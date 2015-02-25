@@ -1,0 +1,107 @@
+package com.github.luben.zstd;
+
+import java.nio.ByteBuffer;
+import java.io.OutputStream;
+import java.io.FilterOutputStream;
+import java.io.IOException;
+
+import com.github.luben.zstd.util.Native;
+import com.github.luben.zstd.Zstd;
+
+public class ZstdOutputStream extends FilterOutputStream {
+
+    static {
+        Native.load();
+    }
+
+    /* Opaque pointer to Zstd context object */
+    private long ctx;
+
+    /* Some constants, there is provision for variable blocksize in the future */
+    private final static int blockSize = 128*1024; //128 KB
+    private final static int iBuffSize = 4 * blockSize;
+    private final static int oBuffSize = (int) Zstd.compressBound(blockSize);
+
+    private byte[] iBuff = null;
+    private byte[] oBuff = null;
+    private int iPos  = 0;
+    private int iEnd  = 0;
+
+    /* JNI methods */
+    private static native long createCCtx();
+    private static native long freeCCtx(long ctx);
+    private static native long compressBegin(long ctx, byte[] dst, long dstSize);
+    private static native long compressContinue(long ctx, byte[] dst, long dstSize, byte[] src, long srcOffset, long srcSize);
+    private static native long compressEnd(long ctx, byte[] dst, long dstSize);
+
+    /* The constuctor */
+    public ZstdOutputStream(OutputStream outStream) throws IOException {
+        // FilterOutputStream constructor
+        super(outStream);
+
+        // create compression context
+        ctx = createCCtx();
+
+        /* allocate memory */
+        iBuff = ByteBuffer.allocate(iBuffSize).array();
+        oBuff = ByteBuffer.allocate(oBuffSize).array();
+        if (iBuff == null || oBuff == null)
+            throw new IOException("Error allocating the buffers");
+
+        /* write header */
+        long size = compressBegin(ctx, oBuff, oBuffSize);
+        if (Zstd.isError(size))
+            throw new IOException("Compression error: cannot create header: " + Zstd.getErrorName(size));
+
+        out.write(oBuff, 0, (int) size);
+    }
+
+    public void write(byte[] src, int offset, int len) throws IOException {
+        while (len > 0) {
+            int free = iBuffSize - iEnd;
+            if (len < free) {
+                System.arraycopy(src, offset, iBuff, iEnd, len);
+                iEnd    += len;
+                len     =  0;
+            } else {
+                System.arraycopy(src, offset, iBuff, iEnd, free);
+                iEnd    =  iBuffSize;
+                offset  += free;
+                len     -= free;
+            }
+            while (iEnd >= iPos + blockSize) {
+                long size = compressContinue(ctx, oBuff, oBuffSize, iBuff, iPos, blockSize);
+                if (Zstd.isError(size))
+                    throw new IOException("Compression error: " + Zstd.getErrorName(size));
+                out.write(oBuff, 0, (int) size);
+                iPos += blockSize;
+                if (iPos == iBuffSize) {
+                    iPos = 0;
+                    iEnd = 0;
+                }
+            }
+        }
+    }
+
+    public void flush() throws IOException {
+        // Does it support smaller blocks in the middle of the stream?
+        out.flush();
+    }
+
+    public void close() throws IOException {
+        long size = 0;
+        // compress the remaining input
+        if (iPos != iEnd) {
+            // compress
+            size = compressContinue(ctx, oBuff, oBuffSize, iBuff, iPos, iEnd - iPos);
+            if (Zstd.isError(size))
+                throw new IOException("Compression error: " + Zstd.getErrorName(size));
+            out.write(oBuff, 0, (int) size);
+        }
+        // wrap it
+        size = compressEnd(ctx, oBuff, oBuffSize);
+        out.write(oBuff, 0, (int) size);
+        freeCCtx(ctx);
+        out.close();
+    }
+}
