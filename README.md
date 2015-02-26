@@ -7,11 +7,10 @@ that expose to all JVM languages:
 * static compress/decompress methods
 
 * implementation of InputStream and OutputStream for transparent compression
-of data streams compatible with the "zstd" program provided by
-**Zstd** library.
+of data streams compatible with the "zstd" program provided by **Zstd**.
 
-The code for JNI bindings is licenced under BSD license - the same as the
-native library.
+The code for these JNI bindings is licenced under BSD license - the same as
+the native library.
 
 Zstd
 ----
@@ -25,6 +24,9 @@ LZ4 covers).
 **Zstd** is developed by Yann Collet and the source is available at:
 https://github.com/Cyan4973/zstd
 
+The motivation for development, the algotithm used and its properties are
+explained in the blog post that introduces the library:
+http://fastcompression.blogspot.com/2015/01/zstd-stronger-compression-algorithm.html
 
 Status and availability
 -----------------------
@@ -45,7 +47,7 @@ Building and dependencies
 **Zstd-JNI** uses SBT for building the libary and running the tests.
 
 The produced JAR does not have any dependencies and embeds the native
-shared library.
+library.
 
 The build system depends on Scala and the tests depend on ScalaTest and
 ScalaCheck.
