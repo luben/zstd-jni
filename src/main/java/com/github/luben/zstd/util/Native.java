@@ -35,13 +35,15 @@ public enum Native {
     }
 
     public static synchronized void load() {
-        if (loaded)
+        if (loaded) {
             return;
+        }
         String resourceName = resourceName();
         InputStream is = Native.class.getResourceAsStream(resourceName);
-        if (is == null)
+        if (is == null) {
             throw new UnsupportedOperationException("Unsupported OS/arch, cannot find " +
                     resourceName + ". Please try building from source.");
+        }
         File tempLib;
         try {
             tempLib = File.createTempFile("libzstd", "." + libExtension());
@@ -51,8 +53,9 @@ public enum Native {
                 byte[] buf = new byte[4096];
                 while (true) {
                     int read = is.read(buf);
-                    if (read == -1)
+                    if (read == -1) {
                         break;
+                    }
                     out.write(buf, 0, read);
                 }
                 try {
@@ -65,7 +68,9 @@ public enum Native {
                 loaded = true;
             } finally {
                 try {
-                    if (out != null) out.close();
+                    if (out != null) {
+                        out.close();
+                    }
                 } catch (IOException e) {
                   // ignore
                 }

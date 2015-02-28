@@ -8,6 +8,13 @@ import java.io.IOException;
 import com.github.luben.zstd.util.Native;
 import com.github.luben.zstd.Zstd;
 
+/**
+ * OutputStream filter that compresses the data using Zstd compression
+ *
+ * Caveat: flush method with flush only the completed blocks of
+ * 128KB size to the output
+ *
+ */
 public class ZstdOutputStream extends FilterOutputStream {
 
     static {
@@ -45,14 +52,14 @@ public class ZstdOutputStream extends FilterOutputStream {
         /* allocate memory */
         iBuff = ByteBuffer.allocate(iBuffSize).array();
         oBuff = ByteBuffer.allocate(oBuffSize).array();
-        if (iBuff == null || oBuff == null)
+        if (iBuff == null || oBuff == null) {
             throw new IOException("Error allocating the buffers");
-
+        }
         /* write header */
         long size = compressBegin(ctx, oBuff, oBuffSize);
-        if (Zstd.isError(size))
+        if (Zstd.isError(size)) {
             throw new IOException("Compression error: cannot create header: " + Zstd.getErrorName(size));
-
+        }
         out.write(oBuff, 0, (int) size);
     }
 
@@ -71,8 +78,9 @@ public class ZstdOutputStream extends FilterOutputStream {
             }
             while (iEnd >= iPos + blockSize) {
                 long size = compressContinue(ctx, oBuff, oBuffSize, iBuff, iPos, blockSize);
-                if (Zstd.isError(size))
+                if (Zstd.isError(size)) {
                     throw new IOException("Compression error: " + Zstd.getErrorName(size));
+                }
                 out.write(oBuff, 0, (int) size);
                 iPos += blockSize;
                 if (iPos == iBuffSize) {
@@ -83,6 +91,11 @@ public class ZstdOutputStream extends FilterOutputStream {
         }
     }
 
+    /**
+     * Flushes the output
+     *
+     * Caveat: it will flush only the completed blocks
+     */
     public void flush() throws IOException {
         // Does it support smaller blocks in the middle of the stream?
         out.flush();
@@ -101,6 +114,7 @@ public class ZstdOutputStream extends FilterOutputStream {
         // wrap it
         size = compressEnd(ctx, oBuff, oBuffSize);
         out.write(oBuff, 0, (int) size);
+        // release the resources
         freeCCtx(ctx);
         out.close();
     }

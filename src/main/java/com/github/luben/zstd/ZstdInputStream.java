@@ -8,6 +8,14 @@ import java.io.IOException;
 import com.github.luben.zstd.util.Native;
 import com.github.luben.zstd.Zstd;
 
+/**
+ * InputStream filter that decompresses the data provided
+ * by the underlying InputStream using Zstd compression.
+ *
+ * It does not support mark/reset methods
+ *
+ */
+
 public class ZstdInputStream extends FilterInputStream {
 
     static {
@@ -54,22 +62,23 @@ public class ZstdInputStream extends FilterInputStream {
 
         /* check header */
         long toRead = nextSrcSizeToDecompress(ctx);
-        if (toRead > MAXHEADERSIZE)
+        if (toRead > MAXHEADERSIZE) {
             throw new IOException("Not enough memory to read a header of size " + toRead);
-
+        }
         long size = in.read(header,0, (int) toRead);
-        if (size != toRead)
+        if (size != toRead) {
             throw new IOException("Cannot read header of size " + toRead);
-
+        }
         size = decompressContinue(ctx, null, 0, 0, header, toRead);
-        if (Zstd.isError(size))
+        if (Zstd.isError(size)) {
             throw new IOException("Error decoding the header: " + Zstd.getErrorName(size));
-
+        }
         /* allocate memory */
         iBuff = ByteBuffer.allocate(iBuffSize).array();
         oBuff = ByteBuffer.allocate(oBuffSize).array();
-        if (iBuff == null || oBuff == null)
+        if (iBuff == null || oBuff == null) {
             throw new IOException("Error allocating the buffers");
+        }
     }
 
     public int read(byte[] dst, int offset, int len) throws IOException {
@@ -84,7 +93,9 @@ public class ZstdInputStream extends FilterInputStream {
             long toRead = nextSrcSizeToDecompress(ctx);
 
             // Reached end of stream (-1) if there is anything more to read
-            if (toRead == 0) return -1;
+            if (toRead == 0) {
+                return -1;
+            }
 
             // Start from the beginning if we have reached the end of the oBuff
             if (oBuffSize - oPos < blockSize) {
@@ -95,17 +106,18 @@ public class ZstdInputStream extends FilterInputStream {
             // in.read is not guaranteed to return the requested size in one go
             while (iPos < toRead) {
                 long read = in.read(iBuff, iPos, (int) toRead - iPos);
-                if (read > 0)
+                if (read > 0) {
                     iPos += read;
-                else
+                } else {
                     throw new IOException("Read error or truncated source");
+                }
             }
 
             // Decode
             long decoded = decompressContinue(ctx, oBuff, oPos, oBuffSize - oPos, iBuff, iPos);
-            if (Zstd.isError(decoded))
+            if (Zstd.isError(decoded)) {
                 throw new IOException("Decode Error: " + Zstd.getErrorName(decoded));
-
+            }
             oEnd += (int) decoded;
         }
         // return size is min(requested, available)
