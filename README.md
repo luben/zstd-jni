@@ -35,8 +35,8 @@ Status and availability
 uncompatible changes in the binary format and it is not yet ready for
 production use.
 
-**Zstd-JNI** is based on an experimental branch (streamAPI2) and will
-track the development of **Zstd**.
+**Zstd-JNI** is based on an the development baranch and will track the
+development of **Zstd**.
 
 We will not publish any pre-build artefacts until **Zstd** and these
 bindings are deemed production ready.
@@ -46,8 +46,6 @@ Building and dependencies
 
 **Zstd-JNI** uses SBT for building the libary and running the tests.
 
-The produced JAR does not have any dependencies and embeds the native
-library.
-
 The build system depends on Scala and the tests depend on ScalaTest and
-ScalaCheck.
+ScalaCheck but the produced JAR does not have any dependencies. It also
+embeds the native library.
