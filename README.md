@@ -35,8 +35,8 @@ Status and availability
 uncompatible changes in the binary format and it is not yet ready for
 production use.
 
-**Zstd-JNI** is based on an the development baranch and will track the
-development of **Zstd**.
+**Zstd-JNI** will track the development of **Zstd** and is currently
+based on version 0.0.2.
 
 We will not publish any pre-build artefacts until **Zstd** and these
 bindings are deemed production ready.
