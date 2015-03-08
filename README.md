@@ -9,9 +9,6 @@ compression lossless algorythm for Java and all JVM languages:
 * implementation of InputStream and OutputStream for transparent compression
 of data streams compatible with the "zstd" program.
 
-The code for these JNI bindings is licenced under BSD license - the same as
-the native **Zstd** library.
-
 Example performance on my laptop (i7-4558U):
 
 ```
@@ -37,6 +34,7 @@ Example performance on my laptop (i7-4558U):
 ```
 
 Run the test suite to get the performance on your hardware.
+
 
 Zstd
 ----
@@ -87,3 +85,11 @@ If you want to publish it to you local ivy2 repositrory:
 ```
  $ sbt publish-local
 ```
+
+
+License
+-------
+
+The code for these JNI bindings is licenced under BSD license - the same as
+the native **Zstd** library. See the LICENSE for full copythight and
+conditions.

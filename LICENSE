@@ -1,6 +1,6 @@
 JNI bindings to ZSTD Library
 Copyright (c) 2014-2015, Yann Collet
-Copyright (c) 2014-2015, Luben Karavelov
+Copyright (c) 2015, Luben Karavelov
 All rights reserved.
 
 BSD License
