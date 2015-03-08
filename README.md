@@ -2,7 +2,7 @@ Zstd-JNI
 ========
 
 JNI bindings for **Zstd** native library that provides fast and high
-compression for Java and all JVM languages:
+compression lossless algorythm for Java and all JVM languages:
 
 * static compress/decompress methods
 
