@@ -1,16 +1,42 @@
 Zstd-JNI
 ========
 
-This reporsitory contains JNI bindings for the **Zstd** native library
-that expose to all JVM languages:
+JNI bindings for **Zstd** native library that provides fast and high
+compression for Java and all JVM languages:
 
 * static compress/decompress methods
 
 * implementation of InputStream and OutputStream for transparent compression
-of data streams compatible with the "zstd" program provided by **Zstd**.
+of data streams compatible with the "zstd" program.
 
 The code for these JNI bindings is licenced under BSD license - the same as
-the native library.
+the native **Zstd** library.
+
+Example performance on my laptop (i7-4558U):
+
+```
+      Uncompressable data
+      --
+      Compression:        662 MB/s
+      Decompression:      8411 MB/s
+      Compression Ratio:  0.99997043697019
+
+
+      Highly compressable data
+      --
+      Compression:        2877 MB/s
+      Decompression:      10976 MB/s
+      Compression Ratio:  884.1281618887015
+
+
+      Compressable data
+      --
+      Compression:        253 MB/s
+      Decompression:      548 MB/s
+      Compression Ratio:  5.639445830823509
+```
+
+Run the test suite to get the performance on your hardware.
 
 Zstd
 ----
@@ -38,7 +64,7 @@ production use.
 **Zstd-JNI** will track the development of **Zstd** and is currently
 based on version 0.0.2.
 
-We will not publish any pre-build artefacts until **Zstd** and these
+I will not publish any pre-build artefacts until **Zstd** and these
 bindings are deemed production ready.
 
 Building and dependencies
@@ -49,3 +75,15 @@ Building and dependencies
 The build system depends on Scala and the tests depend on ScalaTest and
 ScalaCheck but the produced JAR does not have any dependencies. It also
 embeds the native library.
+
+How to build:
+
+```
+ $ sbt compile test package
+```
+
+If you want to publish it to you local ivy2 repositrory:
+
+```
+ $ sbt publish-local
+```
