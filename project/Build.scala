@@ -52,6 +52,9 @@ object ZstdBuild extends Build {
         case Some((major,minor)) => (target in Compile).value / s"scala-$major.$minor" / "classes" / "include"
         case None => sys.error("Can't find Scala version")
       }
+    },
+    artifactName := { (sv: ScalaVersion, module: ModuleID, artifact: Artifact) =>
+      artifact.name + "-" + module.revision + "." + artifact.extension
     }
   )
 }
