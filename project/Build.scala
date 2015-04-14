@@ -42,19 +42,11 @@ object ZstdBuild extends Build {
     binPath := {
       val os = System.getProperty("os.name").toLowerCase.replace(' ','_')
       val arch =  System.getProperty("os.arch")
-      CrossVersion.partialVersion(scalaVersion.value) match {
-        case Some((major,minor)) => (target in Compile).value / s"scala-$major.$minor" / "classes" / os / arch
-        case None => sys.error("Can't find Scala version")
-      }
+      (target in Compile).value / "classes" / os / arch
     },
-    headersPath := {
-      CrossVersion.partialVersion(scalaVersion.value) match {
-        case Some((major,minor)) => (target in Compile).value / s"scala-$major.$minor" / "classes" / "include"
-        case None => sys.error("Can't find Scala version")
-      }
-    },
-    artifactName := { (sv: ScalaVersion, module: ModuleID, artifact: Artifact) =>
-      artifact.name + "-" + module.revision + "." + artifact.extension
-    }
+    headersPath := (target in Compile).value / "classes" / "include",
+    publishMavenStyle := true,
+    autoScalaLibrary := false,
+    crossPaths := false
   )
 }
