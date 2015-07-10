@@ -12,13 +12,13 @@ object ZstdBuild extends Build {
   settings(
     Jni.settings : _*
   ).settings(
-    scalaVersion := "2.11.5",
+    scalaVersion := "2.11.7",
     version := buildVersion,
     organization := "com.github.luben",
     libraryName := "libzstd",
     libraryDependencies ++= Seq(
       "org.scalatest"  %% "scalatest"  % "2.2.4"  % "test",
-      "org.scalacheck" %% "scalacheck" % "1.12.2" % "test"
+      "org.scalacheck" %% "scalacheck" % "1.12.4" % "test"
     ),
     gccFlags ++= {
       val default = Seq( "-std=c99", "-Wundef", "-Wshadow", "-Wcast-align", "-Wstrict-prototypes",
