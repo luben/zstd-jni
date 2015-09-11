@@ -14,20 +14,20 @@ Example performance on my laptop (i7-4558U):
 ```
       Uncompressable data
       --
-      Compression:        642 MB/s
-      Decompression:      9849 MB/s
+      Compression:        724 MB/s
+      Decompression:      9722 MB/s
       Compression Ratio:  0.99997043697019
 
       Highly compressable data
       --
-      Compression:        2816 MB/s
-      Decompression:      13026 MB/s
+      Compression:        3210 MB/s
+      Decompression:      10241 MB/s
       Compression Ratio:  872.3594009983361
 
       Compressable data
       --
-      Compression:        275 MB/s
-      Decompression:      655 MB/s
+      Compression:        297 MB/s
+      Decompression:      613 MB/s
       Compression Ratio:  5.656878665105766
 ```
 
@@ -58,7 +58,7 @@ uncompatible changes in the binary format and it is not yet ready for
 production use.
 
 **Zstd-JNI** will track the development of **Zstd** and is currently
-based on version 0.0.2.
+based on version 0.1.2.
 
 I will not publish any pre-build artefacts until **Zstd** and these
 bindings are deemed production ready.
