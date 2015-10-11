@@ -18,7 +18,7 @@ object ZstdBuild extends Build {
     libraryName := "libzstd",
     libraryDependencies ++= Seq(
       "org.scalatest"  %% "scalatest"  % "2.2.4"  % "test",
-      "org.scalacheck" %% "scalacheck" % "1.12.4" % "test"
+      "org.scalacheck" %% "scalacheck" % "1.12.5" % "test"
     ),
     gccFlags ++= {
       val default = Seq( "-std=c99", "-Wundef", "-Wshadow", "-Wcast-align", "-Wstrict-prototypes",

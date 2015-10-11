@@ -8,6 +8,8 @@ import java.io.InputStream;
 public enum Native {
     ;
 
+    private static final String libname = "libzstd";
+
     private static String osName() {
         return System.getProperty("os.name").toLowerCase().replace(' ', '_');
     }
@@ -25,7 +27,7 @@ public enum Native {
     }
 
     private static String resourceName() {
-        return "/" + osName() + "/" + osArch() + "/libzstd." + libExtension();
+        return "/" + osName() + "/" + osArch() + "/" + libname + "." + libExtension();
     }
 
     private static boolean loaded = false;
@@ -46,7 +48,7 @@ public enum Native {
         }
         File tempLib;
         try {
-            tempLib = File.createTempFile("libzstd", "." + libExtension());
+            tempLib = File.createTempFile(libname, "." + libExtension());
             // copy to tempLib
             FileOutputStream out = new FileOutputStream(tempLib);
             try {
@@ -84,7 +86,7 @@ public enum Native {
                 }
             }
         } catch (IOException e) {
-            throw new ExceptionInInitializerError("Cannot unpack libzstd");
+            throw new ExceptionInInitializerError("Cannot unpack " + libname);
         }
     }
 }
