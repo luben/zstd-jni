@@ -58,7 +58,7 @@ uncompatible changes in the binary format and it is not yet ready for
 production use.
 
 **Zstd-JNI** will track the development of **Zstd** and is currently
-based on version 0.1.2.
+based on version 0.1.3.
 
 I will not publish any pre-build artefacts until **Zstd** and these
 bindings are deemed production ready.
