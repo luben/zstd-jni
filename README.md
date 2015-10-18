@@ -1,4 +1,4 @@
-Zstd-JNI
+Zstd-jni
 ========
 
 JNI bindings for **Zstd** native library that provides fast and high
@@ -53,20 +53,28 @@ http://fastcompression.blogspot.com/2015/01/zstd-stronger-compression-algorithm.
 Status and availability
 -----------------------
 
-**Zstd** is currently in early stages of development, there may be
-uncompatible changes in the binary format and it is not yet ready for
-production use.
+**Zstd** has not yet reached "stable" status. Specifically, it doesn't guarantee
+yet that its current compressed format will remain stable and supported in future
+versions.It may still change to adapt further optimizations still being investigated.
+However, the library starts to be pretty robust, able to withstand hazards situations,
+including invalid input. The library reliability has been tested using
+[Fuzz Testing](https://en.wikipedia.org/wiki/Fuzz_testing), using both
+[internal tools](programs/fuzzer.c) and
+[external ones](http://lcamtuf.coredump.cx/afl). Therefore, you can now safely test
+zstd, even within production environments.
 
-**Zstd-JNI** will track the development of **Zstd** and is currently
+"Stable Format" is projected sometimes early 2016.
+
+**Zstd-jni** will track the development of **Zstd** and is currently
 based on version 0.1.3.
 
-I will not publish any pre-build artefacts until **Zstd** and these
-bindings are deemed production ready.
+**Zstd-jni** will not publish any pre-build artefacts until **Zstd** and these
+bindings are deemed stable.
 
 Building and dependencies
 -------------------------
 
-**Zstd-JNI** uses SBT for building the libary and running the tests.
+**Zstd-jni** uses SBT for building the libary and running the tests.
 
 The build system depends on Scala and the tests depend on ScalaTest and
 ScalaCheck but the produced JAR does not have any dependencies. It also
