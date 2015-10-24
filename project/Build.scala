@@ -22,7 +22,7 @@ object ZstdBuild extends Build {
     ),
     gccFlags ++= {
       val default = Seq( "-std=c99", "-Wundef", "-Wshadow", "-Wcast-align", "-Wstrict-prototypes",
-                         "-Wno-unused-variable", "-funroll-loops")
+                         "-Wno-unused-variable", "-funroll-loops", "-DZSTD_LEGACY_SUPPORT=0")
       val arch = System.getProperty("os.arch") match {
         case "amd64"|"x86_64"   => Seq("-msse4")
         case "i386"             => Seq("-msse4")
@@ -32,7 +32,7 @@ object ZstdBuild extends Build {
     },
     nativeCompiler := "gcc",
     includes += "-I" + nativeSource.value.toString,
-    cppExtensions := Seq("zstd.c"),
+    cppExtensions := Seq(".c"),
     cpp11 := false,
     jniClasses := Seq(
         "com.github.luben.zstd.Zstd",

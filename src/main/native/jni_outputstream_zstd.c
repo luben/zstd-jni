@@ -18,7 +18,7 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdOutputStream_createCCtx
  */
 JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdOutputStream_freeCCtx
   (JNIEnv *env, jclass obj, jlong ctx) {
-    return ZSTD_freeCCtx((ZSTD_Cctx*) ctx);
+    return ZSTD_freeCCtx((ZSTD_CCtx*) ctx);
 }
 
 /*
@@ -29,7 +29,7 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdOutputStream_freeCCtx
 JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdOutputStream_compressBegin
   (JNIEnv *env, jclass obj, jlong ctx, jbyteArray dst, jlong dst_size) {
     void *dst_buff = (*env)->GetPrimitiveArrayCritical(env, dst, NULL);
-    size_t size = ZSTD_compressBegin((ZSTD_Cctx*) ctx, dst_buff, dst_size);
+    size_t size = ZSTD_compressBegin((ZSTD_CCtx*) ctx, dst_buff, dst_size);
     (*env)->ReleasePrimitiveArrayCritical(env, dst, dst_buff, 0);
     return size;
 }
@@ -43,7 +43,7 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdOutputStream_compressCont
   (JNIEnv *env, jclass obj, jlong ctx, jbyteArray dst, jlong dst_size, jbyteArray src, jlong src_offset, jlong src_size) {
     void *dst_buff = (*env)->GetPrimitiveArrayCritical(env, dst, NULL);
     void *src_buff = (*env)->GetPrimitiveArrayCritical(env, src, NULL);
-    size_t size = ZSTD_compressContinue((ZSTD_Cctx*) ctx, dst_buff, dst_size, src_buff + src_offset, src_size);
+    size_t size = ZSTD_compressContinue((ZSTD_CCtx*) ctx, dst_buff, dst_size, src_buff + src_offset, src_size);
     (*env)->ReleasePrimitiveArrayCritical(env, src, src_buff, 0);
     (*env)->ReleasePrimitiveArrayCritical(env, dst, dst_buff, 0);
     return size;
@@ -57,7 +57,7 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdOutputStream_compressCont
 JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdOutputStream_compressEnd
   (JNIEnv *env, jclass obj, jlong ctx, jbyteArray dst, jlong dst_size) {
     void *dst_buff = (*env)->GetPrimitiveArrayCritical(env, dst, NULL);
-    size_t size = ZSTD_compressEnd((ZSTD_Cctx*) ctx, dst_buff, dst_size);
+    size_t size = ZSTD_compressEnd((ZSTD_CCtx*) ctx, dst_buff, dst_size);
     (*env)->ReleasePrimitiveArrayCritical(env, dst, dst_buff, 0);
     return size;
 }

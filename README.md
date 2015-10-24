@@ -66,7 +66,7 @@ zstd, even within production environments.
 "Stable Format" is projected sometimes early 2016.
 
 **Zstd-jni** will track the development of **Zstd** and is currently
-based on version 0.1.3.
+based on version 0.2.1 without the compatibility support for the v0.1 format.
 
 **Zstd-jni** will not publish any pre-build artefacts until **Zstd** and these
 bindings are deemed stable.

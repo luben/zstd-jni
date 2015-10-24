@@ -21,7 +21,7 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdInputStream_createDCtx
  */
 JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdInputStream_freeDCtx
   (JNIEnv *env, jclass obj, jlong ctx) {
-    return ZSTD_freeDCtx((ZSTD_Dctx*) ctx);
+    return ZSTD_freeDCtx((ZSTD_DCtx*) ctx);
 }
 
 /*
@@ -31,7 +31,7 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdInputStream_freeDCtx
  */
 JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdInputStream_nextSrcSizeToDecompress
   (JNIEnv *env, jclass obj, jlong ctx) {
-    return ZSTD_nextSrcSizeToDecompress((ZSTD_Dctx*) ctx);
+    return ZSTD_nextSrcSizeToDecompress((ZSTD_DCtx*) ctx);
 }
 
 /*
@@ -54,7 +54,7 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdInputStream_decompressCon
     } else {
         src_size = 0;
     }
-    size_t size = ZSTD_decompressContinue((ZSTD_Dctx*) ctx, dst_buff + dst_offset, (size_t) dst_size, src_buff, (size_t) src_size);
+    size_t size = ZSTD_decompressContinue((ZSTD_DCtx*) ctx, dst_buff + dst_offset, (size_t) dst_size, src_buff, (size_t) src_size);
     if (src_buff) (*env)->ReleasePrimitiveArrayCritical(env, src, src_buff, 0);
     if (dst_buff) (*env)->ReleasePrimitiveArrayCritical(env, dst, dst_buff, 0);
     return size;
