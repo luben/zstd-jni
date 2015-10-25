@@ -14,21 +14,21 @@ Example performance on my laptop (i7-4558U):
 ```
       Uncompressable data
       --
-      Compression:        724 MB/s
-      Decompression:      9722 MB/s
+      Compression:        704 MB/s
+      Decompression:      10842 MB/s
       Compression Ratio:  0.99997043697019
 
       Highly compressable data
       --
-      Compression:        3210 MB/s
-      Decompression:      10241 MB/s
-      Compression Ratio:  872.3594009983361
+      Compression:        2910 MB/s
+      Decompression:      14079 MB/s
+      Compression Ratio:  866.5917355371901
 
       Compressable data
       --
-      Compression:        297 MB/s
-      Decompression:      613 MB/s
-      Compression Ratio:  5.656878665105766
+      Compression:        310 MB/s
+      Decompression:      877 MB/s
+      Compression Ratio:  5.656848147428843
 ```
 
 Run the test suite to get the performance on your hardware.
