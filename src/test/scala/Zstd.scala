@@ -24,19 +24,30 @@ class ZstdSpec extends FlatSpec with Checkers {
  it should "should round-trip using streaming API" in {
     check { input: Array[Byte] =>
       {
-        val size = input.length
-        val is = new ByteArrayInputStream(input)
-        val os = new ByteArrayOutputStream(size)
-        val buff = Array.fill[Byte](128*1024)(0)
-        var read = 0
-        do {
-          read = is.read(buff, 0, buff.size)
-          if (read > 0)
-            os.write(buff, 0, read)
-        } while (read > 0)
-        os.close
-        is.close
-        input.toSeq == os.toByteArray.seq
+        val size  = input.length
+        val os    = new ByteArrayOutputStream(Zstd.compressBound(size.toLong).toInt)
+        val zos   = new ZstdOutputStream(os)
+        var ptr   = 0
+        while (ptr < size - 1) {
+          val chunk = if (size - ptr > 128 * 1024) 128 * 1024 else size - ptr
+          zos.write(input, ptr, chunk)
+          ptr += chunk
+        }
+        zos.close
+        val compressed = os.toByteArray
+        // now decompress
+        val is    = new ByteArrayInputStream(compressed)
+        val zis   = new ZstdInputStream(is)
+        val output= Array.fill[Byte](size)(0)
+        ptr       = 0
+
+        while (ptr < size - 1) {
+          val chunk = if (size - ptr > 128 * 1024) 128 * 1024 else size - ptr
+          zis.read(output, ptr, chunk)
+          ptr += chunk
+        }
+        zis.close
+        input.toSeq == output.toSeq
       }
     }
   }
