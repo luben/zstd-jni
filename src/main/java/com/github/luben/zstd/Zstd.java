@@ -19,10 +19,11 @@ public class Zstd {
      *
      * @param dst the destination buffer
      * @param src the source buffer
+     * @param level compression level
      * @return  the number of bytes written into buffer 'dst' or an error code if
      *          it fails (which can be tested using ZSTD_isError())
      */
-    public static native long compress  (byte[] dst, byte[] src);
+    public static native long compress  (byte[] dst, byte[] src, int level);
 
     /**
      * Decompresses buffer 'src' into buffer 'dst'.
@@ -55,21 +56,33 @@ public class Zstd {
      * Compresses the data in buffer 'src'
      *
      * @param src the source buffer
+     * @param level compression level
      * @return byte array with the compressed data
      */
-    public static byte[] compress(byte[] src) {
-        long maxDstSize     = compressBound(src.length);
+    public static byte[] compress(byte[] src, int level) {
+        long maxDstSize = compressBound(src.length);
         if (maxDstSize > Integer.MAX_VALUE) {
             throw new RuntimeException("Max output size is greater than MAX_INT");
         }
         ByteBuffer dst_buff = ByteBuffer.allocate((int) maxDstSize);
-        byte[] dst          = dst_buff.array();
-        long size = compress(dst, src);
+        byte[] dst = dst_buff.array();
+        long size = compress(dst, src, level);
         if (isError(size)) {
             throw new RuntimeException(getErrorName(size));
         }
         return Arrays.copyOfRange(dst, 0, (int) size);
     }
+
+    /**
+     * Compresses the data in buffer 'src' using defaul compression level
+     *
+     * @param src the source buffer
+     * @return byte array with the compressed data
+     */
+    public static byte[] compress(byte[] src) {
+        return compress(src, 1);
+    }
+
 
     /**
      * Decompress data

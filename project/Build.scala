@@ -20,16 +20,17 @@ object ZstdBuild extends Build {
       "org.scalatest"  %% "scalatest"  % "2.2.4"  % "test",
       "org.scalacheck" %% "scalacheck" % "1.12.5" % "test"
     ),
-    gccFlags ++= {
-      val default = Seq( "-std=c99", "-Wundef", "-Wshadow", "-Wcast-align", "-Wstrict-prototypes",
-                         "-Wno-unused-variable", "-funroll-loops", "-DZSTD_LEGACY_SUPPORT=0")
-      val arch = System.getProperty("os.arch") match {
-        case "amd64"|"x86_64"   => Seq("-msse4")
-        case "i386"             => Seq("-msse4")
-        case _                  => Seq()
-      }
-      default ++ arch
-    },
+    gccFlags ++= Seq(
+          "-std=c99", "-Wundef", "-Wshadow", "-Wcast-align", "-Wstrict-prototypes",
+          "-Wno-unused-variable",
+          "-O2",
+          //"-funroll-loops",
+          "-DZSTD_LEGACY_SUPPORT=0"
+        ) ++ (System.getProperty("os.arch") match {
+          case "amd64"|"x86_64"   => Seq("-msse4")
+          case "i386"             => Seq("-msse4")
+          case _                  => Seq()
+        }),
     nativeCompiler := "gcc",
     includes += "-I" + nativeSource.value.toString,
     cppExtensions := Seq(".c"),
@@ -47,6 +48,7 @@ object ZstdBuild extends Build {
     headersPath := (target in Compile).value / "classes" / "include",
     publishMavenStyle := true,
     autoScalaLibrary := false,
-    crossPaths := false
+    crossPaths := false,
+    parallelExecution in Test := false
   )
 }

@@ -30,7 +30,8 @@
     - zstd source repository : https://github.com/Cyan4973/zstd
     - ztsd public forum : https://groups.google.com/forum/#!forum/lz4c
 */
-#pragma once
+#ifndef ZSTD_H
+#define ZSTD_H
 
 #if defined (__cplusplus)
 extern "C" {
@@ -46,8 +47,8 @@ extern "C" {
 *  Version
 ***************************************/
 #define ZSTD_VERSION_MAJOR    0    /* for breaking interface changes  */
-#define ZSTD_VERSION_MINOR    2    /* for new (non-breaking) interface capabilities */
-#define ZSTD_VERSION_RELEASE  0    /* for tweaks, bug-fixes, or development */
+#define ZSTD_VERSION_MINOR    3    /* for new (non-breaking) interface capabilities */
+#define ZSTD_VERSION_RELEASE  3    /* for tweaks, bug-fixes, or development */
 #define ZSTD_VERSION_NUMBER  (ZSTD_VERSION_MAJOR *100*100 + ZSTD_VERSION_MINOR *100 + ZSTD_VERSION_RELEASE)
 unsigned ZSTD_versionNumber (void);
 
@@ -105,3 +106,5 @@ size_t ZSTD_compressCCtx(ZSTD_CCtx* ctx, void* dst, size_t maxDstSize, const voi
 #if defined (__cplusplus)
 }
 #endif
+
+#endif  /* ZSTD_H */

@@ -3,13 +3,13 @@ package com.github.luben.zstd
 import org.scalatest.FlatSpec
 class ZstdPerfSpec extends FlatSpec  {
 
-  def bench(name: String, buff: Array[Byte]) {
+  def bench(name: String, buff: Array[Byte], level: Int = 1) {
     var nsc = 0.0
     var nsd = 0.0
     var ratio = 0.0
-    for (i <- 0 to 1023) {
+    for (i <- 1 to 1000) {
       val start_c     = System.nanoTime
-      val compressed  = Zstd.compress(buff)
+      val compressed  = Zstd.compress(buff, level)
       nsc += System.nanoTime - start_c
       val start_d     = System.nanoTime
       val size        = Zstd.decompress(buff, compressed)
@@ -45,10 +45,12 @@ class ZstdPerfSpec extends FlatSpec  {
     bench("Highly compressable data", buff)
   }
 
-  it should "be fast for compressable data" in {
-    import scala.io._
-    val buff = Source.fromFile("src/test/resources/src.tar")(Codec.ISO8859).map{_.toByte }.take(1024*1024).toArray
-    bench("Compressable data", buff)
+  for (level <- 1 to 9) {
+    it should s"be fast for compressable data -$level" in {
+      import scala.io._
+      val buff = Source.fromFile("src/test/resources/src.tar")(Codec.ISO8859).map{_.toByte }.take(1024*1024).toArray
+      bench(s"Compressable data -$level", buff, level)
+    }
   }
 
 }

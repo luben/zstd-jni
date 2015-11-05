@@ -8,24 +8,28 @@ import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
 
 class ZstdSpec extends FlatSpec with Checkers {
   implicit override val generatorDrivenConfig =
-    PropertyCheckConfig(minSize = 0, maxSize = 1024*1024)
+    PropertyCheckConfig(minSize = 0, maxSize = 1024)
 
-  "Zstd" should "should round-trip compression/decompression" in {
-    check { input: Array[Byte] =>
-      val size        = input.length
-      val compressed  = Zstd.compress(input)
-      val decompressed= Zstd.decompress(compressed, size)
-      input.toSeq == decompressed.toSeq
+  for (level <- Some(2)) {
+    "Zstd" should s"should round-trip compression/decompression at level $level" in {
+      check { input: Array[Byte] =>
+        {
+          val size        = input.length
+          val compressed  = Zstd.compress(input, level)
+          val decompressed= Zstd.decompress(compressed, size)
+          input.toSeq == decompressed.toSeq
+        }
+      }
     }
   }
 
- it should "should round-trip using streaming API" in {
-    check { input: Array[Byte] =>
+ "Zstd" should "should round-trip using streaming API" in {
+   check { input: Array[Byte] =>
       val size  = input.length
       val os    = new ByteArrayOutputStream(Zstd.compressBound(size.toLong).toInt)
       val zos   = new ZstdOutputStream(os)
       var ptr   = 0
-      while (ptr < size - 1) {
+      while (ptr < size) {
         val chunk = if (size - ptr > 128 * 1024) 128 * 1024 else size - ptr
         zos.write(input, ptr, chunk)
         ptr += chunk
@@ -38,12 +42,17 @@ class ZstdSpec extends FlatSpec with Checkers {
       val output= Array.fill[Byte](size)(0)
       ptr       = 0
 
-      while (ptr < size - 1) {
+      while (ptr < size) {
         val chunk = if (size - ptr > 128 * 1024) 128 * 1024 else size - ptr
         zis.read(output, ptr, chunk)
         ptr += chunk
       }
       zis.close
+      if (input.toSeq != output.toSeq) {
+        println(s"AT SIZE $size")
+        println(input.toSeq + "!=" + output.toSeq)
+        println("COMPRESSED: " + compressed.toSeq)
+      }
       input.toSeq == output.toSeq
     }
   }
