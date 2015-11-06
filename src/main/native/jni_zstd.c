@@ -14,10 +14,7 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_compress
     void *src_buff = (*env)->GetPrimitiveArrayCritical(env, src, NULL);
     jsize src_size = (*env)->GetArrayLength(env, src);
     size_t size;
-    if (level == 1)
-        size = ZSTD_compress(dst_buff, (size_t) dst_size, src_buff, (size_t) src_size);
-    else
-        size = ZSTD_HC_compress(dst_buff, (size_t) dst_size, src_buff, (size_t) src_size, (int) level);
+    size = ZSTD_HC_compress(dst_buff, (size_t) dst_size, src_buff, (size_t) src_size, (int) level);
     (*env)->ReleasePrimitiveArrayCritical(env, src, src_buff, 0);
     (*env)->ReleasePrimitiveArrayCritical(env, dst, dst_buff, 0);
     return size;
