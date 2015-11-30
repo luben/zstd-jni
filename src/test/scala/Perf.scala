@@ -45,10 +45,10 @@ class ZstdPerfSpec extends FlatSpec  {
     bench("Highly compressable data", buff)
   }
 
-  for (level <- 1 to 9) {
+  for (level <- List(1,3,6,9)) {
     it should s"be fast for compressable data -$level" in {
       import scala.io._
-      val buff = Source.fromFile("src/test/resources/src.tar")(Codec.ISO8859).map{_.toByte }.take(1024*1024).toArray
+      val buff = Source.fromFile("src/test/resources/xml")(Codec.ISO8859).map{_.toByte }.take(1024*1024).toArray
       bench(s"Compressable data -$level", buff, level)
     }
   }
