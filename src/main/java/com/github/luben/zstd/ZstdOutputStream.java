@@ -52,7 +52,7 @@ public class ZstdOutputStream extends FilterOutputStream {
 
         // find buffer sizes
         iBuffSize = findIBuffSize(level);
-        oBuffSize = (int) Zstd.compressBound(blockSize);
+        oBuffSize = (int) Zstd.compressBound(blockSize) + 6;
 
         /* allocate memory */
         iBuff = ByteBuffer.allocate(iBuffSize).array();

@@ -28,7 +28,7 @@ public class ZstdInputStream extends FilterInputStream {
 
     private final static int blockSize = 128*1024; //128 KB
     /* buffer sizes */
-    private final static int iBuffSize = blockSize;
+    private final static int iBuffSize = blockSize + 3;
     private int oBuffSize = -1;
 
     // The decompression buffer
