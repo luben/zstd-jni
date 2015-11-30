@@ -4,6 +4,7 @@ import java.nio.ByteBuffer;
 import java.io.InputStream;
 import java.io.FilterInputStream;
 import java.io.IOException;
+import java.lang.IndexOutOfBoundsException;
 
 import com.github.luben.zstd.util.Native;
 import com.github.luben.zstd.Zstd;
@@ -25,15 +26,10 @@ public class ZstdInputStream extends FilterInputStream {
     // Opaque pointer to Zstd context object
     private long ctx;
 
-    // Some constants
-    private final static int FIO_FRAMEHEADERSIZE = 5;
-    private final static int FIO_blockHeaderSize = 3;
-    private final static int MAXHEADERSIZE = FIO_FRAMEHEADERSIZE + 3;
     private final static int blockSize = 128*1024; //128 KB
-    private final static int wNbBlocks  = 4;
     /* buffer sizes */
-    private final static int iBuffSize = blockSize + FIO_blockHeaderSize;
-    private final static int oBuffSize = wNbBlocks * blockSize;
+    private final static int iBuffSize = blockSize;
+    private int oBuffSize = -1;
 
     // The decompression buffer
     private byte[] oBuff  = null;
@@ -46,6 +42,7 @@ public class ZstdInputStream extends FilterInputStream {
     // JNI methods
     private static native long createDCtx();
     private static native long freeDCtx(long ctx);
+    private static native int  findOBuffSize(byte[] src, long srcSize);
     private static native long nextSrcSizeToDecompress(long ctx);
     private static native long decompressContinue(long ctx, byte[] dst, long dstOffset, long dstSize, byte[] src, long srcSize);
 
@@ -57,35 +54,45 @@ public class ZstdInputStream extends FilterInputStream {
         // create decompression context
         ctx = createDCtx();
 
-        // Header buffer
-        byte[] header = new byte[MAXHEADERSIZE];
-
-        /* check header */
-        long toRead = nextSrcSizeToDecompress(ctx);
-        if (toRead > MAXHEADERSIZE) {
-            throw new IOException("Not enough memory to read a header of size " + toRead);
-        }
-        long size = in.read(header,0, (int) toRead);
-        if (size != toRead) {
-            throw new IOException("Cannot read header of size " + toRead);
-        }
-        size = decompressContinue(ctx, null, 0, 0, header, toRead);
-        if (Zstd.isError(size)) {
-            throw new IOException("Error decoding the header: " + Zstd.getErrorName(size));
-        }
-        /* allocate memory */
+        /* allocate input buffer memory */
         iBuff = ByteBuffer.allocate(iBuffSize).array();
-        oBuff = ByteBuffer.allocate(oBuffSize).array();
-        if (iBuff == null || oBuff == null) {
-            throw new IOException("Error allocating the buffers");
+        if (iBuff == null) {
+            throw new IOException("Error allocating the input buffer of size " + iBuffSize);
         }
+        long toRead = nextSrcSizeToDecompress(ctx);
+
+        // read the header - we need it in order know the size of the output buffer
+        // in.read is not guaranteed to return the requested size in one go
+        int iPos = in.read(iBuff, 0, (int) toRead);
+
+        // find the size and allocate the output buffer
+        while (oBuffSize < 0) {
+            oBuffSize = findOBuffSize(iBuff, iPos);
+            if (oBuffSize < 0) {
+                iPos += in.read(iBuff, iPos, -oBuffSize - iPos);
+            }
+        }
+
+        // allocate the output buffer
+        oBuff = ByteBuffer.allocate(oBuffSize).array();
+
+        if (oBuff == null) {
+            throw new IOException("Error allocating the output buffers of size " + oBuffSize);
+        }
+
+        // decode the first frame
+        long decoded = decompressContinue(ctx, oBuff, oPos, oBuffSize - oPos, iBuff, iPos);
+        if (Zstd.isError(decoded)) {
+            throw new IOException("Decode Error: " + Zstd.getErrorName(decoded));
+        }
+        oEnd += (int) decoded;
     }
 
     public int read(byte[] dst, int offset, int len) throws IOException {
         // guard agains buffer overflows
         if (len > dst.length - offset) {
-            throw new IOException("Requested lenght " +len  +
-                " exceeds the buffer size " + dst.length + " from offset" + offset);
+            throw new IndexOutOfBoundsException("Requested lenght " +len  +
+                " exceeds the buffer size " + dst.length + " from offset " + offset);
         }
         // the buffer is empty
         while (oEnd == oPos) {

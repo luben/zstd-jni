@@ -26,8 +26,8 @@ public class ZstdOutputStream extends FilterOutputStream {
 
     /* Some constants, there is provision for variable blocksize in the future */
     private final static int blockSize = 128*1024; //128 KB
-    private final static int iBuffSize = 4 * blockSize;
-    private final static int oBuffSize = (int) Zstd.compressBound(blockSize);
+    private static int iBuffSize = 0;
+    private static int oBuffSize = 0;
 
     private byte[] iBuff = null;
     private byte[] oBuff = null;
@@ -37,6 +37,7 @@ public class ZstdOutputStream extends FilterOutputStream {
     /* JNI methods */
     private static native long createCCtx();
     private static native long freeCCtx(long ctx);
+    private static native int  findIBuffSize(int level);
     private static native long compressBegin(long ctx, byte[] dst, long dstSize, int level);
     private static native long compressContinue(long ctx, byte[] dst, long dstSize, byte[] src, long srcOffset, long srcSize);
     private static native long compressEnd(long ctx, byte[] dst, long dstSize);
@@ -48,6 +49,10 @@ public class ZstdOutputStream extends FilterOutputStream {
 
         // create compression context
         ctx = createCCtx();
+
+        // find buffer sizes
+        iBuffSize = findIBuffSize(level);
+        oBuffSize = (int) Zstd.compressBound(blockSize);
 
         /* allocate memory */
         iBuff = ByteBuffer.allocate(iBuffSize).array();

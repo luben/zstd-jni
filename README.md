@@ -43,8 +43,8 @@ Therefore, it seems now safe to test Zstandard even within production environmen
 
 
 **Zstd-jni** will track the development of **Zstd** and is currently
-based on version 0.3.6 without the compatibility support for the legacy formats
-(0.1, 0.2). It supports the HighCompression modes.
+based on version 0.4.0 without the compatibility support for the legacy formats
+(0.1, 0.2, 0.3). It supports the HighCompression modes.
 
 **Zstd-jni** will not publish any pre-build artefacts until **Zstd** and these
 bindings are deemed stable.

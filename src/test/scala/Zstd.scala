@@ -27,7 +27,7 @@ class ZstdSpec extends FlatSpec with Checkers {
    check { input: Array[Byte] =>
       val size  = input.length
       val os    = new ByteArrayOutputStream(Zstd.compressBound(size.toLong).toInt)
-      val zos   = new ZstdOutputStream(os)
+      val zos   = new ZstdOutputStream(os, 9)
       var ptr   = 0
       while (ptr < size) {
         val chunk = if (size - ptr > 128 * 1024) 128 * 1024 else size - ptr
