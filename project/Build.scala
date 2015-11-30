@@ -6,7 +6,7 @@ import java.io.File
 
 object ZstdBuild extends Build {
 
-  lazy val buildVersion = "0.3.6"
+  lazy val buildVersion = "0.4.0"
 
   lazy val root = Project(id="zstd-jni", base = file("."), settings = Project.defaultSettings).
   settings(
