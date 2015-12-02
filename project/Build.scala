@@ -6,7 +6,7 @@ import com.typesafe.sbt.osgi.SbtOsgi.{ OsgiKeys, osgiSettings, defaultOsgiSettin
 
 object ZstdBuild extends Build {
 
-  lazy val buildVersion = "0.4.0"
+  lazy val buildVersion = "0.4.1"
 
   lazy val root = Project(id="zstd-jni", base = file(".")).settings(
       Jni.settings : _*
@@ -21,8 +21,7 @@ object ZstdBuild extends Build {
       gccFlags ++= Seq(
             "-std=c99", "-Wundef", "-Wshadow", "-Wcast-align", "-Wstrict-prototypes",
             "-Wno-unused-variable",
-            "-O2",
-            //"-funroll-loops",
+            "-Ofast",
             "-DZSTD_LEGACY_SUPPORT=0"
           ) ++ (System.getProperty("os.arch") match {
             case "amd64"|"x86_64"   => Seq("-msse4")

@@ -30,9 +30,10 @@ class ZstdSpec extends FlatSpec with Checkers {
         val size  = input.length
         val os    = new ByteArrayOutputStream(Zstd.compressBound(size.toLong).toInt)
         val zos   = new ZstdOutputStream(os, level)
+        val block = 128 * 1024
         var ptr   = 0
         while (ptr < size) {
-          val chunk = if (size - ptr > 128 * 1024) 128 * 1024 else size - ptr
+          val chunk = if (size - ptr > block) block else size - ptr
           zos.write(input, ptr, chunk)
           ptr += chunk
         }
@@ -45,7 +46,7 @@ class ZstdSpec extends FlatSpec with Checkers {
         ptr       = 0
 
         while (ptr < size) {
-          val chunk = if (size - ptr > 128 * 1024) 128 * 1024 else size - ptr
+          val chunk = if (size - ptr > block) block else size - ptr
           zis.read(output, ptr, chunk)
           ptr += chunk
         }

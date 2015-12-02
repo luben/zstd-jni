@@ -1,25 +1,22 @@
 package com.github.luben.zstd
 
 import org.scalatest.FlatSpec
+import scala.io._
+import java.io._
+
 class ZstdPerfSpec extends FlatSpec  {
 
-  def bench(name: String, buff: Array[Byte], level: Int = 1) {
-    var nsc = 0.0
-    var nsd = 0.0
-    var ratio = 0.0
-    for (i <- 1 to 1000) {
-      val start_c     = System.nanoTime
-      val compressed  = Zstd.compress(buff, level)
-      nsc += System.nanoTime - start_c
-      val start_d     = System.nanoTime
-      val size        = Zstd.decompress(buff, compressed)
-      nsd += System.nanoTime - start_d
-      ratio = buff.size.toDouble/compressed.size
-    }
-    val seconds_c = nsc / (1000 * 1000 * 1000)
-    val seconds_d = nsd / (1000 * 1000 * 1000)
-    val speed_c   = (buff.size / 1024.0) / seconds_c
-    val speed_d   = (buff.size / 1024.0) / seconds_d
+  def report(name: String, compressed: Int, size: Int, cycles: Int, nsc: Double, nsd: Double ): Unit = {
+    val ns = 1000L * 1000 * 1000
+    val mb = 1024 * 1024
+
+    val ratio = size.toDouble / compressed
+    val seconds_c = nsc.toDouble / ns
+    val seconds_d = nsd.toDouble / ns
+    val total_mb  = cycles.toDouble * size / mb
+    val speed_c   = total_mb / seconds_c
+    val speed_d   = total_mb / seconds_d
+
     println(s"""
       $name
       --
@@ -27,29 +24,75 @@ class ZstdPerfSpec extends FlatSpec  {
       Decompression:      ${speed_d.toLong} MB/s
       Compression Ratio:  $ratio
     """)
+
   }
 
-  "Zstd" should "be fast for random data" in {
-    val buff = Array.fill[Byte](1024*1024)(0)
-    val rand = new scala.util.Random().nextBytes(buff)
-    bench("Uncompressable data", buff)
-  }
-
-  it should "be fast for highly compressable data" in {
-    val buff  = Array.fill[Byte](1024*1024)(0)
-    val block = Array.fill[Byte](1024)(0)
-    new scala.util.Random().nextBytes(block)
-    for (i <- 0 to 1023) {
-      Array.copy(block, 0, buff , i * 1024, 1024)
+  def bench(name: String, buff: Array[Byte], level: Int = 1): Unit = {
+    var nsc = 0.0
+    var nsd = 0.0
+    var ratio = 0.0
+    val cycles = 500
+    var compressedSize = 0
+    for (i <- 1 to cycles) {
+      val start_c     = System.nanoTime
+      val compressed  = Zstd.compress(buff, level)
+      nsc += System.nanoTime - start_c
+      compressedSize  = compressed.size
+      val start_d     = System.nanoTime
+      val size        = Zstd.decompress(buff, compressed)
+      nsd += System.nanoTime - start_d
     }
-    bench("Highly compressable data", buff)
+    report(name, compressedSize, buff.size, cycles, nsc, nsd)
   }
 
-  for (level <- List(1,3,6,9)) {
+  def benchStream(name: String, input: Array[Byte], level: Int = 1): Unit = {
+    val cycles = 100
+    val size  = input.length
+    var compressed: Array[Byte] = null
+
+    val c_start = System.nanoTime
+    for (i <- 1 to cycles)  {
+      val os = new ByteArrayOutputStream(Zstd.compressBound(size.toLong).toInt)
+      val zos   = new ZstdOutputStream(os, level)
+      zos.write(input)
+      zos.close
+      if (compressed == null)
+        compressed = os.toByteArray
+    }
+    val nsc = System.nanoTime - c_start
+
+    val output= Array.fill[Byte](size)(0)
+    val d_start = System.nanoTime
+    for (i <- 1 to cycles)  {
+
+      // now decompress
+      val is    = new ByteArrayInputStream(compressed)
+      val zis   = new ZstdInputStream(is)
+      var ptr   = 0
+
+      while (ptr < size) {
+        ptr += zis.read(output, ptr, size - ptr)
+      }
+      zis.close
+
+    }
+    val nsd = System.nanoTime - d_start
+
+    report(name, compressed.size, size, cycles, nsc, nsd)
+  }
+
+  val buff = Source.fromFile("src/test/resources/xml")(Codec.ISO8859).map{_.toByte }.take(1024 * 1024).toArray
+  for (level <- List(1, 3, 6, 9)) {
     it should s"be fast for compressable data -$level" in {
       import scala.io._
-      val buff = Source.fromFile("src/test/resources/xml")(Codec.ISO8859).map{_.toByte }.take(1024*1024).toArray
       bench(s"Compressable data -$level", buff, level)
+    }
+  }
+
+  val buff1 = Source.fromFile("src/test/resources/xml")(Codec.ISO8859).map{_.toByte }.take(5 * 1024 * 1024).toArray
+  for (level <- List(1, 3, 6, 9)) {
+    it should s"be fast with steaming -$level" in {
+        benchStream(s"Streaming at $level", buff1, level)
     }
   }
 

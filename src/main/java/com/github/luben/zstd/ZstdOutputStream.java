@@ -74,24 +74,32 @@ public class ZstdOutputStream extends FilterOutputStream {
 
     public void write(byte[] src, int offset, int len) throws IOException {
         while (len > 0) {
-            int free = iBuffSize - iEnd;
-            if (len < free) {
-                System.arraycopy(src, offset, iBuff, iEnd, len);
-                iEnd    += len;
-                len     =  0;
+            if (len <= blockSize) {
+                int free = iPos + blockSize - iEnd;
+                if (len <= free) {
+                    System.arraycopy(src, offset, iBuff, iEnd, len);
+                    iEnd    += len;
+                    len     =  0;
+                } else {
+                    System.arraycopy(src, offset, iBuff, iEnd, free);
+                    iEnd    += free;
+                    offset  += free;
+                    len     -= free;
+                }
             } else {
-                System.arraycopy(src, offset, iBuff, iEnd, free);
-                iEnd    =  iBuffSize;
-                offset  += free;
-                len     -= free;
+                System.arraycopy(src, offset, iBuff, iEnd, blockSize);
+                iEnd    += blockSize;
+                offset  += blockSize;
+                len     -= blockSize;
             }
-            while (iEnd >= iPos + blockSize) {
+            if (iEnd >= iPos + blockSize) {
                 long size = compressContinue(ctx, oBuff, oBuffSize, iBuff, iPos, blockSize);
                 if (Zstd.isError(size)) {
                     throw new IOException("Compression error: " + Zstd.getErrorName(size));
                 }
                 out.write(oBuff, 0, (int) size);
                 iPos += blockSize;
+                // start from the beginning if we have reached the end
                 if (iPos == iBuffSize) {
                     iPos = 0;
                     iEnd = 0;
