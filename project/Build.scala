@@ -20,9 +20,7 @@ object ZstdBuild extends Build {
       libraryName := "libzstd",
       gccFlags ++= Seq(
             "-std=c99", "-Wundef", "-Wshadow", "-Wcast-align", "-Wstrict-prototypes",
-            "-Wno-unused-variable",
-            "-Ofast",
-            "-DZSTD_LEGACY_SUPPORT=0"
+            "-Wno-unused-variable", "-DZSTD_LEGACY_SUPPORT=0"
           ) ++ (System.getProperty("os.arch") match {
             case "amd64"|"x86_64"   => Seq("-msse4")
             case "i386"             => Seq("-msse4")

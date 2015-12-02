@@ -27,22 +27,24 @@ class ZstdPerfSpec extends FlatSpec  {
 
   }
 
-  def bench(name: String, buff: Array[Byte], level: Int = 1): Unit = {
+  def bench(name: String, input: Array[Byte], level: Int = 1): Unit = {
     var nsc = 0.0
     var nsd = 0.0
     var ratio = 0.0
     val cycles = 500
+    val output: Array[Byte] = Array.fill[Byte](input.size)(0)
     var compressedSize = 0
     for (i <- 1 to cycles) {
       val start_c     = System.nanoTime
-      val compressed  = Zstd.compress(buff, level)
+      val compressed  = Zstd.compress(input, level)
       nsc += System.nanoTime - start_c
       compressedSize  = compressed.size
       val start_d     = System.nanoTime
-      val size        = Zstd.decompress(buff, compressed)
+      val size        = Zstd.decompress(output, compressed)
       nsd += System.nanoTime - start_d
     }
-    report(name, compressedSize, buff.size, cycles, nsc, nsd)
+    report(name, compressedSize, input.size, cycles, nsc, nsd)
+    assert (input.toSeq == output.toSeq)
   }
 
   def benchStream(name: String, input: Array[Byte], level: Int = 1): Unit = {
@@ -79,6 +81,7 @@ class ZstdPerfSpec extends FlatSpec  {
     val nsd = System.nanoTime - d_start
 
     report(name, compressed.size, size, cycles, nsc, nsd)
+    assert(input.toSeq == output.toSeq)
   }
 
   val buff = Source.fromFile("src/test/resources/xml")(Codec.ISO8859).map{_.toByte }.take(1024 * 1024).toArray
