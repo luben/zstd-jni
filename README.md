@@ -30,23 +30,21 @@ http://fastcompression.blogspot.com/2015/01/zstd-stronger-compression-algorithm.
 Status and availability
 -----------------------
 
-**Zstd** has not yet reached "stable format" status. It doesn't guarantee yet that
-its current compressed format will remain stable and supported in future versions.
-During this period, it can still change to adapt new optimizations still being
-investigated. "Stable Format" is projected sometimes early 2016.
+**Zstd** has not yet reached "stable format" status. It doesn't guarantee yet
+that its current compressed format will remain stable and supported in future
+versions. During this period, it can still change to adapt new optimizations
+still being investigated. "Stable Format" is projected sometimes early 2016.
 
 That being said, the library is now fairly robust, able to withstand hazards
-situations, including invalid inputs. The library reliability has been tested using
-[Fuzz Testing](https://en.wikipedia.org/wiki/Fuzz_testing), with both
+situations, including invalid inputs. The library reliability has been tested
+using [Fuzz Testing](https://en.wikipedia.org/wiki/Fuzz_testing), with both
 [internal tools](programs/fuzzer.c) and [external ones](http://lcamtuf.coredump.cx/afl).
-Therefore, it seems now safe to test Zstandard even within production environments.
+Therefore, it seems now safe to test Zstandard even within production
+environments.
 
 
 **Zstd-jni** will track the development of **Zstd** and is currently
-based on version 0.4.0 without the compatibility support for the legacy formats.
-
-**Zstd-jni** will not publish any pre-build artefacts until **Zstd** and these
-bindings are deemed stable.
+based on version 0.4.3 without the compatibility support for the legacy formats.
 
 Building and dependencies
 -------------------------
@@ -68,6 +66,32 @@ If you want to publish it to you local ivy2 repositrory:
 ```
  $ sbt publish-local
 ```
+
+Binary releases
+---------------
+
+The binary releases are architecture dependent because we are embedding the
+native library in the provided Jar file. Currently they are built for
+*linux-amd64* and *linux-i386*. More platforms are coming soon.
+
+You can find published releases on Maven Central.
+
+    <dependency>
+        <groupId>com.github.luben</groupId>
+        <artifactId>zstd-jni</artifactId>
+        <version>0.4.3</version>
+    </dependency>
+
+sbt dependency:
+
+    libraryDependencies += "com.github.luben" % "zstd" % "0.4.3"
+
+Link for direct download if you don't use a dependency manager:
+
+ - https://repo1.maven.org/maven2/com/github/luben/zstd-jni/
+
+If there is not yet a binary release compatible with your platform look how
+to build it locally [Building](#building-and-dependencies)
 
 License
 -------
