@@ -26,7 +26,7 @@ object ZstdBuild extends Build {
             case "i386"             => Seq("-msse4")
             case _                  => Seq()
           }),
-      nativeCompiler := "gcc",
+      nativeCompiler := "cc",
       includes += "-I" + nativeSource.value.toString,
       cppExtensions := Seq(".c"),
       cpp11 := false,
