@@ -1,5 +1,12 @@
 language: scala
+
 scala:
     - 2.11.7
 
-script: sbt ++$TRAVIS_SCALA_VERSION compile test
+script: sbt ++$TRAVIS_SCALA_VERSION compile jacoco:cover
+
+before_install:
+      - pip install --user codecov
+
+after_success:
+      - codecov

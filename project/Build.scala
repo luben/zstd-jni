@@ -2,6 +2,7 @@ import sbt._
 import Keys._
 import com.github.joprice.Jni
 import Jni.Keys._
+import de.johoop.jacoco4sbt.JacocoPlugin._
 import com.typesafe.sbt.osgi.SbtOsgi.{ OsgiKeys, osgiSettings, defaultOsgiSettings }
 
 object ZstdBuild extends Build {
@@ -10,6 +11,8 @@ object ZstdBuild extends Build {
 
   lazy val root = Project(id="zstd-jni", base = file(".")).settings(
       Jni.settings : _*
+    ).settings(
+      jacoco.settings : _*
     ).settings(
       scalaVersion := "2.11.7",
       version := buildVersion,
