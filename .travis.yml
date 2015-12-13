@@ -4,5 +4,4 @@ scala:
     - 2.11.7
 
 script:
-    - sbt compile
-    - sbt test
+    - sbt ++$TRAVIS_SCALA_VERSION compile test
