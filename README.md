@@ -1,6 +1,12 @@
 Zstd-jni
 ========
 
+[![Build Status](https://api.travis-ci.org/luben/zstd-jni.svg)](https://travis-ci.org/luben/zstd-jni)
+[![Maven Central](https://img.shields.io/maven-central/v/com.github.luben/zstd-jni.svg)](https://maven-badges.herokuapp.com/maven-central/com.github.luben/zstd-jni)
+
+Overview
+--------
+
 JNI bindings for **Zstd** native library that provides fast and high
 compression lossless algorythm for Java and all JVM languages:
 
