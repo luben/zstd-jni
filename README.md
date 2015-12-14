@@ -2,6 +2,7 @@ Zstd-jni
 ========
 
 [![Build Status](https://api.travis-ci.org/luben/zstd-jni.svg)](https://travis-ci.org/luben/zstd-jni)
+[![codecov.io](http://codecov.io/github/luben/zstd-jni/coverage.svg?branch=master)](http://codecov.io/github/luben/zstd-jni?branch=master)
 [![Maven Central](https://img.shields.io/maven-central/v/com.github.luben/zstd-jni.svg)](https://maven-badges.herokuapp.com/maven-central/com.github.luben/zstd-jni)
 
 Overview
