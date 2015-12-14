@@ -2,7 +2,8 @@ import sbt._
 import Keys._
 import com.github.joprice.Jni
 import Jni.Keys._
-import de.johoop.jacoco4sbt.JacocoPlugin._
+import de.johoop.jacoco4sbt._
+import JacocoPlugin._
 import com.typesafe.sbt.osgi.SbtOsgi.{ OsgiKeys, osgiSettings, defaultOsgiSettings }
 
 object ZstdBuild extends Build {
@@ -48,6 +49,12 @@ object ZstdBuild extends Build {
       autoScalaLibrary := false,
       crossPaths := false,
       parallelExecution in Test := false,
+
+      // generate coverage report also in XML
+      jacoco.reportFormats in jacoco.Config := Seq(
+        XMLReport(encoding = "utf-8"),
+        ScalaHTMLReport(withBranchCoverage = true)
+      ),
 
       publishTo := {
         val nexus = "https://oss.sonatype.org/"
