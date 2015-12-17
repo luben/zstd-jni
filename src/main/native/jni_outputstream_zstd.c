@@ -18,7 +18,7 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdOutputStream_findIBuffSiz
  */
 JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdOutputStream_createCCtx
   (JNIEnv *env, jclass obj) {
-    return (jlong) ZSTD_createCCtx();
+    return (jlong)(size_t) ZSTD_createCCtx();
 }
 
 /*

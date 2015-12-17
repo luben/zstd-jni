@@ -11,7 +11,7 @@
  */
 JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdInputStream_createDCtx
   (JNIEnv *env, jclass obj) {
-    return (jlong) ZSTD_createDCtx();
+    return (jlong)(size_t) ZSTD_createDCtx();
 }
 
 /*
