@@ -50,8 +50,8 @@ Therefore, it seems now safe to test Zstandard even within production
 environments.
 
 
-**Zstd-jni** will track the development of **Zstd** and is currently
-based on version 0.4.3 without the compatibility support for the legacy formats.
+**Zstd-jni** is tracking the release branck of **Zstd** (master) without the
+compatibility support for the legacy formats.
 
 Building and dependencies
 -------------------------

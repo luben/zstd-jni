@@ -8,7 +8,7 @@ import com.typesafe.sbt.osgi.SbtOsgi.{ OsgiKeys, osgiSettings, defaultOsgiSettin
 
 object ZstdBuild extends Build {
 
-  lazy val buildVersion = "0.4.4"
+  lazy val buildVersion = "0.4.5"
 
   lazy val root = Project(id="zstd-jni", base = file(".")).settings(
       Jni.settings : _*
