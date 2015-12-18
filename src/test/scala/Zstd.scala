@@ -9,7 +9,7 @@ import scala.io._
 
 class ZstdSpec extends FlatSpec with Checkers {
   implicit override val generatorDrivenConfig =
-    PropertyCheckConfig(minSize = 0, maxSize = 256 * 1024)
+    PropertyCheckConfig(minSize = 0, maxSize = 128 * 1024)
 
   for (level <- List(1,3,6,9)) {
     "Zstd" should s"should round-trip compression/decompression at level $level" in {

@@ -26,8 +26,8 @@ public class ZstdOutputStream extends FilterOutputStream {
 
     /* Some constants, there is provision for variable blocksize in the future */
     private final static int blockSize = 128*1024; //128 KB
-    private static int iBuffSize = 0;
-    private static int oBuffSize = 0;
+    private int iBuffSize = 0;
+    private int oBuffSize = 0;
 
     private byte[] iBuff = null;
     private byte[] oBuff = null;
