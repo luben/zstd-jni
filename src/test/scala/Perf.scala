@@ -31,7 +31,7 @@ class ZstdPerfSpec extends FlatSpec  {
     var nsc = 0.0
     var nsd = 0.0
     var ratio = 0.0
-    val cycles = 500
+    val cycles = 200
     val output: Array[Byte] = Array.fill[Byte](input.size)(0)
     var compressedSize = 0
     for (i <- 1 to cycles) {
@@ -84,7 +84,6 @@ class ZstdPerfSpec extends FlatSpec  {
     assert(input.toSeq == output.toSeq)
   }
 
-  /*
   val buff = Source.fromFile("src/test/resources/xml")(Codec.ISO8859).map{_.toByte }.take(1024 * 1024).toArray
   for (level <- List(1, 3, 6, 9)) {
     it should s"be fast for compressable data -$level" in {
@@ -92,7 +91,6 @@ class ZstdPerfSpec extends FlatSpec  {
       bench(s"Compressable data -$level", buff, level)
     }
   }
-  */
 
   val buff1 = Source.fromFile("src/test/resources/xml")(Codec.ISO8859).map{_.toByte }.take(5 * 1024 * 1024).toArray
   for (level <- List(1, 3, 6, 9)) {
