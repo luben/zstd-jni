@@ -1,5 +1,6 @@
 #include <jni.h>
 #include <zstd_static.h>
+#include <error.h>
 
 /*
  * Class:     com_github_luben_zstd_Zstd
@@ -8,15 +9,17 @@
  */
 JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_compress
   (JNIEnv *env, jclass obj, jbyteArray dst, jbyteArray src, jint level) {
-    void *dst_buff = (*env)->GetPrimitiveArrayCritical(env, dst, NULL);
+    size_t size = ERROR(memory_allocation);
     jsize dst_size = (*env)->GetArrayLength(env, dst);
-    void *src_buff = (*env)->GetPrimitiveArrayCritical(env, src, NULL);
     jsize src_size = (*env)->GetArrayLength(env, src);
-    size_t size;
+    void *dst_buff = (*env)->GetPrimitiveArrayCritical(env, dst, NULL);
+    if (dst_buff == NULL) goto E1;
+    void *src_buff = (*env)->GetPrimitiveArrayCritical(env, src, NULL);
+    if (src_buff == NULL) goto E2;
     size = ZSTD_compress(dst_buff, (size_t) dst_size, src_buff, (size_t) src_size, (int) level);
     (*env)->ReleasePrimitiveArrayCritical(env, src, src_buff, 0);
-    (*env)->ReleasePrimitiveArrayCritical(env, dst, dst_buff, 0);
-    return size;
+E2: (*env)->ReleasePrimitiveArrayCritical(env, dst, dst_buff, 0);
+E1: return size;
 }
 
 /*
@@ -26,14 +29,17 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_compress
  */
 JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_decompress
   (JNIEnv *env, jclass obj, jbyteArray dst, jbyteArray src) {
-    void *dst_buff = (*env)->GetPrimitiveArrayCritical(env, dst, NULL);
+    size_t size = ERROR(memory_allocation);
     jsize dst_size = (*env)->GetArrayLength(env, dst);
-    void *src_buff = (*env)->GetPrimitiveArrayCritical(env, src, NULL);
     jsize src_size = (*env)->GetArrayLength(env, src);
-    size_t size = ZSTD_decompress(dst_buff, (size_t) dst_size, src_buff, (size_t) src_size);
+    void *dst_buff = (*env)->GetPrimitiveArrayCritical(env, dst, NULL);
+    if (dst_buff == NULL) goto E1;
+    void *src_buff = (*env)->GetPrimitiveArrayCritical(env, src, NULL);
+    if (src_buff == NULL) goto E2;
+    size = ZSTD_decompress(dst_buff, (size_t) dst_size, src_buff, (size_t) src_size);
     (*env)->ReleasePrimitiveArrayCritical(env, src, src_buff, 0);
-    (*env)->ReleasePrimitiveArrayCritical(env, dst, dst_buff, 0);
-    return size;
+E2: (*env)->ReleasePrimitiveArrayCritical(env, dst, dst_buff, 0);
+E1: return size;
 }
 
 /*

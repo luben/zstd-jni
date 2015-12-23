@@ -9,7 +9,7 @@ import scala.io._
 
 class ZstdSpec extends FlatSpec with Checkers {
   implicit override val generatorDrivenConfig =
-    PropertyCheckConfig(minSize = 0, maxSize = 1 * 1024)
+    PropertyCheckConfig(minSize = 0, maxSize = 192 * 1024)
 
   for (level <- List(1,3,6,9)) {
     "Zstd" should s"should round-trip compression/decompression at level $level" in {
@@ -61,32 +61,35 @@ class ZstdSpec extends FlatSpec with Checkers {
     }
   }
 
-  "ZstdInputStream" should "be able to consume files compressed by the zstd binary" in {
-    val orig = new File("src/test/resources/xml")
-    val file = new File("src/test/resources/xml.zst")
-    val fis  = new FileInputStream(file)
-    val zis  = new ZstdInputStream(fis)
-    val buff = Array.fill[Byte](orig.length.toInt)(0)
-    zis.read(buff, 0, orig.length.toInt)
-    val original = Source.fromFile(orig)(Codec.ISO8859)
-    original.toSeq == buff.toSeq
-  }
 
-  "ZstdOutputStream" should "produce the same compressed file as zstd binary" in {
-    val file = new File("src/test/resources/xml")
-    val fis  = new FileInputStream(file)
-    val buff = Array.fill[Byte](file.length.toInt)(0)
-    fis.read(buff, 0, file.length.toInt)
+  for (level <- List(1,3,6,9))
+    "ZstdInputStream" should s"be able to consume files compressed by the zstd binary at level $level" in {
+      val orig = new File("src/test/resources/xml")
+      val file = new File(s"src/test/resources/xml-$level.zst")
+      val fis  = new FileInputStream(file)
+      val zis  = new ZstdInputStream(fis)
+      val buff = Array.fill[Byte](orig.length.toInt)(0)
+      zis.read(buff, 0, orig.length.toInt)
+      val original = Source.fromFile(orig)(Codec.ISO8859)
+      original.toSeq == buff.toSeq
+    }
 
-    val os  = new ByteArrayOutputStream(Zstd.compressBound(file.length).toInt)
-    val zos = new ZstdOutputStream(os, 9)
-    zos.write(buff)
-    zos.close
+  for (level <- List(1,3,6,9))
+    "ZstdOutputStream" should s"produce the same compressed file as zstd binary at level $level" in {
+      val file = new File("src/test/resources/xml")
+      val fis  = new FileInputStream(file)
+      val buff = Array.fill[Byte](file.length.toInt)(0)
+      fis.read(buff, 0, file.length.toInt)
 
-    val compressed = os.toByteArray
-    val zst = Source.fromFile("src/test/resources/xml.zst")(Codec.ISO8859)
+      val os  = new ByteArrayOutputStream(Zstd.compressBound(file.length).toInt)
+      val zos = new ZstdOutputStream(os, level)
+      zos.write(buff)
+      zos.close
 
-    zst.toSeq == compressed.toSeq
-  }
+      val compressed = os.toByteArray
+      val zst = Source.fromFile(s"src/test/resources/xml-$level.zst")(Codec.ISO8859)
+
+      zst.toSeq == compressed.toSeq
+    }
 
 }

@@ -84,6 +84,7 @@ class ZstdPerfSpec extends FlatSpec  {
     assert(input.toSeq == output.toSeq)
   }
 
+  /*
   val buff = Source.fromFile("src/test/resources/xml")(Codec.ISO8859).map{_.toByte }.take(1024 * 1024).toArray
   for (level <- List(1, 3, 6, 9)) {
     it should s"be fast for compressable data -$level" in {
@@ -91,6 +92,7 @@ class ZstdPerfSpec extends FlatSpec  {
       bench(s"Compressable data -$level", buff, level)
     }
   }
+  */
 
   val buff1 = Source.fromFile("src/test/resources/xml")(Codec.ISO8859).map{_.toByte }.take(5 * 1024 * 1024).toArray
   for (level <- List(1, 3, 6, 9)) {

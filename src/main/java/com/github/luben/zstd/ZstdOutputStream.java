@@ -26,8 +26,8 @@ public class ZstdOutputStream extends FilterOutputStream {
 
     /* Some constants, there is provision for variable blocksize in the future */
     private final static int blockSize = 128*1024; //128 KB
+    private final static int oBuffSize = (int) Zstd.compressBound(blockSize) + 6;
     private int iBuffSize = 0;
-    private int oBuffSize = 0;
 
     private byte[] iBuff = null;
     private byte[] oBuff = null;
@@ -52,7 +52,6 @@ public class ZstdOutputStream extends FilterOutputStream {
 
         // find buffer sizes
         iBuffSize = findIBuffSize(level);
-        oBuffSize = (int) Zstd.compressBound(blockSize) + 6;
 
         /* allocate memory */
         iBuff = ByteBuffer.allocate(iBuffSize).array();

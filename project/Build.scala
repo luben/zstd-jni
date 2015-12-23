@@ -48,7 +48,7 @@ object ZstdBuild extends Build {
       publishMavenStyle := true,
       autoScalaLibrary := false,
       crossPaths := false,
-      parallelExecution in Test := false,
+      //parallelExecution in Test := false,
 
       // generate coverage report also in XML
       jacoco.reportFormats in jacoco.Config := Seq(
