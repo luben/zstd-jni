@@ -38,7 +38,7 @@ public class ZstdOutputStream extends FilterOutputStream {
     private static native long createCCtx();
     private static native long freeCCtx(long ctx);
     private static native int  findIBuffSize(int level);
-    private static native long compressBegin(long ctx, byte[] dst, long dstSize, int level);
+    private static native long compressBegin(long ctx, int level);
     private static native long compressContinue(long ctx, byte[] dst, long dstSize, byte[] src, long srcOffset, long srcSize);
     private static native long compressEnd(long ctx, byte[] dst, long dstSize);
 
@@ -60,7 +60,7 @@ public class ZstdOutputStream extends FilterOutputStream {
             throw new IOException("Error allocating the buffers");
         }
         /* write header */
-        long size = compressBegin(ctx, oBuff, oBuffSize, level);
+        long size = compressBegin(ctx, level);
         if (Zstd.isError(size)) {
             throw new IOException("Compression error: cannot create header: " + Zstd.getErrorName(size));
         }

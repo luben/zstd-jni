@@ -35,15 +35,11 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdOutputStream_freeCCtx
 /*
  * Class:     com_github_luben_zstd_ZstdOutputStream
  * Method:    comperssBegin
- * Signature: (J[BJI)J
+ * Signature: (JI)J
  */
 JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdOutputStream_compressBegin
-  (JNIEnv *env, jclass obj, jlong ctx, jbyteArray dst, jlong dst_size, jint level) {
-    void *dst_buff = (*env)->GetPrimitiveArrayCritical(env, dst, NULL);
-    if (dst_buff == NULL) return ERROR(memory_allocation);
-    size_t size = ZSTD_compressBegin((ZSTD_CCtx*)(size_t) ctx, dst_buff, dst_size, level);
-    (*env)->ReleasePrimitiveArrayCritical(env, dst, dst_buff, 0);
-    return size;
+  (JNIEnv *env, jclass obj, jlong ctx, jint level) {
+    return (jlong) ZSTD_compressBegin((ZSTD_CCtx*)(size_t) ctx, level);
 }
 
 /*
