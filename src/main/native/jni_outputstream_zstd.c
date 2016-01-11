@@ -29,7 +29,7 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdOutputStream_createCCtx
  */
 JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdOutputStream_freeCCtx
   (JNIEnv *env, jclass obj, jlong ctx) {
-    return ZSTD_freeCCtx((ZSTD_CCtx*)(size_t) ctx);
+    return (jlong) ZSTD_freeCCtx((ZSTD_CCtx*)(size_t) ctx);
 }
 
 /*
@@ -54,7 +54,11 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdOutputStream_compressCont
     if (dst_buff == NULL) goto E1;
     void *src_buff = (*env)->GetPrimitiveArrayCritical(env, src, NULL);
     if (src_buff == NULL) goto E2;
-    size = ZSTD_compressContinue((ZSTD_CCtx*)(size_t) ctx, dst_buff, dst_size, src_buff + src_offset, src_size);
+    size = ZSTD_compressContinue(
+                (ZSTD_CCtx*)(size_t) ctx,
+                dst_buff, dst_size,
+                src_buff + src_offset, src_size
+            );
     (*env)->ReleasePrimitiveArrayCritical(env, src, src_buff, 0);
 E2: (*env)->ReleasePrimitiveArrayCritical(env, dst, dst_buff, 0);
 E1: return size;

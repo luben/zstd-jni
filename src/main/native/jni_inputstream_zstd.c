@@ -36,9 +36,9 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdInputStream_findOBuffSize
     size_t size = ZSTD_getFrameParams(&params, src_buff, (size_t) src_size);
     (*env)->ReleasePrimitiveArrayCritical(env, src, src_buff, 0);
     if (size == 0) {
-        return (int) (1 << params.windowLog);
+        return (jint) (1 << params.windowLog);
     } else {
-        return -size;
+        return (jint) -size;
     }
 }
 
@@ -49,7 +49,7 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdInputStream_findOBuffSize
  */
 JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdInputStream_nextSrcSizeToDecompress
   (JNIEnv *env, jclass obj, jlong ctx) {
-    return ZSTD_nextSrcSizeToDecompress((ZSTD_DCtx*)(size_t) ctx);
+    return (jlong) ZSTD_nextSrcSizeToDecompress((ZSTD_DCtx*)(size_t) ctx);
 }
 
 /*
@@ -71,5 +71,5 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdInputStream_decompressCon
         );
     (*env)->ReleasePrimitiveArrayCritical(env, dst, dst_buff, 0);
 E2: (*env)->ReleasePrimitiveArrayCritical(env, src, src_buff, 0);
-E1: return size;
+E1: return (jlong) size;
 }
