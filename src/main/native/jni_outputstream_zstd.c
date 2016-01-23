@@ -1,6 +1,6 @@
 #include <jni.h>
 #include <zstd_static.h>
-#include <error.h>
+#include <error_public.h>
 
 /*
  * Class:     com_github_luben_zstd_ZstdOutputStream
@@ -49,7 +49,7 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdOutputStream_compressBegi
  */
 JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdOutputStream_compressContinue
   (JNIEnv *env, jclass obj, jlong ctx, jbyteArray dst, jlong dst_size, jbyteArray src, jlong src_offset, jlong src_size) {
-    size_t size = ERROR(memory_allocation);
+    size_t size = (size_t)(0-ZSTD_error_memory_allocation);
     void *dst_buff = (*env)->GetPrimitiveArrayCritical(env, dst, NULL);
     if (dst_buff == NULL) goto E1;
     void *src_buff = (*env)->GetPrimitiveArrayCritical(env, src, NULL);
@@ -72,7 +72,8 @@ E1: return size;
 JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdOutputStream_compressEnd
   (JNIEnv *env, jclass obj, jlong ctx, jbyteArray dst, jlong dst_size) {
     void *dst_buff = (*env)->GetPrimitiveArrayCritical(env, dst, NULL);
-    if (dst_buff == NULL) return ERROR(memory_allocation);
+    if (dst_buff == NULL)
+        return (size_t)(0-ZSTD_error_memory_allocation);
     size_t size = ZSTD_compressEnd((ZSTD_CCtx*)(size_t) ctx, dst_buff, dst_size);
     (*env)->ReleasePrimitiveArrayCritical(env, dst, dst_buff, 0);
     return size;

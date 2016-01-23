@@ -1,6 +1,6 @@
 #include <jni.h>
 #include <zstd_static.h>
-#include <error.h>
+#include <error_public.h>
 
 /*
  * Class:     com_github_luben_zstd_Zstd
@@ -9,7 +9,7 @@
  */
 JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_compress
   (JNIEnv *env, jclass obj, jbyteArray dst, jbyteArray src, jint level) {
-    size_t size = ERROR(memory_allocation);
+    size_t size = (size_t)(0-ZSTD_error_memory_allocation);
     jsize dst_size = (*env)->GetArrayLength(env, dst);
     jsize src_size = (*env)->GetArrayLength(env, src);
     void *dst_buff = (*env)->GetPrimitiveArrayCritical(env, dst, NULL);
@@ -29,7 +29,7 @@ E1: return size;
  */
 JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_decompress
   (JNIEnv *env, jclass obj, jbyteArray dst, jbyteArray src) {
-    size_t size = ERROR(memory_allocation);
+    size_t size = (size_t)(0-ZSTD_error_memory_allocation);
     jsize dst_size = (*env)->GetArrayLength(env, dst);
     jsize src_size = (*env)->GetArrayLength(env, src);
     void *dst_buff = (*env)->GetPrimitiveArrayCritical(env, dst, NULL);

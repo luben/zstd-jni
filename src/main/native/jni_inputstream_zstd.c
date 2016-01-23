@@ -1,9 +1,7 @@
-#include <string.h>
-#include <stdlib.h>
-
 #include <jni.h>
 #include <zstd_static.h>
-#include <error.h>
+#include <error_public.h>
+
 /*
  * Class:     com_github_luben_zstd_ZstdInputStream
  * Method:    createDCtx
@@ -59,7 +57,7 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdInputStream_nextSrcSizeTo
  */
 JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdInputStream_decompressContinue
   (JNIEnv *env, jclass obj, jlong ctx, jbyteArray dst, jlong dst_offset, jlong dst_size, jbyteArray src, jlong src_size) {
-    size_t size = ERROR(memory_allocation);
+    size_t size = (size_t)(0-ZSTD_error_memory_allocation);
     void *src_buff = (*env)->GetPrimitiveArrayCritical(env, src, NULL);
     if (src_buff == NULL) goto E1;
     void *dst_buff = (*env)->GetPrimitiveArrayCritical(env, dst, NULL);
