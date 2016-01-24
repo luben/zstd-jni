@@ -59,7 +59,7 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdOutputStream_compressCont
                 dst_buff, dst_size,
                 src_buff + src_offset, src_size
             );
-    (*env)->ReleasePrimitiveArrayCritical(env, src, src_buff, 0);
+    (*env)->ReleasePrimitiveArrayCritical(env, src, src_buff, JNI_ABORT);
 E2: (*env)->ReleasePrimitiveArrayCritical(env, dst, dst_buff, 0);
 E1: return size;
 }

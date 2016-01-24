@@ -32,7 +32,7 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdInputStream_findOBuffSize
     ZSTD_parameters params;
     void *src_buff = (*env)->GetPrimitiveArrayCritical(env, src, NULL);
     size_t size = ZSTD_getFrameParams(&params, src_buff, (size_t) src_size);
-    (*env)->ReleasePrimitiveArrayCritical(env, src, src_buff, 0);
+    (*env)->ReleasePrimitiveArrayCritical(env, src, src_buff, JNI_ABORT);
     if (size == 0) {
         return (jint) (1 << params.windowLog);
     } else {
@@ -58,16 +58,18 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdInputStream_nextSrcSizeTo
 JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdInputStream_decompressContinue
   (JNIEnv *env, jclass obj, jlong ctx, jbyteArray dst, jlong dst_offset, jlong dst_size, jbyteArray src, jlong src_size) {
     size_t size = (size_t)(0-ZSTD_error_memory_allocation);
-    void *src_buff = (*env)->GetPrimitiveArrayCritical(env, src, NULL);
-    if (src_buff == NULL) goto E1;
     void *dst_buff = (*env)->GetPrimitiveArrayCritical(env, dst, NULL);
-    if (dst_buff == NULL) goto E2;
+    if (dst_buff == NULL) goto E1;
+    void *src_buff = (*env)->GetPrimitiveArrayCritical(env, src, NULL);
+    if (src_buff == NULL) goto E2;
+
     size = ZSTD_decompressContinue(
             (ZSTD_DCtx*)(size_t) ctx,
             dst_buff + dst_offset, (size_t) dst_size,
             src_buff,              (size_t) src_size
         );
-    (*env)->ReleasePrimitiveArrayCritical(env, dst, dst_buff, 0);
-E2: (*env)->ReleasePrimitiveArrayCritical(env, src, src_buff, 0);
+
+    (*env)->ReleasePrimitiveArrayCritical(env, src, src_buff, JNI_ABORT);
+E2: (*env)->ReleasePrimitiveArrayCritical(env, dst, dst_buff, 0);
 E1: return (jlong) size;
 }
