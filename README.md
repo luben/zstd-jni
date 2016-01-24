@@ -49,8 +49,7 @@ using [Fuzz Testing](https://en.wikipedia.org/wiki/Fuzz_testing), with both
 Therefore, it seems now safe to test Zstandard even within production
 environments.
 
-
-**Zstd-jni** is tracking the release branck of **Zstd** (master) without the
+**Zstd-jni** is tracking the release branch of **Zstd** (master) without the
 compatibility support for the legacy formats.
 
 Building and dependencies
@@ -68,7 +67,7 @@ How to build:
  $ sbt compile test package
 ```
 
-If you want to publish it to you local ivy2 repositrory:
+If you want to publish it to you local ivy2 repository:
 
 ```
  $ sbt publish-local
