@@ -32,7 +32,7 @@ public class ZstdInputStream extends FilterInputStream {
     private int oBuffSize = -1;
 
     // The decompression buffer
-    private byte[] oBuff  = null;
+    private ByteBuffer oBuff = null;
     private int oPos   = 0;
     private int oEnd   = 0;
 
@@ -44,7 +44,7 @@ public class ZstdInputStream extends FilterInputStream {
     private static native long freeDCtx(long ctx);
     private static native int  findOBuffSize(byte[] src, long srcSize);
     private static native long nextSrcSizeToDecompress(long ctx);
-    private static native long decompressContinue(long ctx, byte[] dst, long dstOffset, long dstSize, byte[] src, long srcSize);
+    private static native long decompressContinue(long ctx, ByteBuffer dst, long dstOffset, long dstSize, byte[] src, long srcSize);
 
     // The main constuctor
     public ZstdInputStream(InputStream inStream) throws IOException {
@@ -74,7 +74,7 @@ public class ZstdInputStream extends FilterInputStream {
         }
 
         // allocate the output buffer
-        oBuff = ByteBuffer.allocate(oBuffSize).array();
+        oBuff = ByteBuffer.allocateDirect(oBuffSize);
 
         if (oBuff == null) {
             throw new IOException("Error allocating the output buffers of size " + oBuffSize);
@@ -129,7 +129,8 @@ public class ZstdInputStream extends FilterInputStream {
         }
         // return size is min(requested, available)
         int size = Math.min(len, oEnd - oPos);
-        System.arraycopy(oBuff, oPos, dst, offset, size);
+        oBuff.position(oPos);
+        oBuff.get(dst, offset, size);
         oPos += size;
         return size;
     }

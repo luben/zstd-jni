@@ -53,15 +53,15 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdInputStream_nextSrcSizeTo
 /*
  * Class:     com_github_luben_zstd_ZstdInputStream
  * Method:    decompressContinue
- * Signature: (J[BJJ[BJ)J
+ * Signature: (JLjava/nio/ByteBuffer;JJ[BJ)J
  */
 JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdInputStream_decompressContinue
-  (JNIEnv *env, jclass obj, jlong ctx, jbyteArray dst, jlong dst_offset, jlong dst_size, jbyteArray src, jlong src_size) {
+  (JNIEnv *env, jclass obj, jlong ctx, jobject dst, jlong dst_offset, jlong dst_size, jbyteArray src, jlong src_size) {
     size_t size = (size_t)(0-ZSTD_error_memory_allocation);
-    void *dst_buff = (*env)->GetPrimitiveArrayCritical(env, dst, NULL);
+    void *dst_buff = (*env)->GetDirectBufferAddress(env, dst);
     if (dst_buff == NULL) goto E1;
     void *src_buff = (*env)->GetPrimitiveArrayCritical(env, src, NULL);
-    if (src_buff == NULL) goto E2;
+    if (src_buff == NULL) goto E1;
 
     size = ZSTD_decompressContinue(
             (ZSTD_DCtx*)(size_t) ctx,
@@ -70,6 +70,5 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdInputStream_decompressCon
         );
 
     (*env)->ReleasePrimitiveArrayCritical(env, src, src_buff, JNI_ABORT);
-E2: (*env)->ReleasePrimitiveArrayCritical(env, dst, dst_buff, 0);
 E1: return (jlong) size;
 }

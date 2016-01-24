@@ -29,17 +29,16 @@ public class ZstdOutputStream extends FilterOutputStream {
     private final static int oBuffSize = (int) Zstd.compressBound(blockSize) + 6;
     private int iBuffSize = 0;
 
-    private byte[] iBuff = null;
+    private ByteBuffer iBuff = null;
     private byte[] oBuff = null;
     private int iPos  = 0;
-    private int iEnd  = 0;
 
     /* JNI methods */
     private static native long createCCtx();
     private static native long freeCCtx(long ctx);
     private static native int  findIBuffSize(int level);
     private static native long compressBegin(long ctx, int level);
-    private static native long compressContinue(long ctx, byte[] dst, long dstSize, byte[] src, long srcOffset, long srcSize);
+    private static native long compressContinue(long ctx, byte[] dst, long dstSize, ByteBuffer src, long srcOffset, long srcSize);
     private static native long compressEnd(long ctx, byte[] dst, long dstSize);
 
     /* The constuctor */
@@ -54,7 +53,7 @@ public class ZstdOutputStream extends FilterOutputStream {
         iBuffSize = findIBuffSize(level);
 
         /* allocate memory */
-        iBuff = ByteBuffer.allocate(iBuffSize).array();
+        iBuff = ByteBuffer.allocateDirect(iBuffSize);
         oBuff = ByteBuffer.allocate(oBuffSize).array();
         if (iBuff == null || oBuff == null) {
             throw new IOException("Error allocating the buffers");
@@ -73,14 +72,12 @@ public class ZstdOutputStream extends FilterOutputStream {
 
     public void write(byte[] src, int offset, int len) throws IOException {
         while (len > 0) {
-            int free = iPos + blockSize - iEnd;
+            int free = iPos + blockSize - iBuff.position();
             if (len < free) {
-                System.arraycopy(src, offset, iBuff, iEnd, len);
-                iEnd    += len;
+                iBuff.put(src, offset, len);
                 len     =  0;
             } else {
-                System.arraycopy(src, offset, iBuff, iEnd, free);
-                iEnd    += free;
+                iBuff.put(src, offset, free);
                 offset  += free;
                 len     -= free;
                 // we have finished a block, now compress it
@@ -93,7 +90,7 @@ public class ZstdOutputStream extends FilterOutputStream {
                 // start from the beginning if we have reached the end
                 if (iPos == iBuffSize) {
                     iPos = 0;
-                    iEnd = 0;
+                    iBuff.position(0);
                 }
             }
         }
@@ -111,6 +108,7 @@ public class ZstdOutputStream extends FilterOutputStream {
 
     public void close() throws IOException {
         long size = 0;
+        int iEnd = iBuff.position();
         // compress the remaining input
         if (iPos != iEnd) {
             // compress

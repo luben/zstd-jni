@@ -45,21 +45,20 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdOutputStream_compressBegi
 /*
  * Class:     com_github_luben_zstd_ZstdOutputStream
  * Method:    compressContinue
- * Signature: (J[BJ[BJJ)J
+ * Signature: (J[BJLjava/nio/ByteBuffer;JJ)J
  */
 JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdOutputStream_compressContinue
-  (JNIEnv *env, jclass obj, jlong ctx, jbyteArray dst, jlong dst_size, jbyteArray src, jlong src_offset, jlong src_size) {
+  (JNIEnv *env, jclass obj, jlong ctx, jbyteArray dst, jlong dst_size, jobject src, jlong src_offset, jlong src_size) {
     size_t size = (size_t)(0-ZSTD_error_memory_allocation);
     void *dst_buff = (*env)->GetPrimitiveArrayCritical(env, dst, NULL);
     if (dst_buff == NULL) goto E1;
-    void *src_buff = (*env)->GetPrimitiveArrayCritical(env, src, NULL);
+    void *src_buff = (*env)->GetDirectBufferAddress(env, src);
     if (src_buff == NULL) goto E2;
     size = ZSTD_compressContinue(
                 (ZSTD_CCtx*)(size_t) ctx,
                 dst_buff, dst_size,
                 src_buff + src_offset, src_size
             );
-    (*env)->ReleasePrimitiveArrayCritical(env, src, src_buff, JNI_ABORT);
 E2: (*env)->ReleasePrimitiveArrayCritical(env, dst, dst_buff, 0);
 E1: return size;
 }
