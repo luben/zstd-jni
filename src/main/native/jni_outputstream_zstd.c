@@ -9,7 +9,7 @@
  */
 JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdOutputStream_findIBuffSize
   (JNIEnv *env, jclass obj, jint level) {
-    return (jlong) (1 << ZSTD_defaultParameters[0][level].windowLog);
+    return (jlong) (1 << ZSTD_getParams(level, 0).windowLog);
 }
 
 /*

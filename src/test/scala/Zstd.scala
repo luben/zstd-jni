@@ -10,7 +10,7 @@ import scala.collection.mutable.WrappedArray
 
 class ZstdSpec extends FlatSpec with Checkers {
   implicit override val generatorDrivenConfig =
-    PropertyCheckConfig(minSize = 0, maxSize = 160 * 1024)
+    PropertyCheckConfig(minSize = 0, maxSize = 130 * 1024)
 
   for (level <- List(1,3,6,9)) {
     "Zstd" should s"should round-trip compression/decompression at level $level" in {
@@ -25,7 +25,7 @@ class ZstdSpec extends FlatSpec with Checkers {
     }
   }
 
-  for (level <- List(1,3,6,9)) {
+  for (level <- List(1,3,6,9,16)) {
     "Zstd" should s"should round-trip using streaming API at level $level" in {
       check { input: Array[Byte] =>
         val size  = input.length
@@ -62,7 +62,7 @@ class ZstdSpec extends FlatSpec with Checkers {
     }
   }
 
-  for (level <- List(1,3,6,9))
+  for (level <- List(1,3,6,9,16))
     "ZstdInputStream" should s"be able to consume files compressed by the zstd binary at level $level" in {
       val orig = new File("src/test/resources/xml")
       val file = new File(s"src/test/resources/xml-$level.zst")
@@ -83,7 +83,7 @@ class ZstdSpec extends FlatSpec with Checkers {
         sys.error(s"Failed")
     }
 
-  for (level <- List(1,3,6,9))
+  for (level <- List(1,3,6,9,16))
     "ZstdOutputStream" should s"produce the same compressed file as zstd binary at level $level" in {
       val file = new File("src/test/resources/xml")
       val length = file.length.toInt
