@@ -3,10 +3,6 @@ language: scala
 scala:
     - 2.11.7
 
-os:
-    - linux
-    - osx
-
 script: sbt ++$TRAVIS_SCALA_VERSION compile jacoco:cover
 
 before_install:
