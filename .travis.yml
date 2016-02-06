@@ -1,9 +1,9 @@
-language: scala
+language: java
 
-scala:
-    - 2.11.7
+jdk:
+    - oraclejdk7
 
-script: sbt ++$TRAVIS_SCALA_VERSION compile jacoco:cover
+script: sbt compile jacoco:cover
 
 before_install:
     - pip install --user codecov
