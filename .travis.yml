@@ -22,7 +22,7 @@ after_success:
     - codecov
 
 addons:
-    s3_region: "eu-west-1"
+    s3_region: "us-east-1"
     artifacts:
         debug: true
         paths:
