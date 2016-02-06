@@ -24,3 +24,6 @@ after_success:
 addons:
     artifacts: true
     s3_region: "eu-west-1"
+    debug: true
+    paths:
+        - $(git ls-files -o | grep libzstd | tr "\n" ":")
