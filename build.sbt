@@ -53,7 +53,7 @@ jniUseCpp11 := false
 
 jniBinPath := {
   val os = System.getProperty("os.name").toLowerCase.replace(' ','_')
-  val arch =  System.getProperty("os.arch")
+  val arch = System.getProperty("os.arch")
   (target in Compile).value / "classes" / os / arch
 }
 
