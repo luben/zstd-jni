@@ -1,21 +1,7 @@
 language: scala
 
-sudo: false
-
-before_install:
-    - if [ "$TRAVIS_OS_NAME" == "osx" ]; then export JAVA_HOME=$(/usr/libexec/java_home); fi
-    - echo $JAVA_HOME
-
-matrix:
-    include:
-        - os:   linux
-          jdk:  openjdk7
-        - os:   linux
-          jdk:  openjdk8
-
-os:
-    - linux
-    - osx
+jdk:
+    - oraclejdk7
 
 script: sbt compile jacoco:cover
 
