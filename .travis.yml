@@ -1,4 +1,4 @@
-language: java
+language: scala
 
 jdk:
     - oraclejdk7
