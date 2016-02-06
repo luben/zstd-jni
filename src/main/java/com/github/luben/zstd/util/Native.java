@@ -19,8 +19,10 @@ public enum Native {
     }
 
     private static String libExtension() {
-        if (osName().contains("os_x")) {
-            return "dynlib";
+        if (osName().contains("os_x") || osName().contains("darwin")) {
+            return "dylib";
+         } else if (osName().contains("win")) {
+            return "dll";
         } else {
             return "so";
         }
