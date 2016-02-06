@@ -20,3 +20,9 @@ before_install:
 
 after_success:
     - codecov
+
+addons:
+    artifacts: true
+    s3_region: "eu-west-1"
+    paths:
+        - ./target/classes
