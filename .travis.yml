@@ -22,9 +22,8 @@ after_success:
     - codecov
 
 addons:
+    s3_region: "eu-west-1"
     artifacts:
         debug: true
         paths:
             - $(git ls-files -o | grep libzstd | tr "\n" ":")
-
-     s3_region: "eu-west-1"
