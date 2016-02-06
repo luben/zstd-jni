@@ -6,7 +6,7 @@ env:
 os:
     - osx
 
-script: sbt "++$SCALA_VERSION" compile jacoco:cover
+script: ./sbt "++$SCALA_VERSION" compile jacoco:cover
 
 matrix:
   include:
@@ -15,7 +15,7 @@ matrix:
       jdk: oraclejdk8
 
 before_install:
-    - curl -s https://raw.githubusercontent.com/paulp/sbt-extras/master/sbt > ~/bin/sbt && chmod 0755 ~/bin/sbt
+    - curl -s https://raw.githubusercontent.com/paulp/sbt-extras/master/sbt > sbt && chmod 0755 sbt
     - pip install --user codecov
 
 after_success:
