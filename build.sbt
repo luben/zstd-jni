@@ -14,7 +14,7 @@ crossPaths := false
 parallelExecution in Test := false
 
 libraryDependencies ++= Seq(
-  "org.scalatest"  %% "scalatest"  % "2.2.4"  % "test",
+  "org.scalatest"  %% "scalatest"  % "2.2.6"  % "test",
   "org.scalacheck" %% "scalacheck" % "1.12.5" % "test"
 )
 
@@ -115,7 +115,8 @@ pomExtra := (
 osgiSettings
 
 OsgiKeys.bundleSymbolicName := "com.github.luben.zstd-jni"
-
-OsgiKeys.privatePackage := Seq("com.github.luben.zstd.util")
-
 OsgiKeys.exportPackage  := Seq(s"""com.github.luben.zstd;version="${version.value}"""")
+OsgiKeys.privatePackage := Seq("com.github.luben.zstd.util", "include",
+  "linux.amd64", "linux.i386", "linux.aarch64", "linux.ppc64",
+  "netbsd.amd64", "aix.ppc64", "mac_os_x.x86_64"
+)
