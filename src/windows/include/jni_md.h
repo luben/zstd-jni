@@ -1,3 +1,4 @@
+#include <windows.h>
 #include <inttypes.h>
 
 #ifndef _JAVASOFT_JNI_MD_H_
