@@ -54,7 +54,8 @@ jniJreIncludes := {
   jniJdkHome.value.fold(Seq.empty[String]) { home =>
     val absHome = home.getAbsolutePath
     if (System.getProperty("os.name") startsWith "Win") {
-      Seq(s"include").map(file => s"-I$absHome/../$file") ++ Seq(s"-I${sourceDirectory.value}/include_windows_jni")
+      Seq(s"include").map(file => s"-I$absHome/../$file") ++
+      Seq(s"""-I${sourceDirectory.value / "windows" / "include"}""")
     } else {
       val jniPlatformFolder  = System.getProperty("os.name") match {
         case "Linux" => "linux"
