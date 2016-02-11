@@ -45,7 +45,8 @@ jniGccFlags ++= Seq(
   case "amd64"|"x86_64"   => Seq("-msse4")
   case "i386"             => Seq("-msse4")
   case _                  => Seq()
-})
+}) ++ (if (System.getProperty("os.name").toLowerCase startsWith "win")
+  Seq("-D_JNI_IMPLEMENTATION_", "-Wl,--kill-at") else Seq())
 
 // Special case the jni header on windows (use the provided one) because
 // the platform provided header is not compatible with the standard compliant
