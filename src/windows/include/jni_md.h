@@ -10,3 +10,5 @@
 typedef int32_t jint;
 typedef int64_t jlong;
 typedef signed char jbyte;
+
+#endif /* !_JAVASOFT_JNI_MD_H_ */
