@@ -28,7 +28,7 @@ test_script:
     sbt test
 artifacts:
   - path: target\classes\win
-    name: windlls
+    name: $("windll_"+$env:ARCH)
 deploy:
   provider: S3
   region: us-east-1
@@ -39,7 +39,7 @@ deploy:
   bucket: zstd-jni
   set_public: false
   folder: appveyor
-  artifact: windlls
+  artifact: $("windll_"+$env:ARCH)
 
 cache:
   - C:\sbt\
