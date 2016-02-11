@@ -26,7 +26,7 @@ test_script:
     sbt test
 artifacts:
   - path: zstd-jni\target\classes\win
-  - name: windlls
+    name: windlls
 
 deploy:
   provider: S3
