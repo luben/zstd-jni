@@ -11,7 +11,7 @@ public enum Native {
     private static final String libname = "libzstd";
 
     private static String osName() {
-        return System.getProperty("os.name").toLowerCase().replace(' ', '_');
+        return System.getProperty("os.name").toLowerCase().replace(' ', '_').replace('.', '_');
     }
 
     private static String osArch() {
