@@ -52,7 +52,11 @@ jniIncludes += "-I" + jniNativeSources.value.toString
 jniUseCpp11 := false
 
 jniBinPath := {
-  val os = System.getProperty("os.name").toLowerCase.replace(' ','_')
+  val os = System.getProperty("os.name").toLowerCase.replace(' ','_') match {
+    case os if os.startsWith("win") => "win"
+    case os if os.startsWith("mac") => "darwin"
+    case os => os
+  }
   val arch = System.getProperty("os.arch")
   (target in Compile).value / "classes" / os / arch
 }
@@ -118,5 +122,5 @@ OsgiKeys.bundleSymbolicName := "com.github.luben.zstd-jni"
 OsgiKeys.exportPackage  := Seq(s"""com.github.luben.zstd;version="${version.value}"""")
 OsgiKeys.privatePackage := Seq("com.github.luben.zstd.util", "include",
   "linux.amd64", "linux.i386", "linux.aarch64", "linux.ppc64",
-  "netbsd.amd64", "aix.ppc64", "mac_os_x.x86_64"
+  "netbsd.amd64", "aix.ppc64", "darwin.x86_64", "win.amd64"
 )

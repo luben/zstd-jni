@@ -11,7 +11,14 @@ public enum Native {
     private static final String libname = "libzstd";
 
     private static String osName() {
-        return System.getProperty("os.name").toLowerCase().replace(' ', '_');
+        String os = System.getProperty("os.name").toLowerCase().replace(' ', '_');
+        if (os.startsWith("win")){
+            return "win";
+        } else if (os.startsWith("mac")) {
+            return "darwin";
+        } else {
+            return os;
+        }
     }
 
     private static String osArch() {
@@ -92,4 +99,3 @@ public enum Native {
         }
     }
 }
-
