@@ -10,7 +10,6 @@ environment:
       JAVA_HOME: C:\Progra~2\Java\jdk1.8.0
 install:
   - echo: Starting install of SBT
-  - cmd: "dir C: /X"
   - ps: |
       Add-Type -AssemblyName System.IO.Compression.FileSystem
       if (!(Test-Path -Path "C:\sbt" )) {

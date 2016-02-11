@@ -34,7 +34,7 @@ jniLibSuffix := (System.getProperty("os.name").toLowerCase.replace(' ', '_') mat
   case _  => "so"
 })
 
-jniNativeCompiler := "cc"
+jniNativeCompiler := "gcc"
 
 jniCppExtensions := Seq("c")
 
