@@ -3,11 +3,14 @@ os: Windows Server 2012
 environment:
   matrix:
     - MSYSTEM: MINGW64
+      MSYS_PATH: C:\msys64\mingw64\usr\bin;C:\msys64\mingw64\bin
       JAVA_HOME: C:\Progra~1\Java\jdk1.8.0
     - MSYSTEM: MINGW32
+      MSYS_PATH: C:\msys64\mingw32\usr\bin;C:\msys64\mingw32\bin
       JAVA_HOME: C:\Progra~2\Java\jdk1.8.0
 install:
   - echo: Starting install of SBT
+  - cmd: "dir C: /X"
   - ps: |
       Add-Type -AssemblyName System.IO.Compression.FileSystem
       if (!(Test-Path -Path "C:\sbt" )) {
@@ -17,7 +20,7 @@ install:
         )
         [System.IO.Compression.ZipFile]::ExtractToDirectory("C:\sbt-bin.zip", "C:\sbt")
       }
-  - cmd: SET PATH=C:\msys64\usr\bin;C:\sbt\sbt\bin;%JAVA_HOME%\bin;%PATH%
+  - cmd: SET PATH=%MSYS_PATH%;C:\sbt\sbt\bin;%JAVA_HOME%\bin;%PATH%
 build_script:
   - sbt clean compile
 test_script:
