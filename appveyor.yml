@@ -15,8 +15,7 @@ install:
       }
   - cmd: SET PATH=C:\msys64\usr\bin;C:\sbt\sbt\bin;%JAVA_HOME%\bin;%PATH%
 build_script:
-  - sbt compile test
+  - sbt compile test:compile
 cache:
   - C:\sbt\
-  - C:\Users\appveyor\.m2
   - C:\Users\appveyor\.ivy2
