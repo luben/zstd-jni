@@ -3,7 +3,9 @@ os: Windows Server 2012
 environment:
   matrix:
     - MSYSTEM: MINGW64
+      JAVA_HOME: C:\Program Files\Java\jdk1.8.0
     - MSYSTEM: MINGW32
+      JAVA_HOME: C:\Program Files (x86)\Java\jdk1.8.0
 install:
   - echo: Starting install of SBT
   - ps: |
@@ -16,9 +18,10 @@ install:
         [System.IO.Compression.ZipFile]::ExtractToDirectory("C:\sbt-bin.zip", "C:\sbt")
       }
   - cmd: SET PATH=C:\msys64\usr\bin;C:\sbt\sbt\bin;%JAVA_HOME%\bin;%PATH%
-  - cmd: SET
 build_script:
-  - sbt compile test
+  - sbt clean compile
+test_script:
+    sbt test
 cache:
   - C:\sbt\
   - C:\Users\appveyor\.ivy2
