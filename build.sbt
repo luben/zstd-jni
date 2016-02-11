@@ -1,7 +1,7 @@
 
 name := "zstd-jni"
 
-version := "0.5.0"
+version := "0.5.1"
 
 scalaVersion := "2.11.7"
 
@@ -17,6 +17,8 @@ libraryDependencies ++= Seq(
   "org.scalatest"  %% "scalatest"  % "2.2.6"  % "test",
   "org.scalacheck" %% "scalacheck" % "1.12.5" % "test"
 )
+
+unmanagedResourceDirectories in Compile += baseDirectory.value / "os_builds"
 
 // JNI
 jniLibraryName := "zstd"
@@ -52,9 +54,9 @@ jniIncludes += "-I" + jniNativeSources.value.toString
 jniUseCpp11 := false
 
 jniBinPath := {
-  val os = System.getProperty("os.name").toLowerCase.replace(' ','_')
+  val os = System.getProperty("os.name").toLowerCase.replace(' ','_').replace('.','_')
   val arch = System.getProperty("os.arch")
-  (target in Compile).value / "classes" / os / arch
+  baseDirectory.value / "os_builds" / os / arch
 }
 
 jniHeadersPath := (target in Compile).value / "classes" / "include"
@@ -118,5 +120,5 @@ OsgiKeys.bundleSymbolicName := "com.github.luben.zstd-jni"
 OsgiKeys.exportPackage  := Seq(s"""com.github.luben.zstd;version="${version.value}"""")
 OsgiKeys.privatePackage := Seq("com.github.luben.zstd.util", "include",
   "linux.amd64", "linux.i386", "linux.aarch64", "linux.ppc64",
-  "netbsd.amd64", "aix.ppc64", "mac_os_x.x86_64"
+  "netbsd.amd64", "aix.ppc64", "mac_os_x.x86_64", "windows_8_1.amd64"
 )
