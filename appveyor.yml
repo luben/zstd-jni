@@ -16,6 +16,7 @@ install:
         [System.IO.Compression.ZipFile]::ExtractToDirectory("C:\sbt-bin.zip", "C:\sbt")
       }
   - cmd: SET PATH=C:\msys64\usr\bin;C:\sbt\sbt\bin;%JAVA_HOME%\bin;%PATH%
+  - cmd: SET
 build_script:
   - sbt compile test
 cache:
