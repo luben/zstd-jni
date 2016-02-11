@@ -24,6 +24,19 @@ build_script:
   - sbt clean compile
 test_script:
     sbt test
+
+deploy:
+  provider: S3
+  region: us-east-1
+  access_key_id:
+    secure: ACQ24Wiqzklv2JpYXATc8CYSDFpBDSObRA6K5rme4eI=
+  secret_access_key: s3_secret
+    secure: d8vzb7gfYxlpZuyLzdDQzrvDt6WVoi9H6RPJKwCX8aLxMwYGDW55szksQ9MxFxCi
+  bucket: zstd-jni
+  set_public: false
+  folder: appveyor
+  artifact: zstd-jni\target\classes\win
+
 cache:
   - C:\sbt\
   - C:\Users\appveyor\.ivy2
