@@ -47,6 +47,9 @@ jniGccFlags ++= Seq(
   case _                  => Seq()
 })
 
+// Special case the jni header on windows (use the provided one) because
+// the platform provided header is not compatible with the standard compliant
+// compilers but only with VisualStudio - this build uses msys/gcc
 jniJreIncludes := {
   jniJdkHome.value.fold(Seq.empty[String]) { home =>
     val absHome = home.getAbsolutePath
