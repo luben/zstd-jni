@@ -5,9 +5,11 @@ environment:
     - MSYSTEM: MINGW64
       MSYS_PATH: C:\msys64\mingw64\usr\bin;C:\msys64\mingw64\bin
       JAVA_HOME: C:\Progra~1\Java\jdk1.8.0
+      ARCH: amd64
     - MSYSTEM: MINGW32
       MSYS_PATH: C:\msys64\mingw32\usr\bin;C:\msys64\mingw32\bin
       JAVA_HOME: C:\Progra~2\Java\jdk1.8.0
+      ARCH: x86
 install:
   - echo: Starting install of SBT
   - ps: |
@@ -24,10 +26,14 @@ build_script:
   - sbt clean compile
 test_script:
     sbt test
+after_test:
+    - cmd: dir \X
+    - cmd: dir target \X
+    - cmd: dir target\classes \X
+    - cmd: dir target\classes\win \X
 artifacts:
-  - path: zstd-jni\target\classes\win
+  - path: target\classes\win
     name: windlls
-
 deploy:
   provider: S3
   region: us-east-1
