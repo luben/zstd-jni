@@ -26,11 +26,6 @@ build_script:
   - sbt clean compile
 test_script:
     sbt test
-after_test:
-    - cmd: dir \X
-    - cmd: dir target \X
-    - cmd: dir target\classes \X
-    - cmd: dir target\classes\win \X
 artifacts:
   - path: target\classes\win
     name: windlls
