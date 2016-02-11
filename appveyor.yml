@@ -3,9 +3,9 @@ os: Windows Server 2012
 environment:
   matrix:
     - MSYSTEM: MINGW64
-      JAVA_HOME: C:\Progra~1\Java\jdk1.8.0
+      JAVA_HOME: "C:\Progra~1\Java\jdk1.8.0"
     - MSYSTEM: MINGW32
-      JAVA_HOME: C:\Progra~2\Java\jdk1.8.0
+      JAVA_HOME: "C:\Progra~2\Java\jdk1.8.0"
 install:
   - echo: Starting install of SBT
   - cmd: dir C: /X
