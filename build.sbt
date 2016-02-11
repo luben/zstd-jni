@@ -18,8 +18,6 @@ libraryDependencies ++= Seq(
   "org.scalacheck" %% "scalacheck" % "1.12.5" % "test"
 )
 
-unmanagedResourceDirectories in Compile += baseDirectory.value / "os_builds"
-
 // JNI
 jniLibraryName := "zstd"
 
@@ -56,7 +54,7 @@ jniUseCpp11 := false
 jniBinPath := {
   val os = System.getProperty("os.name").toLowerCase.replace(' ','_').replace('.','_')
   val arch = System.getProperty("os.arch")
-  baseDirectory.value / "os_builds" / os / arch
+  (target in Compile).value / "classes" / os / arch
 }
 
 jniHeadersPath := (target in Compile).value / "classes" / "include"
