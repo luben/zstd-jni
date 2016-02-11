@@ -24,6 +24,9 @@ build_script:
   - sbt clean compile
 test_script:
     sbt test
+artifacts:
+  - path: zstd-jni\target\classes\win
+  - name: windlls
 
 deploy:
   provider: S3
@@ -35,7 +38,7 @@ deploy:
   bucket: zstd-jni
   set_public: false
   folder: appveyor
-  artifact: zstd-jni\target\classes\win
+  artifact: windlls
 
 cache:
   - C:\sbt\
