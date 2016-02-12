@@ -18,7 +18,7 @@ libraryDependencies ++= Seq(
   "org.scalacheck" %% "scalacheck" % "1.12.5" % "test"
 )
 
-// JNI
+// sbt-jni configuration
 jniLibraryName := "zstd"
 
 jniNativeClasses := Seq(
@@ -27,14 +27,16 @@ jniNativeClasses := Seq(
   "com.github.luben.zstd.ZstdOutputStream"
 )
 
-jniLibSuffix := (System.getProperty("os.name").toLowerCase.replace(' ', '_') match {
-  case os if os.contains("os_x")   => "dylib"
-  case os if os.contains("darwin") => "dylib"
-  case os if os.contains("win")    => "dll"
-  case _  => "so"
+jniLibSuffix := (System.getProperty("os.name").toLowerCase match {
+  case os if os startsWith "mac"    => "dylib"
+  case os if os startsWith "darwin" => "dylib"
+  case os if os startsWith "win"    => "dll"
+  case _                            => "so"
 })
 
 jniNativeCompiler := "gcc"
+
+jniUseCpp11 := false
 
 jniCppExtensions := Seq("c")
 
@@ -45,16 +47,26 @@ jniGccFlags ++= Seq(
   case "amd64"|"x86_64"   => Seq("-msse4")
   case "i386"             => Seq("-msse4")
   case _                  => Seq()
-}) ++ (if (System.getProperty("os.name").toLowerCase startsWith "win")
-  Seq("-D_JNI_IMPLEMENTATION_", "-Wl,--kill-at") else Seq())
+})
 
-// Special case the jni header on windows (use the provided one) because
-// the platform provided header is not compatible with the standard compliant
-// compilers but only with VisualStudio - this build uses msys/gcc
+// compilation on Windows with MSYS/gcc needs extra flags in order
+// to produce correct DLLs, also it alway produces position independent
+// code so let's remote the flag and silence a warning
+jniGccFlags := (
+  if (System.getProperty("os.name").toLowerCase startsWith "win")
+    jniGccFlags.value.filterNot(_ == "-fPIC") ++
+      Seq("-D_JNI_IMPLEMENTATION_", "-Wl,--kill-at")
+  else
+    jniGccFlags.value
+  )
+
+// Special case the jni platform header on windows (use the one from the repo)
+// because the JDK provided one is not compatible with the standard compliant
+// compilers but only with VisualStudio - this build uses MSYS/gcc
 jniJreIncludes := {
   jniJdkHome.value.fold(Seq.empty[String]) { home =>
     val absHome = home.getAbsolutePath
-    if (System.getProperty("os.name") startsWith "Win") {
+    if (System.getProperty("os.name").toLowerCase startsWith "win") {
       Seq(s"include").map(file => s"-I$absHome/../$file") ++
       Seq(s"""-I${sourceDirectory.value / "windows" / "include"}""")
     } else {
@@ -62,7 +74,8 @@ jniJreIncludes := {
         case os if os.startsWith("mac") => "darwin"
         case os                         => os
       }
-      // in a typical installation, jdk files are one directory above the location of the jre set in 'java.home'
+      // in a typical installation, JDK files are one directory above the
+      // location of the JRE set in 'java.home'
       Seq(s"include", s"include/$jniPlatformFolder").map(file => s"-I$absHome/../$file")
     }
   }
@@ -70,18 +83,18 @@ jniJreIncludes := {
 
 jniIncludes += "-I" + jniNativeSources.value.toString
 
-jniUseCpp11 := false
-
+// Where to put the compiled binaries
 jniBinPath := {
   val os = System.getProperty("os.name").toLowerCase.replace(' ','_') match {
-    case os if os.startsWith("win") => "win"
-    case os if os.startsWith("mac") => "darwin"
-    case os => os
+    case os if os startsWith "win" => "win"
+    case os if os startsWith "mac" => "darwin"
+    case os                        => os
   }
   val arch = System.getProperty("os.arch")
   (target in Compile).value / "classes" / os / arch
 }
 
+// Where to put the generated headers for the JNI lib
 jniHeadersPath := (target in Compile).value / "classes" / "include"
 
 // JaCoCo
