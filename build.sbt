@@ -58,10 +58,9 @@ jniJreIncludes := {
       Seq(s"include").map(file => s"-I$absHome/../$file") ++
       Seq(s"""-I${sourceDirectory.value / "windows" / "include"}""")
     } else {
-      val jniPlatformFolder  = System.getProperty("os.name") match {
-        case "Linux" => "linux"
-        case "Mac OS X" => "darwin"
-        case _ => new Exception("Cannot determine os name. Provide a value for `javaInclude`.")
+      val jniPlatformFolder  = System.getProperty("os.name").toLowerCase match {
+        case os if os.startsWith("mac") => "darwin"
+        case os                         => os
       }
       // in a typical installation, jdk files are one directory above the location of the jre set in 'java.home'
       Seq(s"include", s"include/$jniPlatformFolder").map(file => s"-I$absHome/../$file")
@@ -144,5 +143,5 @@ OsgiKeys.bundleSymbolicName := "com.github.luben.zstd-jni"
 OsgiKeys.exportPackage  := Seq(s"""com.github.luben.zstd;version="${version.value}"""")
 OsgiKeys.privatePackage := Seq("com.github.luben.zstd.util", "include",
   "linux.amd64", "linux.i386", "linux.aarch64", "linux.ppc64",
-  "netbsd.amd64", "aix.ppc64", "darwin.x86_64", "win.amd64"
+  "netbsd.amd64", "aix.ppc64", "darwin.x86_64", "win.amd64", "win.x86"
 )
