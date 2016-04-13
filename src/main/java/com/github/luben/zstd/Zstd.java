@@ -47,8 +47,35 @@ public class Zstd {
      * @return the maximum size of the compressed data
      */
     public static native long    compressBound(long srcSize);
+    /**
+     * Error handling
+     *
+     * @param code return code/size
+     */
+
     public static native boolean isError(long code);
     public static native String  getErrorName(long code);
+
+
+    /**
+     * Constants from the zstd_static header
+     */
+    public static native int magicNumber();
+    public static native int windowLogMin();
+    public static native int windowLogMax();
+    public static native int chainLogMin();
+    public static native int chainLogMax();
+    public static native int hashLogMin();
+    public static native int hashLogMax();
+    public static native int searchLogMin();
+    public static native int searchLogMax();
+    public static native int searchLengthMin();
+    public static native int searchLengthMax();
+    public static native int targetLengthMin();
+    public static native int targetLengthMax();
+    public static native int frameHeaderSizeMin();
+    public static native int frameHeaderSizeMax();
+    public static native int blockSizeMax();
 
     /* Convenience methods */
 

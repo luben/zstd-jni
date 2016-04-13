@@ -12,7 +12,9 @@ class ZstdSpec extends FlatSpec with Checkers {
   implicit override val generatorDrivenConfig =
     PropertyCheckConfig(minSize = 0, maxSize = 130 * 1024)
 
-  for (level <- List(1,3,6,9)) {
+  val levels = List(1,3,6,9,16)
+
+  for (level <- levels) {
     "Zstd" should s"should round-trip compression/decompression at level $level" in {
       check { input: Array[Byte] =>
         {
@@ -25,7 +27,7 @@ class ZstdSpec extends FlatSpec with Checkers {
     }
   }
 
-  for (level <- List(1,3,6,9,16)) {
+  for (level <- levels) {
     "Zstd" should s"should round-trip using streaming API at level $level" in {
       check { input: Array[Byte] =>
         val size  = input.length
@@ -62,7 +64,7 @@ class ZstdSpec extends FlatSpec with Checkers {
     }
   }
 
-  for (level <- List(1,3,6,9,16))
+  for (level <- levels)
     "ZstdInputStream" should s"be able to consume files compressed by the zstd binary at level $level" in {
       val orig = new File("src/test/resources/xml")
       val file = new File(s"src/test/resources/xml-$level.zst")
@@ -83,7 +85,7 @@ class ZstdSpec extends FlatSpec with Checkers {
         sys.error(s"Failed")
     }
 
-  for (level <- List(1,3,6,9,16))
+  for (level <- levels)
     "ZstdOutputStream" should s"produce the same compressed file as zstd binary at level $level" in {
       val file = new File("src/test/resources/xml")
       val length = file.length.toInt
@@ -103,8 +105,11 @@ class ZstdSpec extends FlatSpec with Checkers {
       val compressed = os.toByteArray.toSeq
       val zst = Source.fromFile(s"src/test/resources/xml-$level.zst")(Codec.ISO8859).map{char => char.toByte}.to[WrappedArray]
 
-      if (zst != compressed)
-        sys.error(s"Failed")
+      if (zst.length == compressed.length + 8) {
+        if (zst.drop(13) != compressed.drop(5))
+          sys.error(s"Failed while ignoring the embedded size header")
+      } else if (zst != compressed) {
+        sys.error(s"Failed ${zst.length} != ${compressed.length}")
+      }
     }
-
 }

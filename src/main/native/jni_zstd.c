@@ -4,7 +4,7 @@
 
 /*
  * Class:     com_github_luben_zstd_Zstd
- * Method:    ZSTD_compress
+ * Method:    compress
  * Signature: ([BJ[BJI)J
  */
 JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_compress
@@ -24,7 +24,7 @@ E1: return size;
 
 /*
  * Class:     com_github_luben_zstd_Zstd
- * Method:    ZSTD_decompress
+ * Method:    decompress
  * Signature: ([BJ[BJ)J
  */
 JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_decompress
@@ -44,7 +44,7 @@ E1: return size;
 
 /*
  * Class:     com_github_luben_zstd_Zstd
- * Method:    ZSTD_compressBound
+ * Method:    compressBound
  * Signature: (J)J
  */
 JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_compressBound
@@ -54,7 +54,7 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_compressBound
 
 /*
  * Class:     com_github_luben_zstd_Zstd
- * Method:    ZSTD_isError
+ * Method:    isError
  * Signature: (J)I
  */
 JNIEXPORT jboolean JNICALL Java_com_github_luben_zstd_Zstd_isError
@@ -64,11 +64,96 @@ JNIEXPORT jboolean JNICALL Java_com_github_luben_zstd_Zstd_isError
 
 /*
  * Class:     com_github_luben_zstd_Zstd
- * Method:    ZSTD_getErrorName
+ * Method:    getErrorName
  * Signature: (J)Ljava/lang/String;
  */
 JNIEXPORT jstring JNICALL Java_com_github_luben_zstd_Zstd_getErrorName
   (JNIEnv *env, jclass obj, jlong code) {
     const char *msg = ZSTD_getErrorName(code);
     return (*env)->NewStringUTF(env, msg);
+}
+
+/*
+ * Class:     com_github_luben_zstd_Zstd
+ * Methods:   header constants access
+ * Signature: ()I
+ */
+JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_windowLogMin
+  (JNIEnv *env, jclass obj) {
+    return ZSTD_WINDOWLOG_MIN;
+}
+
+JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_windowLogMax
+  (JNIEnv *env, jclass obj) {
+    return ZSTD_WINDOWLOG_MAX;
+}
+
+JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_chainLogMin
+  (JNIEnv *env, jclass obj) {
+    return ZSTD_CHAINLOG_MIN;
+}
+
+JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_chainLogMax
+  (JNIEnv *env, jclass obj) {
+    return ZSTD_CHAINLOG_MAX;
+}
+
+JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_hashLogMin
+  (JNIEnv *env, jclass obj) {
+    return ZSTD_HASHLOG_MIN;
+}
+
+JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_hashLogMax
+  (JNIEnv *env, jclass obj) {
+    return ZSTD_HASHLOG_MAX;
+}
+
+JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_searchLogMin
+  (JNIEnv *env, jclass obj) {
+    return ZSTD_SEARCHLOG_MIN;
+}
+
+JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_searchLogMax
+  (JNIEnv *env, jclass obj) {
+    return ZSTD_SEARCHLOG_MAX;
+}
+
+JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_searchLengthMin
+  (JNIEnv *env, jclass obj) {
+    return ZSTD_SEARCHLENGTH_MIN;
+}
+
+JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_searchLengthMax
+  (JNIEnv *env, jclass obj) {
+    return ZSTD_SEARCHLENGTH_MAX;
+}
+
+JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_targetLengthMin
+  (JNIEnv *env, jclass obj) {
+    return ZSTD_TARGETLENGTH_MIN;
+}
+
+JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_targetLengthMax
+  (JNIEnv *env, jclass obj) {
+    return ZSTD_TARGETLENGTH_MAX;
+}
+
+JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_magicNumber
+  (JNIEnv *env, jclass obj) {
+    return ZSTD_MAGICNUMBER;
+}
+
+JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_frameHeaderSizeMin
+  (JNIEnv *env, jclass obj) {
+    return ZSTD_frameHeaderSize_min;
+}
+
+JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_frameHeaderSizeMax
+  (JNIEnv *env, jclass obj) {
+    return ZSTD_frameHeaderSize_max;
+}
+
+JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_blockSizeMax
+  (JNIEnv *env, jclass obj) {
+    return ZSTD_BLOCKSIZE_MAX;
 }

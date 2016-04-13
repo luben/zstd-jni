@@ -7,9 +7,9 @@
  * Method:    findIBuffSize
  * Signature: (I)I
  */
-JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdOutputStream_findIBuffSize
+JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdOutputStream_findIBuffSize
   (JNIEnv *env, jclass obj, jint level) {
-    return (jlong) (1 << ZSTD_getParams(level, 0).windowLog);
+    return 1 << ZSTD_getCParams(level, 0, 0).windowLog;
 }
 
 /*
@@ -25,21 +25,21 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdOutputStream_createCCtx
 /*
  * Class:     com_github_luben_zstd_ZstdOutputStream
  * Method:    freeCCtx
- * Signature: (J)J
+ * Signature: (J)I
  */
-JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdOutputStream_freeCCtx
+JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdOutputStream_freeCCtx
   (JNIEnv *env, jclass obj, jlong ctx) {
-    return (jlong) ZSTD_freeCCtx((ZSTD_CCtx*)(size_t) ctx);
+    return ZSTD_freeCCtx((ZSTD_CCtx*)(size_t) ctx);
 }
 
 /*
  * Class:     com_github_luben_zstd_ZstdOutputStream
  * Method:    comperssBegin
- * Signature: (JI)J
+ * Signature: (JI)I
  */
-JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdOutputStream_compressBegin
+JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdOutputStream_compressBegin
   (JNIEnv *env, jclass obj, jlong ctx, jint level) {
-    return (jlong) ZSTD_compressBegin((ZSTD_CCtx*)(size_t) ctx, level);
+    return ZSTD_compressBegin((ZSTD_CCtx*)(size_t) ctx, level);
 }
 
 /*
@@ -47,7 +47,7 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdOutputStream_compressBegi
  * Method:    compressContinue
  * Signature: (J[BJLjava/nio/ByteBuffer;JJ)J
  */
-JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdOutputStream_compressContinue
+JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdOutputStream_compressContinue
   (JNIEnv *env, jclass obj, jlong ctx, jbyteArray dst, jlong dst_size, jobject src, jlong src_offset, jlong src_size) {
     size_t size = (size_t)(0-ZSTD_error_memory_allocation);
     void *dst_buff = (*env)->GetPrimitiveArrayCritical(env, dst, NULL);
@@ -60,20 +60,20 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdOutputStream_compressCont
                 src_buff + src_offset, src_size
             );
 E2: (*env)->ReleasePrimitiveArrayCritical(env, dst, dst_buff, 0);
-E1: return size;
+E1: return (jint) size;
 }
 
 /*
  * Class:     com_github_luben_zstd_ZstdOutputStream
  * Method:    compressEnd
- * Signature: (J[BJ)J
+ * Signature: (J[BJ)I
  */
-JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdOutputStream_compressEnd
+JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdOutputStream_compressEnd
   (JNIEnv *env, jclass obj, jlong ctx, jbyteArray dst, jlong dst_size) {
     void *dst_buff = (*env)->GetPrimitiveArrayCritical(env, dst, NULL);
     if (dst_buff == NULL)
-        return (size_t)(0-ZSTD_error_memory_allocation);
+        return 0-ZSTD_error_memory_allocation;
     size_t size = ZSTD_compressEnd((ZSTD_CCtx*)(size_t) ctx, dst_buff, dst_size);
     (*env)->ReleasePrimitiveArrayCritical(env, dst, dst_buff, 0);
-    return size;
+    return (jint) size;
 }

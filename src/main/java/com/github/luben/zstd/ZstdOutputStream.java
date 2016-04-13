@@ -25,8 +25,8 @@ public class ZstdOutputStream extends FilterOutputStream {
     private long ctx;
 
     /* Some constants, there is provision for variable blocksize in the future */
-    private final static int blockSize = 128*1024; //128 KB
-    private final static int oBuffSize = (int) Zstd.compressBound(blockSize) + 6;
+    private final static int blockSize = (int) Zstd.blockSizeMax();
+    private final static int oBuffSize = (int) Zstd.compressBound(blockSize) + 1;
     private int iBuffSize = 0;
 
     private ByteBuffer iBuff = null;
@@ -35,11 +35,11 @@ public class ZstdOutputStream extends FilterOutputStream {
 
     /* JNI methods */
     private static native long createCCtx();
-    private static native long freeCCtx(long ctx);
+    private static native int  freeCCtx(long ctx);
     private static native int  findIBuffSize(int level);
-    private static native long compressBegin(long ctx, int level);
-    private static native long compressContinue(long ctx, byte[] dst, long dstSize, ByteBuffer src, long srcOffset, long srcSize);
-    private static native long compressEnd(long ctx, byte[] dst, long dstSize);
+    private static native int  compressBegin(long ctx, int level);
+    private static native int  compressContinue(long ctx, byte[] dst, long dstSize, ByteBuffer src, long srcOffset, long srcSize);
+    private static native int  compressEnd(long ctx, byte[] dst, long dstSize);
 
     /* The constuctor */
     public ZstdOutputStream(OutputStream outStream, int level) throws IOException {
@@ -59,12 +59,13 @@ public class ZstdOutputStream extends FilterOutputStream {
             throw new IOException("Error allocating the buffers");
         }
         /* write header */
-        long size = compressBegin(ctx, level);
+        int size = compressBegin(ctx, level);
         if (Zstd.isError(size)) {
             throw new IOException("Compression error: cannot create header: " + Zstd.getErrorName(size));
         }
-        out.write(oBuff, 0, (int) size);
+        out.write(oBuff, 0, size);
     }
+
     public ZstdOutputStream(OutputStream outStream) throws IOException {
         this(outStream, 1);
     }
@@ -107,7 +108,7 @@ public class ZstdOutputStream extends FilterOutputStream {
     }
 
     public void close() throws IOException {
-        long size = 0;
+        int size = 0;
         int iEnd = iBuff.position();
         // compress the remaining input
         if (iPos != iEnd) {
@@ -119,7 +120,7 @@ public class ZstdOutputStream extends FilterOutputStream {
         }
         // wrap it
         size = compressEnd(ctx, oBuff, oBuffSize);
-        out.write(oBuff, 0, (int) size);
+        out.write(oBuff, 0, size);
         // release the resources
         freeCCtx(ctx);
         out.close();
