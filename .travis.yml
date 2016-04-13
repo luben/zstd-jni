@@ -1,7 +1,7 @@
 language: java
 
 env:
-    - SCALA_VERSION=2.11.7
+    - SCALA_VERSION=2.11.8
 
 os:
     - osx
@@ -10,7 +10,7 @@ script: ./sbt "++$SCALA_VERSION" compile jacoco:cover
 
 matrix:
   include:
-    - env: SCALA_VERSION=2.11.7
+    - env: SCALA_VERSION=2.11.8
       os:  linux
       jdk: oraclejdk8
 
