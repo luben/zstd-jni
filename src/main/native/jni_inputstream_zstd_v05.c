@@ -25,12 +25,12 @@ size_t ZSTDv05_nextSrcSizeToDecompress(ZSTDv05_DCtx* dctx);
 size_t ZSTDv05_decompressContinue(ZSTDv05_DCtx* dctx, void* dst, size_t dstCapacity, const void* src, size_t srcSize);
 
 /*
- * Class:     com_github_luben_zstd_ZstdInputStream
- * Method:    findBlockSize_v05
+ * Class:     com_github_luben_zstd_ZstdInputStreamV05
+ * Method:    findBlockSize
  * Signature: ([BJ)I
  */
 
-JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdInputStream_findBlockSize_1v05
+JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdInputStreamV05_findBlockSize
   (JNIEnv *env, jclass obj, jbyteArray src, jlong src_size) {
     ZSTDv05_parameters params;
     void *src_buff = (*env)->GetPrimitiveArrayCritical(env, src, NULL);
@@ -44,11 +44,11 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdInputStream_findBlockSize_
 }
 
 /*
- * Class:     com_github_luben_zstd_ZstdInputStream
- * Method:    findOBuffSize_v05
+ * Class:     com_github_luben_zstd_ZstdInputStreamV05
+ * Method:    findOBuffSize
  * Signature: ([BJ)I
  */
-JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdInputStream_findOBuffSize_1v05
+JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdInputStreamV05_findOBuffSize
   (JNIEnv *env, jclass obj, jbyteArray src, jlong src_size) {
     ZSTDv05_parameters params;
     void *src_buff = (*env)->GetPrimitiveArrayCritical(env, src, NULL);
@@ -63,51 +63,51 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdInputStream_findOBuffSize_
 }
 
 /*
- * Class:     com_github_luben_zstd_ZstdInputStream
- * Method:    nextSrcSizeToDecompress_v05
+ * Class:     com_github_luben_zstd_ZstdInputStreamV05
+ * Method:    nextSrcSizeToDecompress
  * Signature: (J)I
  */
-JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdInputStream_nextSrcSizeToDecompress_1v05
+JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdInputStreamV05_nextSrcSizeToDecompress
   (JNIEnv *env, jclass obj, jlong ctx) {
     return (jint) ZSTDv05_nextSrcSizeToDecompress((ZSTDv05_DCtx*)(size_t) ctx);
 }
 
 /*
- * Class:     com_github_luben_zstd_ZstdInputStream
- * Method:    createDCtx_v05
+ * Class:     com_github_luben_zstd_ZstdInputStreamV05
+ * Method:    createDCtx
  * Signature: ()J
  */
-JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdInputStream_createDCtx_1v05
+JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdInputStreamV05_createDCtx
   (JNIEnv *env, jclass obj) {
     return (jlong)(size_t) ZSTDv05_createDCtx();
 }
 
 /*
- * Class:     com_github_luben_zstd_ZstdInputStream
- * Method:    decompressBegin_v05
+ * Class:     com_github_luben_zstd_ZstdInputStreamV05
+ * Method:    decompressBegin
  * Signature: (J)I
  */
-JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdInputStream_decompressBegin_1v05
+JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdInputStreamV05_decompressBegin
   (JNIEnv *env, jclass obj, jlong ctx) {
     return ZSTDv05_decompressBegin((ZSTDv05_DCtx*)(size_t)ctx);
 }
 
 /*
- * Class:     com_github_luben_zstd_ZstdInputStream
- * Method:    freeDCtx_v05
+ * Class:     com_github_luben_zstd_ZstdInputStreamV05
+ * Method:    freeDCtx
  * Signature: (J)I
  */
-JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdInputStream_freeDCtx_1v05
+JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdInputStreamV05_freeDCtx
   (JNIEnv *env, jclass obj, jlong ctx) {
     return ZSTDv05_freeDCtx((ZSTDv05_DCtx*)(size_t)ctx);
 }
 
 /*
- * Class:     com_github_luben_zstd_ZstdInputStream
- * Method:    decompressContinue_v05
+ * Class:     com_github_luben_zstd_ZstdInputStreamV05
+ * Method:    decompressContinue
  * Signature: (JLjava/nio/ByteBuffer;JJ[BJJ)I
  */
-JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdInputStream_decompressContinue_1v05
+JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdInputStreamV05_decompressContinue
   (JNIEnv *env, jclass obj, jlong ctx, jobject dst, jlong dst_offset, jlong dst_size, jbyteArray src, jlong src_offset, jlong src_size) {
     size_t size = (size_t)(0 - ZSTD_error_memory_allocation);
     void *dst_buff = (*env)->GetDirectBufferAddress(env, dst);

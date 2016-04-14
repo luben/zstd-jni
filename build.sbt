@@ -23,8 +23,9 @@ jniLibraryName := "zstd"
 
 jniNativeClasses := Seq(
   "com.github.luben.zstd.Zstd",
+  "com.github.luben.zstd.ZstdOutputStream",
   "com.github.luben.zstd.ZstdInputStream",
-  "com.github.luben.zstd.ZstdOutputStream"
+  "com.github.luben.zstd.ZstdInputStreamV05"
 )
 
 jniLibSuffix := (System.getProperty("os.name").toLowerCase match {

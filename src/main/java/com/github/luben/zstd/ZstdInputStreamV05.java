@@ -9,7 +9,6 @@ import java.lang.IndexOutOfBoundsException;
 
 import com.github.luben.zstd.util.Native;
 import com.github.luben.zstd.Zstd;
-import com.github.luben.zstd.ZstdInputStreamV05;
 
 /**
  * InputStream filter that decompresses the data provided
@@ -19,7 +18,7 @@ import com.github.luben.zstd.ZstdInputStreamV05;
  *
  */
 
-public class ZstdInputStream extends FilterInputStream {
+public class ZstdInputStreamV05 extends FilterInputStream {
 
     static {
         Native.load();
@@ -40,9 +39,6 @@ public class ZstdInputStream extends FilterInputStream {
     // The input buffer
     private byte[] iBuff  = null;
 
-    private static final int MAGIC_BASE = 0xFD2FB520;
-    private FilterInputStream legacy = null;
-
     // JNI methods
     private static native long createDCtx();
     private static native int  decompressBegin(long ctx);
@@ -52,36 +48,10 @@ public class ZstdInputStream extends FilterInputStream {
     private static native int  nextSrcSizeToDecompress(long ctx);
     private static native int  decompressContinue(long ctx, ByteBuffer dst, long dstOffset, long dstSize, byte[] src, long srcOffset, long srcSize);
 
-    // The main constuctor / legacy version dispatcher
-    public ZstdInputStream(InputStream inStream) throws IOException {
+    // The main constuctor
+    public ZstdInputStreamV05(InputStream inStream, byte[] header, int iPos) throws IOException {
         // FilterInputStream constructor
         super(inStream);
-
-        // allocate input buffer with max frame header size
-        byte[] header = new byte[Zstd.frameHeaderSizeMax()];
-        if (header == null) {
-            throw new IOException("Error allocating the frame header buffer of size " + Zstd.frameHeaderSizeMax());
-        }
-
-        // find the ZSTD version
-        int iPos = 0;
-        while (iPos < 4) {
-            iPos += in.read(header, iPos, 4 - iPos);
-        }
-
-        byte[] magic = Arrays.copyOfRange(header,0,4);
-        int version = java.nio.ByteBuffer.wrap(magic).order(java.nio.ByteOrder.LITTLE_ENDIAN).getInt() - MAGIC_BASE;
-
-        switch (version) {
-            case 6: init(inStream, header, iPos);
-                    break;
-            case 5: legacy = new ZstdInputStreamV05(inStream, header, iPos);
-                    break;
-        }
-    }
-
-    // The main initialization logic
-    private void init(InputStream inStream, byte[] header, int iPos) throws IOException {
 
         // create decompression context
         ctx = createDCtx();
@@ -129,7 +99,6 @@ public class ZstdInputStream extends FilterInputStream {
     }
 
     public int read(byte[] dst, int offset, int len) throws IOException {
-        if (legacy != null) return legacy.read(dst, offset, len);
         // guard agains buffer overflows
         if (len > dst.length - offset) {
             throw new IndexOutOfBoundsException("Requested lenght " +len  +
@@ -163,7 +132,6 @@ public class ZstdInputStream extends FilterInputStream {
 
             // Decode
             int decoded = decompressContinue(ctx, oBuff, oPos, oBuffSize - oPos, iBuff, 0, iPos);
-
             if (Zstd.isError(decoded)) {
                 throw new IOException("Decode Error: " + Zstd.getErrorName(decoded));
             }
@@ -178,7 +146,6 @@ public class ZstdInputStream extends FilterInputStream {
     }
 
     public int available() throws IOException {
-        if (legacy != null) return legacy.available();
         return oEnd - oPos;
     }
 
@@ -188,8 +155,7 @@ public class ZstdInputStream extends FilterInputStream {
     }
 
     /* we can skip forward only inside the buffer*/
-    public long skip(long n) throws IOException {
-        if (legacy != null) return legacy.skip(n);
+    public long skip(long n) {
         if (n <= oEnd - oPos) {
             oPos += n;
             return n;
@@ -201,11 +167,7 @@ public class ZstdInputStream extends FilterInputStream {
     }
 
     public void close() throws IOException {
-        if (legacy != null) {
-            legacy.close();
-        } else {
-            freeDCtx(ctx);
-            in.close();
-        }
+        freeDCtx(ctx);
+        in.close();
     }
 }
