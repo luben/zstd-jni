@@ -6,36 +6,6 @@
 
 /*
  * Class:     com_github_luben_zstd_ZstdInputStream
- * Method:    createDCtx
- * Signature: ()J
- */
-JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdInputStream_createDCtx
-  (JNIEnv *env, jclass obj) {
-    return (jlong)(size_t) ZSTD_createDCtx();
-}
-
-/*
- * Class:     com_github_luben_zstd_ZstdInputStream
- * Method:    decompressBegin
- * Signature: (J)I
- */
-JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdInputStream_decompressBegin
-  (JNIEnv *env, jclass obj, jlong ctx) {
-    return ZSTD_decompressBegin((ZSTD_DCtx*)(size_t)ctx);
-}
-
-/*
- * Class:     com_github_luben_zstd_ZstdInputStream
- * Method:    freeDCtx
- * Signature: (J)I
- */
-JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdInputStream_freeDCtx
-  (JNIEnv *env, jclass obj, jlong ctx) {
-    return ZSTD_freeDCtx((ZSTD_DCtx*)(size_t)ctx);
-}
-
-/*
- * Class:     com_github_luben_zstd_ZstdInputStream
  * Method:    findBlockSize
  * Signature: ([BJ)I
  */
@@ -71,7 +41,6 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdInputStream_findOBuffSize
     }
 }
 
-
 /*
  * Class:     com_github_luben_zstd_ZstdInputStream
  * Method:    nextSrcSizeToDecompress
@@ -80,6 +49,36 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdInputStream_findOBuffSize
 JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdInputStream_nextSrcSizeToDecompress
   (JNIEnv *env, jclass obj, jlong ctx) {
     return (jint) ZSTD_nextSrcSizeToDecompress((ZSTD_DCtx*)(size_t) ctx);
+}
+
+/*
+ * Class:     com_github_luben_zstd_ZstdInputStream
+ * Method:    createDCtx
+ * Signature: ()J
+ */
+JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdInputStream_createDCtx
+  (JNIEnv *env, jclass obj) {
+    return (jlong)(size_t) ZSTD_createDCtx();
+}
+
+/*
+ * Class:     com_github_luben_zstd_ZstdInputStream
+ * Method:    decompressBegin
+ * Signature: (J)I
+ */
+JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdInputStream_decompressBegin
+  (JNIEnv *env, jclass obj, jlong ctx) {
+    return ZSTD_decompressBegin((ZSTD_DCtx*)(size_t)ctx);
+}
+
+/*
+ * Class:     com_github_luben_zstd_ZstdInputStream
+ * Method:    freeDCtx
+ * Signature: (J)I
+ */
+JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdInputStream_freeDCtx
+  (JNIEnv *env, jclass obj, jlong ctx) {
+    return ZSTD_freeDCtx((ZSTD_DCtx*)(size_t)ctx);
 }
 
 /*

@@ -91,8 +91,7 @@ public class Zstd {
         if (maxDstSize > Integer.MAX_VALUE) {
             throw new RuntimeException("Max output size is greater than MAX_INT");
         }
-        ByteBuffer dst_buff = ByteBuffer.allocate((int) maxDstSize);
-        byte[] dst = dst_buff.array();
+        byte[] dst = new byte[(int) maxDstSize];
         long size = compress(dst, src, level);
         if (isError(size)) {
             throw new RuntimeException(getErrorName(size));
@@ -110,7 +109,6 @@ public class Zstd {
         return compress(src, 1);
     }
 
-
     /**
      * Decompress data
      *
@@ -119,8 +117,7 @@ public class Zstd {
      * @return byte array with the decompressed data
      */
     public static byte[] decompress(byte[] src, int originalSize) {
-        ByteBuffer dst_buff = ByteBuffer.allocate(originalSize);
-        byte[] dst          = dst_buff.array();
+        byte[] dst = new byte[originalSize];
         long size = decompress(dst, src);
         if (isError(size)) {
             throw new RuntimeException(getErrorName(size));

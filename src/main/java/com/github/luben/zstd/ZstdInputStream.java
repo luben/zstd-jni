@@ -39,6 +39,9 @@ public class ZstdInputStream extends FilterInputStream {
     // The input buffer
     private byte[] iBuff  = null;
 
+    private static final int MAGIC_BASE = 0xFD2FB520;
+    private int version = 0;
+
     // JNI methods
     private static native long createDCtx();
     private static native int  decompressBegin(long ctx);
@@ -48,40 +51,73 @@ public class ZstdInputStream extends FilterInputStream {
     private static native int  nextSrcSizeToDecompress(long ctx);
     private static native int  decompressContinue(long ctx, ByteBuffer dst, long dstOffset, long dstSize, byte[] src, long srcOffset, long srcSize);
 
+    // legacy v05
+    private static native long createDCtx_v05();
+    private static native int  decompressBegin_v05(long ctx);
+    private static native int  freeDCtx_v05(long ctx);
+    private static native int  findBlockSize_v05(byte[] src, long srcSize);
+    private static native int  findOBuffSize_v05(byte[] src, long srcSize);
+    private static native int  nextSrcSizeToDecompress_v05(long ctx);
+    private static native int  decompressContinue_v05(long ctx, ByteBuffer dst, long dstOffset, long dstSize, byte[] src, long srcOffset, long srcSize);
+
     // The main constuctor
     public ZstdInputStream(InputStream inStream) throws IOException {
         // FilterInputStream constructor
         super(inStream);
 
-        // create decompression context
-        ctx = createDCtx();
-        decompressBegin(ctx);
-
         // allocate input buffer with max frame header size
-        byte[] header = ByteBuffer.allocate(Zstd.frameHeaderSizeMax()).array();
+        byte[] header = new byte[Zstd.frameHeaderSizeMax()];
         if (header == null) {
             throw new IOException("Error allocating the frame header buffer of size " + Zstd.frameHeaderSizeMax());
         }
 
+        // find the ZSTD version
         int iPos = 0;
+        while (iPos < 4) {
+            iPos += in.read(header, iPos, 4 - iPos);
+        }
+
+        byte[] magic = Arrays.copyOfRange(header,0,4);
+        version = java.nio.ByteBuffer.wrap(magic).order(java.nio.ByteOrder.LITTLE_ENDIAN).getInt() - MAGIC_BASE;
+
+        // create decompression context
+        switch (version) {
+            case 6: ctx = createDCtx();
+                    decompressBegin(ctx);
+                    break;
+            case 5: ctx = createDCtx_v05();
+                    decompressBegin_v05(ctx);
+                    break;
+            default: throw new IOException("Unsupported version of Zstd " + version);
+        }
 
         // find the block size
         while (blockSize < 0) {
-            blockSize = findBlockSize(header, iPos);
+            switch (version) {
+                case 6: blockSize = findBlockSize(header, iPos);
+                        break;
+                case 5: blockSize = findBlockSize_v05(header, iPos);
+                        break;
+            }
             if (blockSize < 0) {
                 iPos += in.read(header, iPos, -blockSize - iPos);
             }
         }
 
         // allocate the input buffer
-        iBuff = ByteBuffer.allocate(blockSize).array();
+        iBuff = new byte[blockSize];
         if (iBuff == null) {
             throw new IOException("Error allocating the input buffer of size " + blockSize);
         }
 
         // find the size of the output buffer
         while (oBuffSize < 0) {
-            oBuffSize = findOBuffSize(header, iPos);
+            switch (version) {
+                case 6: oBuffSize = findOBuffSize(header, iPos);
+                        break;
+                case 5: oBuffSize = findOBuffSize_v05(header, iPos);
+                        break;
+            }
             if (oBuffSize < 0) {
                 iPos += in.read(header, iPos, -oBuffSize - iPos);
             }
@@ -93,11 +129,20 @@ public class ZstdInputStream extends FilterInputStream {
             throw new IOException("Error allocating the output buffers of size " + oBuffSize);
         }
 
-        // consume the frame header(s) that was read by the getProperties / findOBuffSoze
+        // consume the frame header(s) that was read by the findBlockSize / findOBuffSize
         long consumed = 0;
         while (consumed < iPos) {
-            int toRead = nextSrcSizeToDecompress(ctx);
-            int decoded = decompressContinue(ctx, oBuff, oPos, oBuffSize - oPos, header, consumed, toRead);
+            int toRead = 0;
+            int decoded = 0;
+
+            switch (version) {
+                case 6: toRead = nextSrcSizeToDecompress(ctx);
+                        decoded = decompressContinue(ctx, oBuff, oPos, oBuffSize - oPos, header, consumed, toRead);
+                        break;
+                case 5: toRead = nextSrcSizeToDecompress_v05(ctx);
+                        decoded = decompressContinue_v05(ctx, oBuff, oPos, oBuffSize - oPos, header, consumed, toRead);
+                        break;
+            }
             if (Zstd.isError(decoded)) {
                 throw new IOException("Decode Error: " + Zstd.getErrorName(decoded));
             }
@@ -115,7 +160,13 @@ public class ZstdInputStream extends FilterInputStream {
         // the buffer is empty
         while (oEnd == oPos) {
             int iPos = 0;
-            int toRead = nextSrcSizeToDecompress(ctx);
+            int toRead = 0;
+            switch (version) {
+                case 6: toRead = nextSrcSizeToDecompress(ctx);
+                        break;
+                case 5: toRead = nextSrcSizeToDecompress_v05(ctx);
+                        break;
+            }
 
             // Reached end of stream (-1) if there is anything more to read
             if (toRead == 0) {
@@ -139,7 +190,13 @@ public class ZstdInputStream extends FilterInputStream {
             }
 
             // Decode
-            int decoded = decompressContinue(ctx, oBuff, oPos, oBuffSize - oPos, iBuff, 0, iPos);
+            int decoded = 0;
+            switch (version) {
+                case 6: decoded = decompressContinue(ctx, oBuff, oPos, oBuffSize - oPos, iBuff, 0, iPos);
+                        break;
+                case 5: decoded = decompressContinue_v05(ctx, oBuff, oPos, oBuffSize - oPos, iBuff, 0, iPos);
+                        break;
+            }
 
             if (Zstd.isError(decoded)) {
                 throw new IOException("Decode Error: " + Zstd.getErrorName(decoded));
@@ -176,7 +233,12 @@ public class ZstdInputStream extends FilterInputStream {
     }
 
     public void close() throws IOException {
-        freeDCtx(ctx);
+        switch (version) {
+            case 6: freeDCtx(ctx);
+                    break;
+            case 5: freeDCtx_v05(ctx);
+                    break;
+        }
         in.close();
     }
 }

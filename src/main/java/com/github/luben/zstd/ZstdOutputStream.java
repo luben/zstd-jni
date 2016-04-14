@@ -54,7 +54,7 @@ public class ZstdOutputStream extends FilterOutputStream {
 
         /* allocate memory */
         iBuff = ByteBuffer.allocateDirect(iBuffSize);
-        oBuff = ByteBuffer.allocate(oBuffSize).array();
+        oBuff = new byte[oBuffSize];
         if (iBuff == null || oBuff == null) {
             throw new IOException("Error allocating the buffers");
         }
