@@ -4,12 +4,10 @@ import java.nio.ByteBuffer;
 import java.io.InputStream;
 import java.io.FilterInputStream;
 import java.io.IOException;
-import java.util.Arrays;
 import java.lang.IndexOutOfBoundsException;
 
 import com.github.luben.zstd.util.Native;
 import com.github.luben.zstd.Zstd;
-import com.github.luben.zstd.ZstdInputStreamV05;
 
 /**
  * InputStream filter that decompresses the data provided
@@ -19,7 +17,7 @@ import com.github.luben.zstd.ZstdInputStreamV05;
  *
  */
 
-public class ZstdInputStream extends FilterInputStream {
+public class ZstdInputStreamV04 extends FilterInputStream {
 
     static {
         Native.load();
@@ -28,8 +26,9 @@ public class ZstdInputStream extends FilterInputStream {
     // Opaque pointer to Zstd context object
     private long ctx;
 
-    // read from the frame header
-    private int blockSize = -1;
+    private final static int blockSize = 128*1024; //128 KB
+    /* buffer sizes */
+    private final static int iBuffSize = blockSize;
     private int oBuffSize = -1;
 
     // The decompression buffer
@@ -40,68 +39,25 @@ public class ZstdInputStream extends FilterInputStream {
     // The input buffer
     private byte[] iBuff  = null;
 
-    private static final int MAGIC_BASE = 0xFD2FB520;
-    private FilterInputStream legacy = null;
-
     // JNI methods
     private static native long createDCtx();
-    private static native int  decompressBegin(long ctx);
-    private static native int  freeDCtx(long ctx);
-    private static native int  findBlockSize(byte[] src, long srcSize);
+    private static native long freeDCtx(long ctx);
     private static native int  findOBuffSize(byte[] src, long srcSize);
-    private static native int  nextSrcSizeToDecompress(long ctx);
-    private static native int  decompressContinue(long ctx, ByteBuffer dst, long dstOffset, long dstSize, byte[] src, long srcOffset, long srcSize);
+    private static native long nextSrcSizeToDecompress(long ctx);
+    private static native long decompressContinue(long ctx, ByteBuffer dst, long dstOffset, long dstSize, byte[] src, long srcSize);
 
-    // The main constuctor / legacy version dispatcher
-    public ZstdInputStream(InputStream inStream) throws IOException {
+    // The main constuctor
+    public ZstdInputStreamV04(InputStream inStream, byte[] header, int iPos) throws IOException {
         // FilterInputStream constructor
         super(inStream);
 
-        // allocate input buffer with max frame header size
-        byte[] header = new byte[Zstd.frameHeaderSizeMax()];
-        if (header == null) {
-            throw new IOException("Error allocating the frame header buffer of size " + Zstd.frameHeaderSizeMax());
-        }
-
-        // find the ZSTD version
-        int iPos = 0;
-        while (iPos < 4) {
-            iPos += in.read(header, iPos, 4 - iPos);
-        }
-
-        byte[] magic = Arrays.copyOfRange(header,0,4);
-        int version = java.nio.ByteBuffer.wrap(magic).order(java.nio.ByteOrder.LITTLE_ENDIAN).getInt() - MAGIC_BASE;
-
-        switch (version) {
-            case 6: init(inStream, header, iPos);
-                    break;
-            case 5: legacy = new ZstdInputStreamV05(inStream, header, iPos);
-                    break;
-            case 4: legacy = new ZstdInputStreamV04(inStream, header, iPos);
-                    break;
-            default: throw new IOException("Legacy version " + version + " is not supported");
-        }
-    }
-
-    // The main initialization logic
-    private void init(InputStream inStream, byte[] header, int iPos) throws IOException {
-
         // create decompression context
         ctx = createDCtx();
-        decompressBegin(ctx);
 
-        // find the block size
-        while (blockSize < 0) {
-            blockSize = findBlockSize(header, iPos);
-            if (blockSize < 0) {
-                iPos += in.read(header, iPos, -blockSize - iPos);
-            }
-        }
-
-        // allocate the input buffer
-        iBuff = new byte[blockSize];
+        /* allocate input buffer memory */
+        iBuff = new byte[iBuffSize];
         if (iBuff == null) {
-            throw new IOException("Error allocating the input buffer of size " + blockSize);
+            throw new IOException("Error allocating the input buffer of size " + iBuffSize);
         }
 
         // find the size of the output buffer
@@ -118,21 +74,16 @@ public class ZstdInputStream extends FilterInputStream {
             throw new IOException("Error allocating the output buffers of size " + oBuffSize);
         }
 
-        // consume the frame header(s) that was read by the findBlockSize / findOBuffSize
-        long consumed = 0;
-        while (consumed < iPos) {
-            int toRead = nextSrcSizeToDecompress(ctx);
-            int decoded = decompressContinue(ctx, oBuff, oPos, oBuffSize - oPos, header, consumed, toRead);
-            if (Zstd.isError(decoded)) {
-                throw new IOException("Decode Error: " + Zstd.getErrorName(decoded));
-            }
-            oEnd += decoded;
-            consumed += toRead;
+        // consume the frame header that was read by the findBlockSize / findOBuffSize
+        long toRead = nextSrcSizeToDecompress(ctx);
+        long decoded = decompressContinue(ctx, oBuff, oPos, oBuffSize - oPos, header, toRead);
+        if (Zstd.isError(decoded)) {
+            throw new IOException("Decode Error: " + Zstd.getErrorName(decoded));
         }
+        oEnd += decoded;
     }
 
     public int read(byte[] dst, int offset, int len) throws IOException {
-        if (legacy != null) return legacy.read(dst, offset, len);
         // guard agains buffer overflows
         if (len > dst.length - offset) {
             throw new IndexOutOfBoundsException("Requested lenght " +len  +
@@ -141,7 +92,7 @@ public class ZstdInputStream extends FilterInputStream {
         // the buffer is empty
         while (oEnd == oPos) {
             int iPos = 0;
-            int toRead = nextSrcSizeToDecompress(ctx);
+            long toRead = nextSrcSizeToDecompress(ctx);
 
             // Reached end of stream (-1) if there is anything more to read
             if (toRead == 0) {
@@ -156,7 +107,7 @@ public class ZstdInputStream extends FilterInputStream {
 
             // in.read is not guaranteed to return the requested size in one go
             while (iPos < toRead) {
-                int read = in.read(iBuff, iPos, toRead - iPos);
+                long read = in.read(iBuff, iPos, (int) toRead - iPos);
                 if (read > 0) {
                     iPos += read;
                 } else {
@@ -165,12 +116,11 @@ public class ZstdInputStream extends FilterInputStream {
             }
 
             // Decode
-            int decoded = decompressContinue(ctx, oBuff, oPos, oBuffSize - oPos, iBuff, 0, iPos);
-
+            long decoded = decompressContinue(ctx, oBuff, oPos, oBuffSize - oPos, iBuff, iPos);
             if (Zstd.isError(decoded)) {
                 throw new IOException("Decode Error: " + Zstd.getErrorName(decoded));
             }
-            oEnd += decoded;
+            oEnd += (int) decoded;
         }
         // return size is min(requested, available)
         int size = Math.min(len, oEnd - oPos);
@@ -181,7 +131,6 @@ public class ZstdInputStream extends FilterInputStream {
     }
 
     public int available() throws IOException {
-        if (legacy != null) return legacy.available();
         return oEnd - oPos;
     }
 
@@ -191,8 +140,7 @@ public class ZstdInputStream extends FilterInputStream {
     }
 
     /* we can skip forward only inside the buffer*/
-    public long skip(long n) throws IOException {
-        if (legacy != null) return legacy.skip(n);
+    public long skip(long n) {
         if (n <= oEnd - oPos) {
             oPos += n;
             return n;
@@ -204,11 +152,7 @@ public class ZstdInputStream extends FilterInputStream {
     }
 
     public void close() throws IOException {
-        if (legacy != null) {
-            legacy.close();
-        } else {
-            freeDCtx(ctx);
-            in.close();
-        }
+        freeDCtx(ctx);
+        in.close();
     }
 }

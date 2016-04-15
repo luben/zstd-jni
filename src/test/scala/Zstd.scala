@@ -113,7 +113,7 @@ class ZstdSpec extends FlatSpec with Checkers {
       }
     }
 
-  for (version <- List("05"))
+  for (version <- List("05", "04"))
     "ZstdInputStream" should s"be able to consume files compressed by the zstd binary version $version" in {
       val orig = new File("src/test/resources/xml")
       val file = new File(s"src/test/resources/xml_v$version.zst")
