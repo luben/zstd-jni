@@ -109,7 +109,7 @@ class ZstdSpec extends FlatSpec with Checkers {
         if (zst.drop(13) != compressed.drop(5))
           sys.error(s"Failed while ignoring the embedded size header")
       } else if (zst != compressed) {
-        sys.error(s"Failed ${zst.length} != ${compressed.length}")
+        sys.error(s"Failed original ${zst.length} != ${compressed.length} result")
       }
     }
 
