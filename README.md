@@ -93,7 +93,7 @@ You can find published releases on Maven Central.
 
 sbt dependency:
 
-    libraryDependencies += "com.github.luben" % "zstd" % "0.6.0"
+    libraryDependencies += "com.github.luben" % "zstd-jni" % "0.6.0"
 
 Link for direct download if you don't use a dependency manager:
 
