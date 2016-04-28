@@ -26,31 +26,31 @@ public class ZstdInputStream extends FilterInputStream {
     }
 
     // Opaque pointer to Zstd context object
-    private long ctx;
+    protected long ctx;
 
     // read from the frame header
-    private int blockSize = -1;
-    private int oBuffSize = -1;
+    protected int blockSize = -1;
+    protected int oBuffSize = -1;
 
     // The decompression buffer
-    private ByteBuffer oBuff = null;
-    private int oPos   = 0;
-    private int oEnd   = 0;
+    protected ByteBuffer oBuff = null;
+    protected int oPos   = 0;
+    protected int oEnd   = 0;
 
     // The input buffer
-    private byte[] iBuff  = null;
+    protected byte[] iBuff  = null;
 
-    private static final int MAGIC_BASE = 0xFD2FB520;
-    private FilterInputStream legacy = null;
+    protected static final int MAGIC_BASE = 0xFD2FB520;
+    protected FilterInputStream legacy = null;
 
     // JNI methods
-    private static native long createDCtx();
-    private static native int  decompressBegin(long ctx);
-    private static native int  freeDCtx(long ctx);
-    private static native int  findBlockSize(byte[] src, long srcSize);
-    private static native int  findOBuffSize(byte[] src, long srcSize);
-    private static native int  nextSrcSizeToDecompress(long ctx);
-    private static native int  decompressContinue(long ctx, ByteBuffer dst, long dstOffset, long dstSize, byte[] src, long srcOffset, long srcSize);
+    protected static native long createDCtx();
+    protected static native int  decompressBegin(long ctx);
+    protected static native int  freeDCtx(long ctx);
+    protected static native int  findBlockSize(byte[] src, long srcSize);
+    protected static native int  findOBuffSize(byte[] src, long srcSize);
+    protected static native int  nextSrcSizeToDecompress(long ctx);
+    protected static native int  decompressContinue(long ctx, ByteBuffer dst, long dstOffset, long dstSize, byte[] src, long srcOffset, long srcSize);
 
     // The main constuctor / legacy version dispatcher
     public ZstdInputStream(InputStream inStream) throws IOException {
