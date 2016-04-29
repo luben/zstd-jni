@@ -50,8 +50,8 @@ using [Fuzz Testing](https://en.wikipedia.org/wiki/Fuzz_testing), with both
 Therefore, it seems now safe to test Zstandard even within production
 environments.
 
-**Zstd-jni** is tracking the release branch of **Zstd** (master) without the
-compatibility support for the legacy formats.
+**Zstd-jni** is tracking the release branch of **Zstd** (master) with
+compatibility support for the legacy formats (0.5, 0.4).
 
 Building and dependencies
 -------------------------
