@@ -28,8 +28,6 @@ public class ZstdContinuousInputStream extends ZstdInputStream {
     private int toRead = 0;
     private int iPos   = 0;
 
-
-    // The main constuctor / legacy version dispatcher
     public ZstdContinuousInputStream(InputStream inStream) throws IOException {
         // ZstdInputStream constructor
         super(inStream);
@@ -86,7 +84,6 @@ public class ZstdContinuousInputStream extends ZstdInputStream {
     }
 
     public int available() throws IOException {
-        if (legacy != null) return legacy.available();
         return oEnd - oPos;
     }
 
@@ -97,7 +94,6 @@ public class ZstdContinuousInputStream extends ZstdInputStream {
 
     /* we can skip forward only inside the buffer*/
     public long skip(long n) throws IOException {
-        if (legacy != null) return legacy.skip(n);
         if (n <= oEnd - oPos) {
             oPos += n;
             return n;
@@ -109,11 +105,7 @@ public class ZstdContinuousInputStream extends ZstdInputStream {
     }
 
     public void close() throws IOException {
-        if (legacy != null) {
-            legacy.close();
-        } else {
-            freeDCtx(ctx);
-            in.close();
-        }
+        freeDCtx(ctx);
+        in.close();
     }
 }
