@@ -44,7 +44,7 @@ jniCppExtensions := Seq("c")
 
 jniGccFlags ++= Seq(
   "-std=c99", "-Wundef", "-Wshadow", "-Wcast-align", "-Wstrict-prototypes",
-  "-Wno-unused-variable", "-Isrc/native/legacy"
+  "-Wno-unused-variable"
 ) ++ (System.getProperty("os.arch") match {
   case "amd64"|"x86_64"   => Seq("-msse4")
   case "i386"             => Seq("-msse4")
@@ -83,7 +83,9 @@ jniJreIncludes := {
   }
 }
 
-jniIncludes += "-I" + jniNativeSources.value.toString
+jniIncludes ++= Seq("-I" + jniNativeSources.value.toString,
+                    "-I" + jniNativeSources.value.toString + "/common",
+                    "-I" + jniNativeSources.value.toString + "/legacy")
 
 // Where to put the compiled binaries
 jniBinPath := {

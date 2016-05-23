@@ -1,20 +1,19 @@
 /*
-    dictBuilder header file
-    Copyright (C) Yann Collet 2016
+    zstd - buffered version of compression library
+    experimental complementary API, for static linking only
+    Copyright (C) 2015-2016, Yann Collet.
 
     BSD 2-Clause License (http://www.opensource.org/licenses/bsd-license.php)
 
     Redistribution and use in source and binary forms, with or without
     modification, are permitted provided that the following conditions are
     met:
-
     * Redistributions of source code must retain the above copyright
     notice, this list of conditions and the following disclaimer.
     * Redistributions in binary form must reproduce the above
     copyright notice, this list of conditions and the following disclaimer
     in the documentation and/or other materials provided with the
     distribution.
-
     THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
     "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
     LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
@@ -28,40 +27,45 @@
     OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
     You can contact the author at :
-       - Zstd source repository : https://www.zstd.net
+    - zstd homepage : http://www.zstd.net
 */
+#ifndef ZSTD_BUFFERED_STATIC_H
+#define ZSTD_BUFFERED_STATIC_H
 
-#ifndef DICTBUILDER_H_001
-#define DICTBUILDER_H_001
+/* The objects defined into this file should be considered experimental.
+ * They are not labelled stable, as their prototype may change in the future.
+ * You can use them for tests, provide feedback, or if you can endure risk of future changes.
+ */
 
 #if defined (__cplusplus)
 extern "C" {
 #endif
 
-/*-*************************************
-*  Public functions
+/* *************************************
+*  Includes
 ***************************************/
-/*! ZDICT_trainFromBuffer() :
-    Train a dictionary from a memory buffer `samplesBuffer`,
-    where `nbSamples` samples have been stored concatenated.
-    Each sample size is provided into an orderly table `samplesSizes`.
-    Resulting dictionary will be saved into `dictBuffer`.
-    @return : size of dictionary stored into `dictBuffer` (<= `dictBufferCapacity`)
-              or an error code, which can be tested by ZDICT_isError().
-*/
-size_t ZDICT_trainFromBuffer(void* dictBuffer, size_t dictBufferCapacity,
-                             const void* samplesBuffer, const size_t* samplesSizes, unsigned nbSamples);
+#include "zstd_static.h"     /* ZSTD_parameters */
+#include "zbuff.h"
+#include "zstd_internal.h"  /* MIN  */
 
 
-/*-*************************************
-*  Helper functions
+/* *************************************
+*  Advanced Streaming functions
 ***************************************/
-unsigned ZDICT_isError(size_t errorCode);
-const char* ZDICT_getErrorName(size_t errorCode);
+ZSTDLIB_API size_t ZBUFF_compressInit_advanced(ZBUFF_CCtx* cctx,
+                                               const void* dict, size_t dictSize,
+                                               ZSTD_parameters params, U64 pledgedSrcSize);
+
+MEM_STATIC size_t ZBUFF_limitCopy(void* dst, size_t dstCapacity, const void* src, size_t srcSize)
+{
+    size_t length = MIN(dstCapacity, srcSize);
+    memcpy(dst, src, length);
+    return length;
+}
 
 
 #if defined (__cplusplus)
 }
 #endif
 
-#endif
+#endif  /* ZSTD_BUFFERED_STATIC_H */
