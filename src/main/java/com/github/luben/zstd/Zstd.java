@@ -38,6 +38,42 @@ public class Zstd {
      */
     public static native long decompress(byte[] dst, byte[] src);
 
+    /**
+     * Compresses buffer 'src' into buffer 'dst' with dictionary.
+     *
+     * Destination buffer should be sized to handle worst cases situations (input
+     * data not compressible). Worst case size evaluation is provided by function
+     * ZSTD_compressBound().
+     *
+     * @param dst the destination buffer
+     * @param dstOffset the start offset of 'dst'
+     * @param src the source buffer
+     * @param srcOffset the start offset of 'src'
+     * @param length the length of 'src'
+     * @param dict the dictionary buffer
+     * @param level compression level
+     * @return  the number of bytes written into buffer 'dst' or an error code if
+     *          it fails (which can be tested using ZSTD_isError())
+     */
+    public static native long compressUsingDict (byte[] dst, int dstOffset, byte[] src, int srcOffset, int length, byte[] dict, int level);
+
+    /**
+     * Decompresses buffer 'src' into buffer 'dst' with dictionary.
+     *
+     * Destination buffer should be sized to be larger of equal to the originalSize
+     *
+     * @param dst the destination buffer
+     * @param dstOffset the start offset of 'dst'
+     * @param src the source buffer
+     * @param srcOffset the start offset of 'src'
+     * @param length the length of 'src'
+     * @param dict the dictionary buffer
+     * @return the number of bytes decompressed into destination buffer (originalSize)
+     *          or an errorCode if it fails (which can be tested using ZSTD_isError())
+     *
+     */
+    public static native long decompressUsingDict(byte[] dst, int dstOffset, byte[] src, int srcOffset, int length, byte[] dict);
+
     /* Utility methods */
 
     /**
@@ -56,6 +92,15 @@ public class Zstd {
     public static native boolean isError(long code);
     public static native String  getErrorName(long code);
 
+    /**
+     * Creates a new dictionary to tune a kind of samples
+     *
+     * @param samples the samples buffer array
+     * @param dictBuffer the new dictionary buffer
+     * @return the number of bytes into buffer 'dictBuffer' or an error code if
+     *          it fails (which can be tested using ZSTD_isError())
+     */
+    public static native long trainFromBuffer(byte[][] samples, byte[] dictBuffer);
 
     /**
      * Constants from the zstd_static header

@@ -42,6 +42,46 @@ E2: (*env)->ReleasePrimitiveArrayCritical(env, dst, dst_buff, 0);
 E1: return size;
 }
 
+JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_compressUsingDict
+  (JNIEnv *env, jclass obj, jbyteArray dst, jint dst_offset, jbyteArray src, jint src_offset, jint src_length, jbyteArray dict, jint level) {
+    size_t size = (size_t)(0-ZSTD_error_memory_allocation);
+    jsize dst_size = (*env)->GetArrayLength(env, dst) - dst_offset;
+    jsize dict_size = (*env)->GetArrayLength(env, dict);
+    void *dst_buff = (*env)->GetPrimitiveArrayCritical(env, dst, NULL);
+    if (dst_buff == NULL) goto E1;
+    void *src_buff = (*env)->GetPrimitiveArrayCritical(env, src, NULL);
+    if (src_buff == NULL) goto E2;
+    void *dict_buff = (*env)->GetPrimitiveArrayCritical(env, dict, NULL);
+    if (dict_buff == NULL) goto E3;
+    ZSTD_CCtx* ctx = ZSTD_createCCtx();
+    size = ZSTD_compress_usingDict(ctx, dst_buff + dst_offset, (size_t) dst_size, src_buff + src_offset, (size_t) src_length, dict_buff, (size_t) dict_size, (int) level);
+    ZSTD_freeCCtx(ctx);
+    (*env)->ReleasePrimitiveArrayCritical(env, dict, dict_buff, JNI_ABORT);
+E3: (*env)->ReleasePrimitiveArrayCritical(env, src, src_buff, JNI_ABORT);
+E2: (*env)->ReleasePrimitiveArrayCritical(env, dst, dst_buff, 0);
+E1: return size;
+}
+
+JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_decompressUsingDict
+  (JNIEnv *env, jclass obj, jbyteArray dst, jint dst_offset, jbyteArray src, jint src_offset, jint src_length, jbyteArray dict) {
+    size_t size = (size_t)(0-ZSTD_error_memory_allocation);
+    jsize dst_size = (*env)->GetArrayLength(env, dst) - dst_offset;
+    jsize dict_size = (*env)->GetArrayLength(env, dict);
+    void *dst_buff = (*env)->GetPrimitiveArrayCritical(env, dst, NULL);
+    if (dst_buff == NULL) goto E1;
+    void *src_buff = (*env)->GetPrimitiveArrayCritical(env, src, NULL);
+    if (src_buff == NULL) goto E2;
+    void *dict_buff = (*env)->GetPrimitiveArrayCritical(env, dict, NULL);
+    if (dict_buff == NULL) goto E3;
+    ZSTD_DCtx* dctx = ZSTD_createDCtx();
+    size = ZSTD_decompress_usingDict(dctx, dst_buff + dst_offset, (size_t) dst_size, src_buff + src_offset, (size_t) src_length, dict_buff, (size_t) dict_size);
+    ZSTD_freeDCtx(dctx);
+    (*env)->ReleasePrimitiveArrayCritical(env, dict, dict_buff, JNI_ABORT);
+E3: (*env)->ReleasePrimitiveArrayCritical(env, src, src_buff, JNI_ABORT);
+E2: (*env)->ReleasePrimitiveArrayCritical(env, dst, dst_buff, 0);
+E1: return size;
+}
+
 /*
  * Class:     com_github_luben_zstd_Zstd
  * Method:    compressBound
