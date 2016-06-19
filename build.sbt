@@ -1,7 +1,7 @@
 
 name := "zstd-jni"
 
-version := "0.6.1"
+version := "0.7.0"
 
 scalaVersion := "2.11.8"
 
@@ -25,6 +25,7 @@ jniNativeClasses := Seq(
   "com.github.luben.zstd.Zstd",
   "com.github.luben.zstd.ZstdOutputStream",
   "com.github.luben.zstd.ZstdInputStream",
+  "com.github.luben.zstd.ZstdInputStreamV06",
   "com.github.luben.zstd.ZstdInputStreamV05",
   "com.github.luben.zstd.ZstdInputStreamV04"
 )
@@ -84,8 +85,8 @@ jniJreIncludes := {
 }
 
 jniIncludes ++= Seq("-I" + jniNativeSources.value.toString,
-                    "-I" + jniNativeSources.value.toString + "/common",
-                    "-I" + jniNativeSources.value.toString + "/legacy")
+                    "-I" + jniNativeSources.value.toString + "/common"
+                    )
 
 // Where to put the compiled binaries
 jniBinPath := {

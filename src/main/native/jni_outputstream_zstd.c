@@ -1,5 +1,5 @@
 #include <jni.h>
-#include <zstd_static.h>
+#include <zstd_internal.h>
 #include <error_public.h>
 
 /*

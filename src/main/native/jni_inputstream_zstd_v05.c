@@ -1,23 +1,11 @@
 #include <jni.h>
-#include <zstd_static.h>
 #include <error_public.h>
 #include <legacy/zstd_v05.h>
 
 # define MIN(_a, _b) (((_a) < (_b)) ? (_a) : (_b))
+#define ZSTD_BLOCKSIZE_MAX (128 * 1024)   /* define, for static allocation */
 
 /* =============================== v0.5 support =========================== */
-
-typedef struct
-{
-    U64 srcSize;       /* optional : tells how much bytes are present in the frame. Use 0 if not known. */
-    U32 windowLog;     /* largest match distance : larger == more compression, more memory needed during decompression */
-    U32 contentLog;    /* full search segment : larger == more compression, slower, more memory (useless for fast) */
-    U32 hashLog;       /* dispatch table : larger == faster, more memory */
-    U32 searchLog;     /* nb of searches : larger == more compression, slower */
-    U32 searchLength;  /* match length searched : larger == faster decompression, sometimes less compression */
-    U32 targetLength;  /* acceptable match size for optimal parser (only) : larger == more compression, slower */
-    ZSTD_strategy strategy;
-} ZSTDv05_parameters;
 
 size_t ZSTDv05_decompressBegin(ZSTDv05_DCtx* dctx);
 size_t ZSTDv05_getFrameParams(ZSTDv05_parameters* params, const void* src, size_t srcSize);

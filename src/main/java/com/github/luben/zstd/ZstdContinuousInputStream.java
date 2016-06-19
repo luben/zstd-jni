@@ -9,7 +9,6 @@ import java.lang.IndexOutOfBoundsException;
 
 import com.github.luben.zstd.util.Native;
 import com.github.luben.zstd.Zstd;
-import com.github.luben.zstd.ZstdInputStreamV05;
 
 /**
  * InputStream filter that decompresses the data provided

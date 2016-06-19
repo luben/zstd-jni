@@ -1,5 +1,5 @@
 #include <jni.h>
-#include <dictBuilder/zdict_static.h>
+#include <dictBuilder/zdict.h>
 #include <error_public.h>
 #include <stdlib.h>
 

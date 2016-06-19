@@ -1,5 +1,4 @@
 #include <jni.h>
-//#include <zstd_static.h>
 #include <mem.h>
 #include <error_public.h>
 #include <legacy/zstd_v04.h>
