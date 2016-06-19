@@ -41,7 +41,7 @@ public class ZstdInputStream extends FilterInputStream {
     protected byte[] iBuff  = null;
 
     protected static final int MAGIC_BASE = 0xFD2FB520;
-    protected FilterInputStream legacy = null;
+    protected ZstdLegacyInputStream legacy = null;
 
     // JNI methods
     protected static native long createDCtx();

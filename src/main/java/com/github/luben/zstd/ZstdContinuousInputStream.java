@@ -33,6 +33,7 @@ public class ZstdContinuousInputStream extends ZstdInputStream {
     }
 
     public int read(byte[] dst, int offset, int len) throws IOException {
+        if (legacy != null) return legacy.read_truncated(dst, offset, len);
         // guard agains buffer overflows
         if (len > dst.length - offset) {
             throw new IndexOutOfBoundsException("Requested lenght " +len  +
@@ -80,31 +81,5 @@ public class ZstdContinuousInputStream extends ZstdInputStream {
         oBuff.get(dst, offset, size);
         oPos += size;
         return size;
-    }
-
-    public int available() throws IOException {
-        return oEnd - oPos;
-    }
-
-    /* we don't support mark/reset */
-    public boolean markSupported() {
-        return false;
-    }
-
-    /* we can skip forward only inside the buffer*/
-    public long skip(long n) throws IOException {
-        if (n <= oEnd - oPos) {
-            oPos += n;
-            return n;
-        } else {
-            long skip = oEnd - oPos;
-            oPos = oEnd;
-            return skip;
-        }
-    }
-
-    public void close() throws IOException {
-        freeDCtx(ctx);
-        in.close();
     }
 }
