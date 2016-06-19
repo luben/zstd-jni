@@ -40,8 +40,6 @@ public class ZstdInputStreamV06 extends ZstdLegacyInputStream {
     // The input buffer
     protected byte[] iBuff  = null;
 
-    protected static final int MAGIC_BASE = 0xFD2FB520;
-
     // JNI methods
     protected static native long createDCtx();
     protected static native int  decompressBegin(long ctx);

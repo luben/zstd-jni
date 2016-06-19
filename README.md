@@ -51,7 +51,7 @@ Therefore, it seems now safe to test Zstandard even within production
 environments.
 
 **Zstd-jni** is tracking the release branch of **Zstd** (master) with
-compatibility support for the legacy formats (0.5, 0.4).
+compatibility support for the legacy formats (0.4, 0.5, 0.6).
 
 Building and dependencies
 -------------------------
