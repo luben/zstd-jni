@@ -83,10 +83,12 @@ public class Zstd {
      * @return the maximum size of the compressed data
      */
     public static native long    compressBound(long srcSize);
+
     /**
      * Error handling
      *
      * @param code return code/size
+     * @return if the return code signals an error
      */
 
     public static native boolean isError(long code);
@@ -102,9 +104,7 @@ public class Zstd {
      */
     public static native long trainFromBuffer(byte[][] samples, byte[] dictBuffer);
 
-    /**
-     * Constants from the zstd_static header
-     */
+    /* Constants from the zstd_static header */
     public static native int magicNumber();
     public static native int windowLogMin();
     public static native int windowLogMax();
