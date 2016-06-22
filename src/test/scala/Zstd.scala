@@ -142,10 +142,12 @@ class ZstdSpec extends FlatSpec with Checkers {
       val compressed = os.toByteArray.toSeq
       val zst = Source.fromFile(s"src/test/resources/xml-$level.zst")(Codec.ISO8859).map{char => char.toByte}.to[WrappedArray]
 
-      if (zst.length == compressed.length + 8) {
-        if (zst.drop(13) != compressed.drop(5))
-          sys.error(s"Failed while ignoring the embedded size header")
-      } else if (zst != compressed) {
+     if (zst != compressed) {
+        //for (i <- 0 until zst.length) {
+        //  if (zst(i) != compressed(i)) {
+        //    println(s"Difference at pos $i: ${zst(i)} != ${compressed(i)}")
+        //  }
+        //}
         sys.error(s"Failed original ${zst.length} != ${compressed.length} result")
       }
     }
