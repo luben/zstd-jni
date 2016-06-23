@@ -161,5 +161,5 @@ OsgiKeys.bundleSymbolicName := "com.github.luben.zstd-jni"
 OsgiKeys.exportPackage  := Seq(s"""com.github.luben.zstd;version="${version.value}"""")
 OsgiKeys.privatePackage := Seq("com.github.luben.zstd.util", "include",
   "linux.amd64", "linux.i386", "linux.aarch64", "linux.ppc64",
-  "netbsd.amd64", "aix.ppc64", "darwin.x86_64", "win.amd64", "win.x86"
+  "aix.ppc64", "darwin.x86_64", "win.amd64", "win.x86"
 )
