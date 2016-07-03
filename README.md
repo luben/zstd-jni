@@ -38,20 +38,17 @@ http://fastcompression.blogspot.com/2015/01/zstd-stronger-compression-algorithm.
 Status and availability
 -----------------------
 
-**Zstd** has not yet reached "stable format" status. It doesn't guarantee yet
-that its current compressed format will remain stable and supported in future
-versions. During this period, it can still change to adapt new optimizations
-still being investigated. "Stable Format" is projected sometimes early 2016.
-
-That being said, the library is now fairly robust, able to withstand hazards
-situations, including invalid inputs. The library reliability has been tested
-using [Fuzz Testing](https://en.wikipedia.org/wiki/Fuzz_testing), with both
+**Zstd** has just reached "stable format" status with release 0.7. This library
+provides decompression support for earlier formats also. The library is fairly
+robust, able to withstand hazards situations, including invalid inputs. The
+library reliability has been tested using
+[Fuzz Testing](https://en.wikipedia.org/wiki/Fuzz_testing), with both
 [internal tools](programs/fuzzer.c) and [external ones](http://lcamtuf.coredump.cx/afl).
 Therefore, it seems now safe to test Zstandard even within production
 environments.
 
 **Zstd-jni** is tracking the release branch of **Zstd** (master) with
-compatibility support for the legacy formats (0.4, 0.5, 0.6).
+compatibility support for the legacy formats (stating from v0.4).
 
 Building and dependencies
 -------------------------
