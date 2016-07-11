@@ -135,7 +135,8 @@ class ZstdSpec extends FlatSpec with Checkers {
 
       val os  = new ByteArrayOutputStream(Zstd.compressBound(file.length).toInt)
       val zos = new ZstdOutputStream(os, level)
-      zos.write(buff)
+      zos.write(buff(0).toInt)
+      zos.write(buff, 1, length - 1)
       zos.flush
       zos.close
 

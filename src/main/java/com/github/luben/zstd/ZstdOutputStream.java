@@ -97,6 +97,12 @@ public class ZstdOutputStream extends FilterOutputStream {
         }
     }
 
+    public void write(int i) throws IOException {
+        byte[] oneByte = new byte[1];
+        oneByte[0] = (byte) i;
+        write(oneByte, 0, 1);
+    }
+
     /**
      * Flushes the output
      *
