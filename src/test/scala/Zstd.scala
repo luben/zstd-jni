@@ -163,7 +163,8 @@ class ZstdSpec extends FlatSpec with Checkers {
       assert(zis.skip(0) == 0)
       val length = orig.length.toInt
       val buff = Array.fill[Byte](length)(0)
-      var pos  = 0;
+      buff(0)  = zis.read().toByte
+      var pos  = 1;
       while (pos < length) {
         pos += zis.read(buff, pos, length - pos)
       }
@@ -184,7 +185,8 @@ class ZstdSpec extends FlatSpec with Checkers {
       assert(zis.skip(0) == 0)
       val length = orig.length.toInt
       val buff = Array.fill[Byte](length)(0)
-      var pos  = 0;
+      buff(0)  = zis.read().toByte
+      var pos  = 1;
       while (pos < length) {
         pos += zis.read(buff, pos, length - pos)
       }

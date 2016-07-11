@@ -182,6 +182,16 @@ public class ZstdInputStream extends FilterInputStream {
         return size;
     }
 
+    public int read() throws IOException {
+        byte[] oneByte = new byte[1];
+        int result = read(oneByte, 0, 1);
+        if (result > 0) {
+            return oneByte[0] & 0xff;
+        } else {
+            return result;
+        }
+    }
+
     public int available() throws IOException {
         if (legacy != null) return legacy.available();
         return oEnd - oPos;
