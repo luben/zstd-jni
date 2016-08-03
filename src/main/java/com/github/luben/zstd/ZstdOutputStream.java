@@ -117,13 +117,11 @@ public class ZstdOutputStream extends FilterOutputStream {
         int size = 0;
         int iEnd = iBuff.position();
         // compress the remaining input
-        if (iPos != iEnd) {
-            // compress
-            size = compressEnd(ctx, oBuff, oBuffSize, iBuff, iPos, iEnd - iPos);
-            if (Zstd.isError(size))
-                throw new IOException("Compression error: " + Zstd.getErrorName(size));
-            out.write(oBuff, 0, (int) size);
-        }
+        size = compressEnd(ctx, oBuff, oBuffSize, iBuff, iPos, iEnd - iPos);
+        if (Zstd.isError(size))
+            throw new IOException("Compression error: " + Zstd.getErrorName(size));
+        out.write(oBuff, 0, (int) size);
+
         // release the resources
         freeCCtx(ctx);
         out.close();
