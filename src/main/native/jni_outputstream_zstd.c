@@ -66,14 +66,16 @@ E1: return (jint) size;
 /*
  * Class:     com_github_luben_zstd_ZstdOutputStream
  * Method:    compressEnd
- * Signature: (J[BJ)I
+ * Signature: (J[BJLjava/nio/ByteBuffer;JJ)I
  */
 JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdOutputStream_compressEnd
-  (JNIEnv *env, jclass obj, jlong ctx, jbyteArray dst, jlong dst_size) {
+  (JNIEnv *env, jclass obj, jlong ctx, jbyteArray dst, jlong dst_size, jobject src, jlong src_offset, jlong src_size) {
+    size_t size = (size_t)(0-ZSTD_error_memory_allocation);
     void *dst_buff = (*env)->GetPrimitiveArrayCritical(env, dst, NULL);
-    if (dst_buff == NULL)
-        return 0-ZSTD_error_memory_allocation;
-    size_t size = ZSTD_compressEnd((ZSTD_CCtx*)(size_t) ctx, dst_buff, dst_size);
-    (*env)->ReleasePrimitiveArrayCritical(env, dst, dst_buff, 0);
-    return (jint) size;
+    if (dst_buff == NULL) goto E1;
+    void *src_buff = (*env)->GetDirectBufferAddress(env, src);
+    if (src_buff == NULL) goto E2;
+    size = ZSTD_compressEnd((ZSTD_CCtx*)(size_t) ctx, dst_buff, dst_size, src_buff + src_offset, src_size);
+E2: (*env)->ReleasePrimitiveArrayCritical(env, dst, dst_buff, 0);
+E1: return (jint) size;
 }

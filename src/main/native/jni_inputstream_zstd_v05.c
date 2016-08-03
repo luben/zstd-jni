@@ -2,7 +2,7 @@
 #include <error_public.h>
 #include <legacy/zstd_v05.h>
 
-# define MIN(_a, _b) (((_a) < (_b)) ? (_a) : (_b))
+#define MIN(_a, _b) (((_a) < (_b)) ? (_a) : (_b))
 #define ZSTD_BLOCKSIZE_MAX (128 * 1024)   /* define, for static allocation */
 
 /* =============================== v0.5 support =========================== */

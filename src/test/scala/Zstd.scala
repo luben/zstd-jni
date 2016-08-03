@@ -144,16 +144,20 @@ class ZstdSpec extends FlatSpec with Checkers {
       val zst = Source.fromFile(s"src/test/resources/xml-$level.zst")(Codec.ISO8859).map{char => char.toByte}.to[WrappedArray]
 
      if (zst != compressed) {
-        //for (i <- 0 until zst.length) {
-        //  if (zst(i) != compressed(i)) {
-        //    println(s"Difference at pos $i: ${zst(i)} != ${compressed(i)}")
-        //  }
-        //}
+        /*
+        println("Original: " + zst.take(16) + " .. " + zst.takeRight(13))
+        println("Compress: " + compressed.take(16) + " .. " + compressed.takeRight(16))
+        for (i <- 0 until zst.length) {
+          if (zst(i) != compressed(i)) {
+            println(s"Difference at pos $i: ${zst(i)} != ${compressed(i)}")
+          }
+        }
+        */
         sys.error(s"Failed original ${zst.length} != ${compressed.length} result")
       }
     }
 
-  for (version <- List("04", "05", "06"))
+  for (version <- List("04", "05", "06", "07"))
     "ZstdInputStream" should s"be able to consume files compressed by the zstd binary version $version" in {
       val orig = new File("src/test/resources/xml")
       val file = new File(s"src/test/resources/xml_v$version.zst")
@@ -175,7 +179,7 @@ class ZstdSpec extends FlatSpec with Checkers {
         sys.error(s"Failed")
     }
 
-  for (version <- List("04", "05", "06"))
+  for (version <- List("04", "05", "06", "07"))
     "ZstdContinuousInputStream" should s"be able to consume files compressed by the zstd binary version $version" in {
       val orig = new File("src/test/resources/xml")
       val file = new File(s"src/test/resources/xml_v$version.zst")
@@ -196,5 +200,4 @@ class ZstdSpec extends FlatSpec with Checkers {
       if(original != buff.toSeq)
         sys.error(s"Failed")
     }
-
 }

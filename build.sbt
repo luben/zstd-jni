@@ -1,7 +1,7 @@
 
 name := "zstd-jni"
 
-version := "0.7.4"
+version := "0.8.0"
 
 scalaVersion := "2.11.8"
 
@@ -25,6 +25,7 @@ jniNativeClasses := Seq(
   "com.github.luben.zstd.Zstd",
   "com.github.luben.zstd.ZstdOutputStream",
   "com.github.luben.zstd.ZstdInputStream",
+  "com.github.luben.zstd.ZstdInputStreamV07",
   "com.github.luben.zstd.ZstdInputStreamV06",
   "com.github.luben.zstd.ZstdInputStreamV05",
   "com.github.luben.zstd.ZstdInputStreamV04"

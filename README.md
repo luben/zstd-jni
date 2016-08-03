@@ -38,7 +38,7 @@ http://fastcompression.blogspot.com/2015/01/zstd-stronger-compression-algorithm.
 Status and availability
 -----------------------
 
-**Zstd** has just reached "stable format" status with release 0.7. This library
+**Zstd** has just reached "final format" status with release 0.8. This library
 provides decompression support for earlier formats also. The library is fairly
 robust, able to withstand hazards situations, including invalid inputs. The
 library reliability has been tested using
@@ -48,7 +48,7 @@ Therefore, it seems now safe to test Zstandard even within production
 environments.
 
 **Zstd-jni** is tracking the release branch of **Zstd** (master) with
-compatibility support for the legacy formats (stating from v0.4).
+compatibility support for the legacy formats (since v0.4).
 
 Building and dependencies
 -------------------------
@@ -85,12 +85,12 @@ You can find published releases on Maven Central.
     <dependency>
         <groupId>com.github.luben</groupId>
         <artifactId>zstd-jni</artifactId>
-        <version>0.7.4</version>
+        <version>0.8.0</version>
     </dependency>
 
 sbt dependency:
 
-    libraryDependencies += "com.github.luben" % "zstd-jni" % "0.7.4"
+    libraryDependencies += "com.github.luben" % "zstd-jni" % "0.8.0"
 
 Link for direct download if you don't use a dependency manager:
 

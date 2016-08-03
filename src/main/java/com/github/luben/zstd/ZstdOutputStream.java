@@ -39,7 +39,7 @@ public class ZstdOutputStream extends FilterOutputStream {
     private static native int  findIBuffSize(int level);
     private static native int  compressBegin(long ctx, int level);
     private static native int  compressContinue(long ctx, byte[] dst, long dstSize, ByteBuffer src, long srcOffset, long srcSize);
-    private static native int  compressEnd(long ctx, byte[] dst, long dstSize);
+    private static native int  compressEnd(long ctx, byte[] dst, long dstSize, ByteBuffer src, long srcOffset, long srcSize);
 
     /* The constuctor */
     public ZstdOutputStream(OutputStream outStream, int level) throws IOException {
@@ -119,14 +119,11 @@ public class ZstdOutputStream extends FilterOutputStream {
         // compress the remaining input
         if (iPos != iEnd) {
             // compress
-            size = compressContinue(ctx, oBuff, oBuffSize, iBuff, iPos, iEnd - iPos);
+            size = compressEnd(ctx, oBuff, oBuffSize, iBuff, iPos, iEnd - iPos);
             if (Zstd.isError(size))
                 throw new IOException("Compression error: " + Zstd.getErrorName(size));
             out.write(oBuff, 0, (int) size);
         }
-        // wrap it
-        size = compressEnd(ctx, oBuff, oBuffSize);
-        out.write(oBuff, 0, size);
         // release the resources
         freeCCtx(ctx);
         out.close();

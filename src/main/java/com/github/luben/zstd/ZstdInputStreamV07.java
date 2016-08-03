@@ -19,7 +19,7 @@ import com.github.luben.zstd.ZstdInputStreamV05;
  *
  */
 
-public class ZstdInputStream extends FilterInputStream {
+public class ZstdInputStreamV07 extends ZstdLegacyInputStream {
 
     static {
         Native.load();
@@ -40,9 +40,6 @@ public class ZstdInputStream extends FilterInputStream {
     // The input buffer
     protected byte[] iBuff  = null;
 
-    protected static final int MAGIC_BASE = 0xFD2FB520;
-    protected ZstdLegacyInputStream legacy = null;
-
     // JNI methods
     protected static native long createDCtx();
     protected static native int  decompressBegin(long ctx);
@@ -52,43 +49,9 @@ public class ZstdInputStream extends FilterInputStream {
     protected static native int  nextSrcSizeToDecompress(long ctx);
     protected static native int  decompressContinue(long ctx, ByteBuffer dst, long dstOffset, long dstSize, byte[] src, long srcOffset, long srcSize);
 
-    // The main constuctor / legacy version dispatcher
-    public ZstdInputStream(InputStream inStream) throws IOException {
+    public ZstdInputStreamV07(InputStream inStream, byte[] header, int iPos) throws IOException {
         // FilterInputStream constructor
         super(inStream);
-
-        // allocate input buffer with max frame header size
-        byte[] header = new byte[Zstd.frameHeaderSizeMax()];
-        if (header == null) {
-            throw new IOException("Error allocating the frame header buffer of size " + Zstd.frameHeaderSizeMax());
-        }
-
-        // find the ZSTD version
-        int iPos = 0;
-        while (iPos < 4) {
-            iPos += in.read(header, iPos, 4 - iPos);
-        }
-
-        byte[] magic = Arrays.copyOfRange(header,0,4);
-        int version = java.nio.ByteBuffer.wrap(magic).order(java.nio.ByteOrder.LITTLE_ENDIAN).getInt() - MAGIC_BASE;
-
-        switch (version) {
-            case 8: init(inStream, header, iPos);
-                    break;
-            case 7: legacy = new ZstdInputStreamV07(inStream, header, iPos);
-                    break;
-            case 6: legacy = new ZstdInputStreamV06(inStream, header, iPos);
-                    break;
-            case 5: legacy = new ZstdInputStreamV05(inStream, header, iPos);
-                    break;
-            case 4: legacy = new ZstdInputStreamV04(inStream, header, iPos);
-                    break;
-            default: throw new IOException("Legacy version " + version + " is not supported");
-        }
-    }
-
-    // The main initialization logic
-    private void init(InputStream inStream, byte[] header, int iPos) throws IOException {
 
         // create decompression context
         ctx = createDCtx();
@@ -136,7 +99,6 @@ public class ZstdInputStream extends FilterInputStream {
     }
 
     public int read(byte[] dst, int offset, int len) throws IOException {
-        if (legacy != null) return legacy.read(dst, offset, len);
         // guard agains buffer overflows
         if (len > dst.length - offset) {
             throw new IndexOutOfBoundsException("Requested lenght " +len  +
@@ -184,18 +146,57 @@ public class ZstdInputStream extends FilterInputStream {
         return size;
     }
 
-    public int read() throws IOException {
-        byte[] oneByte = new byte[1];
-        int result = read(oneByte, 0, 1);
-        if (result > 0) {
-            return oneByte[0] & 0xff;
-        } else {
-            return result;
+    public int read_truncated(byte[] dst, int offset, int len) throws IOException {
+        // guard agains buffer overflows
+        if (len > dst.length - offset) {
+            throw new IndexOutOfBoundsException("Requested lenght " +len  +
+                " exceeds the buffer size " + dst.length + " from offset " + offset);
         }
+        // the output buffer is empty
+        while (oEnd == oPos) {
+            if (toRead - iPos == 0) {
+                iPos = 0;
+                toRead = nextSrcSizeToDecompress(ctx);
+            }
+
+            // Reached end of stream (-1) if there is anything more to read
+            if (toRead == 0) {
+                return -1;
+            }
+
+            // Start from the beginning if we have reached the end of the oBuff
+            if (oBuffSize - oPos < blockSize) {
+                oPos = 0;
+                oEnd = 0;
+            }
+
+            // in.read is not guaranteed to return the requested size in one go
+            while (iPos < toRead) {
+                int read = in.read(iBuff, iPos, toRead - iPos);
+                if (read > 0) {
+                    iPos += read;
+                } else {
+                    return 0;
+                }
+            }
+
+            // Decode
+            int decoded = decompressContinue(ctx, oBuff, oPos, oBuffSize - oPos, iBuff, 0, iPos);
+
+            if (Zstd.isError(decoded)) {
+                throw new IOException("Decode Error: " + Zstd.getErrorName(decoded));
+            }
+            oEnd += decoded;
+        }
+        // return size is min(requested, available)
+        int size = Math.min(len, oEnd - oPos);
+        oBuff.position(oPos);
+        oBuff.get(dst, offset, size);
+        oPos += size;
+        return size;
     }
 
     public int available() throws IOException {
-        if (legacy != null) return legacy.available();
         return oEnd - oPos;
     }
 
@@ -206,7 +207,6 @@ public class ZstdInputStream extends FilterInputStream {
 
     /* we can skip forward only inside the buffer*/
     public long skip(long n) throws IOException {
-        if (legacy != null) return legacy.skip(n);
         if (n <= oEnd - oPos) {
             oPos += n;
             return n;
@@ -218,11 +218,7 @@ public class ZstdInputStream extends FilterInputStream {
     }
 
     public void close() throws IOException {
-        if (legacy != null) {
-            legacy.close();
-        } else {
-            freeDCtx(ctx);
-            in.close();
-        }
+	freeDCtx(ctx);
+	in.close();
     }
 }
