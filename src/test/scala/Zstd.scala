@@ -27,6 +27,7 @@ class ZstdSpec extends FlatSpec with Checkers {
     }
   }
 
+
   for (level <- levels) {
     "Zstd" should s"should round-trip using streaming API at level $level" in {
       check { input: Array[Byte] =>
@@ -137,22 +138,12 @@ class ZstdSpec extends FlatSpec with Checkers {
       val zos = new ZstdOutputStream(os, level)
       zos.write(buff(0).toInt)
       zos.write(buff, 1, length - 1)
-      zos.flush
       zos.close
 
       val compressed = os.toByteArray.toSeq
       val zst = Source.fromFile(s"src/test/resources/xml-$level.zst")(Codec.ISO8859).map{char => char.toByte}.to[WrappedArray]
 
      if (zst != compressed) {
-        /*
-        println("Original: " + zst.take(16) + " .. " + zst.takeRight(13))
-        println("Compress: " + compressed.take(16) + " .. " + compressed.takeRight(16))
-        for (i <- 0 until zst.length) {
-          if (zst(i) != compressed(i)) {
-            println(s"Difference at pos $i: ${zst(i)} != ${compressed(i)}")
-          }
-        }
-        */
         sys.error(s"Failed original ${zst.length} != ${compressed.length} result")
       }
     }
