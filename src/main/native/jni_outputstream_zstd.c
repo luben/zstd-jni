@@ -4,20 +4,19 @@
 #include <error_public.h>
 
 
-/*
-
-ZSTDLIB_API ZBUFF_CCtx* ZBUFF_createCCtx(void);
-ZSTDLIB_API size_t      ZBUFF_freeCCtx(ZBUFF_CCtx* cctx);
-ZSTDLIB_API size_t ZBUFF_compressInit(ZBUFF_CCtx* cctx, int compressionLevel);
-ZSTDLIB_API size_t ZBUFF_compressInitDictionary(ZBUFF_CCtx* cctx, const void* dict, size_t dictSize, int compressionLevel);
-ZSTDLIB_API size_t ZBUFF_compressContinue(ZBUFF_CCtx* cctx, void* dst, size_t* dstCapacityPtr, const void* src, size_t* srcSizePtr);
-ZSTDLIB_API size_t ZBUFF_compressFlush(ZBUFF_CCtx* cctx, void* dst, size_t* dstCapacityPtr);
-ZSTDLIB_API size_t ZBUFF_compressEnd(ZBUFF_CCtx* cctx, void* dst, size_t* dstCapacityPtr);
-*/
-
-
+/* field IDs can't change in one instnance */
 static jfieldID src_ptr_id;
 static jfieldID dst_ptr_id;
+
+/*
+ * Class:     com_github_luben_zstd_ZstdOutputStream
+ * Method:    recommendedCOutSize
+ * Signature: ()I
+ */
+JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdOutputStream_recommendedCOutSize
+  (JNIEnv *env, jclass obj) {
+    return (jint) ZBUFF_recommendedCOutSize();
+}
 
 /*
  * Class:     com_github_luben_zstd_ZstdOutputStream

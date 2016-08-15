@@ -26,15 +26,17 @@ public class ZstdOutputStream extends FilterOutputStream {
     private long srcPtr = 0;
     private long dstPtr = 0;
     private byte[] dst = null;
-    private static final long dstSize = 128*1024 + 6;
+    private static final long dstSize = recommendedCOutSize();
 
     /* JNI methods */
+    private static native long recommendedCOutSize();
     private static native long createCCtx();
     private static native int  freeCCtx(long ctx);
     private native int  compressInit(long ctx, int level);
     private native int  compressContinue(long ctx, byte[] dst, byte[] src, int src_offset);
     private native int  compressFlush(long ctx, byte[] dst);
     private native int  compressEnd(long ctx, byte[] dst);
+
 
     /* The constuctor */
     public ZstdOutputStream(OutputStream outStream, int level) throws IOException {
@@ -79,8 +81,6 @@ public class ZstdOutputStream extends FilterOutputStream {
 
     /**
      * Flushes the output
-     *
-     * Caveat: it will flush only the completed blocks
      */
     public void flush() throws IOException {
         dstPtr = dstSize;
