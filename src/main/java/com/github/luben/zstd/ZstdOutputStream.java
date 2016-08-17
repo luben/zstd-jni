@@ -23,19 +23,19 @@ public class ZstdOutputStream extends FilterOutputStream {
 
     /* Opaque pointer to Zstd context object */
     private long ctx;
-    private long srcPtr = 0;
-    private long dstPtr = 0;
+    private long srcPos = 0;
+    private long dstPos = 0;
     private byte[] dst = null;
-    private static final long dstSize = recommendedCOutSize();
+    private static final int dstSize = (int) recommendedCOutSize();
 
     /* JNI methods */
     private static native long recommendedCOutSize();
     private static native long createCCtx();
     private static native int  freeCCtx(long ctx);
     private native int  compressInit(long ctx, int level);
-    private native int  compressContinue(long ctx, byte[] dst, byte[] src, int src_offset);
-    private native int  compressFlush(long ctx, byte[] dst);
-    private native int  compressEnd(long ctx, byte[] dst);
+    private native int  compressContinue(long ctx, byte[] dst, int dst_size, byte[] src, int src_offset, int src_size);
+    private native int  compressFlush(long ctx, byte[] dst, int dst_size);
+    private native int  compressEnd(long ctx, byte[] dst, int dst_size);
 
 
     /* The constuctor */
@@ -56,20 +56,16 @@ public class ZstdOutputStream extends FilterOutputStream {
         this(outStream, 1);
     }
 
-
     public void write(byte[] src, int offset, int len) throws IOException {
-        while (len > 0) {
-            srcPtr = (long) len;
-            dstPtr = dstSize;
-            long size = compressContinue(ctx, dst, src, offset);
+        srcPos = 0;
+        while (srcPos < len) {
+            int size = compressContinue(ctx, dst, dstSize, src, offset, len);
             if (Zstd.isError(size)) {
                 throw new IOException("Compression error: " + Zstd.getErrorName(size));
             }
-            if (dstPtr > 0) {
-                out.write(dst, 0, (int) dstPtr);
+            if (dstPos > 0) {
+                out.write(dst, 0, (int) dstPos);
             }
-            offset += srcPtr;
-            len -= srcPtr;
         }
     }
 
@@ -83,24 +79,22 @@ public class ZstdOutputStream extends FilterOutputStream {
      * Flushes the output
      */
     public void flush() throws IOException {
-        dstPtr = dstSize;
         // compress the remaining input
-        int size = compressFlush(ctx, dst);
+        int size = compressFlush(ctx, dst, dstSize);
         if (Zstd.isError(size)) {
             throw new IOException("Compression error: " + Zstd.getErrorName(size));
         }
-        out.write(dst, 0, (int) dstPtr);
+        out.write(dst, 0, (int) dstPos);
         out.flush();
     }
 
     public void close() throws IOException {
-        dstPtr = dstSize;
-        // compress the remaining input
-        int size = compressEnd(ctx, dst);
+        // compress the remaining input and close the frame
+        int size = compressEnd(ctx, dst, dstSize);
         if (Zstd.isError(size)) {
             throw new IOException("Compression error: " + Zstd.getErrorName(size));
         }
-        out.write(dst, 0, (int) dstPtr);
+        out.write(dst, 0, (int) dstPos);
 
         // release the resources
         freeCCtx(ctx);

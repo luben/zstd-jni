@@ -27,7 +27,6 @@ class ZstdSpec extends FlatSpec with Checkers {
     }
   }
 
-
   for (level <- levels) {
     "Zstd" should s"should round-trip using streaming API at level $level" in {
       check { input: Array[Byte] =>

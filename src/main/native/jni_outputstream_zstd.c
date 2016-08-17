@@ -1,12 +1,17 @@
 #include <jni.h>
 #include <zstd_internal.h>
-#include <zbuff.h>
 #include <error_public.h>
+#include <stdlib.h>
 
+/* field IDs can't change in the same VM */
+static jfieldID src_pos_id;
+static jfieldID dst_pos_id;
 
-/* field IDs can't change in one instnance */
-static jfieldID src_ptr_id;
-static jfieldID dst_ptr_id;
+typedef struct CCtx_s {
+    ZSTD_CStream *stream;
+    ZSTD_inBuffer read;
+    ZSTD_outBuffer write;
+} CCtx;
 
 /*
  * Class:     com_github_luben_zstd_ZstdOutputStream
@@ -15,7 +20,7 @@ static jfieldID dst_ptr_id;
  */
 JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdOutputStream_recommendedCOutSize
   (JNIEnv *env, jclass obj) {
-    return (jint) ZBUFF_recommendedCOutSize();
+    return (jint) ZSTD_CStreamOutSize();
 }
 
 /*
@@ -25,7 +30,11 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdOutputStream_recommendedCO
  */
 JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdOutputStream_createCCtx
   (JNIEnv *env, jclass obj) {
-    return (jlong)(size_t) ZBUFF_createCCtx();
+    CCtx *ctx = malloc(sizeof(CCtx));
+    ctx->stream = ZSTD_createCStream();
+    ctx->read.pos = 0;
+    ctx->write.pos = 0;
+    return (jlong) ctx;
 }
 
 /*
@@ -34,8 +43,11 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdOutputStream_createCCtx
  * Signature: (J)I
  */
 JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdOutputStream_freeCCtx
-  (JNIEnv *env, jclass obj, jlong ctx) {
-    return ZBUFF_freeCCtx((ZBUFF_CCtx*)(size_t) ctx);
+  (JNIEnv *env, jclass obj, jlong jctx) {
+    CCtx *ctx = (CCtx *) jctx;
+    size_t result = ZSTD_freeCStream(ctx->stream);
+    free(ctx);
+    return (jlong) result;
 }
 
 /*
@@ -44,75 +56,83 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdOutputStream_freeCCtx
  * Signature: (JI)I
  */
 JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdOutputStream_compressInit
-  (JNIEnv *env, jclass obj, jlong ctx, jint level) {
+  (JNIEnv *env, jclass obj, jlong jctx, jint level) {
+    CCtx *ctx = (CCtx *) jctx;
     jclass clazz = (*env)->GetObjectClass(env, obj);
-    src_ptr_id = (*env)->GetFieldID(env, clazz, "srcPtr", "J");
-    dst_ptr_id = (*env)->GetFieldID(env, clazz, "dstPtr", "J");
-    return ZBUFF_compressInit((ZBUFF_CCtx*)(size_t) ctx, level);
+    src_pos_id = (*env)->GetFieldID(env, clazz, "srcPos", "J");
+    dst_pos_id = (*env)->GetFieldID(env, clazz, "dstPos", "J");
+    return ZSTD_initCStream(ctx->stream, level);
 }
 
 /*
  * Class:     com_github_luben_zstd_ZstdOutputStream
  * Method:    compressContinue
- * Signature: (J[B[BJ)I
+ * Signature: (J[BI[BII)I
  */
 JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdOutputStream_compressContinue
-  (JNIEnv *env, jclass obj, jlong ctx, jbyteArray dst, jbyteArray src, jlong src_offset) {
+  (JNIEnv *env, jclass obj, jlong jctx, jbyteArray dst, jint dst_size, jbyteArray src, jint src_offset, jint src_size) {
 
-    size_t src_ptr = (size_t) (*env)->GetLongField(env, obj, src_ptr_id);
-    size_t dst_ptr = (size_t) (*env)->GetLongField(env, obj, dst_ptr_id);
-
+    CCtx *ctx = (CCtx *) jctx;
     size_t size = (size_t)(0-ZSTD_error_memory_allocation);
-    void *dst_buff = (*env)->GetPrimitiveArrayCritical(env, dst, NULL);
-    if (dst_buff == NULL) goto E1;
 
-    void *src_buff = (*env)->GetPrimitiveArrayCritical(env, src, NULL);
-    if (src_buff == NULL) goto E2;
+    ctx->read.pos = (size_t) (*env)->GetLongField(env, obj, src_pos_id);
+    ctx->read.size = (size_t) src_size;
+    ctx->write.size = (size_t) dst_size;
+    ctx->write.pos  = 0;
+    ctx->write.dst = (*env)->GetPrimitiveArrayCritical(env, dst, NULL);
+    if (ctx->write.dst == NULL) goto E1;
+    ctx->read.src = (*env)->GetPrimitiveArrayCritical(env, src, NULL) + src_offset;
+    if (ctx->read.src == NULL) goto E2;
 
+    size = ZSTD_compressStream(ctx->stream, &(ctx->write), &(ctx->read));
 
-    size = ZBUFF_compressContinue(
-                (ZBUFF_CCtx*)(size_t) ctx,
-                dst_buff, &dst_ptr,
-                src_buff + src_offset, &src_ptr
-            );
-    (*env)->ReleasePrimitiveArrayCritical(env, src, src_buff, 0);
-E2: (*env)->ReleasePrimitiveArrayCritical(env, dst, dst_buff, 0);
-
-    (*env)->SetLongField(env, obj, src_ptr_id, src_ptr);
-    (*env)->SetLongField(env, obj, dst_ptr_id, dst_ptr);
+    (*env)->ReleasePrimitiveArrayCritical(env, src, (void *) ctx->read.src, 0);
+E2: (*env)->ReleasePrimitiveArrayCritical(env, dst, ctx->write.dst, 0);
+    (*env)->SetLongField(env, obj, src_pos_id, ctx->read.pos);
+    (*env)->SetLongField(env, obj, dst_pos_id, ctx->write.pos);
 E1: return (jint) size;
 }
 
 /*
  * Class:     com_github_luben_zstd_ZstdOutputStream
  * Method:    compressEnd
- * Signature: (J[B)I
+ * Signature: (J[BI)I
  */
 JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdOutputStream_compressEnd
-  (JNIEnv *env, jclass obj, jlong ctx, jbyteArray dst) {
-    size_t dst_ptr = (size_t) (*env)->GetLongField(env, obj, dst_ptr_id);
+  (JNIEnv *env, jclass obj, jlong jctx, jbyteArray dst, jint dst_size) {
+
+    CCtx *ctx = (CCtx *) jctx;
     size_t size = (size_t)(0-ZSTD_error_memory_allocation);
-    void *dst_buff = (*env)->GetPrimitiveArrayCritical(env, dst, NULL);
-    if (dst_buff == NULL) goto E1;
-    size = ZBUFF_compressEnd((ZBUFF_CCtx*)(size_t) ctx, dst_buff, &dst_ptr);
-    (*env)->ReleasePrimitiveArrayCritical(env, dst, dst_buff, 0);
-    (*env)->SetLongField(env, obj, dst_ptr_id, dst_ptr);
-E1: return (jint) size;
+
+    ctx->write.size = (size_t) dst_size;
+    ctx->write.pos  = 0;
+    ctx->write.dst = (*env)->GetPrimitiveArrayCritical(env, dst, NULL);
+    if (ctx->write.dst != NULL) {
+        size = ZSTD_endStream(ctx->stream, &(ctx->write));
+        (*env)->ReleasePrimitiveArrayCritical(env, dst, ctx->write.dst, 0);
+        (*env)->SetLongField(env, obj, dst_pos_id, ctx->write.pos);
+    }
+    return (jint) size;
 }
 
 /*
  * Class:     com_github_luben_zstd_ZstdOutputStream
  * Method:    compressFlush
- * Signature: (J[B)I
+ * Signature: (J[BI)I
  */
 JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdOutputStream_compressFlush
-  (JNIEnv *env, jclass obj, jlong ctx, jbyteArray dst) {
-    size_t dst_ptr = (size_t) (*env)->GetLongField(env, obj, dst_ptr_id);
+  (JNIEnv *env, jclass obj, jlong jctx, jbyteArray dst, jint dst_size) {
+
+    CCtx *ctx = (CCtx *) jctx;
     size_t size = (size_t)(0-ZSTD_error_memory_allocation);
-    void *dst_buff = (*env)->GetPrimitiveArrayCritical(env, dst, NULL);
-    if (dst_buff == NULL) goto E1;
-    size = ZBUFF_compressFlush((ZBUFF_CCtx*)(size_t) ctx, dst_buff, &dst_ptr);
-    (*env)->ReleasePrimitiveArrayCritical(env, dst, dst_buff, 0);
-    (*env)->SetLongField(env, obj, dst_ptr_id, dst_ptr);
-E1: return (jint) size;
+
+    ctx->write.size = (size_t) dst_size;
+    ctx->write.pos  = 0;
+    ctx->write.dst = (*env)->GetPrimitiveArrayCritical(env, dst, NULL);
+    if (ctx->write.dst != NULL) {
+        size = ZSTD_flushStream(ctx->stream, &(ctx->write));
+        (*env)->ReleasePrimitiveArrayCritical(env, dst, ctx->write.dst, 0);
+        (*env)->SetLongField(env, obj, dst_pos_id, ctx->write.pos);
+    }
+    return (jint) size;
 }
