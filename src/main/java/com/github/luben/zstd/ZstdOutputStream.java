@@ -33,7 +33,7 @@ public class ZstdOutputStream extends FilterOutputStream {
     private static native long createCCtx();
     private static native int  freeCCtx(long ctx);
     private native int  compressInit(long ctx, int level);
-    private native int  compressContinue(long ctx, byte[] dst, int dst_size, byte[] src, int src_offset, int src_size);
+    private native int  compressContinue(long ctx, byte[] dst, int dst_size, byte[] src, int src_size);
     private native int  compressFlush(long ctx, byte[] dst, int dst_size);
     private native int  compressEnd(long ctx, byte[] dst, int dst_size);
 
@@ -57,9 +57,10 @@ public class ZstdOutputStream extends FilterOutputStream {
     }
 
     public void write(byte[] src, int offset, int len) throws IOException {
-        srcPos = 0;
-        while (srcPos < len) {
-            int size = compressContinue(ctx, dst, dstSize, src, offset, len);
+        int srcSize = offset + len;
+        srcPos = offset;
+        while (srcPos < srcSize) {
+            int size = compressContinue(ctx, dst, dstSize, src, srcSize);
             if (Zstd.isError(size)) {
                 throw new IOException("Compression error: " + Zstd.getErrorName(size));
             }

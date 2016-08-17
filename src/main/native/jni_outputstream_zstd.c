@@ -53,17 +53,17 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdOutputStream_compressInit
 /*
  * Class:     com_github_luben_zstd_ZstdOutputStream
  * Method:    compressContinue
- * Signature: (J[BI[BII)I
+ * Signature: (J[BI[BI)I
  */
 JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdOutputStream_compressContinue
-  (JNIEnv *env, jclass obj, jlong stream, jbyteArray dst, jint dst_size, jbyteArray src, jint src_offset, jint src_size) {
+  (JNIEnv *env, jclass obj, jlong stream, jbyteArray dst, jint dst_size, jbyteArray src, jint src_size) {
 
     size_t size = (size_t)(0-ZSTD_error_memory_allocation);
 
     size_t src_pos = (size_t) (*env)->GetLongField(env, obj, src_pos_id);
     void *dst_buff = (*env)->GetPrimitiveArrayCritical(env, dst, NULL);
     if (dst_buff == NULL) goto E1;
-    void *src_buff = (*env)->GetPrimitiveArrayCritical(env, src, NULL) + src_offset;
+    void *src_buff = (*env)->GetPrimitiveArrayCritical(env, src, NULL);
     if (src_buff == NULL) goto E2;
 
     ZSTD_outBuffer output = { dst_buff, dst_size, 0 };
