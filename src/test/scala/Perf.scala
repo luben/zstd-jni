@@ -55,7 +55,7 @@ class ZstdPerfSpec extends FlatSpec  {
     val c_start = System.nanoTime
     for (i <- 1 to cycles)  {
       val os = new ByteArrayOutputStream(Zstd.compressBound(size.toLong).toInt)
-      val zos   = new ZstdOutputStream(os, level)
+      val zos = new ZstdOutputStream(os, level)
       zos.write(input)
       zos.close
       if (compressed == null)
@@ -88,7 +88,7 @@ class ZstdPerfSpec extends FlatSpec  {
   for (level <- List(1, 3, 6, 9)) {
     it should s"be fast for compressable data -$level" in {
       import scala.io._
-      bench(s"Compressable data -$level", buff, level)
+      bench(s"Compressable data at $level", buff, level)
     }
   }
 

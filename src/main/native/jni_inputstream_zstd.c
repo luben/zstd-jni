@@ -1,105 +1,80 @@
 #include <jni.h>
 #include <zstd_internal.h>
 #include <error_public.h>
+#include <stdlib.h>
 
-#define ZSTD_BLOCKSIZE_MAX (128 * 1024)   /* define, for static allocation */
+/* field IDs can't change in the same VM */
+static jfieldID src_pos_id;
+static jfieldID dst_pos_id;
 
 /*
  * Class:     com_github_luben_zstd_ZstdInputStream
- * Method:    findBlockSize
- * Signature: ([BJ)I
+ * Method:    recommendedDInSize
+ * Signature: ()I
  */
-JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdInputStream_findBlockSize
-  (JNIEnv *env, jclass obj, jbyteArray src, jlong src_size) {
-    ZSTD_frameParams params;
-    void *src_buff = (*env)->GetPrimitiveArrayCritical(env, src, NULL);
-    size_t size = ZSTD_getFrameParams(&params, src_buff, (size_t) src_size);
-    (*env)->ReleasePrimitiveArrayCritical(env, src, src_buff, JNI_ABORT);
-    if (size == 0) {
-        return (jint) MIN(params.windowSize, ZSTD_BLOCKSIZE_MAX);
-    } else {
-        return (jint) -size;
-    }
+JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdInputStream_recommendedDInSize
+  (JNIEnv *env, jclass obj) {
+    return (jint) ZSTD_DStreamInSize();
 }
 
 /*
  * Class:     com_github_luben_zstd_ZstdInputStream
- * Method:    findOBuffSize
- * Signature: ([BJ)I
- */
-JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdInputStream_findOBuffSize
-  (JNIEnv *env, jclass obj, jbyteArray src, jlong src_size) {
-    ZSTD_frameParams params;
-    void *src_buff = (*env)->GetPrimitiveArrayCritical(env, src, NULL);
-    size_t size = ZSTD_getFrameParams(&params, src_buff, (size_t) src_size);
-    (*env)->ReleasePrimitiveArrayCritical(env, src, src_buff, JNI_ABORT);
-    if (size == 0) {
-        size_t block_size = MIN(params.windowSize, ZSTD_BLOCKSIZE_MAX);
-        return (jint) (params.windowSize) + block_size;
-    } else {
-        return (jint) -size;
-    }
-}
-
-/*
- * Class:     com_github_luben_zstd_ZstdInputStream
- * Method:    nextSrcSizeToDecompress
- * Signature: (J)I
- */
-JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdInputStream_nextSrcSizeToDecompress
-  (JNIEnv *env, jclass obj, jlong ctx) {
-    return (jint) ZSTD_nextSrcSizeToDecompress((ZSTD_DCtx*)(size_t) ctx);
-}
-
-/*
- * Class:     com_github_luben_zstd_ZstdInputStream
- * Method:    createDCtx
+ * Method:    createDStream
  * Signature: ()J
  */
-JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdInputStream_createDCtx
+JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdInputStream_createDStream
   (JNIEnv *env, jclass obj) {
-    return (jlong)(size_t) ZSTD_createDCtx();
+    return (jlong) ZSTD_createDStream();
 }
 
 /*
  * Class:     com_github_luben_zstd_ZstdInputStream
- * Method:    decompressBegin
+ * Method:    freeDStream
  * Signature: (J)I
  */
-JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdInputStream_decompressBegin
-  (JNIEnv *env, jclass obj, jlong ctx) {
-    return ZSTD_decompressBegin((ZSTD_DCtx*)(size_t)ctx);
+JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdInputStream_freeDStream
+  (JNIEnv *env, jclass obj, jlong stream) {
+    return ZSTD_freeDStream((ZSTD_DStream *) stream);
 }
 
 /*
  * Class:     com_github_luben_zstd_ZstdInputStream
- * Method:    freeDCtx
+ * Method:    initDStream
  * Signature: (J)I
  */
-JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdInputStream_freeDCtx
-  (JNIEnv *env, jclass obj, jlong ctx) {
-    return ZSTD_freeDCtx((ZSTD_DCtx*)(size_t)ctx);
+JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdInputStream_initDStream
+  (JNIEnv *env, jclass obj, jlong stream) {
+    jclass clazz = (*env)->GetObjectClass(env, obj);
+    src_pos_id = (*env)->GetFieldID(env, clazz, "srcPos", "J");
+    dst_pos_id = (*env)->GetFieldID(env, clazz, "dstPos", "J");
+    return ZSTD_initDStream((ZSTD_DStream *) stream);
 }
 
 /*
  * Class:     com_github_luben_zstd_ZstdInputStream
- * Method:    decompressContinue
- * Signature: (JLjava/nio/ByteBuffer;JJ[BJJ)I
+ * Method:    decompressStream
+ * Signature: (J[BI[BI)I
  */
-JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdInputStream_decompressContinue
-  (JNIEnv *env, jclass obj, jlong ctx, jobject dst, jlong dst_offset, jlong dst_size, jbyteArray src, jlong src_offset, jlong src_size) {
-    size_t size = (size_t)(0 - ZSTD_error_memory_allocation);
-    void *dst_buff = (*env)->GetDirectBufferAddress(env, dst);
+JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdInputStream_decompressStream
+  (JNIEnv *env, jclass obj, jlong stream, jbyteArray dst, jint dst_size, jbyteArray src, jint src_size) {
+
+    size_t size = (size_t)(0-ZSTD_error_memory_allocation);
+
+    size_t dst_pos = (size_t) (*env)->GetLongField(env, obj, dst_pos_id);
+
+    void *dst_buff = (*env)->GetPrimitiveArrayCritical(env, dst, NULL);
     if (dst_buff == NULL) goto E1;
     void *src_buff = (*env)->GetPrimitiveArrayCritical(env, src, NULL);
-    if (src_buff == NULL) goto E1;
+    if (src_buff == NULL) goto E2;
 
-    size = ZSTD_decompressContinue(
-            (ZSTD_DCtx*)(size_t) ctx,
-            dst_buff + dst_offset, (size_t) dst_size,
-            src_buff + src_offset, (size_t) src_size
-        );
+    ZSTD_outBuffer output = { dst_buff, dst_size, dst_pos };
+    ZSTD_inBuffer input = { src_buff, src_size, 0 };
 
-    (*env)->ReleasePrimitiveArrayCritical(env, src, src_buff, JNI_ABORT);
+    size = ZSTD_decompressStream((ZSTD_DStream *) stream, &output, &input);
+
+    (*env)->ReleasePrimitiveArrayCritical(env, src, src_buff, 0);
+E2: (*env)->ReleasePrimitiveArrayCritical(env, dst, dst_buff, 0);
+    (*env)->SetLongField(env, obj, src_pos_id, input.pos);
+    (*env)->SetLongField(env, obj, dst_pos_id, output.pos);
 E1: return (jint) size;
 }
