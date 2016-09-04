@@ -1,7 +1,7 @@
 
 name := "zstd-jni"
 
-version := "0.8.0"
+version := "1.0.0"
 
 scalaVersion := "2.11.8"
 
@@ -42,7 +42,7 @@ jniCppExtensions := Seq("c")
 
 jniGccFlags ++= Seq(
   "-std=c99", "-Wundef", "-Wshadow", "-Wcast-align", "-Wstrict-prototypes",
-  "-Wno-unused-variable"
+  "-Wno-unused-variable", "-DZSTD_LEGACY_SUPPORT=1"
 ) ++ (System.getProperty("os.arch") match {
   case "amd64"|"x86_64"   => Seq("-msse4")
   case "i386"             => Seq("-msse4")
@@ -51,7 +51,7 @@ jniGccFlags ++= Seq(
 
 // compilation on Windows with MSYS/gcc needs extra flags in order
 // to produce correct DLLs, also it alway produces position independent
-// code so let's remote the flag and silence a warning
+// code so let's remove the flag and silence a warning
 jniGccFlags := (
   if (System.getProperty("os.name").toLowerCase startsWith "win")
     jniGccFlags.value.filterNot(_ == "-fPIC") ++
@@ -62,7 +62,7 @@ jniGccFlags := (
 
 // Special case the jni platform header on windows (use the one from the repo)
 // because the JDK provided one is not compatible with the standard compliant
-// compilers but only with VisualStudio - this build uses MSYS/gcc
+// compilers but only with VisualStudio - our build uses MSYS/gcc
 jniJreIncludes := {
   jniJdkHome.value.fold(Seq.empty[String]) { home =>
     val absHome = home.getAbsolutePath
@@ -82,7 +82,8 @@ jniJreIncludes := {
 }
 
 jniIncludes ++= Seq("-I" + jniNativeSources.value.toString,
-                    "-I" + jniNativeSources.value.toString + "/common"
+                    "-I" + jniNativeSources.value.toString + "/common",
+                    "-I" + jniNativeSources.value.toString + "/legacy"
                     )
 
 // Where to put the compiled binaries

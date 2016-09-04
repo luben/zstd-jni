@@ -169,9 +169,8 @@ class ZstdSpec extends FlatSpec with Checkers {
       }
     }
 
-  /*
 
-  for (version <- List("04", "05", "06", "07"))
+  for (version <- List("04", "05", "06", "07", "08"))
     "ZstdInputStream" should s"be able to consume files compressed by the zstd binary version $version" in {
       val orig = new File("src/test/resources/xml")
       val file = new File(s"src/test/resources/xml_v$version.zst")
@@ -182,8 +181,8 @@ class ZstdSpec extends FlatSpec with Checkers {
       assert(zis.skip(0) == 0)
       val length = orig.length.toInt
       val buff = Array.fill[Byte](length)(0)
-      buff(0)  = zis.read().toByte
-      var pos  = 1;
+      var pos  = 0;
+      println(s"$version")
       while (pos < length) {
         pos += zis.read(buff, pos, length - pos)
       }
@@ -193,7 +192,8 @@ class ZstdSpec extends FlatSpec with Checkers {
         sys.error(s"Failed")
     }
 
-  for (version <- List("04", "05", "06", "07"))
+  /*
+  for (version <- List("04", "05", "06", "07", "08"))
     "ZstdContinuousInputStream" should s"be able to consume files compressed by the zstd binary version $version" in {
       val orig = new File("src/test/resources/xml")
       val file = new File(s"src/test/resources/xml_v$version.zst")
@@ -204,8 +204,7 @@ class ZstdSpec extends FlatSpec with Checkers {
       assert(zis.skip(0) == 0)
       val length = orig.length.toInt
       val buff = Array.fill[Byte](length)(0)
-      buff(0)  = zis.read().toByte
-      var pos  = 1;
+      var pos  = 0;
       while (pos < length) {
         pos += zis.read(buff, pos, length - pos)
       }

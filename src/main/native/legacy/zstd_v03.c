@@ -7,9 +7,63 @@
  * of patent rights can be found in the PATENTS file in the same directory.
  */
 
+#ifndef ERROR_H_MODULE
+#define ERROR_H_MODULE
 
-/*- Dependencies -*/
-#include "zstd_v04.h"
+#if defined (__cplusplus)
+extern "C" {
+#endif
+
+#include <stddef.h>    /* size_t, ptrdiff_t */
+#include "zstd_v03.h"
+
+/******************************************
+*  Compiler-specific
+******************************************/
+#if defined(_MSC_VER)   /* Visual Studio */
+#   include <stdlib.h>  /* _byteswap_ulong */
+#   include <intrin.h>  /* _byteswap_* */
+#endif
+#if defined (__cplusplus) || (defined (__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L) /* C99 */)
+#  define ERR_STATIC static inline
+#elif defined(_MSC_VER)
+#  define ERR_STATIC static __inline
+#elif defined(__GNUC__)
+#  define ERR_STATIC static __attribute__((unused))
+#else
+#  define ERR_STATIC static  /* this version may generate warnings for unused static functions; disable the relevant warning */
+#endif
+
+
+/******************************************
+*  Error Management
+******************************************/
+#define PREFIX(name) ZSTD_error_##name
+
+#define ERROR(name) (size_t)-PREFIX(name)
+
+#define ERROR_LIST(ITEM) \
+        ITEM(PREFIX(No_Error)) ITEM(PREFIX(GENERIC)) \
+        ITEM(PREFIX(memory_allocation)) \
+        ITEM(PREFIX(dstSize_tooSmall)) ITEM(PREFIX(srcSize_wrong)) \
+        ITEM(PREFIX(prefix_unknown)) ITEM(PREFIX(corruption_detected)) \
+        ITEM(PREFIX(tableLog_tooLarge)) ITEM(PREFIX(maxSymbolValue_tooLarge)) ITEM(PREFIX(maxSymbolValue_tooSmall)) \
+        ITEM(PREFIX(maxCode))
+
+#define ERROR_GENERATE_ENUM(ENUM) ENUM,
+typedef enum { ERROR_LIST(ERROR_GENERATE_ENUM) } ERR_codes;  /* enum is exposed, to detect & handle specific errors; compare function result to -enum value */
+
+#define ERROR_CONVERTTOSTRING(STRING) #STRING,
+#define ERROR_GENERATE_STRING(EXPR) ERROR_CONVERTTOSTRING(EXPR)
+
+ERR_STATIC unsigned ERR_isError(size_t code) { return (code > ERROR(maxCode)); }
+
+
+#if defined (__cplusplus)
+}
+#endif
+
+#endif /* ERROR_H_MODULE */
 
 
 /* ******************************************************************
@@ -63,10 +117,6 @@ extern "C" {
 /******************************************
 *  Compiler-specific
 ******************************************/
-#if defined(_MSC_VER)   /* Visual Studio */
-#   include <stdlib.h>  /* _byteswap_ulong */
-#   include <intrin.h>  /* _byteswap_* */
-#endif
 #if defined(__GNUC__)
 #  define MEM_STATIC static __attribute__((unused))
 #elif defined (__cplusplus) || (defined (__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L) /* C99 */)
@@ -182,6 +232,7 @@ MEM_STATIC void MEM_write16(void* memPtr, U16 value)
     memcpy(memPtr, &value, sizeof(value));
 }
 
+
 #endif // MEM_FORCE_MEMORY_ACCESS
 
 
@@ -221,7 +272,6 @@ MEM_STATIC U32 MEM_readLE32(const void* memPtr)
     }
 }
 
-
 MEM_STATIC U64 MEM_readLE64(const void* memPtr)
 {
     if (MEM_isLittleEndian())
@@ -249,601 +299,6 @@ MEM_STATIC size_t MEM_readLEST(const void* memPtr)
 #endif
 
 #endif /* MEM_H_MODULE */
-
-/* ******************************************************************
-   Error codes list
-   Copyright (C) 2016, Yann Collet
-
-   BSD 2-Clause License (http://www.opensource.org/licenses/bsd-license.php)
-
-   Redistribution and use in source and binary forms, with or without
-   modification, are permitted provided that the following conditions are
-   met:
-
-       * Redistributions of source code must retain the above copyright
-   notice, this list of conditions and the following disclaimer.
-       * Redistributions in binary form must reproduce the above
-   copyright notice, this list of conditions and the following disclaimer
-   in the documentation and/or other materials provided with the
-   distribution.
-
-   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-   "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-   A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-   OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-   DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-   THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-   You can contact the author at :
-   - Source repository : https://github.com/Cyan4973/zstd
-****************************************************************** */
-#ifndef ERROR_PUBLIC_H_MODULE
-#define ERROR_PUBLIC_H_MODULE
-
-#if defined (__cplusplus)
-extern "C" {
-#endif
-
-
-/* ****************************************
-*  error list
-******************************************/
-enum {
-  ZSTD_error_No_Error,
-  ZSTD_error_GENERIC,
-  ZSTD_error_prefix_unknown,
-  ZSTD_error_frameParameter_unsupported,
-  ZSTD_error_frameParameter_unsupportedBy32bitsImplementation,
-  ZSTD_error_init_missing,
-  ZSTD_error_memory_allocation,
-  ZSTD_error_stage_wrong,
-  ZSTD_error_dstSize_tooSmall,
-  ZSTD_error_srcSize_wrong,
-  ZSTD_error_corruption_detected,
-  ZSTD_error_tableLog_tooLarge,
-  ZSTD_error_maxSymbolValue_tooLarge,
-  ZSTD_error_maxSymbolValue_tooSmall,
-  ZSTD_error_maxCode
-};
-
-/* note : functions provide error codes in reverse negative order,
-          so compare with (size_t)(0-enum) */
-
-
-#if defined (__cplusplus)
-}
-#endif
-
-#endif /* ERROR_PUBLIC_H_MODULE */
-
-
-
-/*
-    zstd - standard compression library
-    Header File for static linking only
-    Copyright (C) 2014-2015, Yann Collet.
-
-    BSD 2-Clause License (http://www.opensource.org/licenses/bsd-license.php)
-
-    Redistribution and use in source and binary forms, with or without
-    modification, are permitted provided that the following conditions are
-    met:
-    * Redistributions of source code must retain the above copyright
-    notice, this list of conditions and the following disclaimer.
-    * Redistributions in binary form must reproduce the above
-    copyright notice, this list of conditions and the following disclaimer
-    in the documentation and/or other materials provided with the
-    distribution.
-    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-    "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-    LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-    A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-    OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-    SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-    LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-    DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-    THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-    (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-    OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-    You can contact the author at :
-    - zstd source repository : https://github.com/Cyan4973/zstd
-    - ztsd public forum : https://groups.google.com/forum/#!forum/lz4c
-*/
-#ifndef ZSTD_STATIC_H
-#define ZSTD_STATIC_H
-
-/* The objects defined into this file shall be considered experimental.
- * They are not considered stable, as their prototype may change in the future.
- * You can use them for tests, provide feedback, or if you can endure risks of future changes.
- */
-
-#if defined (__cplusplus)
-extern "C" {
-#endif
-
-/* *************************************
-*  Types
-***************************************/
-#define ZSTD_WINDOWLOG_MAX 26
-#define ZSTD_WINDOWLOG_MIN 18
-#define ZSTD_WINDOWLOG_ABSOLUTEMIN 11
-#define ZSTD_CONTENTLOG_MAX (ZSTD_WINDOWLOG_MAX+1)
-#define ZSTD_CONTENTLOG_MIN 4
-#define ZSTD_HASHLOG_MAX 28
-#define ZSTD_HASHLOG_MIN 4
-#define ZSTD_SEARCHLOG_MAX (ZSTD_CONTENTLOG_MAX-1)
-#define ZSTD_SEARCHLOG_MIN 1
-#define ZSTD_SEARCHLENGTH_MAX 7
-#define ZSTD_SEARCHLENGTH_MIN 4
-
-/** from faster to stronger */
-typedef enum { ZSTD_fast, ZSTD_greedy, ZSTD_lazy, ZSTD_lazy2, ZSTD_btlazy2 } ZSTD_strategy;
-
-typedef struct
-{
-    U64 srcSize;       /* optional : tells how much bytes are present in the frame. Use 0 if not known. */
-    U32 windowLog;     /* largest match distance : larger == more compression, more memory needed during decompression */
-    U32 contentLog;    /* full search segment : larger == more compression, slower, more memory (useless for fast) */
-    U32 hashLog;       /* dispatch table : larger == more memory, faster */
-    U32 searchLog;     /* nb of searches : larger == more compression, slower */
-    U32 searchLength;  /* size of matches : larger == faster decompression, sometimes less compression */
-    ZSTD_strategy strategy;
-} ZSTD_parameters;
-
-typedef ZSTDv04_Dctx ZSTD_DCtx;
-
-/* *************************************
-*  Advanced functions
-***************************************/
-/** ZSTD_decompress_usingDict
-*   Same as ZSTD_decompressDCtx, using a Dictionary content as prefix
-*   Note : dict can be NULL, in which case, it's equivalent to ZSTD_decompressDCtx() */
-static size_t ZSTD_decompress_usingDict(ZSTD_DCtx* ctx,
-                                             void* dst, size_t maxDstSize,
-                                       const void* src, size_t srcSize,
-                                       const void* dict,size_t dictSize);
-
-
-/* **************************************
-*  Streaming functions (direct mode)
-****************************************/
-static size_t ZSTD_resetDCtx(ZSTD_DCtx* dctx);
-static size_t ZSTD_getFrameParams(ZSTD_parameters* params, const void* src, size_t srcSize);
-static void   ZSTD_decompress_insertDictionary(ZSTD_DCtx* ctx, const void* src, size_t srcSize);
-
-static size_t ZSTD_nextSrcSizeToDecompress(ZSTD_DCtx* dctx);
-static size_t ZSTD_decompressContinue(ZSTD_DCtx* dctx, void* dst, size_t maxDstSize, const void* src, size_t srcSize);
-
-/**
-  Streaming decompression, bufferless mode
-
-  A ZSTD_DCtx object is required to track streaming operations.
-  Use ZSTD_createDCtx() / ZSTD_freeDCtx() to manage it.
-  A ZSTD_DCtx object can be re-used multiple times. Use ZSTD_resetDCtx() to return to fresh status.
-
-  First operation is to retrieve frame parameters, using ZSTD_getFrameParams().
-  This function doesn't consume its input. It needs enough input data to properly decode the frame header.
-  Objective is to retrieve *params.windowlog, to know minimum amount of memory required during decoding.
-  Result : 0 when successful, it means the ZSTD_parameters structure has been filled.
-           >0 : means there is not enough data into src. Provides the expected size to successfully decode header.
-           errorCode, which can be tested using ZSTD_isError() (For example, if it's not a ZSTD header)
-
-  Then, you can optionally insert a dictionary.
-  This operation must mimic the compressor behavior, otherwise decompression will fail or be corrupted.
-
-  Then it's possible to start decompression.
-  Use ZSTD_nextSrcSizeToDecompress() and ZSTD_decompressContinue() alternatively.
-  ZSTD_nextSrcSizeToDecompress() tells how much bytes to provide as 'srcSize' to ZSTD_decompressContinue().
-  ZSTD_decompressContinue() requires this exact amount of bytes, or it will fail.
-  ZSTD_decompressContinue() needs previous data blocks during decompression, up to (1 << windowlog).
-  They should preferably be located contiguously, prior to current block. Alternatively, a round buffer is also possible.
-
-  @result of ZSTD_decompressContinue() is the number of bytes regenerated within 'dst'.
-  It can be zero, which is not an error; it just means ZSTD_decompressContinue() has decoded some header.
-
-  A frame is fully decoded when ZSTD_nextSrcSizeToDecompress() returns zero.
-  Context can then be reset to start a new decompression.
-*/
-
-
-#if defined (__cplusplus)
-}
-#endif
-
-/* ******************************************************************
-   Error codes and messages
-   Copyright (C) 2013-2016, Yann Collet
-
-   BSD 2-Clause License (http://www.opensource.org/licenses/bsd-license.php)
-
-   Redistribution and use in source and binary forms, with or without
-   modification, are permitted provided that the following conditions are
-   met:
-
-       * Redistributions of source code must retain the above copyright
-   notice, this list of conditions and the following disclaimer.
-       * Redistributions in binary form must reproduce the above
-   copyright notice, this list of conditions and the following disclaimer
-   in the documentation and/or other materials provided with the
-   distribution.
-
-   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-   "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-   A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-   OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-   DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-   THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-   You can contact the author at :
-   - Source repository : https://github.com/Cyan4973/zstd
-****************************************************************** */
-/* Note : this module is expected to remain private, do not expose it */
-
-#ifndef ERROR_H_MODULE
-#define ERROR_H_MODULE
-
-#if defined (__cplusplus)
-extern "C" {
-#endif
-
-
-/* *****************************************
-*  Includes
-******************************************/
-#include <stddef.h>        /* size_t, ptrdiff_t */
-
-
-/* *****************************************
-*  Compiler-specific
-******************************************/
-#if defined(__GNUC__)
-#  define ERR_STATIC static __attribute__((unused))
-#elif defined (__cplusplus) || (defined (__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L) /* C99 */)
-#  define ERR_STATIC static inline
-#elif defined(_MSC_VER)
-#  define ERR_STATIC static __inline
-#else
-#  define ERR_STATIC static  /* this version may generate warnings for unused static functions; disable the relevant warning */
-#endif
-
-
-/* *****************************************
-*  Error Codes
-******************************************/
-#define PREFIX(name) ZSTD_error_##name
-
-#ifdef ERROR
-#  undef ERROR   /* reported already defined on VS 2015 by Rich Geldreich */
-#endif
-#define ERROR(name) (size_t)-PREFIX(name)
-
-ERR_STATIC unsigned ERR_isError(size_t code) { return (code > ERROR(maxCode)); }
-
-
-/* *****************************************
-*  Error Strings
-******************************************/
-
-ERR_STATIC const char* ERR_getErrorName(size_t code)
-{
-    static const char* codeError = "Unspecified error code";
-    switch( (size_t)(0-code) )
-    {
-    case ZSTD_error_No_Error: return "No error detected";
-    case ZSTD_error_GENERIC:  return "Error (generic)";
-    case ZSTD_error_prefix_unknown: return "Unknown frame descriptor";
-    case ZSTD_error_frameParameter_unsupported: return "Unsupported frame parameter";
-    case ZSTD_error_frameParameter_unsupportedBy32bitsImplementation: return "Frame parameter unsupported in 32-bits mode";
-    case ZSTD_error_init_missing: return "Context should be init first";
-    case ZSTD_error_memory_allocation: return "Allocation error : not enough memory";
-    case ZSTD_error_dstSize_tooSmall: return "Destination buffer is too small";
-    case ZSTD_error_srcSize_wrong: return "Src size incorrect";
-    case ZSTD_error_corruption_detected: return "Corrupted block detected";
-    case ZSTD_error_tableLog_tooLarge: return "tableLog requires too much memory";
-    case ZSTD_error_maxSymbolValue_tooLarge: return "Unsupported max possible Symbol Value : too large";
-    case ZSTD_error_maxSymbolValue_tooSmall: return "Specified maxSymbolValue is too small";
-    case ZSTD_error_maxCode:
-    default: return codeError;
-    }
-}
-
-
-#if defined (__cplusplus)
-}
-#endif
-
-#endif /* ERROR_H_MODULE */
-
-
-#endif  /* ZSTD_STATIC_H */
-
-
-/*
-    zstd_internal - common functions to include
-    Header File for include
-    Copyright (C) 2014-2015, Yann Collet.
-
-    BSD 2-Clause License (http://www.opensource.org/licenses/bsd-license.php)
-
-    Redistribution and use in source and binary forms, with or without
-    modification, are permitted provided that the following conditions are
-    met:
-    * Redistributions of source code must retain the above copyright
-    notice, this list of conditions and the following disclaimer.
-    * Redistributions in binary form must reproduce the above
-    copyright notice, this list of conditions and the following disclaimer
-    in the documentation and/or other materials provided with the
-    distribution.
-    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-    "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-    LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-    A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-    OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-    SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-    LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-    DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-    THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-    (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-    OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-    You can contact the author at :
-    - zstd source repository : https://github.com/Cyan4973/zstd
-    - ztsd public forum : https://groups.google.com/forum/#!forum/lz4c
-*/
-#ifndef ZSTD_CCOMMON_H_MODULE
-#define ZSTD_CCOMMON_H_MODULE
-
-#if defined (__cplusplus)
-extern "C" {
-#endif
-
-/* *************************************
-*  Common macros
-***************************************/
-#define MIN(a,b) ((a)<(b) ? (a) : (b))
-#define MAX(a,b) ((a)>(b) ? (a) : (b))
-
-
-/* *************************************
-*  Common constants
-***************************************/
-#define ZSTD_MAGICNUMBER 0xFD2FB524   /* v0.4 */
-
-#define KB *(1 <<10)
-#define MB *(1 <<20)
-#define GB *(1U<<30)
-
-#define BLOCKSIZE (128 KB)                 /* define, for static allocation */
-
-static const size_t ZSTD_blockHeaderSize = 3;
-static const size_t ZSTD_frameHeaderSize_min = 5;
-#define ZSTD_frameHeaderSize_max 5         /* define, for static allocation */
-
-#define BIT7 128
-#define BIT6  64
-#define BIT5  32
-#define BIT4  16
-#define BIT1   2
-#define BIT0   1
-
-#define IS_RAW BIT0
-#define IS_RLE BIT1
-
-#define MINMATCH 4
-#define REPCODE_STARTVALUE 4
-
-#define MLbits   7
-#define LLbits   6
-#define Offbits  5
-#define MaxML  ((1<<MLbits) - 1)
-#define MaxLL  ((1<<LLbits) - 1)
-#define MaxOff ((1<<Offbits)- 1)
-#define MLFSELog   10
-#define LLFSELog   10
-#define OffFSELog   9
-#define MaxSeq MAX(MaxLL, MaxML)
-
-#define MIN_SEQUENCES_SIZE (2 /*seqNb*/ + 2 /*dumps*/ + 3 /*seqTables*/ + 1 /*bitStream*/)
-#define MIN_CBLOCK_SIZE (3 /*litCSize*/ + MIN_SEQUENCES_SIZE)
-
-typedef enum { bt_compressed, bt_raw, bt_rle, bt_end } blockType_t;
-
-
-/* ******************************************
-*  Shared functions to include for inlining
-********************************************/
-static void ZSTD_copy8(void* dst, const void* src) { memcpy(dst, src, 8); }
-
-#define COPY8(d,s) { ZSTD_copy8(d,s); d+=8; s+=8; }
-
-/*! ZSTD_wildcopy : custom version of memcpy(), can copy up to 7-8 bytes too many */
-static void ZSTD_wildcopy(void* dst, const void* src, size_t length)
-{
-    const BYTE* ip = (const BYTE*)src;
-    BYTE* op = (BYTE*)dst;
-    BYTE* const oend = op + length;
-    do
-        COPY8(op, ip)
-    while (op < oend);
-}
-
-
-#if defined (__cplusplus)
-}
-#endif
-
-
-/* ******************************************************************
-   FSE : Finite State Entropy coder
-   header file
-   Copyright (C) 2013-2015, Yann Collet.
-
-   BSD 2-Clause License (http://www.opensource.org/licenses/bsd-license.php)
-
-   Redistribution and use in source and binary forms, with or without
-   modification, are permitted provided that the following conditions are
-   met:
-
-       * Redistributions of source code must retain the above copyright
-   notice, this list of conditions and the following disclaimer.
-       * Redistributions in binary form must reproduce the above
-   copyright notice, this list of conditions and the following disclaimer
-   in the documentation and/or other materials provided with the
-   distribution.
-
-   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-   "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-   A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-   OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-   DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-   THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-   You can contact the author at :
-   - Source repository : https://github.com/Cyan4973/FiniteStateEntropy
-   - Public forum : https://groups.google.com/forum/#!forum/lz4c
-****************************************************************** */
-#ifndef FSE_H
-#define FSE_H
-
-#if defined (__cplusplus)
-extern "C" {
-#endif
-
-
-/* *****************************************
-*  Includes
-******************************************/
-#include <stddef.h>    /* size_t, ptrdiff_t */
-
-
-/* *****************************************
-*  FSE simple functions
-******************************************/
-static size_t FSE_decompress(void* dst,  size_t maxDstSize,
-                const void* cSrc, size_t cSrcSize);
-/*!
-FSE_decompress():
-    Decompress FSE data from buffer 'cSrc', of size 'cSrcSize',
-    into already allocated destination buffer 'dst', of size 'maxDstSize'.
-    return : size of regenerated data (<= maxDstSize)
-             or an error code, which can be tested using FSE_isError()
-
-    ** Important ** : FSE_decompress() doesn't decompress non-compressible nor RLE data !!!
-    Why ? : making this distinction requires a header.
-    Header management is intentionally delegated to the user layer, which can better manage special cases.
-*/
-
-
-/* *****************************************
-*  Tool functions
-******************************************/
-/* Error Management */
-static unsigned    FSE_isError(size_t code);        /* tells if a return value is an error code */
-
-
-
-/* *****************************************
-*  FSE detailed API
-******************************************/
-/*!
-FSE_compress() does the following:
-1. count symbol occurrence from source[] into table count[]
-2. normalize counters so that sum(count[]) == Power_of_2 (2^tableLog)
-3. save normalized counters to memory buffer using writeNCount()
-4. build encoding table 'CTable' from normalized counters
-5. encode the data stream using encoding table 'CTable'
-
-FSE_decompress() does the following:
-1. read normalized counters with readNCount()
-2. build decoding table 'DTable' from normalized counters
-3. decode the data stream using decoding table 'DTable'
-
-The following API allows targeting specific sub-functions for advanced tasks.
-For example, it's possible to compress several blocks using the same 'CTable',
-or to save and provide normalized distribution using external method.
-*/
-
-
-/* *** DECOMPRESSION *** */
-
-/*!
-FSE_readNCount():
-   Read compactly saved 'normalizedCounter' from 'rBuffer'.
-   return : size read from 'rBuffer'
-            or an errorCode, which can be tested using FSE_isError()
-            maxSymbolValuePtr[0] and tableLogPtr[0] will also be updated with their respective values */
-static  size_t FSE_readNCount (short* normalizedCounter, unsigned* maxSymbolValuePtr, unsigned* tableLogPtr, const void* rBuffer, size_t rBuffSize);
-
-/*!
-Constructor and Destructor of type FSE_DTable
-    Note that its size depends on 'tableLog' */
-typedef unsigned FSE_DTable;   /* don't allocate that. It's just a way to be more restrictive than void* */
-
-/*!
-FSE_buildDTable():
-   Builds 'dt', which must be already allocated, using FSE_createDTable()
-   return : 0,
-            or an errorCode, which can be tested using FSE_isError() */
-static size_t FSE_buildDTable ( FSE_DTable* dt, const short* normalizedCounter, unsigned maxSymbolValue, unsigned tableLog);
-
-/*!
-FSE_decompress_usingDTable():
-   Decompress compressed source 'cSrc' of size 'cSrcSize' using 'dt'
-   into 'dst' which must be already allocated.
-   return : size of regenerated data (necessarily <= maxDstSize)
-            or an errorCode, which can be tested using FSE_isError() */
-static  size_t FSE_decompress_usingDTable(void* dst, size_t maxDstSize, const void* cSrc, size_t cSrcSize, const FSE_DTable* dt);
-
-/*!
-Tutorial :
-----------
-(Note : these functions only decompress FSE-compressed blocks.
- If block is uncompressed, use memcpy() instead
- If block is a single repeated byte, use memset() instead )
-
-The first step is to obtain the normalized frequencies of symbols.
-This can be performed by FSE_readNCount() if it was saved using FSE_writeNCount().
-'normalizedCounter' must be already allocated, and have at least 'maxSymbolValuePtr[0]+1' cells of signed short.
-In practice, that means it's necessary to know 'maxSymbolValue' beforehand,
-or size the table to handle worst case situations (typically 256).
-FSE_readNCount() will provide 'tableLog' and 'maxSymbolValue'.
-The result of FSE_readNCount() is the number of bytes read from 'rBuffer'.
-Note that 'rBufferSize' must be at least 4 bytes, even if useful information is less than that.
-If there is an error, the function will return an error code, which can be tested using FSE_isError().
-
-The next step is to build the decompression tables 'FSE_DTable' from 'normalizedCounter'.
-This is performed by the function FSE_buildDTable().
-The space required by 'FSE_DTable' must be already allocated using FSE_createDTable().
-If there is an error, the function will return an error code, which can be tested using FSE_isError().
-
-'FSE_DTable' can then be used to decompress 'cSrc', with FSE_decompress_usingDTable().
-'cSrcSize' must be strictly correct, otherwise decompression will fail.
-FSE_decompress_usingDTable() result will tell how many bytes were regenerated (<=maxDstSize).
-If there is an error, the function will return an error code, which can be tested using FSE_isError(). (ex: dst buffer too small)
-*/
-
-
-#if defined (__cplusplus)
-}
-#endif
-
-#endif  /* FSE_H */
 
 
 /* ******************************************************************
@@ -894,6 +349,7 @@ extern "C" {
 *  Since link-time-optimization is not available for all compilers,
 *  these functions are defined into a .h to be included.
 */
+
 
 /**********************************************
 *  bitStream decompression API (read backward)
@@ -962,6 +418,7 @@ MEM_STATIC unsigned BIT_highbit32 (register U32 val)
     return r;
 #   endif
 }
+
 
 
 /**********************************************************
@@ -1106,7 +563,102 @@ MEM_STATIC unsigned BIT_endOfDStream(const BIT_DStream_t* DStream)
 #endif
 
 #endif /* BITSTREAM_H_MODULE */
+/* ******************************************************************
+   Error codes and messages
+   Copyright (C) 2013-2015, Yann Collet
 
+   BSD 2-Clause License (http://www.opensource.org/licenses/bsd-license.php)
+
+   Redistribution and use in source and binary forms, with or without
+   modification, are permitted provided that the following conditions are
+   met:
+
+       * Redistributions of source code must retain the above copyright
+   notice, this list of conditions and the following disclaimer.
+       * Redistributions in binary form must reproduce the above
+   copyright notice, this list of conditions and the following disclaimer
+   in the documentation and/or other materials provided with the
+   distribution.
+
+   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+   "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+   A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+   OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+   DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+   THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+   You can contact the author at :
+   - Source repository : https://github.com/Cyan4973/FiniteStateEntropy
+   - Public forum : https://groups.google.com/forum/#!forum/lz4c
+****************************************************************** */
+#ifndef ERROR_H_MODULE
+#define ERROR_H_MODULE
+
+#if defined (__cplusplus)
+extern "C" {
+#endif
+
+
+/******************************************
+*  Compiler-specific
+******************************************/
+#if defined (__cplusplus) || (defined (__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L) /* C99 */)
+#  define ERR_STATIC static inline
+#elif defined(_MSC_VER)
+#  define ERR_STATIC static __inline
+#elif defined(__GNUC__)
+#  define ERR_STATIC static __attribute__((unused))
+#else
+#  define ERR_STATIC static  /* this version may generate warnings for unused static functions; disable the relevant warning */
+#endif
+
+
+/******************************************
+*  Error Management
+******************************************/
+#define PREFIX(name) ZSTD_error_##name
+
+#define ERROR(name) (size_t)-PREFIX(name)
+
+#define ERROR_LIST(ITEM) \
+        ITEM(PREFIX(No_Error)) ITEM(PREFIX(GENERIC)) \
+        ITEM(PREFIX(dstSize_tooSmall)) ITEM(PREFIX(srcSize_wrong)) \
+        ITEM(PREFIX(prefix_unknown)) ITEM(PREFIX(corruption_detected)) \
+        ITEM(PREFIX(tableLog_tooLarge)) ITEM(PREFIX(maxSymbolValue_tooLarge)) ITEM(PREFIX(maxSymbolValue_tooSmall)) \
+        ITEM(PREFIX(maxCode))
+
+#define ERROR_GENERATE_ENUM(ENUM) ENUM,
+typedef enum { ERROR_LIST(ERROR_GENERATE_ENUM) } ERR_codes;  /* enum is exposed, to detect & handle specific errors; compare function result to -enum value */
+
+#define ERROR_CONVERTTOSTRING(STRING) #STRING,
+#define ERROR_GENERATE_STRING(EXPR) ERROR_CONVERTTOSTRING(EXPR)
+static const char* ERR_strings[] = { ERROR_LIST(ERROR_GENERATE_STRING) };
+
+ERR_STATIC unsigned ERR_isError(size_t code) { return (code > ERROR(maxCode)); }
+
+ERR_STATIC const char* ERR_getErrorName(size_t code)
+{
+    static const char* codeError = "Unspecified error code";
+    if (ERR_isError(code)) return ERR_strings[-(int)(code)];
+    return codeError;
+}
+
+
+#if defined (__cplusplus)
+}
+#endif
+
+#endif /* ERROR_H_MODULE */
+/*
+Constructor and Destructor of type FSE_CTable
+    Note that its size depends on 'tableLog' and 'maxSymbolValue' */
+typedef unsigned FSE_CTable;   /* don't allocate that. It's just a way to be more restrictive than void* */
+typedef unsigned FSE_DTable;   /* don't allocate that. It's just a way to be more restrictive than void* */
 
 
 /* ******************************************************************
@@ -1143,30 +695,27 @@ MEM_STATIC unsigned BIT_endOfDStream(const BIT_DStream_t* DStream)
    - Source repository : https://github.com/Cyan4973/FiniteStateEntropy
    - Public forum : https://groups.google.com/forum/#!forum/lz4c
 ****************************************************************** */
-#ifndef FSE_STATIC_H
-#define FSE_STATIC_H
-
 #if defined (__cplusplus)
 extern "C" {
 #endif
 
 
-/* *****************************************
+/******************************************
 *  Static allocation
-*******************************************/
+******************************************/
 /* FSE buffer bounds */
 #define FSE_NCOUNTBOUND 512
 #define FSE_BLOCKBOUND(size) (size + (size>>7))
 #define FSE_COMPRESSBOUND(size) (FSE_NCOUNTBOUND + FSE_BLOCKBOUND(size))   /* Macro version, useful for static allocation */
 
-/* It is possible to statically allocate FSE CTable/DTable as a table of unsigned using below macros */
+/* You can statically allocate FSE CTable/DTable as a table of unsigned using below macro */
 #define FSE_CTABLE_SIZE_U32(maxTableLog, maxSymbolValue)   (1 + (1<<(maxTableLog-1)) + ((maxSymbolValue+1)*2))
 #define FSE_DTABLE_SIZE_U32(maxTableLog)                   (1 + (1<<maxTableLog))
 
 
-/* *****************************************
+/******************************************
 *  FSE advanced API
-*******************************************/
+******************************************/
 static size_t FSE_buildDTable_raw (FSE_DTable* dt, unsigned nbBits);
 /* build a fake FSE_DTable, designed to read an uncompressed bitstream where each symbol uses nbBits */
 
@@ -1174,10 +723,9 @@ static size_t FSE_buildDTable_rle (FSE_DTable* dt, unsigned char symbolValue);
 /* build a fake FSE_DTable, designed to always generate the same symbolValue */
 
 
-
-/* *****************************************
+/******************************************
 *  FSE symbol decompression API
-*******************************************/
+******************************************/
 typedef struct
 {
     size_t      state;
@@ -1191,7 +739,7 @@ static unsigned char FSE_decodeSymbol(FSE_DState_t* DStatePtr, BIT_DStream_t* bi
 
 static unsigned FSE_endOfDState(const FSE_DState_t* DStatePtr);
 
-/*!
+/*
 Let's now decompose FSE_decompress_usingDTable() into its unitary components.
 You will decode FSE-encoded symbols from the bitStream,
 and also any other bitFields you put in, **in reverse order**.
@@ -1241,16 +789,17 @@ Check also the states. There might be some symbols left there, if some high prob
 */
 
 
-/* *****************************************
+/******************************************
 *  FSE unsafe API
-*******************************************/
+******************************************/
 static unsigned char FSE_decodeSymbolFast(FSE_DState_t* DStatePtr, BIT_DStream_t* bitD);
 /* faster, but works only if nbBits is always >= 1 (otherwise, result will be corrupted) */
 
 
-/* *****************************************
-*  Implementation of inlined functions
-*******************************************/
+/******************************************
+*  Implementation of inline functions
+******************************************/
+
 /* decompression */
 
 typedef struct {
@@ -1305,9 +854,199 @@ MEM_STATIC unsigned FSE_endOfDState(const FSE_DState_t* DStatePtr)
 #if defined (__cplusplus)
 }
 #endif
+/* ******************************************************************
+   Huff0 : Huffman coder, part of New Generation Entropy library
+   header file for static linking (only)
+   Copyright (C) 2013-2015, Yann Collet
 
-#endif  /* FSE_STATIC_H */
+   BSD 2-Clause License (http://www.opensource.org/licenses/bsd-license.php)
 
+   Redistribution and use in source and binary forms, with or without
+   modification, are permitted provided that the following conditions are
+   met:
+
+       * Redistributions of source code must retain the above copyright
+   notice, this list of conditions and the following disclaimer.
+       * Redistributions in binary form must reproduce the above
+   copyright notice, this list of conditions and the following disclaimer
+   in the documentation and/or other materials provided with the
+   distribution.
+
+   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+   "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+   A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+   OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+   DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+   THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+   You can contact the author at :
+   - Source repository : https://github.com/Cyan4973/FiniteStateEntropy
+   - Public forum : https://groups.google.com/forum/#!forum/lz4c
+****************************************************************** */
+
+#if defined (__cplusplus)
+extern "C" {
+#endif
+
+/******************************************
+*  Static allocation macros
+******************************************/
+/* Huff0 buffer bounds */
+#define HUF_CTABLEBOUND 129
+#define HUF_BLOCKBOUND(size) (size + (size>>8) + 8)   /* only true if incompressible pre-filtered with fast heuristic */
+#define HUF_COMPRESSBOUND(size) (HUF_CTABLEBOUND + HUF_BLOCKBOUND(size))   /* Macro version, useful for static allocation */
+
+/* static allocation of Huff0's DTable */
+#define HUF_DTABLE_SIZE(maxTableLog)   (1 + (1<<maxTableLog))  /* nb Cells; use unsigned short for X2, unsigned int for X4 */
+#define HUF_CREATE_STATIC_DTABLEX2(DTable, maxTableLog) \
+        unsigned short DTable[HUF_DTABLE_SIZE(maxTableLog)] = { maxTableLog }
+#define HUF_CREATE_STATIC_DTABLEX4(DTable, maxTableLog) \
+        unsigned int DTable[HUF_DTABLE_SIZE(maxTableLog)] = { maxTableLog }
+#define HUF_CREATE_STATIC_DTABLEX6(DTable, maxTableLog) \
+        unsigned int DTable[HUF_DTABLE_SIZE(maxTableLog) * 3 / 2] = { maxTableLog }
+
+
+/******************************************
+*  Advanced functions
+******************************************/
+static size_t HUF_decompress4X2 (void* dst, size_t dstSize, const void* cSrc, size_t cSrcSize);   /* single-symbol decoder */
+static size_t HUF_decompress4X4 (void* dst, size_t dstSize, const void* cSrc, size_t cSrcSize);   /* double-symbols decoder */
+
+
+#if defined (__cplusplus)
+}
+#endif
+
+/*
+    zstd - standard compression library
+    Header File
+    Copyright (C) 2014-2015, Yann Collet.
+
+    BSD 2-Clause License (http://www.opensource.org/licenses/bsd-license.php)
+
+    Redistribution and use in source and binary forms, with or without
+    modification, are permitted provided that the following conditions are
+    met:
+    * Redistributions of source code must retain the above copyright
+    notice, this list of conditions and the following disclaimer.
+    * Redistributions in binary form must reproduce the above
+    copyright notice, this list of conditions and the following disclaimer
+    in the documentation and/or other materials provided with the
+    distribution.
+    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+    "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+    LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+    A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+    OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+    SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+    LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+    DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+    THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+    (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+    OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+    You can contact the author at :
+    - zstd source repository : https://github.com/Cyan4973/zstd
+    - ztsd public forum : https://groups.google.com/forum/#!forum/lz4c
+*/
+
+#if defined (__cplusplus)
+extern "C" {
+#endif
+
+/* *************************************
+*  Includes
+***************************************/
+#include <stddef.h>   /* size_t */
+
+
+/* *************************************
+*  Version
+***************************************/
+#define ZSTD_VERSION_MAJOR    0    /* for breaking interface changes  */
+#define ZSTD_VERSION_MINOR    2    /* for new (non-breaking) interface capabilities */
+#define ZSTD_VERSION_RELEASE  2    /* for tweaks, bug-fixes, or development */
+#define ZSTD_VERSION_NUMBER  (ZSTD_VERSION_MAJOR *100*100 + ZSTD_VERSION_MINOR *100 + ZSTD_VERSION_RELEASE)
+
+
+/* *************************************
+*  Advanced functions
+***************************************/
+typedef struct ZSTD_CCtx_s ZSTD_CCtx;   /* incomplete type */
+
+#if defined (__cplusplus)
+}
+#endif
+/*
+    zstd - standard compression library
+    Header File for static linking only
+    Copyright (C) 2014-2015, Yann Collet.
+
+    BSD 2-Clause License (http://www.opensource.org/licenses/bsd-license.php)
+
+    Redistribution and use in source and binary forms, with or without
+    modification, are permitted provided that the following conditions are
+    met:
+    * Redistributions of source code must retain the above copyright
+    notice, this list of conditions and the following disclaimer.
+    * Redistributions in binary form must reproduce the above
+    copyright notice, this list of conditions and the following disclaimer
+    in the documentation and/or other materials provided with the
+    distribution.
+    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+    "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+    LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+    A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+    OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+    SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+    LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+    DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+    THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+    (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+    OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+    You can contact the author at :
+    - zstd source repository : https://github.com/Cyan4973/zstd
+    - ztsd public forum : https://groups.google.com/forum/#!forum/lz4c
+*/
+
+/* The objects defined into this file should be considered experimental.
+ * They are not labelled stable, as their prototype may change in the future.
+ * You can use them for tests, provide feedback, or if you can endure risk of future changes.
+ */
+
+#if defined (__cplusplus)
+extern "C" {
+#endif
+
+/* *************************************
+*  Streaming functions
+***************************************/
+
+typedef struct ZSTD_DCtx_s ZSTD_DCtx;
+
+/*
+  Use above functions alternatively.
+  ZSTD_nextSrcSizeToDecompress() tells how much bytes to provide as 'srcSize' to ZSTD_decompressContinue().
+  ZSTD_decompressContinue() will use previous data blocks to improve compression if they are located prior to current block.
+  Result is the number of bytes regenerated within 'dst'.
+  It can be zero, which is not an error; it just means ZSTD_decompressContinue() has decoded some header.
+*/
+
+/* *************************************
+*  Prefix - version detection
+***************************************/
+#define ZSTD_magicNumber 0xFD2FB523   /* v0.3 */
+
+
+#if defined (__cplusplus)
+}
+#endif
 /* ******************************************************************
    FSE : Finite State Entropy coder
    Copyright (C) 2013-2015, Yann Collet.
@@ -1344,10 +1083,10 @@ MEM_STATIC unsigned FSE_endOfDState(const FSE_DState_t* DStatePtr)
 
 #ifndef FSE_COMMONDEFS_ONLY
 
-/* **************************************************************
+/****************************************************************
 *  Tuning parameters
 ****************************************************************/
-/*!MEMORY_USAGE :
+/* MEMORY_USAGE :
 *  Memory usage formula : N->2^N Bytes (examples : 10 -> 1KB; 12 -> 4KB ; 16 -> 64KB; 20 -> 1MB; etc.)
 *  Increasing memory usage improves compression ratio
 *  Reduced memory usage can improve speed, due to cache effect
@@ -1355,23 +1094,26 @@ MEM_STATIC unsigned FSE_endOfDState(const FSE_DState_t* DStatePtr)
 #define FSE_MAX_MEMORY_USAGE 14
 #define FSE_DEFAULT_MEMORY_USAGE 13
 
-/*!FSE_MAX_SYMBOL_VALUE :
+/* FSE_MAX_SYMBOL_VALUE :
 *  Maximum symbol value authorized.
 *  Required for proper stack allocation */
 #define FSE_MAX_SYMBOL_VALUE 255
 
 
-/* **************************************************************
+/****************************************************************
 *  template functions type & suffix
 ****************************************************************/
 #define FSE_FUNCTION_TYPE BYTE
 #define FSE_FUNCTION_EXTENSION
-#define FSE_DECODE_TYPE FSE_decode_t
 
 
+/****************************************************************
+*  Byte symbol type
+****************************************************************/
 #endif   /* !FSE_COMMONDEFS_ONLY */
 
-/* **************************************************************
+
+/****************************************************************
 *  Compiler specifics
 ****************************************************************/
 #ifdef _MSC_VER    /* Visual Studio */
@@ -1389,15 +1131,14 @@ MEM_STATIC unsigned FSE_endOfDState(const FSE_DState_t* DStatePtr)
 #endif
 
 
-/* **************************************************************
-*  Dependencies
+/****************************************************************
+*  Includes
 ****************************************************************/
 #include <stdlib.h>     /* malloc, free, qsort */
 #include <string.h>     /* memcpy, memset */
 #include <stdio.h>      /* printf (debug) */
 
-
-/* ***************************************************************
+/****************************************************************
 *  Constants
 *****************************************************************/
 #define FSE_MAX_TABLELOG  (FSE_MAX_MEMORY_USAGE-2)
@@ -1412,19 +1153,19 @@ MEM_STATIC unsigned FSE_endOfDState(const FSE_DState_t* DStatePtr)
 #endif
 
 
-/* **************************************************************
+/****************************************************************
 *  Error Management
 ****************************************************************/
 #define FSE_STATIC_ASSERT(c) { enum { FSE_static_assert = 1/(int)(!!(c)) }; }   /* use only *after* variable declarations */
 
 
-/* **************************************************************
+/****************************************************************
 *  Complex types
 ****************************************************************/
 typedef U32 DTable_max_t[FSE_DTABLE_SIZE_U32(FSE_MAX_TABLELOG)];
 
 
-/*-**************************************************************
+/****************************************************************
 *  Templates
 ****************************************************************/
 /*
@@ -1446,14 +1187,19 @@ typedef U32 DTable_max_t[FSE_DTABLE_SIZE_U32(FSE_MAX_TABLELOG)];
 #define FSE_FUNCTION_NAME(X,Y) FSE_CAT(X,Y)
 #define FSE_TYPE_NAME(X,Y) FSE_CAT(X,Y)
 
+
+/* Function templates */
+
+#define FSE_DECODE_TYPE FSE_decode_t
+
 static U32 FSE_tableStep(U32 tableSize) { return (tableSize>>1) + (tableSize>>3) + 3; }
 
-
-static size_t FSE_buildDTable(FSE_DTable* dt, const short* normalizedCounter, unsigned maxSymbolValue, unsigned tableLog)
+static size_t FSE_buildDTable
+(FSE_DTable* dt, const short* normalizedCounter, unsigned maxSymbolValue, unsigned tableLog)
 {
+    void* ptr = dt+1;
     FSE_DTableHeader DTableH;
-    void* const tdPtr = dt+1;   /* because dt is unsigned, 32-bits aligned on 32-bits */
-    FSE_DECODE_TYPE* const tableDecode = (FSE_DECODE_TYPE*) (tdPtr);
+    FSE_DECODE_TYPE* const tableDecode = (FSE_DECODE_TYPE*)ptr;
     const U32 tableSize = 1 << tableLog;
     const U32 tableMask = tableSize-1;
     const U32 step = FSE_tableStep(tableSize);
@@ -1651,8 +1397,7 @@ static size_t FSE_buildDTable_rle (FSE_DTable* dt, BYTE symbolValue)
 {
     void* ptr = dt;
     FSE_DTableHeader* const DTableH = (FSE_DTableHeader*)ptr;
-    void* dPtr = dt + 1;
-    FSE_decode_t* const cell = (FSE_decode_t*)dPtr;
+    FSE_decode_t* const cell = (FSE_decode_t*)(ptr) + 1;
 
     DTableH->tableLog = 0;
     DTableH->fastMode = 0;
@@ -1669,8 +1414,7 @@ static size_t FSE_buildDTable_raw (FSE_DTable* dt, unsigned nbBits)
 {
     void* ptr = dt;
     FSE_DTableHeader* const DTableH = (FSE_DTableHeader*)ptr;
-    void* dPtr = dt + 1;
-    FSE_decode_t* const dinfo = (FSE_decode_t*)dPtr;
+    FSE_decode_t* const dinfo = (FSE_decode_t*)(ptr) + 1;
     const unsigned tableSize = 1 << nbBits;
     const unsigned tableMask = tableSize - 1;
     const unsigned maxSymbolValue = tableMask;
@@ -1767,13 +1511,10 @@ static size_t FSE_decompress_usingDTable(void* dst, size_t originalSize,
                             const FSE_DTable* dt)
 {
     FSE_DTableHeader DTableH;
-    U32 fastMode;
-
     memcpy(&DTableH, dt, sizeof(DTableH));
-    fastMode = DTableH.fastMode;
 
     /* select fast mode (static) */
-    if (fastMode) return FSE_decompress_usingDTable_generic(dst, originalSize, cSrc, cSrcSize, dt, 1);
+    if (DTableH.fastMode) return FSE_decompress_usingDTable_generic(dst, originalSize, cSrc, cSrcSize, dt, 1);
     return FSE_decompress_usingDTable_generic(dst, originalSize, cSrc, cSrcSize, dt, 0);
 }
 
@@ -1807,174 +1548,6 @@ static size_t FSE_decompress(void* dst, size_t maxDstSize, const void* cSrc, siz
 
 
 #endif   /* FSE_COMMONDEFS_ONLY */
-
-
-/* ******************************************************************
-   Huff0 : Huffman coder, part of New Generation Entropy library
-   header file
-   Copyright (C) 2013-2015, Yann Collet.
-
-   BSD 2-Clause License (http://www.opensource.org/licenses/bsd-license.php)
-
-   Redistribution and use in source and binary forms, with or without
-   modification, are permitted provided that the following conditions are
-   met:
-
-       * Redistributions of source code must retain the above copyright
-   notice, this list of conditions and the following disclaimer.
-       * Redistributions in binary form must reproduce the above
-   copyright notice, this list of conditions and the following disclaimer
-   in the documentation and/or other materials provided with the
-   distribution.
-
-   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-   "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-   A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-   OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-   DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-   THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-   You can contact the author at :
-   - Source repository : https://github.com/Cyan4973/FiniteStateEntropy
-   - Public forum : https://groups.google.com/forum/#!forum/lz4c
-****************************************************************** */
-#ifndef HUFF0_H
-#define HUFF0_H
-
-#if defined (__cplusplus)
-extern "C" {
-#endif
-
-
-/* ****************************************
-*  Dependency
-******************************************/
-#include <stddef.h>    /* size_t */
-
-
-/* ****************************************
-*  Huff0 simple functions
-******************************************/
-static size_t HUF_decompress(void* dst,  size_t dstSize,
-                const void* cSrc, size_t cSrcSize);
-/*!
-HUF_decompress():
-    Decompress Huff0 data from buffer 'cSrc', of size 'cSrcSize',
-    into already allocated destination buffer 'dst', of size 'dstSize'.
-    'dstSize' must be the exact size of original (uncompressed) data.
-    Note : in contrast with FSE, HUF_decompress can regenerate RLE (cSrcSize==1) and uncompressed (cSrcSize==dstSize) data, because it knows size to regenerate.
-    @return : size of regenerated data (== dstSize)
-              or an error code, which can be tested using HUF_isError()
-*/
-
-
-/* ****************************************
-*  Tool functions
-******************************************/
-/* Error Management */
-static unsigned    HUF_isError(size_t code);        /* tells if a return value is an error code */
-
-
-#if defined (__cplusplus)
-}
-#endif
-
-#endif   /* HUFF0_H */
-
-
-/* ******************************************************************
-   Huff0 : Huffman coder, part of New Generation Entropy library
-   header file for static linking (only)
-   Copyright (C) 2013-2015, Yann Collet
-
-   BSD 2-Clause License (http://www.opensource.org/licenses/bsd-license.php)
-
-   Redistribution and use in source and binary forms, with or without
-   modification, are permitted provided that the following conditions are
-   met:
-
-       * Redistributions of source code must retain the above copyright
-   notice, this list of conditions and the following disclaimer.
-       * Redistributions in binary form must reproduce the above
-   copyright notice, this list of conditions and the following disclaimer
-   in the documentation and/or other materials provided with the
-   distribution.
-
-   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-   "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-   A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-   OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-   DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-   THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-   You can contact the author at :
-   - Source repository : https://github.com/Cyan4973/FiniteStateEntropy
-   - Public forum : https://groups.google.com/forum/#!forum/lz4c
-****************************************************************** */
-#ifndef HUFF0_STATIC_H
-#define HUFF0_STATIC_H
-
-#if defined (__cplusplus)
-extern "C" {
-#endif
-
-
-
-/* ****************************************
-*  Static allocation macros
-******************************************/
-/* static allocation of Huff0's DTable */
-#define HUF_DTABLE_SIZE(maxTableLog)   (1 + (1<<maxTableLog))  /* nb Cells; use unsigned short for X2, unsigned int for X4 */
-#define HUF_CREATE_STATIC_DTABLEX2(DTable, maxTableLog) \
-        unsigned short DTable[HUF_DTABLE_SIZE(maxTableLog)] = { maxTableLog }
-#define HUF_CREATE_STATIC_DTABLEX4(DTable, maxTableLog) \
-        unsigned int DTable[HUF_DTABLE_SIZE(maxTableLog)] = { maxTableLog }
-#define HUF_CREATE_STATIC_DTABLEX6(DTable, maxTableLog) \
-        unsigned int DTable[HUF_DTABLE_SIZE(maxTableLog) * 3 / 2] = { maxTableLog }
-
-
-/* ****************************************
-*  Advanced decompression functions
-******************************************/
-static size_t HUF_decompress4X2 (void* dst, size_t dstSize, const void* cSrc, size_t cSrcSize);   /* single-symbol decoder */
-static size_t HUF_decompress4X4 (void* dst, size_t dstSize, const void* cSrc, size_t cSrcSize);   /* double-symbols decoder */
-
-
-/* ****************************************
-*  Huff0 detailed API
-******************************************/
-/*!
-HUF_decompress() does the following:
-1. select the decompression algorithm (X2, X4, X6) based on pre-computed heuristics
-2. build Huffman table from save, using HUF_readDTableXn()
-3. decode 1 or 4 segments in parallel using HUF_decompressSXn_usingDTable
-
-*/
-static size_t HUF_readDTableX2 (unsigned short* DTable, const void* src, size_t srcSize);
-static size_t HUF_readDTableX4 (unsigned* DTable, const void* src, size_t srcSize);
-
-static size_t HUF_decompress4X2_usingDTable(void* dst, size_t maxDstSize, const void* cSrc, size_t cSrcSize, const unsigned short* DTable);
-static size_t HUF_decompress4X4_usingDTable(void* dst, size_t maxDstSize, const void* cSrc, size_t cSrcSize, const unsigned* DTable);
-
-
-#if defined (__cplusplus)
-}
-#endif
-
-#endif /* HUFF0_STATIC_H */
-
-
-
 /* ******************************************************************
    Huff0 : Huffman coder, part of New Generation Entropy library
    Copyright (C) 2013-2015, Yann Collet.
@@ -2006,9 +1579,10 @@ static size_t HUF_decompress4X4_usingDTable(void* dst, size_t maxDstSize, const 
 
     You can contact the author at :
     - FSE+Huff0 source repository : https://github.com/Cyan4973/FiniteStateEntropy
+    - Public forum : https://groups.google.com/forum/#!forum/lz4c
 ****************************************************************** */
 
-/* **************************************************************
+/****************************************************************
 *  Compiler specifics
 ****************************************************************/
 #if defined (__cplusplus) || (defined (__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L) /* C99 */)
@@ -2033,17 +1607,24 @@ static size_t HUF_decompress4X4_usingDTable(void* dst, size_t maxDstSize, const 
 #endif
 
 
-/* **************************************************************
+/****************************************************************
 *  Includes
 ****************************************************************/
 #include <stdlib.h>     /* malloc, free, qsort */
 #include <string.h>     /* memcpy, memset */
 #include <stdio.h>      /* printf (debug) */
 
-
-/* **************************************************************
-*  Constants
+/****************************************************************
+*  Error Management
 ****************************************************************/
+#define HUF_STATIC_ASSERT(c) { enum { HUF_static_assert = 1/(int)(!!(c)) }; }   /* use only *after* variable declarations */
+
+
+/******************************************
+*  Helper functions
+******************************************/
+static unsigned HUF_isError(size_t code) { return ERR_isError(code); }
+
 #define HUF_ABSOLUTEMAX_TABLELOG  16   /* absolute limit of HUF_MAX_TABLELOG. Beyond that value, code does not work */
 #define HUF_MAX_TABLELOG  12           /* max configured tableLog (for static allocation); can be modified up to HUF_ABSOLUTEMAX_TABLELOG */
 #define HUF_DEFAULT_TABLELOG  HUF_MAX_TABLELOG   /* tableLog by default, when not specified */
@@ -2053,15 +1634,8 @@ static size_t HUF_decompress4X4_usingDTable(void* dst, size_t maxDstSize, const 
 #endif
 
 
-/* **************************************************************
-*  Error Management
-****************************************************************/
-static unsigned HUF_isError(size_t code) { return ERR_isError(code); }
-#define HUF_STATIC_ASSERT(c) { enum { HUF_static_assert = 1/(int)(!!(c)) }; }   /* use only *after* variable declarations */
 
-
-
-/*-*******************************************************
+/*********************************************************
 *  Huff0 : Huffman block decompression
 *********************************************************/
 typedef struct { BYTE byte; BYTE nbBits; } HUF_DEltX2;   /* single-symbol decoding */
@@ -2160,12 +1734,13 @@ static size_t HUF_readDTableX2 (U16* DTable, const void* src, size_t srcSize)
     BYTE huffWeight[HUF_MAX_SYMBOL_VALUE + 1];
     U32 rankVal[HUF_ABSOLUTEMAX_TABLELOG + 1];   /* large enough for values from 0 to 16 */
     U32 tableLog = 0;
-    size_t iSize;
+    const BYTE* ip = (const BYTE*) src;
+    size_t iSize = ip[0];
     U32 nbSymbols = 0;
     U32 n;
     U32 nextRankStart;
-    void* const dtPtr = DTable + 1;
-    HUF_DEltX2* const dt = (HUF_DEltX2*)dtPtr;
+    void* ptr = DTable+1;
+    HUF_DEltX2* const dt = (HUF_DEltX2*)(ptr);
 
     HUF_STATIC_ASSERT(sizeof(HUF_DEltX2) == sizeof(U16));   /* if compilation fails here, assertion is false */
     //memset(huffWeight, 0, sizeof(huffWeight));   /* is not necessary, even though some analyzer complain ... */
@@ -2257,8 +1832,9 @@ static size_t HUF_decompress4X2_usingDTable(
         const BYTE* const istart = (const BYTE*) cSrc;
         BYTE* const ostart = (BYTE*) dst;
         BYTE* const oend = ostart + dstSize;
-        const void* const dtPtr = DTable;
-        const HUF_DEltX2* const dt = ((const HUF_DEltX2*)dtPtr) +1;
+
+        const void* ptr = DTable;
+        const HUF_DEltX2* const dt = ((const HUF_DEltX2*)ptr) +1;
         const U32 dtLog = DTable[0];
         size_t errorCode;
 
@@ -2465,9 +2041,10 @@ static size_t HUF_readDTableX4 (U32* DTable, const void* src, size_t srcSize)
     rankVal_t rankVal;
     U32 tableLog, maxW, sizeOfSort, nbSymbols;
     const U32 memLog = DTable[0];
-    size_t iSize;
-    void* dtPtr = DTable;
-    HUF_DEltX4* const dt = ((HUF_DEltX4*)dtPtr) + 1;
+    const BYTE* ip = (const BYTE*) src;
+    size_t iSize = ip[0];
+    void* ptr = DTable;
+    HUF_DEltX4* const dt = ((HUF_DEltX4*)ptr) + 1;
 
     HUF_STATIC_ASSERT(sizeof(HUF_DEltX4) == sizeof(U32));   /* if compilation fails here, assertion is false */
     if (memLog > HUF_ABSOLUTEMAX_TABLELOG) return ERROR(tableLog_tooLarge);
@@ -2509,7 +2086,7 @@ static size_t HUF_readDTableX4 (U32* DTable, const void* src, size_t srcSize)
         rankStart[0] = 0;   /* forget 0w symbols; this is beginning of weight(1) */
     }
 
-    /* Build rankVal */
+	/* Build rankVal */
     {
         const U32 minBits = tableLog+1 - maxW;
         U32 nextRankVal = 0;
@@ -2604,6 +2181,8 @@ static inline size_t HUF_decodeStreamX4(BYTE* p, BIT_DStream_t* bitDPtr, BYTE* c
     return p-pStart;
 }
 
+
+
 static size_t HUF_decompress4X4_usingDTable(
           void* dst,  size_t dstSize,
     const void* cSrc, size_t cSrcSize,
@@ -2615,8 +2194,9 @@ static size_t HUF_decompress4X4_usingDTable(
         const BYTE* const istart = (const BYTE*) cSrc;
         BYTE* const ostart = (BYTE*) dst;
         BYTE* const oend = ostart + dstSize;
-        const void* const dtPtr = DTable;
-        const HUF_DEltX4* const dt = ((const HUF_DEltX4*)dtPtr) +1;
+
+        const void* ptr = DTable;
+        const HUF_DEltX4* const dt = ((const HUF_DEltX4*)ptr) +1;
         const U32 dtLog = DTable[0];
         size_t errorCode;
 
@@ -2774,15 +2354,9 @@ static size_t HUF_decompress (void* dst, size_t dstSize, const void* cSrc, size_
     //return HUF_decompress4X4(dst, dstSize, cSrc, cSrcSize);   /* multi-streams double-symbols decoding */
     //return HUF_decompress4X6(dst, dstSize, cSrc, cSrcSize);   /* multi-streams quad-symbols decoding */
 }
-
-
-
-#endif   /* ZSTD_CCOMMON_H_MODULE */
-
-
 /*
-    zstd - decompression module fo v0.4 legacy format
-    Copyright (C) 2015-2016, Yann Collet.
+    zstd - standard compression library
+    Copyright (C) 2014-2015, Yann Collet.
 
     BSD 2-Clause License (http://www.opensource.org/licenses/bsd-license.php)
 
@@ -2816,12 +2390,29 @@ static size_t HUF_decompress (void* dst, size_t dstSize, const void* cSrc, size_
 *  Tuning parameters
 *****************************************************************/
 /*!
+*  MEMORY_USAGE :
+*  Memory usage formula : N->2^N Bytes (examples : 10 -> 1KB; 12 -> 4KB ; 16 -> 64KB; 20 -> 1MB; etc.)
+*  Increasing memory usage improves compression ratio
+*  Reduced memory usage can improve speed, due to cache effect
+*/
+#define ZSTD_MEMORY_USAGE 17
+
+/*!
  * HEAPMODE :
- * Select how default decompression function ZSTD_decompress() will allocate memory,
- * in memory stack (0), or in memory heap (1, requires malloc())
+ * Select how default compression functions will allocate memory for their hash table,
+ * in memory stack (0, fastest), or in memory heap (1, requires malloc())
+ * Note that compression context is fairly large, as a consequence heap memory is recommended.
  */
 #ifndef ZSTD_HEAPMODE
 #  define ZSTD_HEAPMODE 1
+#endif /* ZSTD_HEAPMODE */
+
+/*!
+*  LEGACY_SUPPORT :
+*  decompressor can decode older formats (starting from Zstd 0.1+)
+*/
+#ifndef ZSTD_LEGACY_SUPPORT
+#  define ZSTD_LEGACY_SUPPORT 1
 #endif
 
 
@@ -2836,6 +2427,10 @@ static size_t HUF_decompress (void* dst, size_t dstSize, const void* cSrc, size_
 /* *******************************************************
 *  Compiler specifics
 *********************************************************/
+#ifdef __AVX2__
+#  include <immintrin.h>   /* AVX2 intrinsics */
+#endif
+
 #ifdef _MSC_VER    /* Visual Studio */
 #  define FORCE_INLINE static __forceinline
 #  include <intrin.h>                    /* For Visual 2005 */
@@ -2851,126 +2446,128 @@ static size_t HUF_decompress (void* dst, size_t dstSize, const void* cSrc, size_
 #endif
 
 
-/* *************************************
-*  Local types
-***************************************/
+/* *******************************************************
+*  Constants
+*********************************************************/
+#define HASH_LOG (ZSTD_MEMORY_USAGE - 2)
+#define HASH_TABLESIZE (1 << HASH_LOG)
+#define HASH_MASK (HASH_TABLESIZE - 1)
+
+#define KNUTH 2654435761
+
+#define BIT7 128
+#define BIT6  64
+#define BIT5  32
+#define BIT4  16
+#define BIT1   2
+#define BIT0   1
+
+#define KB *(1 <<10)
+#define MB *(1 <<20)
+#define GB *(1U<<30)
+
+#define BLOCKSIZE (128 KB)                 /* define, for static allocation */
+#define MIN_SEQUENCES_SIZE (2 /*seqNb*/ + 2 /*dumps*/ + 3 /*seqTables*/ + 1 /*bitStream*/)
+#define MIN_CBLOCK_SIZE (3 /*litCSize*/ + MIN_SEQUENCES_SIZE)
+#define IS_RAW BIT0
+#define IS_RLE BIT1
+
+#define WORKPLACESIZE (BLOCKSIZE*3)
+#define MINMATCH 4
+#define MLbits   7
+#define LLbits   6
+#define Offbits  5
+#define MaxML  ((1<<MLbits )-1)
+#define MaxLL  ((1<<LLbits )-1)
+#define MaxOff   31
+#define LitFSELog  11
+#define MLFSELog   10
+#define LLFSELog   10
+#define OffFSELog   9
+#define MAX(a,b) ((a)<(b)?(b):(a))
+#define MaxSeq MAX(MaxLL, MaxML)
+
+#define LITERAL_NOENTROPY 63
+#define COMMAND_NOENTROPY 7   /* to remove */
+
+static const size_t ZSTD_blockHeaderSize = 3;
+static const size_t ZSTD_frameHeaderSize = 4;
+
+
+/* *******************************************************
+*  Memory operations
+**********************************************************/
+static void   ZSTD_copy4(void* dst, const void* src) { memcpy(dst, src, 4); }
+
+static void   ZSTD_copy8(void* dst, const void* src) { memcpy(dst, src, 8); }
+
+#define COPY8(d,s) { ZSTD_copy8(d,s); d+=8; s+=8; }
+
+/*! ZSTD_wildcopy : custom version of memcpy(), can copy up to 7-8 bytes too many */
+static void ZSTD_wildcopy(void* dst, const void* src, size_t length)
+{
+    const BYTE* ip = (const BYTE*)src;
+    BYTE* op = (BYTE*)dst;
+    BYTE* const oend = op + length;
+    do COPY8(op, ip) while (op < oend);
+}
+
+
+/* **************************************
+*  Local structures
+****************************************/
+typedef enum { bt_compressed, bt_raw, bt_rle, bt_end } blockType_t;
+
 typedef struct
 {
     blockType_t blockType;
     U32 origSize;
 } blockProperties_t;
 
-
-/* *******************************************************
-*  Memory operations
-**********************************************************/
-static void ZSTD_copy4(void* dst, const void* src) { memcpy(dst, src, 4); }
+typedef struct {
+    void* buffer;
+    U32*  offsetStart;
+    U32*  offset;
+    BYTE* offCodeStart;
+    BYTE* offCode;
+    BYTE* litStart;
+    BYTE* lit;
+    BYTE* litLengthStart;
+    BYTE* litLength;
+    BYTE* matchLengthStart;
+    BYTE* matchLength;
+    BYTE* dumpsStart;
+    BYTE* dumps;
+} seqStore_t;
 
 
 /* *************************************
 *  Error Management
 ***************************************/
-
 /*! ZSTD_isError
 *   tells if a return value is an error code */
 static unsigned ZSTD_isError(size_t code) { return ERR_isError(code); }
 
 
-/* *************************************************************
-*   Context management
-***************************************************************/
-typedef enum { ZSTDds_getFrameHeaderSize, ZSTDds_decodeFrameHeader,
-               ZSTDds_decodeBlockHeader, ZSTDds_decompressBlock } ZSTD_dStage;
-
-struct ZSTDv04_Dctx_s
-{
-    U32 LLTable[FSE_DTABLE_SIZE_U32(LLFSELog)];
-    U32 OffTable[FSE_DTABLE_SIZE_U32(OffFSELog)];
-    U32 MLTable[FSE_DTABLE_SIZE_U32(MLFSELog)];
-    const void* previousDstEnd;
-    const void* base;
-    const void* vBase;
-    const void* dictEnd;
-    size_t expected;
-    size_t headerSize;
-    ZSTD_parameters params;
-    blockType_t bType;
-    ZSTD_dStage stage;
-    const BYTE* litPtr;
-    size_t litBufSize;
-    size_t litSize;
-    BYTE litBuffer[BLOCKSIZE + 8 /* margin for wildcopy */];
-    BYTE headerBuffer[ZSTD_frameHeaderSize_max];
-};  /* typedef'd to ZSTD_DCtx within "zstd_static.h" */
-
-static size_t ZSTD_resetDCtx(ZSTD_DCtx* dctx)
-{
-    dctx->expected = ZSTD_frameHeaderSize_min;
-    dctx->stage = ZSTDds_getFrameHeaderSize;
-    dctx->previousDstEnd = NULL;
-    dctx->base = NULL;
-    dctx->vBase = NULL;
-    dctx->dictEnd = NULL;
-    return 0;
-}
-
-static ZSTD_DCtx* ZSTD_createDCtx(void)
-{
-    ZSTD_DCtx* dctx = (ZSTD_DCtx*)malloc(sizeof(ZSTD_DCtx));
-    if (dctx==NULL) return NULL;
-    ZSTD_resetDCtx(dctx);
-    return dctx;
-}
-
-static size_t ZSTD_freeDCtx(ZSTD_DCtx* dctx)
-{
-    free(dctx);
-    return 0;
-}
-
 
 /* *************************************************************
 *   Decompression section
 ***************************************************************/
-/** ZSTD_decodeFrameHeader_Part1
-*   decode the 1st part of the Frame Header, which tells Frame Header size.
-*   srcSize must be == ZSTD_frameHeaderSize_min
-*   @return : the full size of the Frame Header */
-static size_t ZSTD_decodeFrameHeader_Part1(ZSTD_DCtx* zc, const void* src, size_t srcSize)
+struct ZSTD_DCtx_s
 {
-    U32 magicNumber;
-    if (srcSize != ZSTD_frameHeaderSize_min) return ERROR(srcSize_wrong);
-    magicNumber = MEM_readLE32(src);
-    if (magicNumber != ZSTD_MAGICNUMBER) return ERROR(prefix_unknown);
-    zc->headerSize = ZSTD_frameHeaderSize_min;
-    return zc->headerSize;
-}
-
-
-static size_t ZSTD_getFrameParams(ZSTD_parameters* params, const void* src, size_t srcSize)
-{
-    U32 magicNumber;
-    if (srcSize < ZSTD_frameHeaderSize_min) return ZSTD_frameHeaderSize_max;
-    magicNumber = MEM_readLE32(src);
-    if (magicNumber != ZSTD_MAGICNUMBER) return ERROR(prefix_unknown);
-    memset(params, 0, sizeof(*params));
-    params->windowLog = (((const BYTE*)src)[4] & 15) + ZSTD_WINDOWLOG_ABSOLUTEMIN;
-    if ((((const BYTE*)src)[4] >> 4) != 0) return ERROR(frameParameter_unsupported);   /* reserved bits */
-    return 0;
-}
-
-/** ZSTD_decodeFrameHeader_Part2
-*   decode the full Frame Header
-*   srcSize must be the size provided by ZSTD_decodeFrameHeader_Part1
-*   @return : 0, or an error code, which can be tested using ZSTD_isError() */
-static size_t ZSTD_decodeFrameHeader_Part2(ZSTD_DCtx* zc, const void* src, size_t srcSize)
-{
-    size_t result;
-    if (srcSize != zc->headerSize) return ERROR(srcSize_wrong);
-    result = ZSTD_getFrameParams(&(zc->params), src, srcSize);
-    if ((MEM_32bits()) && (zc->params.windowLog > 25)) return ERROR(frameParameter_unsupportedBy32bitsImplementation);
-    return result;
-}
+    U32 LLTable[FSE_DTABLE_SIZE_U32(LLFSELog)];
+    U32 OffTable[FSE_DTABLE_SIZE_U32(OffFSELog)];
+    U32 MLTable[FSE_DTABLE_SIZE_U32(MLFSELog)];
+    void* previousDstEnd;
+    void* base;
+    size_t expected;
+    blockType_t bType;
+    U32 phase;
+    const BYTE* litPtr;
+    size_t litBufSize;
+    size_t litSize;
+    BYTE litBuffer[BLOCKSIZE + 8 /* margin for wildcopy */];
+};   /* typedef'd to ZSTD_Dctx within "zstd_static.h" */
 
 
 static size_t ZSTD_getcBlockSize(const void* src, size_t srcSize, blockProperties_t* bpPtr)
@@ -2992,7 +2589,7 @@ static size_t ZSTD_getcBlockSize(const void* src, size_t srcSize, blockPropertie
     return cSize;
 }
 
-static size_t ZSTD_copyRawBlock(void* dst, size_t maxDstSize, const void* src, size_t srcSize)
+static size_t ZSTD_copyUncompressedBlock(void* dst, size_t maxDstSize, const void* src, size_t srcSize)
 {
     if (srcSize > maxDstSize) return ERROR(dstSize_tooSmall);
     memcpy(dst, src, srcSize);
@@ -3021,24 +2618,25 @@ static size_t ZSTD_decompressLiterals(void* dst, size_t* maxDstSizePtr,
 
 
 /** ZSTD_decodeLiteralsBlock
-    @return : nb of bytes read from src (< srcSize ) */
-static size_t ZSTD_decodeLiteralsBlock(ZSTD_DCtx* dctx,
-                          const void* src, size_t srcSize)   /* note : srcSize < BLOCKSIZE */
+    @return : nb of bytes read from src (< srcSize )*/
+static size_t ZSTD_decodeLiteralsBlock(void* ctx,
+                          const void* src, size_t srcSize)
 {
-    const BYTE* const istart = (const BYTE*) src;
+    ZSTD_DCtx* dctx = (ZSTD_DCtx*)ctx;
+    const BYTE* const istart = (const BYTE* const)src;
 
     /* any compressed block with literals segment must be at least this size */
     if (srcSize < MIN_CBLOCK_SIZE) return ERROR(corruption_detected);
 
     switch(*istart & 3)
     {
-    /* compressed */
+    default:
     case 0:
         {
             size_t litSize = BLOCKSIZE;
             const size_t readSize = ZSTD_decompressLiterals(dctx->litBuffer, &litSize, src, srcSize);
             dctx->litPtr = dctx->litBuffer;
-            dctx->litBufSize = BLOCKSIZE+8;
+            dctx->litBufSize = BLOCKSIZE;
             dctx->litSize = litSize;
             return readSize;   /* works if it's an error too */
         }
@@ -3047,30 +2645,29 @@ static size_t ZSTD_decodeLiteralsBlock(ZSTD_DCtx* dctx,
             const size_t litSize = (MEM_readLE32(istart) & 0xFFFFFF) >> 2;   /* no buffer issue : srcSize >= MIN_CBLOCK_SIZE */
             if (litSize > srcSize-11)   /* risk of reading too far with wildcopy */
             {
-                if (litSize > srcSize-3) return ERROR(corruption_detected);
-                memcpy(dctx->litBuffer, istart, litSize);
-                dctx->litPtr = dctx->litBuffer;
-                dctx->litBufSize = BLOCKSIZE+8;
-                dctx->litSize = litSize;
-                return litSize+3;
-            }
-            /* direct reference into compressed stream */
+				if (litSize > srcSize-3) return ERROR(corruption_detected);
+				memcpy(dctx->litBuffer, istart, litSize);
+				dctx->litPtr = dctx->litBuffer;
+				dctx->litBufSize = BLOCKSIZE;
+				dctx->litSize = litSize;
+				return litSize+3;
+			}
+			/* direct reference into compressed stream */
             dctx->litPtr = istart+3;
             dctx->litBufSize = srcSize-3;
             dctx->litSize = litSize;
-            return litSize+3;        }
+            return litSize+3;
+        }
     case IS_RLE:
         {
             const size_t litSize = (MEM_readLE32(istart) & 0xFFFFFF) >> 2;   /* no buffer issue : srcSize >= MIN_CBLOCK_SIZE */
             if (litSize > BLOCKSIZE) return ERROR(corruption_detected);
             memset(dctx->litBuffer, istart[3], litSize);
             dctx->litPtr = dctx->litBuffer;
-            dctx->litBufSize = BLOCKSIZE+8;
+            dctx->litBufSize = BLOCKSIZE;
             dctx->litSize = litSize;
             return 4;
         }
-    default:
-        return ERROR(corruption_detected);   /* forbidden nominal case */
     }
 }
 
@@ -3115,7 +2712,7 @@ static size_t ZSTD_decodeSeqHeaders(int* nbSeq, const BYTE** dumpsPtr, size_t* d
 
     /* sequences */
     {
-        S16 norm[MaxML+1];    /* assumption : MaxML >= MaxLL >= MaxOff */
+        S16 norm[MaxML+1];    /* assumption : MaxML >= MaxLL and MaxOff */
         size_t headerSize;
 
         /* Build DTables */
@@ -3206,6 +2803,7 @@ static void ZSTD_decodeSequence(seq_t* seq, seqState_t* seqState)
     /* Literal length */
     litLength = FSE_decodeSymbol(&(seqState->stateLL), &(seqState->DStream));
     prevOffset = litLength ? seq->offset : seqState->prevOffset;
+    seqState->prevOffset = seq->offset;
     if (litLength == MaxLL)
     {
         U32 add = *dumps++;
@@ -3220,7 +2818,7 @@ static void ZSTD_decodeSequence(seq_t* seq, seqState_t* seqState)
 
     /* Offset */
     {
-        static const U32 offsetPrefix[MaxOff+1] = {
+        static const size_t offsetPrefix[MaxOff+1] = {  /* note : size_t faster than U32 */
                 1 /*fake*/, 1, 2, 4, 8, 16, 32, 64, 128, 256,
                 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072, 262144,
                 524288, 1048576, 2097152, 4194304, 8388608, 16777216, 33554432, /*fake*/ 1, 1, 1, 1, 1 };
@@ -3232,7 +2830,6 @@ static void ZSTD_decodeSequence(seq_t* seq, seqState_t* seqState)
         offset = offsetPrefix[offsetCode] + BIT_readBits(&(seqState->DStream), nbBits);
         if (MEM_32bits()) BIT_reloadDStream(&(seqState->DStream));
         if (offsetCode==0) offset = prevOffset;   /* cmove */
-        if (offsetCode | !litLength) seqState->prevOffset = seq->offset;   /* cmove */
     }
 
     /* MatchLength */
@@ -3259,23 +2856,22 @@ static void ZSTD_decodeSequence(seq_t* seq, seqState_t* seqState)
 
 
 static size_t ZSTD_execSequence(BYTE* op,
-                                BYTE* const oend, seq_t sequence,
-                                const BYTE** litPtr, const BYTE* const litLimit_8,
-                                const BYTE* const base, const BYTE* const vBase, const BYTE* const dictEnd)
+                                seq_t sequence,
+                                const BYTE** litPtr, const BYTE* const litLimit,
+                                BYTE* const base, BYTE* const oend)
 {
-    static const int dec32table[] = { 0, 1, 2, 1, 4, 4, 4, 4 };   /* added */
-    static const int dec64table[] = { 8, 8, 8, 7, 8, 9,10,11 };   /* substracted */
+    static const int dec32table[] = {0, 1, 2, 1, 4, 4, 4, 4};   /* added */
+    static const int dec64table[] = {8, 8, 8, 7, 8, 9,10,11};   /* substracted */
+    const BYTE* const ostart = op;
     BYTE* const oLitEnd = op + sequence.litLength;
-    const size_t sequenceLength = sequence.litLength + sequence.matchLength;
-    BYTE* const oMatchEnd = op + sequenceLength;   /* risk : address space overflow (32-bits) */
+    BYTE* const oMatchEnd = op + sequence.litLength + sequence.matchLength;   /* risk : address space overflow (32-bits) */
     BYTE* const oend_8 = oend-8;
     const BYTE* const litEnd = *litPtr + sequence.litLength;
-    const BYTE* match = oLitEnd - sequence.offset;
 
-    /* check */
+    /* checks */
     if (oLitEnd > oend_8) return ERROR(dstSize_tooSmall);   /* last match must start at a minimum distance of 8 from oend */
     if (oMatchEnd > oend) return ERROR(dstSize_tooSmall);   /* overwrite beyond dst buffer */
-    if (litEnd > litLimit_8) return ERROR(corruption_detected);   /* risk read beyond lit buffer */
+    if (litEnd > litLimit-8) return ERROR(corruption_detected);   /* overRead beyond lit buffer */
 
     /* copy Literals */
     ZSTD_wildcopy(op, *litPtr, sequence.litLength);   /* note : oLitEnd <= oend-8 : no risk of overwrite beyond oend */
@@ -3283,69 +2879,57 @@ static size_t ZSTD_execSequence(BYTE* op,
     *litPtr = litEnd;   /* update for next sequence */
 
     /* copy Match */
-    if (sequence.offset > (size_t)(oLitEnd - base))
     {
-        /* offset beyond prefix */
-        if (sequence.offset > (size_t)(oLitEnd - vBase))
-            return ERROR(corruption_detected);
-        match = dictEnd - (base-match);
-        if (match + sequence.matchLength <= dictEnd)
-        {
-            memmove(oLitEnd, match, sequence.matchLength);
-            return sequenceLength;
-        }
-        /* span extDict & currentPrefixSegment */
-        {
-            size_t length1 = dictEnd - match;
-            memmove(oLitEnd, match, length1);
-            op = oLitEnd + length1;
-            sequence.matchLength -= length1;
-            match = base;
-        }
-    }
+        const BYTE* match = op - sequence.offset;
 
-    /* match within prefix */
-    if (sequence.offset < 8)
-    {
+        /* check */
+        if (sequence.offset > (size_t)op) return ERROR(corruption_detected);   /* address space overflow test (this test seems kept by clang optimizer) */
+        //if (match > op) return ERROR(corruption_detected);   /* address space overflow test (is clang optimizer removing this test ?) */
+        if (match < base) return ERROR(corruption_detected);
+
         /* close range match, overlap */
-        const int sub2 = dec64table[sequence.offset];
-        op[0] = match[0];
-        op[1] = match[1];
-        op[2] = match[2];
-        op[3] = match[3];
-        match += dec32table[sequence.offset];
-        ZSTD_copy4(op+4, match);
-        match -= sub2;
-    }
-    else
-    {
-        ZSTD_copy8(op, match);
-    }
-    op += 8; match += 8;
-
-    if (oMatchEnd > oend-12)
-    {
-        if (op < oend_8)
+        if (sequence.offset < 8)
         {
-            ZSTD_wildcopy(op, match, oend_8 - op);
-            match += oend_8 - op;
-            op = oend_8;
+            const int dec64 = dec64table[sequence.offset];
+            op[0] = match[0];
+            op[1] = match[1];
+            op[2] = match[2];
+            op[3] = match[3];
+            match += dec32table[sequence.offset];
+            ZSTD_copy4(op+4, match);
+            match -= dec64;
         }
-        while (op < oMatchEnd) *op++ = *match++;
+        else
+        {
+            ZSTD_copy8(op, match);
+        }
+        op += 8; match += 8;
+
+        if (oMatchEnd > oend-12)
+        {
+            if (op < oend_8)
+            {
+                ZSTD_wildcopy(op, match, oend_8 - op);
+                match += oend_8 - op;
+                op = oend_8;
+            }
+            while (op < oMatchEnd) *op++ = *match++;
+        }
+        else
+        {
+            ZSTD_wildcopy(op, match, sequence.matchLength-8);   /* works even if matchLength < 8 */
+        }
     }
-    else
-    {
-        ZSTD_wildcopy(op, match, sequence.matchLength-8);   /* works even if matchLength < 8 */
-    }
-    return sequenceLength;
+
+    return oMatchEnd - ostart;
 }
 
-
 static size_t ZSTD_decompressSequences(
-                               ZSTD_DCtx* dctx,
+                               void* ctx,
                                void* dst, size_t maxDstSize,
                          const void* seqStart, size_t seqSize)
 {
+    ZSTD_DCtx* dctx = (ZSTD_DCtx*)ctx;
     const BYTE* ip = (const BYTE*)seqStart;
     const BYTE* const iend = ip + seqSize;
     BYTE* const ostart = (BYTE* const)dst;
@@ -3353,16 +2937,14 @@ static size_t ZSTD_decompressSequences(
     BYTE* const oend = ostart + maxDstSize;
     size_t errorCode, dumpsLength;
     const BYTE* litPtr = dctx->litPtr;
-    const BYTE* const litLimit_8 = litPtr + dctx->litBufSize - 8;
+    const BYTE* const litMax = litPtr + dctx->litBufSize;
     const BYTE* const litEnd = litPtr + dctx->litSize;
     int nbSeq;
     const BYTE* dumps;
     U32* DTableLL = dctx->LLTable;
     U32* DTableML = dctx->MLTable;
     U32* DTableOffb = dctx->OffTable;
-    const BYTE* const base = (const BYTE*) (dctx->base);
-    const BYTE* const vBase = (const BYTE*) (dctx->vBase);
-    const BYTE* const dictEnd = (const BYTE*) (dctx->dictEnd);
+    BYTE* const base = (BYTE*) (dctx->base);
 
     /* Build Decoding Tables */
     errorCode = ZSTD_decodeSeqHeaders(&nbSeq, &dumps, &dumpsLength,
@@ -3377,35 +2959,35 @@ static size_t ZSTD_decompressSequences(
         seqState_t seqState;
 
         memset(&sequence, 0, sizeof(sequence));
-        sequence.offset = 4;
         seqState.dumps = dumps;
         seqState.dumpsEnd = dumps + dumpsLength;
-        seqState.prevOffset = 4;
+        seqState.prevOffset = sequence.offset = 4;
         errorCode = BIT_initDStream(&(seqState.DStream), ip, iend-ip);
         if (ERR_isError(errorCode)) return ERROR(corruption_detected);
         FSE_initDState(&(seqState.stateLL), &(seqState.DStream), DTableLL);
         FSE_initDState(&(seqState.stateOffb), &(seqState.DStream), DTableOffb);
         FSE_initDState(&(seqState.stateML), &(seqState.DStream), DTableML);
 
-        for ( ; (BIT_reloadDStream(&(seqState.DStream)) <= BIT_DStream_completed) && nbSeq ; )
+        for ( ; (BIT_reloadDStream(&(seqState.DStream)) <= BIT_DStream_completed) && (nbSeq>0) ; )
         {
             size_t oneSeqSize;
             nbSeq--;
             ZSTD_decodeSequence(&sequence, &seqState);
-            oneSeqSize = ZSTD_execSequence(op, oend, sequence, &litPtr, litLimit_8, base, vBase, dictEnd);
+            oneSeqSize = ZSTD_execSequence(op, sequence, &litPtr, litMax, base, oend);
             if (ZSTD_isError(oneSeqSize)) return oneSeqSize;
             op += oneSeqSize;
         }
 
         /* check if reached exact end */
-        if ( !BIT_endOfDStream(&(seqState.DStream)) ) return ERROR(corruption_detected);   /* DStream should be entirely and exactly consumed; otherwise data is corrupted */
+        if ( !BIT_endOfDStream(&(seqState.DStream)) ) return ERROR(corruption_detected);   /* requested too much : data is corrupted */
+        if (nbSeq<0) return ERROR(corruption_detected);   /* requested too many sequences : data is corrupted */
 
         /* last literal segment */
         {
             size_t lastLLSize = litEnd - litPtr;
             if (litPtr > litEnd) return ERROR(corruption_detected);
             if (op+lastLLSize > oend) return ERROR(dstSize_tooSmall);
-            if (op != litPtr) memcpy(op, litPtr, lastLLSize);
+            if (op != litPtr) memmove(op, litPtr, lastLLSize);
             op += lastLLSize;
         }
     }
@@ -3414,19 +2996,8 @@ static size_t ZSTD_decompressSequences(
 }
 
 
-static void ZSTD_checkContinuity(ZSTD_DCtx* dctx, const void* dst)
-{
-    if (dst != dctx->previousDstEnd)   /* not contiguous */
-    {
-        dctx->dictEnd = dctx->previousDstEnd;
-        dctx->vBase = (const char*)dst - ((const char*)(dctx->previousDstEnd) - (const char*)(dctx->base));
-        dctx->base = dst;
-        dctx->previousDstEnd = dst;
-    }
-}
-
-
-static size_t ZSTD_decompressBlock_internal(ZSTD_DCtx* dctx,
+static size_t ZSTD_decompressBlock(
+                            void* ctx,
                             void* dst, size_t maxDstSize,
                       const void* src, size_t srcSize)
 {
@@ -3434,19 +3005,16 @@ static size_t ZSTD_decompressBlock_internal(ZSTD_DCtx* dctx,
     const BYTE* ip = (const BYTE*)src;
 
     /* Decode literals sub-block */
-    size_t litCSize = ZSTD_decodeLiteralsBlock(dctx, src, srcSize);
+    size_t litCSize = ZSTD_decodeLiteralsBlock(ctx, src, srcSize);
     if (ZSTD_isError(litCSize)) return litCSize;
     ip += litCSize;
     srcSize -= litCSize;
 
-    return ZSTD_decompressSequences(dctx, dst, maxDstSize, ip, srcSize);
+    return ZSTD_decompressSequences(ctx, dst, maxDstSize, ip, srcSize);
 }
 
 
-static size_t ZSTD_decompress_usingDict(ZSTD_DCtx* ctx,
-                                 void* dst, size_t maxDstSize,
-                                 const void* src, size_t srcSize,
-                                 const void* dict, size_t dictSize)
+static size_t ZSTD_decompressDCtx(void* ctx, void* dst, size_t maxDstSize, const void* src, size_t srcSize)
 {
     const BYTE* ip = (const BYTE*)src;
     const BYTE* iend = ip + srcSize;
@@ -3454,33 +3022,14 @@ static size_t ZSTD_decompress_usingDict(ZSTD_DCtx* ctx,
     BYTE* op = ostart;
     BYTE* const oend = ostart + maxDstSize;
     size_t remainingSize = srcSize;
+    U32 magicNumber;
     blockProperties_t blockProperties;
 
-    /* init */
-    ZSTD_resetDCtx(ctx);
-    if (dict)
-    {
-        ZSTD_decompress_insertDictionary(ctx, dict, dictSize);
-        ctx->dictEnd = ctx->previousDstEnd;
-        ctx->vBase = (const char*)dst - ((const char*)(ctx->previousDstEnd) - (const char*)(ctx->base));
-        ctx->base = dst;
-    }
-    else
-    {
-        ctx->vBase = ctx->base = ctx->dictEnd = dst;
-    }
-
     /* Frame Header */
-    {
-        size_t frameHeaderSize;
-        if (srcSize < ZSTD_frameHeaderSize_min+ZSTD_blockHeaderSize) return ERROR(srcSize_wrong);
-        frameHeaderSize = ZSTD_decodeFrameHeader_Part1(ctx, src, ZSTD_frameHeaderSize_min);
-        if (ZSTD_isError(frameHeaderSize)) return frameHeaderSize;
-        if (srcSize < frameHeaderSize+ZSTD_blockHeaderSize) return ERROR(srcSize_wrong);
-        ip += frameHeaderSize; remainingSize -= frameHeaderSize;
-        frameHeaderSize = ZSTD_decodeFrameHeader_Part2(ctx, src, frameHeaderSize);
-        if (ZSTD_isError(frameHeaderSize)) return frameHeaderSize;
-    }
+    if (srcSize < ZSTD_frameHeaderSize+ZSTD_blockHeaderSize) return ERROR(srcSize_wrong);
+    magicNumber = MEM_readLE32(src);
+    if (magicNumber != ZSTD_magicNumber) return ERROR(prefix_unknown);
+    ip += ZSTD_frameHeaderSize; remainingSize -= ZSTD_frameHeaderSize;
 
     /* Loop on each block */
     while (1)
@@ -3496,10 +3045,10 @@ static size_t ZSTD_decompress_usingDict(ZSTD_DCtx* ctx,
         switch(blockProperties.blockType)
         {
         case bt_compressed:
-            decodedSize = ZSTD_decompressBlock_internal(ctx, op, oend-op, ip, cBlockSize);
+            decodedSize = ZSTD_decompressBlock(ctx, op, oend-op, ip, cBlockSize);
             break;
         case bt_raw :
-            decodedSize = ZSTD_copyRawBlock(op, oend-op, ip, cBlockSize);
+            decodedSize = ZSTD_copyUncompressedBlock(op, oend-op, ip, cBlockSize);
             break;
         case bt_rle :
             return ERROR(GENERIC);   /* not yet supported */
@@ -3522,10 +3071,41 @@ static size_t ZSTD_decompress_usingDict(ZSTD_DCtx* ctx,
     return op-ostart;
 }
 
+static size_t ZSTD_decompress(void* dst, size_t maxDstSize, const void* src, size_t srcSize)
+{
+    ZSTD_DCtx ctx;
+    ctx.base = dst;
+    return ZSTD_decompressDCtx(&ctx, dst, maxDstSize, src, srcSize);
+}
 
-/* ******************************
+
+/*******************************
 *  Streaming Decompression API
-********************************/
+*******************************/
+
+static size_t ZSTD_resetDCtx(ZSTD_DCtx* dctx)
+{
+    dctx->expected = ZSTD_frameHeaderSize;
+    dctx->phase = 0;
+    dctx->previousDstEnd = NULL;
+    dctx->base = NULL;
+    return 0;
+}
+
+static ZSTD_DCtx* ZSTD_createDCtx(void)
+{
+    ZSTD_DCtx* dctx = (ZSTD_DCtx*)malloc(sizeof(ZSTD_DCtx));
+    if (dctx==NULL) return NULL;
+    ZSTD_resetDCtx(dctx);
+    return dctx;
+}
+
+static size_t ZSTD_freeDCtx(ZSTD_DCtx* dctx)
+{
+    free(dctx);
+    return 0;
+}
+
 static size_t ZSTD_nextSrcSizeToDecompress(ZSTD_DCtx* dctx)
 {
     return dctx->expected;
@@ -3535,451 +3115,104 @@ static size_t ZSTD_decompressContinue(ZSTD_DCtx* ctx, void* dst, size_t maxDstSi
 {
     /* Sanity check */
     if (srcSize != ctx->expected) return ERROR(srcSize_wrong);
-    ZSTD_checkContinuity(ctx, dst);
+    if (dst != ctx->previousDstEnd)  /* not contiguous */
+        ctx->base = dst;
 
-    /* Decompress : frame header; part 1 */
-    switch (ctx->stage)
+    /* Decompress : frame header */
+    if (ctx->phase == 0)
     {
-    case ZSTDds_getFrameHeaderSize :
-        /* get frame header size */
-        if (srcSize != ZSTD_frameHeaderSize_min) return ERROR(srcSize_wrong);   /* impossible */
-        ctx->headerSize = ZSTD_decodeFrameHeader_Part1(ctx, src, ZSTD_frameHeaderSize_min);
-        if (ZSTD_isError(ctx->headerSize)) return ctx->headerSize;
-        memcpy(ctx->headerBuffer, src, ZSTD_frameHeaderSize_min);
-        if (ctx->headerSize > ZSTD_frameHeaderSize_min) return ERROR(GENERIC);   /* impossible */
-        ctx->expected = 0;   /* not necessary to copy more */
-        /* fallthrough */
-    case ZSTDds_decodeFrameHeader:
-        /* get frame header */
-        {   size_t const result = ZSTD_decodeFrameHeader_Part2(ctx, ctx->headerBuffer, ctx->headerSize);
-            if (ZSTD_isError(result)) return result;
-            ctx->expected = ZSTD_blockHeaderSize;
-            ctx->stage = ZSTDds_decodeBlockHeader;
-            return 0;
-        }
-    case ZSTDds_decodeBlockHeader:
-        /* Decode block header */
-        {   blockProperties_t bp;
-            size_t const blockSize = ZSTD_getcBlockSize(src, ZSTD_blockHeaderSize, &bp);
-            if (ZSTD_isError(blockSize)) return blockSize;
-            if (bp.blockType == bt_end)
-            {
-                ctx->expected = 0;
-                ctx->stage = ZSTDds_getFrameHeaderSize;
-            }
-            else
-            {
-                ctx->expected = blockSize;
-                ctx->bType = bp.blockType;
-                ctx->stage = ZSTDds_decompressBlock;
-            }
-            return 0;
-        }
-    case ZSTDds_decompressBlock:
+        /* Check frame magic header */
+        U32 magicNumber = MEM_readLE32(src);
+        if (magicNumber != ZSTD_magicNumber) return ERROR(prefix_unknown);
+        ctx->phase = 1;
+        ctx->expected = ZSTD_blockHeaderSize;
+        return 0;
+    }
+
+    /* Decompress : block header */
+    if (ctx->phase == 1)
+    {
+        blockProperties_t bp;
+        size_t blockSize = ZSTD_getcBlockSize(src, ZSTD_blockHeaderSize, &bp);
+        if (ZSTD_isError(blockSize)) return blockSize;
+        if (bp.blockType == bt_end)
         {
-            /* Decompress : block content */
-            size_t rSize;
-            switch(ctx->bType)
-            {
-            case bt_compressed:
-                rSize = ZSTD_decompressBlock_internal(ctx, dst, maxDstSize, src, srcSize);
-                break;
-            case bt_raw :
-                rSize = ZSTD_copyRawBlock(dst, maxDstSize, src, srcSize);
-                break;
-            case bt_rle :
-                return ERROR(GENERIC);   /* not yet handled */
-                break;
-            case bt_end :   /* should never happen (filtered at phase 1) */
-                rSize = 0;
-                break;
-            default:
-                return ERROR(GENERIC);
-            }
-            ctx->stage = ZSTDds_decodeBlockHeader;
-            ctx->expected = ZSTD_blockHeaderSize;
-            ctx->previousDstEnd = (char*)dst + rSize;
-            return rSize;
+            ctx->expected = 0;
+            ctx->phase = 0;
         }
-    default:
-        return ERROR(GENERIC);   /* impossible */
-    }
-}
-
-
-static void ZSTD_decompress_insertDictionary(ZSTD_DCtx* ctx, const void* dict, size_t dictSize)
-{
-    ctx->dictEnd = ctx->previousDstEnd;
-    ctx->vBase = (const char*)dict - ((const char*)(ctx->previousDstEnd) - (const char*)(ctx->base));
-    ctx->base = dict;
-    ctx->previousDstEnd = (const char*)dict + dictSize;
-}
-
-
-
-/*
-    Buffered version of Zstd compression library
-    Copyright (C) 2015, Yann Collet.
-
-    BSD 2-Clause License (http://www.opensource.org/licenses/bsd-license.php)
-
-    Redistribution and use in source and binary forms, with or without
-    modification, are permitted provided that the following conditions are
-    met:
-    * Redistributions of source code must retain the above copyright
-    notice, this list of conditions and the following disclaimer.
-    * Redistributions in binary form must reproduce the above
-    copyright notice, this list of conditions and the following disclaimer
-    in the documentation and/or other materials provided with the
-    distribution.
-    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-    "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-    LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-    A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-    OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-    SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-    LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-    DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-    THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-    (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-    OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-    You can contact the author at :
-    - zstd source repository : https://github.com/Cyan4973/zstd
-    - ztsd public forum : https://groups.google.com/forum/#!forum/lz4c
-*/
-
-/* The objects defined into this file should be considered experimental.
- * They are not labelled stable, as their prototype may change in the future.
- * You can use them for tests, provide feedback, or if you can endure risk of future changes.
- */
-
-/* *************************************
-*  Includes
-***************************************/
-#include <stdlib.h>
-
-
-/** ************************************************
-*  Streaming decompression
-*
-*  A ZBUFF_DCtx object is required to track streaming operation.
-*  Use ZBUFF_createDCtx() and ZBUFF_freeDCtx() to create/release resources.
-*  Use ZBUFF_decompressInit() to start a new decompression operation.
-*  ZBUFF_DCtx objects can be reused multiple times.
-*
-*  Use ZBUFF_decompressContinue() repetitively to consume your input.
-*  *srcSizePtr and *maxDstSizePtr can be any size.
-*  The function will report how many bytes were read or written by modifying *srcSizePtr and *maxDstSizePtr.
-*  Note that it may not consume the entire input, in which case it's up to the caller to call again the function with remaining input.
-*  The content of dst will be overwritten (up to *maxDstSizePtr) at each function call, so save its content if it matters or change dst .
-*  return : a hint to preferred nb of bytes to use as input for next function call (it's only a hint, to improve latency)
-*            or 0 when a frame is completely decoded
-*            or an error code, which can be tested using ZBUFF_isError().
-*
-*  Hint : recommended buffer sizes (not compulsory)
-*  output : 128 KB block size is the internal unit, it ensures it's always possible to write a full block when it's decoded.
-*  input : just follow indications from ZBUFF_decompressContinue() to minimize latency. It should always be <= 128 KB + 3 .
-* **************************************************/
-
-typedef enum { ZBUFFds_init, ZBUFFds_readHeader, ZBUFFds_loadHeader, ZBUFFds_decodeHeader,
-               ZBUFFds_read, ZBUFFds_load, ZBUFFds_flush } ZBUFF_dStage;
-
-/* *** Resource management *** */
-
-#define ZSTD_frameHeaderSize_max 5   /* too magical, should come from reference */
-struct ZBUFFv04_DCtx_s {
-    ZSTD_DCtx* zc;
-    ZSTD_parameters params;
-    char* inBuff;
-    size_t inBuffSize;
-    size_t inPos;
-    char* outBuff;
-    size_t outBuffSize;
-    size_t outStart;
-    size_t outEnd;
-    size_t hPos;
-    const char* dict;
-    size_t dictSize;
-    ZBUFF_dStage stage;
-    unsigned char headerBuffer[ZSTD_frameHeaderSize_max];
-};   /* typedef'd to ZBUFF_DCtx within "zstd_buffered.h" */
-
-typedef ZBUFFv04_DCtx ZBUFF_DCtx;
-
-
-static ZBUFF_DCtx* ZBUFF_createDCtx(void)
-{
-    ZBUFF_DCtx* zbc = (ZBUFF_DCtx*)malloc(sizeof(ZBUFF_DCtx));
-    if (zbc==NULL) return NULL;
-    memset(zbc, 0, sizeof(*zbc));
-    zbc->zc = ZSTD_createDCtx();
-    zbc->stage = ZBUFFds_init;
-    return zbc;
-}
-
-static size_t ZBUFF_freeDCtx(ZBUFF_DCtx* zbc)
-{
-    if (zbc==NULL) return 0;   /* support free on null */
-    ZSTD_freeDCtx(zbc->zc);
-    free(zbc->inBuff);
-    free(zbc->outBuff);
-    free(zbc);
-    return 0;
-}
-
-
-/* *** Initialization *** */
-
-static size_t ZBUFF_decompressInit(ZBUFF_DCtx* zbc)
-{
-    zbc->stage = ZBUFFds_readHeader;
-    zbc->hPos = zbc->inPos = zbc->outStart = zbc->outEnd = zbc->dictSize = 0;
-    return ZSTD_resetDCtx(zbc->zc);
-}
-
-
-static size_t ZBUFF_decompressWithDictionary(ZBUFF_DCtx* zbc, const void* src, size_t srcSize)
-{
-    zbc->dict = (const char*)src;
-    zbc->dictSize = srcSize;
-    return 0;
-}
-
-static size_t ZBUFF_limitCopy(void* dst, size_t maxDstSize, const void* src, size_t srcSize)
-{
-    size_t length = MIN(maxDstSize, srcSize);
-    memcpy(dst, src, length);
-    return length;
-}
-
-/* *** Decompression *** */
-
-static size_t ZBUFF_decompressContinue(ZBUFF_DCtx* zbc, void* dst, size_t* maxDstSizePtr, const void* src, size_t* srcSizePtr)
-{
-    const char* const istart = (const char*)src;
-    const char* ip = istart;
-    const char* const iend = istart + *srcSizePtr;
-    char* const ostart = (char*)dst;
-    char* op = ostart;
-    char* const oend = ostart + *maxDstSizePtr;
-    U32 notDone = 1;
-
-    while (notDone)
-    {
-        switch(zbc->stage)
+        else
         {
-
-        case ZBUFFds_init :
-            return ERROR(init_missing);
-
-        case ZBUFFds_readHeader :
-            /* read header from src */
-            {   size_t const headerSize = ZSTD_getFrameParams(&(zbc->params), src, *srcSizePtr);
-                if (ZSTD_isError(headerSize)) return headerSize;
-                if (headerSize) {
-                    /* not enough input to decode header : tell how many bytes would be necessary */
-                    memcpy(zbc->headerBuffer+zbc->hPos, src, *srcSizePtr);
-                    zbc->hPos += *srcSizePtr;
-                    *maxDstSizePtr = 0;
-                    zbc->stage = ZBUFFds_loadHeader;
-                    return headerSize - zbc->hPos;
-                }
-                zbc->stage = ZBUFFds_decodeHeader;
-                break;
-            }
-
-        case ZBUFFds_loadHeader:
-            /* complete header from src */
-            {   size_t headerSize = ZBUFF_limitCopy(
-                    zbc->headerBuffer + zbc->hPos, ZSTD_frameHeaderSize_max - zbc->hPos,
-                    src, *srcSizePtr);
-                zbc->hPos += headerSize;
-                ip += headerSize;
-                headerSize = ZSTD_getFrameParams(&(zbc->params), zbc->headerBuffer, zbc->hPos);
-                if (ZSTD_isError(headerSize)) return headerSize;
-                if (headerSize) {
-                    /* not enough input to decode header : tell how many bytes would be necessary */
-                    *maxDstSizePtr = 0;
-                    return headerSize - zbc->hPos;
-            }   }
-            /* intentional fallthrough */
-
-        case ZBUFFds_decodeHeader:
-                /* apply header to create / resize buffers */
-                {   size_t const neededOutSize = (size_t)1 << zbc->params.windowLog;
-                    size_t const neededInSize = BLOCKSIZE;   /* a block is never > BLOCKSIZE */
-                    if (zbc->inBuffSize < neededInSize) {
-                        free(zbc->inBuff);
-                        zbc->inBuffSize = neededInSize;
-                        zbc->inBuff = (char*)malloc(neededInSize);
-                        if (zbc->inBuff == NULL) return ERROR(memory_allocation);
-                    }
-                    if (zbc->outBuffSize < neededOutSize) {
-                        free(zbc->outBuff);
-                        zbc->outBuffSize = neededOutSize;
-                        zbc->outBuff = (char*)malloc(neededOutSize);
-                        if (zbc->outBuff == NULL) return ERROR(memory_allocation);
-                }   }
-                if (zbc->dictSize)
-                    ZSTD_decompress_insertDictionary(zbc->zc, zbc->dict, zbc->dictSize);
-                if (zbc->hPos) {
-                    /* some data already loaded into headerBuffer : transfer into inBuff */
-                    memcpy(zbc->inBuff, zbc->headerBuffer, zbc->hPos);
-                    zbc->inPos = zbc->hPos;
-                    zbc->hPos = 0;
-                    zbc->stage = ZBUFFds_load;
-                    break;
-                }
-                zbc->stage = ZBUFFds_read;
-
-        case ZBUFFds_read:
-            {
-                size_t neededInSize = ZSTD_nextSrcSizeToDecompress(zbc->zc);
-                if (neededInSize==0)   /* end of frame */
-                {
-                    zbc->stage = ZBUFFds_init;
-                    notDone = 0;
-                    break;
-                }
-                if ((size_t)(iend-ip) >= neededInSize)
-                {
-                    /* directly decode from src */
-                    size_t decodedSize = ZSTD_decompressContinue(zbc->zc,
-                        zbc->outBuff + zbc->outStart, zbc->outBuffSize - zbc->outStart,
-                        ip, neededInSize);
-                    if (ZSTD_isError(decodedSize)) return decodedSize;
-                    ip += neededInSize;
-                    if (!decodedSize) break;   /* this was just a header */
-                    zbc->outEnd = zbc->outStart +  decodedSize;
-                    zbc->stage = ZBUFFds_flush;
-                    break;
-                }
-                if (ip==iend) { notDone = 0; break; }   /* no more input */
-                zbc->stage = ZBUFFds_load;
-            }
-
-        case ZBUFFds_load:
-            {
-                size_t neededInSize = ZSTD_nextSrcSizeToDecompress(zbc->zc);
-                size_t toLoad = neededInSize - zbc->inPos;   /* should always be <= remaining space within inBuff */
-                size_t loadedSize;
-                if (toLoad > zbc->inBuffSize - zbc->inPos) return ERROR(corruption_detected);   /* should never happen */
-                loadedSize = ZBUFF_limitCopy(zbc->inBuff + zbc->inPos, toLoad, ip, iend-ip);
-                ip += loadedSize;
-                zbc->inPos += loadedSize;
-                if (loadedSize < toLoad) { notDone = 0; break; }   /* not enough input, wait for more */
-                {
-                    size_t decodedSize = ZSTD_decompressContinue(zbc->zc,
-                        zbc->outBuff + zbc->outStart, zbc->outBuffSize - zbc->outStart,
-                        zbc->inBuff, neededInSize);
-                    if (ZSTD_isError(decodedSize)) return decodedSize;
-                    zbc->inPos = 0;   /* input is consumed */
-                    if (!decodedSize) { zbc->stage = ZBUFFds_read; break; }   /* this was just a header */
-                    zbc->outEnd = zbc->outStart +  decodedSize;
-                    zbc->stage = ZBUFFds_flush;
-                    // break; /* ZBUFFds_flush follows */
-                }
-            }
-        case ZBUFFds_flush:
-            {
-                size_t toFlushSize = zbc->outEnd - zbc->outStart;
-                size_t flushedSize = ZBUFF_limitCopy(op, oend-op, zbc->outBuff + zbc->outStart, toFlushSize);
-                op += flushedSize;
-                zbc->outStart += flushedSize;
-                if (flushedSize == toFlushSize)
-                {
-                    zbc->stage = ZBUFFds_read;
-                    if (zbc->outStart + BLOCKSIZE > zbc->outBuffSize)
-                        zbc->outStart = zbc->outEnd = 0;
-                    break;
-                }
-                /* cannot flush everything */
-                notDone = 0;
-                break;
-            }
-        default: return ERROR(GENERIC);   /* impossible */
+            ctx->expected = blockSize;
+            ctx->bType = bp.blockType;
+            ctx->phase = 2;
         }
+
+        return 0;
     }
 
-    *srcSizePtr = ip-istart;
-    *maxDstSizePtr = op-ostart;
-
+    /* Decompress : block content */
     {
-        size_t nextSrcSizeHint = ZSTD_nextSrcSizeToDecompress(zbc->zc);
-        if (nextSrcSizeHint > 3) nextSrcSizeHint+= 3;   /* get the next block header while at it */
-        nextSrcSizeHint -= zbc->inPos;   /* already loaded*/
-        return nextSrcSizeHint;
+        size_t rSize;
+        switch(ctx->bType)
+        {
+        case bt_compressed:
+            rSize = ZSTD_decompressBlock(ctx, dst, maxDstSize, src, srcSize);
+            break;
+        case bt_raw :
+            rSize = ZSTD_copyUncompressedBlock(dst, maxDstSize, src, srcSize);
+            break;
+        case bt_rle :
+            return ERROR(GENERIC);   /* not yet handled */
+            break;
+        case bt_end :   /* should never happen (filtered at phase 1) */
+            rSize = 0;
+            break;
+        default:
+            return ERROR(GENERIC);
+        }
+        ctx->phase = 1;
+        ctx->expected = ZSTD_blockHeaderSize;
+        ctx->previousDstEnd = (void*)( ((char*)dst) + rSize);
+        return rSize;
     }
+
 }
 
 
-/* *************************************
-*  Tool functions
-***************************************/
-unsigned ZBUFFv04_isError(size_t errorCode) { return ERR_isError(errorCode); }
-const char* ZBUFFv04_getErrorName(size_t errorCode) { return ERR_getErrorName(errorCode); }
+/* wrapper layer */
 
-size_t ZBUFFv04_recommendedDInSize()  { return BLOCKSIZE + 3; }
-size_t ZBUFFv04_recommendedDOutSize() { return BLOCKSIZE; }
-
-
-
-/*- ========================================================================= -*/
-
-/* final wrapping stage */
-
-size_t ZSTDv04_decompressDCtx(ZSTD_DCtx* dctx, void* dst, size_t maxDstSize, const void* src, size_t srcSize)
+unsigned ZSTDv03_isError(size_t code)
 {
-    return ZSTD_decompress_usingDict(dctx, dst, maxDstSize, src, srcSize, NULL, 0);
+	return ZSTD_isError(code);
 }
 
-size_t ZSTDv04_decompress(void* dst, size_t maxDstSize, const void* src, size_t srcSize)
+size_t ZSTDv03_decompress( void* dst, size_t maxOriginalSize,
+                     const void* src, size_t compressedSize)
 {
-#if defined(ZSTD_HEAPMODE) && (ZSTD_HEAPMODE==1)
-    size_t regenSize;
-    ZSTD_DCtx* dctx = ZSTD_createDCtx();
-    if (dctx==NULL) return ERROR(memory_allocation);
-    regenSize = ZSTDv04_decompressDCtx(dctx, dst, maxDstSize, src, srcSize);
-    ZSTD_freeDCtx(dctx);
-    return regenSize;
-#else
-    ZSTD_DCtx dctx;
-    return ZSTDv04_decompressDCtx(&dctx, dst, maxDstSize, src, srcSize);
-#endif
+	return ZSTD_decompress(dst, maxOriginalSize, src, compressedSize);
 }
 
-
-size_t ZSTDv04_resetDCtx(ZSTDv04_Dctx* dctx) { return ZSTD_resetDCtx(dctx); }
-
-size_t ZSTDv04_nextSrcSizeToDecompress(ZSTDv04_Dctx* dctx)
+ZSTDv03_Dctx* ZSTDv03_createDCtx(void)
 {
-    return ZSTD_nextSrcSizeToDecompress(dctx);
+	return (ZSTDv03_Dctx*)ZSTD_createDCtx();
 }
 
-size_t ZSTDv04_decompressContinue(ZSTDv04_Dctx* dctx, void* dst, size_t maxDstSize, const void* src, size_t srcSize)
+size_t ZSTDv03_freeDCtx(ZSTDv03_Dctx* dctx)
 {
-    return ZSTD_decompressContinue(dctx, dst, maxDstSize, src, srcSize);
+	return ZSTD_freeDCtx((ZSTD_DCtx*)dctx);
 }
 
-
-
-ZBUFFv04_DCtx* ZBUFFv04_createDCtx(void) { return ZBUFF_createDCtx(); }
-size_t      ZBUFFv04_freeDCtx(ZBUFFv04_DCtx* dctx) { return ZBUFF_freeDCtx(dctx); }
-
-size_t ZBUFFv04_decompressInit(ZBUFFv04_DCtx* dctx) { return ZBUFF_decompressInit(dctx); }
-size_t ZBUFFv04_decompressWithDictionary(ZBUFFv04_DCtx* dctx, const void* src, size_t srcSize)
-{ return ZBUFF_decompressWithDictionary(dctx, src, srcSize); }
-
-size_t ZBUFFv04_decompressContinue(ZBUFFv04_DCtx* dctx, void* dst, size_t* maxDstSizePtr, const void* src, size_t* srcSizePtr)
+size_t ZSTDv03_resetDCtx(ZSTDv03_Dctx* dctx)
 {
-    return ZBUFF_decompressContinue(dctx, dst, maxDstSizePtr, src, srcSizePtr);
+	return ZSTD_resetDCtx((ZSTD_DCtx*)dctx);
 }
 
-ZSTD_DCtx* ZSTDv04_createDCtx(void) { return ZSTD_createDCtx(); }
-size_t ZSTDv04_freeDCtx(ZSTD_DCtx* dctx) { return ZSTD_freeDCtx(dctx); }
-
-size_t ZSTDv04_getFrameParams(ZSTD_parameters* params, const void* src, size_t srcSize)
+size_t ZSTDv03_nextSrcSizeToDecompress(ZSTDv03_Dctx* dctx)
 {
-    return ZSTD_getFrameParams(params, src, srcSize);
+	return ZSTD_nextSrcSizeToDecompress((ZSTD_DCtx*)dctx);
+}
+
+size_t ZSTDv03_decompressContinue(ZSTDv03_Dctx* dctx, void* dst, size_t maxDstSize, const void* src, size_t srcSize)
+{
+	return ZSTD_decompressContinue((ZSTD_DCtx*)dctx, dst, maxDstSize, src, srcSize);
 }
