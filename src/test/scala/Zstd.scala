@@ -182,7 +182,6 @@ class ZstdSpec extends FlatSpec with Checkers {
       val length = orig.length.toInt
       val buff = Array.fill[Byte](length)(0)
       var pos  = 0;
-      println(s"$version")
       while (pos < length) {
         pos += zis.read(buff, pos, length - pos)
       }
