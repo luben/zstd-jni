@@ -124,6 +124,24 @@ class ZstdSpec extends FlatSpec with Checkers {
         sys.error(s"Failed")
     }
 
+  for (level <- levels) // the worst case
+    "ZstdInputStream" should s"be able to consume 1 byte at a time files compressed by the zstd binary at level $level" in {
+      val orig = new File("src/test/resources/xml")
+      val file = new File(s"src/test/resources/xml-$level.zst")
+      val fis  = new FileInputStream(file)
+      val zis  = new ZstdInputStream(fis)
+      val length = orig.length.toInt
+      val buff = Array.fill[Byte](length)(0)
+      var pos  = 0;
+      while (pos < length) {
+        pos += zis.read(buff, pos, 1)
+      }
+
+      val original = Source.fromFile(orig)(Codec.ISO8859).map{char => char.toByte}.to[WrappedArray]
+      if(original != buff.toSeq)
+        sys.error(s"Failed")
+    }
+
   "ZstdInputStream" should s"be able to consume 2 frames in a file compressed by the zstd binary" in {
     val orig = new File("src/test/resources/xmlx2")
     val file = new File(s"src/test/resources/xml-1x2.zst")

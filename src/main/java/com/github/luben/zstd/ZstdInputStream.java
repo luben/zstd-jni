@@ -25,8 +25,9 @@ public class ZstdInputStream extends FilterInputStream {
 
     // Opaque pointer to Zstd context object
     private long stream;
-    private long srcPos = 0;
     private long dstPos = 0;
+    private long srcPos = 0;
+    private long srcEnd = 0;
     private byte[] src = null;
     private long toRead = 0;
     private static final int srcSize = (int) recommendedDInSize();
@@ -49,7 +50,8 @@ public class ZstdInputStream extends FilterInputStream {
             throw new IOException("Error allocating the input buffer of size " + srcSize);
         }
         stream = createDStream();
-        toRead = initDStream(stream);
+        toRead = initDStream(stream); // TODO: why it does not return the frame header size?
+        toRead = 9; // frame header size + 1 TODO: fix it
         if (Zstd.isError(toRead)) {
             throw new IOException("Decompression error: " + Zstd.getErrorName(toRead));
         }
@@ -59,17 +61,37 @@ public class ZstdInputStream extends FilterInputStream {
 
         // guard agains buffer overflows
         if (offset < 0 || len > dst.length - offset) {
-            throw new IndexOutOfBoundsException("Requested lenght " +len
-                    + " from offset " + offset);
+            throw new IndexOutOfBoundsException("Requested lenght " + len
+                    + " from offset " + offset + " in buffer of size " + dst.length);
         }
         int dstSize = offset + len;
         dstPos = offset;
+
+        int completed = 0;
+
         while (dstPos < dstSize) {
-            int read = in.read(src, 0, (int) toRead);
-            if (read < 0) {
-                throw new IOException("Read error or truncated source");
+            if (srcEnd + toRead > srcSize) {
+                int toCopy = (int) (srcEnd-srcPos);
+                if (toCopy > 0) {
+                    System.arraycopy(src, (int) srcPos, src, 0, (int)(srcEnd-srcPos));
+                }
+                srcPos = 0;
+                srcEnd = toCopy;
             }
-            toRead = decompressStream(stream, dst, dstSize, src, read);
+            if (toRead != 1) { // TODO: Why are they not consumed in one go?
+                int reading = (int) (toRead - (srcEnd - srcPos));
+                if (reading > 0) {
+                    int read = in.read(src, (int) srcEnd, reading);
+                    if (read < 0) {
+                        throw new IOException("Read error or truncated source");
+                    }
+                    srcEnd += read;
+                }
+            }
+            long oldDPos = dstPos;
+            toRead = decompressStream(stream, dst, dstSize, src, (int) srcEnd);
+            completed += (int)(dstPos - oldDPos);
+
             if (Zstd.isError(toRead)) {
                 throw new IOException("Decompression error: " + Zstd.getErrorName(toRead));
             }
@@ -77,13 +99,16 @@ public class ZstdInputStream extends FilterInputStream {
             if (toRead == 0) {
                 // re-init the codec so it can start decoding next frame
                 toRead = initDStream(stream);
+                toRead = 9; // TODO: magic
+                srcPos = 0;
+                srcEnd = 0;
                 if (Zstd.isError(toRead)) {
                     throw new IOException("Decompression error: " + Zstd.getErrorName(toRead));
                 }
-                return (int)(dstPos - offset);
+                return completed;
             }
         }
-        return len;
+        return completed;
     }
 
     public int read() throws IOException {
@@ -114,13 +139,12 @@ public class ZstdInputStream extends FilterInputStream {
     public long skip(long n) throws IOException {
         long toSkip = n;
         long skipped = 0;
-        while (toSkip > Integer.MAX_VALUE) {
-            byte[] dst = new byte[Integer.MAX_VALUE];
-            long size = read(dst, 0, Integer.MAX_VALUE);
+        byte[] dst = new byte[128*1024];
+        while (toSkip > 128*1024) {
+            long size = read(dst, 0, 1024);
             toSkip -= size;
             skipped += size;
         }
-        byte[] dst = new byte[(int) toSkip];
         skipped += read(dst, 0, (int) toSkip);
         return skipped;
     }
