@@ -56,21 +56,15 @@ public class ZstdInputStream extends FilterInputStream {
     }
 
     public int read(byte[] dst, int offset, int len) throws IOException {
-        int completed = 0;
 
-        // guard agains buffer underflows
-        if (offset < 0) {
-            throw new IndexOutOfBoundsException("Requested offset is negative: " + offset);
-        }
         // guard agains buffer overflows
-        if (len > dst.length - offset) {
-            throw new IndexOutOfBoundsException("Requested lenght " +len  +
-                " exceeds the buffer size " + dst.length + " from offset " + offset);
+        if (offset < 0 || len > dst.length - offset) {
+            throw new IndexOutOfBoundsException("Requested lenght " +len
+                    + " from offset " + offset);
         }
         int dstSize = offset + len;
         dstPos = offset;
         while (dstPos < dstSize) {
-            long oldPos = dstPos;
             int read = in.read(src, 0, (int) toRead);
             if (read < 0) {
                 throw new IOException("Read error or truncated source");
@@ -79,7 +73,6 @@ public class ZstdInputStream extends FilterInputStream {
             if (Zstd.isError(toRead)) {
                 throw new IOException("Decompression error: " + Zstd.getErrorName(toRead));
             }
-            completed += dstPos - oldPos;
             // we have completed a frame
             if (toRead == 0) {
                 // re-init the codec so it can start decoding next frame
@@ -87,10 +80,10 @@ public class ZstdInputStream extends FilterInputStream {
                 if (Zstd.isError(toRead)) {
                     throw new IOException("Decompression error: " + Zstd.getErrorName(toRead));
                 }
-                return completed;
+                return (int)(dstPos - offset);
             }
         }
-        return completed;
+        return len;
     }
 
     public int read() throws IOException {
@@ -103,9 +96,13 @@ public class ZstdInputStream extends FilterInputStream {
         }
     }
 
-    /* TODO: Talk with  Yann */
     public int available() throws IOException {
-        return 0;
+        if (toRead == 1) {
+            /* TODO: Talk with  Yann */
+            return 1;
+        } else {
+            return 0;
+        }
     }
 
     /* we don't support mark/reset */
@@ -113,7 +110,7 @@ public class ZstdInputStream extends FilterInputStream {
         return false;
     }
 
-    /* we can skip forward only inside the buffer*/
+    /* we can skip forward */
     public long skip(long n) throws IOException {
         long toSkip = n;
         long skipped = 0;
