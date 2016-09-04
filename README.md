@@ -29,7 +29,7 @@ highest possible ratio (which LZMA and ZPAQ cover) nor extreme speeds (which
 LZ4 covers).
 
 **Zstd** is developed by Yann Collet and the source is available at:
-https://github.com/Cyan4973/zstd
+https://github.com/facebook/zstd
 
 The motivation for development, the algotithm used and its properties are
 explained in the blog post that introduces the library:
@@ -38,17 +38,10 @@ http://fastcompression.blogspot.com/2015/01/zstd-stronger-compression-algorithm.
 Status and availability
 -----------------------
 
-**Zstd** has just reached "final format" status with release 0.8. This library
-provides decompression support for earlier formats also. The library is fairly
-robust, able to withstand hazards situations, including invalid inputs. The
-library reliability has been tested using
-[Fuzz Testing](https://en.wikipedia.org/wiki/Fuzz_testing), with both
-[internal tools](programs/fuzzer.c) and [external ones](http://lcamtuf.coredump.cx/afl).
-Therefore, it seems now safe to test Zstandard even within production
-environments.
+**Zstd** is production ready with stable format with release 1.0.0
 
 **Zstd-jni** is tracking the release branch of **Zstd** (master) with
-compatibility support for the legacy formats (since v0.4).
+compatibility support for the legacy formats.
 
 Building and dependencies
 -------------------------
@@ -85,12 +78,12 @@ You can find published releases on Maven Central.
     <dependency>
         <groupId>com.github.luben</groupId>
         <artifactId>zstd-jni</artifactId>
-        <version>0.8.0</version>
+        <version>1.0.0</version>
     </dependency>
 
 sbt dependency:
 
-    libraryDependencies += "com.github.luben" % "zstd-jni" % "0.8.0"
+    libraryDependencies += "com.github.luben" % "zstd-jni" % "1.0.0"
 
 Link for direct download if you don't use a dependency manager:
 
