@@ -65,10 +65,11 @@ public class ZstdInputStream extends FilterInputStream {
         }
         int dstSize = offset + len;
         dstPos = offset;
+        boolean reallyNeedThatOne = false;
 
         while (dstPos < dstSize) {
             long unconsumed = srcSize - srcPos;
-            if (unconsumed == 0 && toRead != 1) {
+            if (unconsumed == 0 && (toRead != 1 || reallyNeedThatOne)) {
                 srcSize = in.read(src, 0, srcBuffSize);
                 if (srcSize < 0) {
                     throw new IOException("Read error or truncated source");
@@ -76,7 +77,9 @@ public class ZstdInputStream extends FilterInputStream {
                 srcPos = 0;
             }
 
+            long oldDstPos = dstPos;
             toRead = decompressStream(stream, dst, dstSize, src, (int) srcSize);
+            reallyNeedThatOne = oldDstPos == dstPos;
 
             if (Zstd.isError(toRead)) {
                 throw new IOException("Decompression error: " + Zstd.getErrorName(toRead));
