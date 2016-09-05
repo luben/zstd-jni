@@ -28,7 +28,7 @@ class ZstdSpec extends FlatSpec with Checkers {
   }
 
   for (level <- levels) {
-    "Zstd" should s"should round-trip using streaming API at level $level" in {
+    "ZstdInputStream" should s"should round-trip compression/decompression at level $level" in {
       check { input: Array[Byte] =>
         val size  = input.length
         val os    = new ByteArrayOutputStream(Zstd.compressBound(size.toLong).toInt)
@@ -66,7 +66,7 @@ class ZstdSpec extends FlatSpec with Checkers {
 
   /*
   for (level <- levels) {
-    "Zstd" should s"should round-trip using streaming API with unfinished chunks at level $level" in {
+    "ZstdContinuousInputStream" should s"should round-trip using streaming API with unfinished chunks at level $level" in {
       check { input: Array[Byte] =>
         val size  = input.length
         val os    = new ByteArrayOutputStream(Zstd.compressBound(size.toLong).toInt)
@@ -132,9 +132,12 @@ class ZstdSpec extends FlatSpec with Checkers {
       val zis  = new ZstdInputStream(fis)
       val length = orig.length.toInt
       val buff = Array.fill[Byte](length)(0)
-      var pos  = 0;
+      var pos  = 0
+      val block = 1
       while (pos < length) {
-        pos += zis.read(buff, pos, 1)
+        val remain = length - pos;
+        val toRead = if (remain > block) block else remain
+        pos += zis.read(buff, pos, toRead)
       }
 
       val original = Source.fromFile(orig)(Codec.ISO8859).map{char => char.toByte}.to[WrappedArray]

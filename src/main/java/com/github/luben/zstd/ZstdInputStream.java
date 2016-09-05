@@ -51,7 +51,6 @@ public class ZstdInputStream extends FilterInputStream {
         }
         stream = createDStream();
         toRead = initDStream(stream); // TODO: why it does not return the frame header size?
-        toRead = 9; // frame header size + 1 TODO: fix it
         if (Zstd.isError(toRead)) {
             throw new IOException("Decompression error: " + Zstd.getErrorName(toRead));
         }
@@ -68,21 +67,15 @@ public class ZstdInputStream extends FilterInputStream {
         dstPos = offset;
 
         while (dstPos < dstSize) {
-            if (srcSize == srcPos) {
-                srcPos = 0;
-                srcSize = 0;
-            }
-            if (toRead > 1) { // TODO: Why are they not consumed in one go?
-                long unconsumed = srcSize - srcPos;
-                int reading = (int) (toRead - unconsumed);
-                if (reading > 0) {
-                    int read = in.read(src, (int) srcSize, reading);
-                    if (read < 0) {
-                        throw new IOException("Read error or truncated source");
-                    }
-                    srcSize += read;
+            long unconsumed = srcSize - srcPos;
+            if (unconsumed == 0 && toRead != 1) {
+                srcSize = in.read(src, 0, srcBuffSize);
+                if (srcSize < 0) {
+                    throw new IOException("Read error or truncated source");
                 }
+                srcPos = 0;
             }
+
             toRead = decompressStream(stream, dst, dstSize, src, (int) srcSize);
 
             if (Zstd.isError(toRead)) {
@@ -93,9 +86,6 @@ public class ZstdInputStream extends FilterInputStream {
             if (toRead == 0) {
                 // re-init the codec so it can start decoding next frame
                 toRead = initDStream(stream);
-                toRead = 9; // TODO: magic
-                srcSize = 0;
-                srcPos = 0;
                 if (Zstd.isError(toRead)) {
                     throw new IOException("Decompression error: " + Zstd.getErrorName(toRead));
                 }
@@ -116,7 +106,7 @@ public class ZstdInputStream extends FilterInputStream {
     }
 
     public int available() throws IOException {
-        if (toRead == 1 || toRead == 3) {
+        if (toRead == 1 || srcSize - srcPos > 0) {
             /* TODO: Talk with  Yann */
             return 1;
         } else {
@@ -130,8 +120,7 @@ public class ZstdInputStream extends FilterInputStream {
     }
 
     /* we can skip forward */
-    public long skip(long n) throws IOException {
-        long toSkip = n;
+    public long skip(long toSkip) throws IOException {
         long skipped = 0;
         int dstSize = (int) recommendedDOutSize();
         byte[] dst = new byte[dstSize];
