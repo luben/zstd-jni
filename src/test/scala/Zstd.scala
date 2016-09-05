@@ -64,9 +64,8 @@ class ZstdSpec extends FlatSpec with Checkers {
     }
   }
 
-  /*
   for (level <- levels) {
-    "ZstdContinuousInputStream" should s"should round-trip using streaming API with unfinished chunks at level $level" in {
+    "ZstdInputStream in continuous mode" should s"should round-trip using streaming API with unfinished chunks at level $level" in {
       check { input: Array[Byte] =>
         val size  = input.length
         val os    = new ByteArrayOutputStream(Zstd.compressBound(size.toLong).toInt)
@@ -82,7 +81,7 @@ class ZstdSpec extends FlatSpec with Checkers {
         val compressed = os.toByteArray
         // now decompress
         val is    = new ByteArrayInputStream(compressed)
-        val zis   = new ZstdContinuousInputStream(is)
+        val zis   = new ZstdInputStream(is).setContinuous(true);
         val output= Array.fill[Byte](size)(0)
         ptr       = 0
 
@@ -101,7 +100,6 @@ class ZstdSpec extends FlatSpec with Checkers {
       }
     }
   }
-  */
 
   for (level <- levels)
     "ZstdInputStream" should s"be able to consume files compressed by the zstd binary at level $level" in {
@@ -212,13 +210,12 @@ class ZstdSpec extends FlatSpec with Checkers {
         sys.error(s"Failed")
     }
 
-  /*
   for (version <- List("04", "05", "06", "07", "08"))
-    "ZstdContinuousInputStream" should s"be able to consume files compressed by the zstd binary version $version" in {
+    "ZstdInputStream in continuous mode" should s"be able to consume files compressed by the zstd binary version $version" in {
       val orig = new File("src/test/resources/xml")
       val file = new File(s"src/test/resources/xml_v$version.zst")
       val fis  = new FileInputStream(file)
-      val zis  = new ZstdContinuousInputStream(fis)
+      val zis  = new ZstdInputStream(fis).setContinuous(true);
       assert(!zis.markSupported)
       assert(zis.available == 0)
       assert(zis.skip(0) == 0)
@@ -233,5 +230,4 @@ class ZstdSpec extends FlatSpec with Checkers {
       if(original != buff.toSeq)
         sys.error(s"Failed")
     }
-    */
 }

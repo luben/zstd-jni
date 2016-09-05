@@ -31,6 +31,8 @@ public class ZstdInputStream extends FilterInputStream {
     private long toRead = 0;
     private static final int srcBuffSize = (int) recommendedDInSize();
 
+    private boolean isContinuous = false;
+
     /* JNI methods */
     private static native long recommendedDInSize();
     private static native long recommendedDOutSize();
@@ -56,6 +58,21 @@ public class ZstdInputStream extends FilterInputStream {
         }
     }
 
+    /**
+     * Don't break on unfinished frames
+     *
+     * Use case: decompressing files that are not
+     * yet finished writing and compressing
+     */
+    public ZstdInputStream setContinuous(boolean b) {
+        isContinuous = b;
+        return this;
+    }
+
+    public boolean getContinuous() {
+        return this.isContinuous;
+    }
+
     public int read(byte[] dst, int offset, int len) throws IOException {
 
         // guard agains buffer overflows
@@ -71,7 +88,7 @@ public class ZstdInputStream extends FilterInputStream {
             long unconsumed = srcSize - srcPos;
             if (unconsumed == 0 && (toRead != 1 || reallyNeedThatOne)) {
                 srcSize = in.read(src, 0, srcBuffSize);
-                if (srcSize < 0) {
+                if (srcSize < 0 && !isContinuous) {
                     throw new IOException("Read error or truncated source");
                 }
                 srcPos = 0;
