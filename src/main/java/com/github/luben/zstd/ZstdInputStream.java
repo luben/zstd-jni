@@ -1,6 +1,5 @@
 package com.github.luben.zstd;
 
-import java.nio.ByteBuffer;
 import java.io.InputStream;
 import java.io.FilterInputStream;
 import java.io.IOException;
@@ -27,10 +26,10 @@ public class ZstdInputStream extends FilterInputStream {
     private long stream;
     private long dstPos = 0;
     private long srcPos = 0;
-    private long srcEnd = 0;
+    private long srcSize = 0;
     private byte[] src = null;
     private long toRead = 0;
-    private static final int srcSize = (int) recommendedDInSize();
+    private static final int srcBuffSize = (int) recommendedDInSize();
 
     /* JNI methods */
     private static native long recommendedDInSize();
@@ -46,9 +45,9 @@ public class ZstdInputStream extends FilterInputStream {
         super(inStream);
 
         // allocate input buffer with max frame header size
-        src = new byte[srcSize];
+        src = new byte[srcBuffSize];
         if (src == null) {
-            throw new IOException("Error allocating the input buffer of size " + srcSize);
+            throw new IOException("Error allocating the input buffer of size " + srcBuffSize);
         }
         stream = createDStream();
         toRead = initDStream(stream); // TODO: why it does not return the frame header size?
@@ -68,48 +67,42 @@ public class ZstdInputStream extends FilterInputStream {
         int dstSize = offset + len;
         dstPos = offset;
 
-        int completed = 0;
-
         while (dstPos < dstSize) {
-            if (srcEnd + toRead > srcSize) {
-                int toCopy = (int) (srcEnd-srcPos);
-                if (toCopy > 0) {
-                    System.arraycopy(src, (int) srcPos, src, 0, (int)(srcEnd-srcPos));
-                }
+            if (srcSize == srcPos) {
                 srcPos = 0;
-                srcEnd = toCopy;
+                srcSize = 0;
             }
-            if (toRead != 1) { // TODO: Why are they not consumed in one go?
-                int reading = (int) (toRead - (srcEnd - srcPos));
+            if (toRead > 1) { // TODO: Why are they not consumed in one go?
+                long unconsumed = srcSize - srcPos;
+                int reading = (int) (toRead - unconsumed);
                 if (reading > 0) {
-                    int read = in.read(src, (int) srcEnd, reading);
+                    int read = in.read(src, (int) srcSize, reading);
                     if (read < 0) {
                         throw new IOException("Read error or truncated source");
                     }
-                    srcEnd += read;
+                    srcSize += read;
                 }
             }
-            long oldDPos = dstPos;
-            toRead = decompressStream(stream, dst, dstSize, src, (int) srcEnd);
-            completed += (int)(dstPos - oldDPos);
+            toRead = decompressStream(stream, dst, dstSize, src, (int) srcSize);
 
             if (Zstd.isError(toRead)) {
                 throw new IOException("Decompression error: " + Zstd.getErrorName(toRead));
             }
+
             // we have completed a frame
             if (toRead == 0) {
                 // re-init the codec so it can start decoding next frame
                 toRead = initDStream(stream);
                 toRead = 9; // TODO: magic
+                srcSize = 0;
                 srcPos = 0;
-                srcEnd = 0;
                 if (Zstd.isError(toRead)) {
                     throw new IOException("Decompression error: " + Zstd.getErrorName(toRead));
                 }
-                return completed;
+                return (int)(dstPos - offset);
             }
         }
-        return completed;
+        return len;
     }
 
     public int read() throws IOException {
@@ -123,7 +116,7 @@ public class ZstdInputStream extends FilterInputStream {
     }
 
     public int available() throws IOException {
-        if (toRead == 1) {
+        if (toRead == 1 || toRead == 3) {
             /* TODO: Talk with  Yann */
             return 1;
         } else {
