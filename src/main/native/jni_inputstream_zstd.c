@@ -19,6 +19,16 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdInputStream_recommendedDIn
 
 /*
  * Class:     com_github_luben_zstd_ZstdInputStream
+ * Method:    recommendedDOutSize
+ * Signature: ()I
+ */
+JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdInputStream_recommendedDOutSize
+  (JNIEnv *env, jclass obj) {
+    return (jint) ZSTD_DStreamOutSize();
+}
+
+/*
+ * Class:     com_github_luben_zstd_ZstdInputStream
  * Method:    createDStream
  * Signature: ()J
  */

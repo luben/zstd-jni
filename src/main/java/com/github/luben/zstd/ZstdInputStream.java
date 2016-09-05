@@ -34,6 +34,7 @@ public class ZstdInputStream extends FilterInputStream {
 
     /* JNI methods */
     private static native long recommendedDInSize();
+    private static native long recommendedDOutSize();
     private static native long createDStream();
     private static native int  freeDStream(long stream);
     private native int  initDStream(long stream);
@@ -139,9 +140,10 @@ public class ZstdInputStream extends FilterInputStream {
     public long skip(long n) throws IOException {
         long toSkip = n;
         long skipped = 0;
-        byte[] dst = new byte[128*1024];
-        while (toSkip > 128*1024) {
-            long size = read(dst, 0, 1024);
+        int dstSize = (int) recommendedDOutSize();
+        byte[] dst = new byte[dstSize];
+        while (toSkip > dstSize) {
+            long size = read(dst, 0, dstSize);
             toSkip -= size;
             skipped += size;
         }
