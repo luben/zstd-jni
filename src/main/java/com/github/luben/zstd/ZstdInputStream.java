@@ -91,11 +91,11 @@ public class ZstdInputStream extends FilterInputStream {
                 srcSize = in.read(src, 0, srcBuffSize);
                 srcPos = 0;
                 if (srcSize < 0) {
-                    if (isContinuous) {
-                        srcSize = 0;
-                        return 0;
-                    } else if (frameFinished) {
+                    srcSize = 0;
+                    if (frameFinished) {
                         return -1;
+                    } else if (isContinuous) {
+                        return (int)(dstPos - offset);
                     } else {
                         throw new IOException("Read error or truncated source");
                     }
@@ -113,12 +113,12 @@ public class ZstdInputStream extends FilterInputStream {
 
             // we have completed a frame
             if (toRead == 0) {
+                frameFinished = true;
                 // re-init the codec so it can start decoding next frame
                 toRead = initDStream(stream);
                 if (Zstd.isError(toRead)) {
                     throw new IOException("Decompression error: " + Zstd.getErrorName(toRead));
                 }
-                frameFinished = true;
                 return (int)(dstPos - offset);
             }
         }
