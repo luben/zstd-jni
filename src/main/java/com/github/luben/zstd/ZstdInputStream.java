@@ -32,6 +32,7 @@ public class ZstdInputStream extends FilterInputStream {
     private static final int srcBuffSize = (int) recommendedDInSize();
 
     private boolean isContinuous = false;
+    private boolean frameFinished = false;
 
     /* JNI methods */
     private static native long recommendedDInSize();
@@ -92,11 +93,14 @@ public class ZstdInputStream extends FilterInputStream {
                 if (srcSize < 0) {
                     if (isContinuous) {
                         srcSize = 0;
-                        return (int)(dstPos - offset);
+                        return 0;
+                    } else if (frameFinished) {
+                        return -1;
                     } else {
                         throw new IOException("Read error or truncated source");
                     }
                 }
+                frameFinished = false;
             }
 
             long oldDstPos = dstPos;
@@ -114,6 +118,7 @@ public class ZstdInputStream extends FilterInputStream {
                 if (Zstd.isError(toRead)) {
                     throw new IOException("Decompression error: " + Zstd.getErrorName(toRead));
                 }
+                frameFinished = true;
                 return (int)(dstPos - offset);
             }
         }
