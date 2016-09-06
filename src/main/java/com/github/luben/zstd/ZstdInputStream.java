@@ -88,10 +88,15 @@ public class ZstdInputStream extends FilterInputStream {
             long unconsumed = srcSize - srcPos;
             if (unconsumed == 0 && (toRead != 1 || reallyNeedThatOne)) {
                 srcSize = in.read(src, 0, srcBuffSize);
-                if (srcSize < 0 && !isContinuous) {
-                    throw new IOException("Read error or truncated source");
-                }
                 srcPos = 0;
+                if (srcSize < 0) {
+                    if (isContinuous) {
+                        srcSize = 0;
+                        return (int)(dstPos - offset);
+                    } else {
+                        throw new IOException("Read error or truncated source");
+                    }
+                }
             }
 
             long oldDstPos = dstPos;
