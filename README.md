@@ -95,6 +95,7 @@ to build it locally [Building](#building-and-dependencies)
 License
 -------
 
-The code for these JNI bindings is licenced under BSD license - the same as
-the native **Zstd** library. See the LICENSE for full copythight and
-conditions.
+The code for these JNI bindings is licenced under 2-clause BSD license.
+The native **Zstd** library is licensed under 3-clause BSD license with
+a patent grant. See the LICENSE and src/main/native/LICENSE for full
+copythight and conditions.
