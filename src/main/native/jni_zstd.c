@@ -7,7 +7,7 @@
 /*
  * Class:     com_github_luben_zstd_Zstd
  * Method:    compress
- * Signature: ([BJ[BJI)J
+ * Signature: ([B[BI)J
  */
 JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_compress
   (JNIEnv *env, jclass obj, jbyteArray dst, jbyteArray src, jint level) {
@@ -27,7 +27,7 @@ E1: return size;
 /*
  * Class:     com_github_luben_zstd_Zstd
  * Method:    decompress
- * Signature: ([BJ[BJ)J
+ * Signature: ([B[B)J
  */
 JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_decompress
   (JNIEnv *env, jclass obj, jbyteArray dst, jbyteArray src) {
@@ -43,6 +43,23 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_decompress
 E2: (*env)->ReleasePrimitiveArrayCritical(env, dst, dst_buff, 0);
 E1: return size;
 }
+
+/*
+ * Class:     com_github_luben_zstd_Zstd
+ * Method:    decompressedSize
+ * Signature: ([B)J
+ */
+JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_decompressedSize
+  (JNIEnv *env, jclass obj, jbyteArray src) {
+    size_t size = (size_t)(0-ZSTD_error_memory_allocation);
+    jsize src_size = (*env)->GetArrayLength(env, src);
+    void *src_buff = (*env)->GetPrimitiveArrayCritical(env, src, NULL);
+    if (src_buff == NULL) goto E1;
+    size = ZSTD_getDecompressedSize(src_buff, (size_t) src_size);
+    (*env)->ReleasePrimitiveArrayCritical(env, src, src_buff, 0);
+E1: return size;
+}
+
 
 JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_compressUsingDict
   (JNIEnv *env, jclass obj, jbyteArray dst, jint dst_offset, jbyteArray src, jint src_offset, jint src_length, jbyteArray dict, jint level) {

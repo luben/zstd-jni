@@ -38,6 +38,16 @@ public class Zstd {
      */
     public static native long decompress(byte[] dst, byte[] src);
 
+
+    /**
+     * Return the original size of a compressed buffer (if known)
+     *
+     * @param src the compressed buffer
+     * @return the number of bytes of the original buffer
+     *         0 if the original size is now known
+     */
+    public static native long decompressedSize(byte[] src);
+
    /**
      * Compresses buffer 'src' into buffer 'dst' with dictionary.
      *
