@@ -190,6 +190,26 @@ public class Zstd {
     }
 
     /**
+     * Compresses the data in buffer 'src'
+     *
+     * @param src the source buffer
+     * @param dict dictionary to use
+     * @return byte array with the compressed data
+     */
+    public static byte[] compress(byte[] src, ZstdDictCompress dict) {
+        long maxDstSize = compressBound(src.length);
+        if (maxDstSize > Integer.MAX_VALUE) {
+            throw new RuntimeException("Max output size is greater than MAX_INT");
+        }
+        byte[] dst = new byte[(int) maxDstSize];
+        long size = compressFastDict(dst,0,src,0,src.length, dict);
+        if (isError(size)) {
+            throw new RuntimeException(getErrorName(size));
+        }
+        return Arrays.copyOfRange(dst, 0, (int) size);
+    }
+
+    /**
      * Compresses the data in buffer 'src' using defaul compression level
      *
      * @param src the source buffer
@@ -209,6 +229,27 @@ public class Zstd {
     public static byte[] decompress(byte[] src, int originalSize) {
         byte[] dst = new byte[originalSize];
         long size = decompress(dst, src);
+        if (isError(size)) {
+            throw new RuntimeException(getErrorName(size));
+        }
+        if (size != originalSize) {
+            return Arrays.copyOfRange(dst, 0, (int) size);
+        } else {
+            return dst;
+        }
+    }
+
+    /**
+     * Decompress data
+     *
+     * @param src the source buffer
+     * @param dict dictionary to use
+     * @param originalSize the maximum size of the uncompressed data
+     * @return byte array with the decompressed data
+     */
+    public static byte[] decompress(byte[] src, ZstdDictDecompress dict, int originalSize) {
+        byte[] dst = new byte[originalSize];
+        long size = decompressFastDict(dst, 0, src, 0, src.length, dict);
         if (isError(size)) {
             throw new RuntimeException(getErrorName(size));
         }

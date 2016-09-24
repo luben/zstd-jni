@@ -24,6 +24,7 @@ static void* getNativePtr(JNIEnv *env, jobject obj)
 JNIEXPORT void JNICALL Java_com_github_luben_zstd_ZstdDictDecompress_init
   (JNIEnv *env, jobject obj, jbyteArray dict)
 {
+    if (NULL == dict) return;
     jsize dict_size = (*env)->GetArrayLength(env, dict);
     void *dict_buff = (*env)->GetPrimitiveArrayCritical(env, dict, NULL);
     if (NULL == dict_buff) return;
@@ -54,6 +55,7 @@ JNIEXPORT void JNICALL Java_com_github_luben_zstd_ZstdDictDecompress_free
 JNIEXPORT void JNICALL Java_com_github_luben_zstd_ZstdDictCompress_init
   (JNIEnv *env, jobject obj, jbyteArray dict, jint level)
 {
+    if (NULL == dict) return;
     jsize dict_size = (*env)->GetArrayLength(env, dict);
     void *dict_buff = (*env)->GetPrimitiveArrayCritical(env, dict, NULL);
     if (NULL == dict_buff) return;
@@ -84,10 +86,21 @@ JNIEXPORT void JNICALL Java_com_github_luben_zstd_ZstdDictCompress_free
 JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_decompressFastDict
   (JNIEnv *env, jclass obj, jbyteArray dst, jint dst_offset, jbyteArray src, jint src_offset, jint src_length, jobject dict)
 {
+    if (NULL == dict) return ZSTD_error_dictionary_wrong;
     ZSTD_DDict* ddict = getNativePtr(env, dict);
     if (NULL == ddict) return ZSTD_error_dictionary_wrong;
+    if (NULL == dst) return ZSTD_error_dstSize_tooSmall;
+    if (NULL == src) return ZSTD_error_srcSize_wrong;
+    if (0 > dst_offset) return ZSTD_error_dstSize_tooSmall;
+    if (0 > src_offset) return ZSTD_error_srcSize_wrong;
+    if (0 > src_length) return ZSTD_error_srcSize_wrong;
+
     size_t size = (size_t)(0-ZSTD_error_memory_allocation);
-    jsize dst_size = (*env)->GetArrayLength(env, dst) - dst_offset;
+    jsize dst_size = (*env)->GetArrayLength(env, dst);
+    jsize src_size = (*env)->GetArrayLength(env, src);
+    if (dst_offset > dst_size) return ZSTD_error_dstSize_tooSmall;
+    if (src_size < (src_offset + src_length)) return ZSTD_error_srcSize_wrong;
+    dst_size -= dst_offset;
     void *dst_buff = (*env)->GetPrimitiveArrayCritical(env, dst, NULL);
     if (dst_buff == NULL) goto E1;
     void *src_buff = (*env)->GetPrimitiveArrayCritical(env, src, NULL);
@@ -107,9 +120,22 @@ E1: return size;
  */
 JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_compressFastDict
   (JNIEnv *env, jclass obj, jbyteArray dst, jint dst_offset, jbyteArray src, jint src_offset, jint src_length, jobject dict) {
+    if (NULL == dict) return ZSTD_error_dictionary_wrong;
     ZSTD_CDict* cdict = getNativePtr(env, dict);
+    if (NULL == cdict) return ZSTD_error_dictionary_wrong;
+    if (NULL == dst) return ZSTD_error_dstSize_tooSmall;
+    if (NULL == src) return ZSTD_error_srcSize_wrong;
+    if (0 > dst_offset) return ZSTD_error_dstSize_tooSmall;
+    if (0 > src_offset) return ZSTD_error_srcSize_wrong;
+    if (0 > src_length) return ZSTD_error_srcSize_wrong;
+
+
     size_t size = (size_t)(0-ZSTD_error_memory_allocation);
-    jsize dst_size = (*env)->GetArrayLength(env, dst) - dst_offset;
+    jsize dst_size = (*env)->GetArrayLength(env, dst);
+    jsize src_size = (*env)->GetArrayLength(env, src);
+    if (dst_offset > dst_size) return ZSTD_error_dstSize_tooSmall;
+    if (src_size < (src_offset + src_length)) return ZSTD_error_srcSize_wrong;
+    dst_size -= dst_offset;
     void *dst_buff = (*env)->GetPrimitiveArrayCritical(env, dst, NULL);
     if (dst_buff == NULL) goto E1;
     void *src_buff = (*env)->GetPrimitiveArrayCritical(env, src, NULL);
