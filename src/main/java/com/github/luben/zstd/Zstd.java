@@ -1,6 +1,5 @@
 package com.github.luben.zstd;
 
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 import com.github.luben.zstd.util.Native;
@@ -83,6 +82,42 @@ public class Zstd {
      *
      */
     public static native long decompressUsingDict(byte[] dst, int dstOffset, byte[] src, int srcOffset, int length, byte[] dict);
+
+
+    /**
+     * Decompresses buffer 'src' into buffer 'dst' with dictionary.
+     *
+     * Destination buffer should be sized to be larger of equal to the originalSize
+     *
+     * @param dst the destination buffer
+     * @param dstOffset the start offset of 'dst'
+     * @param src the source buffer
+     * @param srcOffset the start offset of 'src'
+     * @param length the length of 'src'
+     * @param dict the dictionary
+     * @return the number of bytes decompressed into destination buffer (originalSize)
+     *          or an errorCode if it fails (which can be tested using ZSTD_isError())
+     *
+     */
+    public static native long decompressFastDict(byte[] dst, int dstOffset, byte[] src, int srcOffset, int length, ZstdDictDecompress dict);
+
+    /**
+     * Compresses buffer 'src' into buffer 'dst' with dictionary.
+     *
+     * Destination buffer should be sized to handle worst cases situations (input
+     * data not compressible). Worst case size evaluation is provided by function
+     * ZSTD_compressBound().
+     *
+     * @param dst the destination buffer
+     * @param dstOffset the start offset of 'dst'
+     * @param src the source buffer
+     * @param srcOffset the start offset of 'src'
+     * @param length the length of 'src'
+     * @param dict the dictionary
+     * @return  the number of bytes written into buffer 'dst' or an error code if
+     *          it fails (which can be tested using ZSTD_isError())
+     */
+    public static native long compressFastDict(byte[] dst, int dstOffset, byte[] src, int srcOffset, int length, ZstdDictCompress dict);
 
     /* Utility methods */
 
