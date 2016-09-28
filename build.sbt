@@ -1,7 +1,7 @@
 
 name := "zstd-jni"
 
-version := "1.0.0"
+version := "1.1.0"
 
 scalaVersion := "2.11.8"
 
@@ -14,8 +14,8 @@ crossPaths := false
 parallelExecution in Test := false
 
 libraryDependencies ++= Seq(
-  "org.scalatest"  %% "scalatest"  % "2.2.6"  % "test",
-  "org.scalacheck" %% "scalacheck" % "1.12.5" % "test"
+  "org.scalatest"  %% "scalatest"  % "3.0.0"  % "test",
+  "org.scalacheck" %% "scalacheck" % "1.13.2" % "test"
 )
 
 // sbt-jni configuration

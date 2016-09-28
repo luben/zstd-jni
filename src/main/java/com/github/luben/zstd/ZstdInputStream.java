@@ -28,7 +28,6 @@ public class ZstdInputStream extends FilterInputStream {
     private long srcPos = 0;
     private long srcSize = 0;
     private byte[] src = null;
-    private long toRead = 0;
     private static final int srcBuffSize = (int) recommendedDInSize();
 
     private boolean isContinuous = false;
@@ -53,9 +52,9 @@ public class ZstdInputStream extends FilterInputStream {
             throw new IOException("Error allocating the input buffer of size " + srcBuffSize);
         }
         stream = createDStream();
-        toRead = initDStream(stream); // TODO: why it does not return the frame header size?
-        if (Zstd.isError(toRead)) {
-            throw new IOException("Decompression error: " + Zstd.getErrorName(toRead));
+        int size = initDStream(stream);
+        if (Zstd.isError(size)) {
+            throw new IOException("Decompression error: " + Zstd.getErrorName(size));
         }
     }
 
@@ -83,11 +82,9 @@ public class ZstdInputStream extends FilterInputStream {
         }
         int dstSize = offset + len;
         dstPos = offset;
-        boolean reallyNeedThatOne = false;
 
         while (dstPos < dstSize) {
-            long unconsumed = srcSize - srcPos;
-            if (unconsumed == 0 && (toRead != 1 || reallyNeedThatOne)) {
+            if (srcSize - srcPos == 0) {
                 srcSize = in.read(src, 0, srcBuffSize);
                 srcPos = 0;
                 if (srcSize < 0) {
@@ -103,21 +100,19 @@ public class ZstdInputStream extends FilterInputStream {
                 frameFinished = false;
             }
 
-            long oldDstPos = dstPos;
-            toRead = decompressStream(stream, dst, dstSize, src, (int) srcSize);
-            reallyNeedThatOne = oldDstPos == dstPos;
+            int size = decompressStream(stream, dst, dstSize, src, (int) srcSize);
 
-            if (Zstd.isError(toRead)) {
-                throw new IOException("Decompression error: " + Zstd.getErrorName(toRead));
+            if (Zstd.isError(size)) {
+                throw new IOException("Decompression error: " + Zstd.getErrorName(size));
             }
 
             // we have completed a frame
-            if (toRead == 0) {
+            if (size == 0) {
                 frameFinished = true;
                 // re-init the codec so it can start decoding next frame
-                toRead = initDStream(stream);
-                if (Zstd.isError(toRead)) {
-                    throw new IOException("Decompression error: " + Zstd.getErrorName(toRead));
+                size = initDStream(stream);
+                if (Zstd.isError(size)) {
+                    throw new IOException("Decompression error: " + Zstd.getErrorName(size));
                 }
                 return (int)(dstPos - offset);
             }
@@ -136,8 +131,7 @@ public class ZstdInputStream extends FilterInputStream {
     }
 
     public int available() throws IOException {
-        if (toRead == 1 || srcSize - srcPos > 0) {
-            /* TODO: Talk with  Yann */
+        if (srcSize - srcPos > 0) {
             return 1;
         } else {
             return 0;

@@ -9,8 +9,9 @@ import scala.io._
 import scala.collection.mutable.WrappedArray
 
 class ZstdSpec extends FlatSpec with Checkers {
+
   implicit override val generatorDrivenConfig =
-    PropertyCheckConfig(minSize = 0, maxSize = 130 * 1024)
+    PropertyCheckConfiguration(minSize = 0, sizeRange = 130 * 1024)
 
   val levels = List(1,3,6,9,16)
 
@@ -189,7 +190,7 @@ class ZstdSpec extends FlatSpec with Checkers {
     }
 
 
-  for (version <- List("04", "05", "06", "07", "08"))
+  for (version <- List("04", "05", "06", "07"))
     "ZstdInputStream" should s"be able to consume files compressed by the zstd binary version $version" in {
       val orig = new File("src/test/resources/xml")
       val file = new File(s"src/test/resources/xml_v$version.zst")
@@ -210,7 +211,7 @@ class ZstdSpec extends FlatSpec with Checkers {
         sys.error(s"Failed")
     }
 
-  for (version <- List("04", "05", "06", "07", "08"))
+  for (version <- List("04", "05", "06", "07"))
     "ZstdInputStream in continuous mode" should s"be able to consume files compressed by the zstd binary version $version" in {
       val orig = new File("src/test/resources/xml")
       val file = new File(s"src/test/resources/xml_v$version.zst")
