@@ -1,7 +1,7 @@
 package com.github.luben.zstd
 
 import org.scalatest.FlatSpec
-import org.scalatest.prop.Checkers
+import org.scalatest.prop.{Checkers, Whenever}
 import org.scalacheck.Arbitrary._
 import org.scalacheck.Prop._
 import java.io._
@@ -10,7 +10,7 @@ import java.nio.ByteBuffer
 import scala.io._
 import scala.collection.mutable.WrappedArray
 
-class ZstdSpec extends FlatSpec with Checkers {
+class ZstdSpec extends FlatSpec with Checkers with Whenever {
 
   implicit override val generatorDrivenConfig =
     PropertyCheckConfiguration(minSize = 0, sizeRange = 130 * 1024)
@@ -160,6 +160,45 @@ class ZstdSpec extends FlatSpec with Checkers {
       assert(decompressedBuffer.position() == levels.size * size)
       assert(!decompressedBuffer.hasRemaining)
       true
+    }
+  }
+
+  it should "fail to compress when the destination buffer is too small" in {
+    check{ input: Array[Byte] =>
+      (input.length > 0) ==> {
+        val size = input.length
+        val compressedSize = Zstd.compressBound(size.toLong)
+        val compressedBuffer = ByteBuffer.allocateDirect(compressedSize.toInt / 2)
+        val inputBuffer = ByteBuffer.allocateDirect(size)
+        inputBuffer.put(input)
+        inputBuffer.rewind()
+
+        val e = intercept[RuntimeException] {
+          Zstd.compress(compressedBuffer, inputBuffer, 1)
+        }
+
+        e.getMessage().contains("Destination buffer is too small")
+      }
+    }
+  }
+
+  it should "fail to decompress when the destination buffer is too small" in {
+    check { input: Array[Byte] =>
+      (input.length > 0) ==> {
+        val size = input.length
+        val compressedSize = Zstd.compressBound(size.toLong)
+        val inputBuffer = ByteBuffer.allocateDirect(size)
+        inputBuffer.put(input)
+        inputBuffer.rewind()
+        val compressedBuffer = Zstd.compress(inputBuffer, 1)
+        val decompressedBuffer = ByteBuffer.allocateDirect(size - 1)
+
+        val e = intercept[RuntimeException] {
+          Zstd.decompress(decompressedBuffer, compressedBuffer)
+        }
+
+        e.getMessage().contains("Destination buffer is too small")
+      }
     }
   }
 
