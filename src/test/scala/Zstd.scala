@@ -1,14 +1,16 @@
 package com.github.luben.zstd
 
 import org.scalatest.FlatSpec
-import org.scalatest.prop.Checkers
+import org.scalatest.prop.{Checkers, Whenever}
 import org.scalacheck.Arbitrary._
 import org.scalacheck.Prop._
 import java.io._
+import java.nio.ByteBuffer
+
 import scala.io._
 import scala.collection.mutable.WrappedArray
 
-class ZstdSpec extends FlatSpec with Checkers {
+class ZstdSpec extends FlatSpec with Checkers with Whenever {
 
   implicit override val generatorDrivenConfig =
     PropertyCheckConfiguration(minSize = 0, sizeRange = 130 * 1024)
@@ -24,6 +26,177 @@ class ZstdSpec extends FlatSpec with Checkers {
           val decompressed= Zstd.decompress(compressed, size)
           input.toSeq == decompressed.toSeq
         }
+      }
+    }
+
+    it should s"round-trip compression/decompression with ByteBuffers at level $level" in {
+      check { input: Array[Byte] =>
+        {
+          val size        = input.length
+          val inputBuffer = ByteBuffer.allocateDirect(size)
+          inputBuffer.put(input)
+          inputBuffer.rewind()
+          val compressedBuffer = ByteBuffer.allocateDirect(Zstd.compressBound(size).toInt)
+          val decompressedBuffer = ByteBuffer.allocateDirect(size)
+
+          val compressedSize = Zstd.compress(compressedBuffer, inputBuffer, level)
+
+          compressedBuffer.flip()
+          val decompressedSize = Zstd.decompress(decompressedBuffer, compressedBuffer)
+          assert(decompressedSize == input.length)
+
+          inputBuffer.rewind()
+          compressedBuffer.rewind()
+          decompressedBuffer.flip()
+
+          val comparison = inputBuffer.compareTo(decompressedBuffer)
+          val result = comparison == 0 && Zstd.decompressedSize(compressedBuffer) == decompressedSize
+          result
+        }
+      }
+    }
+
+    it should s"compress with a byte[] and uncompress with a ByteBuffer $level" in {
+      check { input: Array[Byte] =>
+        val size = input.length
+        val compressed = Zstd.compress(input, level)
+
+        val compressedBuffer = ByteBuffer.allocateDirect(Zstd.compressBound(size.toLong).toInt)
+        compressedBuffer.put(compressed)
+        compressedBuffer.limit(compressedBuffer.position())
+        compressedBuffer.rewind()
+
+        val decompressedBuffer = Zstd.decompress(compressedBuffer, size)
+        val decompressed = new Array[Byte](size)
+        decompressedBuffer.get(decompressed)
+        input.toSeq == decompressed.toSeq
+      }
+    }
+
+    it should s"compress with a ByteBuffer and uncompress with a byte[] $level" in {
+      check { input: Array[Byte] =>
+        val size        = input.length
+        val inputBuffer = ByteBuffer.allocateDirect(size)
+        inputBuffer.put(input)
+        inputBuffer.rewind()
+        val compressedBuffer  = Zstd.compress(inputBuffer, level)
+        val compressed = new Array[Byte](compressedBuffer.limit() - compressedBuffer.position())
+        compressedBuffer.get(compressed)
+
+        val decompressed = Zstd.decompress(compressed, size)
+        input.toSeq == decompressed.toSeq
+      }
+    }
+  }
+
+  it should s"honor non-zero position and limit values in ByteBuffers" in {
+    check { input: Array[Byte] =>
+      val size = input.length
+
+      //The test here is to compress the input at each of the designated levels, with each new compressed version
+      //being added to the same buffer as the one before it, one after the other.  Then decompress the same way.
+      //This verifies that the ByteBuffer-based versions behave the way one expects, honoring and updating position
+      //and limit as they go
+      val inputBuffer = ByteBuffer.allocateDirect(size)
+      inputBuffer.put(input)
+      inputBuffer.rewind()
+      val compressedBuffer = ByteBuffer.allocateDirect(Zstd.compressBound(size).toInt * levels.size)
+      val decompressedBuffer = ByteBuffer.allocateDirect(size * levels.size)
+
+      val compressedSizes = for (level <- levels) yield {
+        inputBuffer.rewind()
+
+        val oldCompressedPosition = compressedBuffer.position()
+        val oldInputPosition = inputBuffer.position()
+
+        val compressedSize = Zstd.compress(compressedBuffer, inputBuffer, level)
+
+        assert(inputBuffer.position() == oldInputPosition + size)
+        assert(compressedBuffer.position() == oldCompressedPosition + compressedSize)
+
+        compressedSize
+      }
+
+      compressedBuffer.flip()
+      for ((level, compresedSize) <- levels.zip(compressedSizes)) {
+        val oldCompressedPosition = compressedBuffer.position()
+        val oldDecompressedPosition = decompressedBuffer.position()
+
+        //This isn't using the streaming mode, so zstd expects the entire contents of the buffer to be one
+        //zstd compressed output.  For this test we've stacked the compressed outputs one after the other.
+        //Use limit to mark where the end of this particular compresssed output can be found.
+        //Note that the duplicate() call doesn't copy memory; it just makes a duplicate ByteBuffer pointing to the same
+        //location in memory
+        val thisChunkBuffer = compressedBuffer.duplicate()
+        thisChunkBuffer.limit(thisChunkBuffer.position() + compresedSize)
+        val decompressedSize = Zstd.decompress(decompressedBuffer, thisChunkBuffer)
+
+        assert(decompressedSize == input.length)
+        compressedBuffer.position(thisChunkBuffer.position)
+        assert(compressedBuffer.position() == oldCompressedPosition + compresedSize)
+        assert(decompressedBuffer.position() == oldDecompressedPosition + size)
+      }
+
+      //At this point the decompressedBuffer's position should equal it's limit.
+      //flip it and verify it has one copy of the input for each of the levels that were compressed
+      assert(decompressedBuffer.hasRemaining == false)
+      decompressedBuffer.flip()
+
+      for (level <- levels) {
+        val slice = decompressedBuffer.slice()
+        slice.limit(size)
+        inputBuffer.rewind()
+
+        val expected = new Array[Byte](size)
+        inputBuffer.get(expected)
+        val actual = new Array[Byte](size)
+        slice.get(actual)
+
+        assert(actual.toSeq == expected.toSeq)
+        decompressedBuffer.position(decompressedBuffer.position() + size)
+      }
+
+      assert(decompressedBuffer.position() == levels.size * size)
+      assert(!decompressedBuffer.hasRemaining)
+      true
+    }
+  }
+
+  it should "fail to compress when the destination buffer is too small" in {
+    check{ input: Array[Byte] =>
+      (input.length > 0) ==> {
+        val size = input.length
+        val compressedSize = Zstd.compressBound(size.toLong)
+        val compressedBuffer = ByteBuffer.allocateDirect(compressedSize.toInt / 2)
+        val inputBuffer = ByteBuffer.allocateDirect(size)
+        inputBuffer.put(input)
+        inputBuffer.rewind()
+
+        val e = intercept[RuntimeException] {
+          Zstd.compress(compressedBuffer, inputBuffer, 1)
+        }
+
+        e.getMessage().contains("Destination buffer is too small")
+      }
+    }
+  }
+
+  it should "fail to decompress when the destination buffer is too small" in {
+    check { input: Array[Byte] =>
+      (input.length > 0) ==> {
+        val size = input.length
+        val compressedSize = Zstd.compressBound(size.toLong)
+        val inputBuffer = ByteBuffer.allocateDirect(size)
+        inputBuffer.put(input)
+        inputBuffer.rewind()
+        val compressedBuffer = Zstd.compress(inputBuffer, 1)
+        val decompressedBuffer = ByteBuffer.allocateDirect(size - 1)
+
+        val e = intercept[RuntimeException] {
+          Zstd.decompress(decompressedBuffer, compressedBuffer)
+        }
+
+        e.getMessage().contains("Destination buffer is too small")
       }
     }
   }
