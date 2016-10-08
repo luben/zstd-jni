@@ -1,8 +1,10 @@
 package com.github.luben.zstd
 
 import org.scalatest.FlatSpec
+
 import scala.io._
 import java.io._
+import java.nio.ByteBuffer
 
 class ZstdPerfSpec extends FlatSpec  {
 
@@ -47,6 +49,30 @@ class ZstdPerfSpec extends FlatSpec  {
     assert (input.toSeq == output.toSeq)
   }
 
+  def benchDirectByteBuffer(name: String, input: Array[Byte], level: Int = 1): Unit = {
+    var nsc = 0.0
+    var nsd = 0.0
+    var ratio = 0.0
+    val cycles = 200
+    val outputBuffer = ByteBuffer.allocateDirect(input.size)
+    val inputBuffer = ByteBuffer.allocateDirect(input.size)
+    inputBuffer.put(input)
+    var compressedSize = 0
+    for (i <- 1 to cycles) {
+      val start_c     = System.nanoTime
+      inputBuffer.rewind()
+      val compressedBuffer  = Zstd.compress(inputBuffer, level)
+      nsc += System.nanoTime - start_c
+      compressedSize  = compressedBuffer.position()
+      val start_d     = System.nanoTime
+      outputBuffer.clear()
+      val size        = Zstd.decompress(outputBuffer, compressedBuffer)
+      nsd += System.nanoTime - start_d
+    }
+    report(name, compressedSize, input.size, cycles, nsc, nsd)
+    assert (inputBuffer.compareTo(outputBuffer) == 0)
+  }
+
   def benchStream(name: String, input: Array[Byte], level: Int = 1): Unit = {
     val cycles = 100
     val size  = input.length
@@ -89,6 +115,7 @@ class ZstdPerfSpec extends FlatSpec  {
     it should s"be fast for compressable data -$level" in {
       import scala.io._
       bench(s"Compressable data at $level", buff, level)
+      benchDirectByteBuffer(s"Compressable data at $level in a direct ByteBuffer", buff, level)
     }
   }
 
