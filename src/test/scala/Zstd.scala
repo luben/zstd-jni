@@ -119,7 +119,6 @@ class ZstdSpec extends FlatSpec with Checkers with Whenever {
 
       compressedBuffer.flip()
       for ((level, compresedSize) <- levels.zip(compressedSizes)) {
-        println(s"level=${level} compressedSize=${compresedSize}")
         val oldCompressedPosition = compressedBuffer.position()
         val oldDecompressedPosition = decompressedBuffer.position()
 
