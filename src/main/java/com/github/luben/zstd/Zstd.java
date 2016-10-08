@@ -1,5 +1,6 @@
 package com.github.luben.zstd;
 
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 import com.github.luben.zstd.util.Native;
@@ -25,6 +26,21 @@ public class Zstd {
     public static native long compress  (byte[] dst, byte[] src, int level);
 
     /**
+     * Compresses buffer 'src' into buffer 'dst'.
+     *
+     * Destination buffer should be sized to handle worst cases situations (input
+     * data not compressible). Worst case size evaluation is provided by function
+     * ZSTD_compressBound().
+     *
+     * @param dst the destination buffer
+     * @param src the source buffer
+     * @param level compression level
+     * @return  the number of bytes written into buffer 'dst' or an error code if
+     *          it fails (which can be tested using ZSTD_isError())
+     */
+    public static native long compressDirectByteBuffer  (ByteBuffer dst, int dstOffset, int dstSize, ByteBuffer src, int srcOffset, int srcSize, int level);
+
+    /**
      * Decompresses buffer 'src' into buffer 'dst'.
      *
      * Destination buffer should be sized to be larger of equal to the originalSize
@@ -37,6 +53,19 @@ public class Zstd {
      */
     public static native long decompress(byte[] dst, byte[] src);
 
+    /**
+     * Decompresses buffer 'src' into buffer 'dst'.
+     *
+     * Destination buffer should be sized to be larger of equal to the originalSize
+     *
+     * @param dst the destination buffer
+     * @param src the source buffer
+     * @return the number of bytes decompressed into destination buffer (originalSize)
+     *          or an errorCode if it fails (which can be tested using ZSTD_isError())
+     *
+     */
+    public static native long decompressDirectByteBuffer(ByteBuffer dst, int dstOffset, int dstSize, ByteBuffer src, int srcOffset, int srcSize);
+
 
     /**
      * Return the original size of a compressed buffer (if known)
@@ -46,6 +75,15 @@ public class Zstd {
      *         0 if the original size is now known
      */
     public static native long decompressedSize(byte[] src);
+
+    /**
+     * Return the original size of a compressed buffer (if known)
+     *
+     * @param src the compressed buffer
+     * @return the number of bytes of the original buffer
+     *         0 if the original size is now known
+     */
+    public static native long decompressedDirectByteBufferSize(ByteBuffer src, int srcPosition, int srcSize);
 
    /**
      * Compresses buffer 'src' into buffer 'dst' with dictionary.
@@ -82,7 +120,6 @@ public class Zstd {
      *
      */
     public static native long decompressUsingDict(byte[] dst, int dstOffset, byte[] src, int srcOffset, int length, byte[] dict);
-
 
     /**
      * Decompresses buffer 'src' into buffer 'dst' with dictionary.
@@ -190,6 +227,91 @@ public class Zstd {
     }
 
     /**
+     * Compresses the data in buffer 'srcBuf'
+     *
+     * @param dstBuf the destination buffer.  must be direct.  It is assumed that the position() of this buffer marks the offset
+     *               at which the compressed data are to be written, and that the capacity() of this buffer is the maximum
+     *               compressed data size to allow.
+     *               <p>
+     *               When this method returns successfully, dstBuf's position() will be set to its current position() plus the
+     *               compressed size of the data.
+     *               </p>
+     * @param srcBuf the source buffer.  must be direct.  It is assumed that the position() of this buffer marks the beginning of the
+     *               uncompressed data to be compressed, and that the limit() of this buffer marks its end.
+     *               <p>
+     *               When this method returns successfully, srcBuf's position() will be set to its limit().
+     *               </p>
+     * @param level compression level
+     * @return the size of the compressed data
+     */
+    public static int compress(ByteBuffer dstBuf, ByteBuffer srcBuf, int level) {
+        if (!srcBuf.isDirect()) {
+            throw new IllegalArgumentException("srcBuf must be a direct buffer");
+        }
+
+        if (!dstBuf.isDirect()) {
+            throw new IllegalArgumentException("dstBuf must be a direct buffer");
+        }
+
+        long size = compressDirectByteBuffer(dstBuf, //compress into dstBuf
+                dstBuf.position(), //write compressed data starting at offset position()
+                dstBuf.capacity() - dstBuf.position(), //write no more than capacity() - position() bytes
+                srcBuf, //read data to compress from srcBuf
+                srcBuf.position(), //start reading at position()
+                srcBuf.limit() - srcBuf.position(), //read limit() - position() bytes
+                level); //use this compression level
+        if (isError(size)) {
+            throw new RuntimeException(getErrorName(size));
+        }
+        srcBuf.position(srcBuf.limit());
+        dstBuf.position(dstBuf.position() + (int)size);
+        return (int)size;
+    }
+
+    /**
+     * Compresses the data in buffer 'srcBuf'
+     *
+     * @param srcBuf the source buffer.  must be direct.  It is assumed that the position() of this buffer marks the beginning of the
+     *               uncompressed data to be compressed, and that the limit() of this buffer marks its end.
+     *               <p>
+     *               When this method returns successfully, srcBuf's position() will be set to its limit().
+     *               </p>
+     * @param level compression level
+     * @return A newly allocated direct ByteBuffer containing the compressed data.
+     */
+    public static ByteBuffer compress(ByteBuffer srcBuf, int level) {
+        if (!srcBuf.isDirect()) {
+            throw new IllegalArgumentException("srcBuf must be a direct buffer");
+        }
+
+        long maxDstSize = Zstd.compressBound((long)(srcBuf.limit() - srcBuf.position()));
+        if (maxDstSize > Integer.MAX_VALUE) {
+            throw new RuntimeException("Max output size is greater than MAX_INT");
+        }
+
+        ByteBuffer dstBuf = ByteBuffer.allocateDirect((int)maxDstSize);
+
+        long size = compressDirectByteBuffer(dstBuf, //compress into dstBuf
+                0, //starting at offset 0
+                (int)maxDstSize, //writing no more than maxDstSize
+                srcBuf, //read data to be compressed from srcBuf
+                srcBuf.position(), //start reading at offset position()
+                srcBuf.limit() - srcBuf.position(), //read limit() - position() bytes
+                level); //use this compression level
+        if (isError(size)) {
+            throw new RuntimeException(getErrorName(size));
+        }
+        srcBuf.position(srcBuf.limit());
+
+        dstBuf.limit((int)size);
+        //Since we allocated the buffer ourselves, we know it cannot be used to hold any further compressed data,
+        //so leave the position at zero where the caller surely wants it
+        //dstBuf.position(dstBuf.position() + (int)size);
+
+        return dstBuf;
+    }
+
+    /**
      * Compresses the data in buffer 'src'
      *
      * @param src the source buffer
@@ -237,6 +359,92 @@ public class Zstd {
         } else {
             return dst;
         }
+    }
+
+    /**
+     * Decompress data
+     *
+     * @param dstBuf the destination buffer.  must be direct.  It is assumed that the position() of this buffer marks the offset
+     *               at which the decompressed data are to be written, and that the capacity() of this buffer is the maximum
+     *               decompressed data size to allow.
+     *               <p>
+     *               When this method returns successfully, dstBuf's position() will be set to its current position() plus the
+     *               decompressed size of the data.
+     *               </p>
+     * @param srcBuf the source buffer.  must be direct.  It is assumed that the position() of this buffer marks the beginning of the
+     *               compressed data to be decompressed, and that the limit() of this buffer marks its end.
+     *               <p>
+     *               When this method returns successfully, srcBuf's position() will be set to its limit().
+     *               </p>
+     * @return the size of the decompressed data.
+     */
+    public static int decompress(ByteBuffer dstBuf, ByteBuffer srcBuf) {
+        if (!srcBuf.isDirect()) {
+            throw new IllegalArgumentException("srcBuf must be a direct buffer");
+        }
+
+        if (!dstBuf.isDirect()) {
+            throw new IllegalArgumentException("dstBuf must be a direct buffer");
+        }
+
+        long size = decompressDirectByteBuffer(dstBuf, //decompress into dstBuf
+                dstBuf.position(), //write decompressed data at offset position()
+                dstBuf.capacity() - dstBuf.position(), //write no more than capacity() - position()
+                srcBuf, //read compressed data from srcBuf
+                srcBuf.position(), //read starting at offset position()
+                srcBuf.limit() - srcBuf.position()); //read no more than limit() - position()
+        if (isError(size)) {
+            throw new RuntimeException(getErrorName(size));
+        }
+
+        srcBuf.position(srcBuf.limit());
+        dstBuf.position(dstBuf.position() + (int)size);
+        return (int)size;
+    }
+
+    /**
+     * Decompress data
+     *
+     * @param srcBuf the source buffer.  must be direct.  It is assumed that the position() of this buffer marks the beginning of the
+     *               compressed data to be decompressed, and that the limit() of this buffer marks its end.
+     *               <p>
+     *               When this method returns successfully, srcBuf's position() will be set to its limit().
+     *               </p>
+     * @param originalSize the maximum size of the uncompressed data
+     * @return A newly-allocated ByteBuffer containing the decompressed data.  The position() of this buffer will be 0,
+     *          and the limit() will be the size of the decompressed data.  In other words the buffer is ready to be used for
+     *          reading.  Note that this is different behavior from the other decompress() overload which takes as a parameter
+     *          the destination ByteBuffer.
+     */
+    public static ByteBuffer decompress(ByteBuffer srcBuf, int originalSize) {
+        if (!srcBuf.isDirect()) {
+            throw new IllegalArgumentException("srcBuf must be a direct buffer");
+        }
+
+        ByteBuffer dstBuf = ByteBuffer.allocateDirect(originalSize);
+        long size = decompressDirectByteBuffer(dstBuf, 0, originalSize, srcBuf, srcBuf.position(), srcBuf.limit());
+        if (isError(size)) {
+            throw new RuntimeException(getErrorName(size));
+        }
+
+        srcBuf.position(srcBuf.limit());
+        //Since we allocated the buffer ourselves, we know it cannot be used to hold any further decompressed data,
+        //so leave the position at zero where the caller surely wants it
+        //dstBuf.position(dstBuf.position() + (int)size);
+        return dstBuf;
+    }
+
+    /**
+     * Return the original size of a compressed buffer (if known)
+     *
+     * @param srcBuf the compressed buffer.  must be direct.  It is assumed that the position() of this buffer marks the beginning of the
+     *               compressed data whose decompressed size is being queried, and that the limit() of this buffer marks its
+     *               end.
+     * @return the number of bytes of the original buffer
+     *         0 if the original size is not known
+     */
+    public static long decompressedSize(ByteBuffer srcBuf) {
+        return decompressedDirectByteBufferSize(srcBuf, srcBuf.position(), srcBuf.limit() - srcBuf.position());
     }
 
     /**
