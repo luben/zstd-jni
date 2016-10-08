@@ -41,12 +41,6 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_compressDirectByteBuffer
     char *src_buf_ptr = (char*)(*env)->GetDirectBufferAddress(env, src_buf);
     if (src_buf_ptr == NULL) goto E1;
 
-    printf("compress: dst=0x%p dst_offset=%d src_buf=%p src_offset=%d dst_ptr=%p\n",
-        dst_buf_ptr, dst_offset, src_buf_ptr, src_offset, dst_buf_ptr + dst_offset);
-    if (src_size == 1) {
-        printf("compress: source byte is 0x%x\n", src_buf_ptr[0]);
-    }
-    fflush(stdout);
     size = ZSTD_compress(dst_buf_ptr + dst_offset, (size_t) dst_size, src_buf_ptr + src_offset, (size_t) src_size, (int) level);
 E1: return size;
 }
@@ -80,8 +74,6 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_decompressDirectByteBuff
   (JNIEnv *env, jclass obj, jobject dst_buf, jint dst_offset, jint dst_size, jobject src_buf, jint src_offset, jint src_size) {
     size_t size = (size_t)ERROR(memory_allocation);
 
-    printf("decompress: decompressing direct byte buffer\n");
-
     jsize dst_cap = (*env)->GetDirectBufferCapacity(env, dst_buf);
     if (dst_offset + dst_size > dst_cap) return ERROR(dstSize_tooSmall);
     jsize src_cap = (*env)->GetDirectBufferCapacity(env, src_buf);
@@ -91,13 +83,7 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_decompressDirectByteBuff
     char *src_buf_ptr = (char*)(*env)->GetDirectBufferAddress(env, src_buf);
     if (src_buf_ptr == NULL) goto E1;
 
-    printf("decompress: dst=0x%p dst_offset=%d src_buf=%p src_offset=%d dst_ptr=%p\n",
-        dst_buf_ptr, dst_offset, src_buf_ptr, src_offset, dst_buf_ptr + dst_offset);
     size = ZSTD_decompress(dst_buf_ptr + dst_offset, (size_t) dst_size, src_buf_ptr + src_offset, (size_t) src_size);
-    if (size == 1) {
-        printf("decompress: dest byte is 0x%x\n", dst_buf_ptr[0]);
-    }
-    fflush(stdout);
 E1: return size;
 }
 
