@@ -63,7 +63,7 @@ class ZstdPerfSpec extends FlatSpec  {
       inputBuffer.rewind()
       val compressedBuffer  = Zstd.compress(inputBuffer, level)
       nsc += System.nanoTime - start_c
-      compressedSize  = compressedBuffer.position()
+      compressedSize  = compressedBuffer.limit()
       val start_d     = System.nanoTime
       outputBuffer.clear()
       val size        = Zstd.decompress(outputBuffer, compressedBuffer)
