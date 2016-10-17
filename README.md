@@ -68,7 +68,7 @@ Binary releases
 ---------------
 
 The binary releases are architecture dependent because we are embedding the
-native library in the provided Jar file. Currently they are built for
+native library in the provided Jar file. Currently they are built for *win-amd64*, *win-x86*,
 *linux-amd64*, *linux-i386*, *linux-aarch64*, *linux-ppc64*, *aix-ppc64*
 and *max_os_x-x86_64*. More builds will be available if I get access to more
 platforms.
