@@ -1,6 +1,6 @@
 #include <jni.h>
 #include <zstd_internal.h>
-#include <error_public.h>
+#include <zstd_errors.h>
 
 static jfieldID nativePtrField(JNIEnv *env, jobject obj)
 {

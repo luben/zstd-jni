@@ -1,6 +1,6 @@
 #include <jni.h>
 #include <dictBuilder/zdict.h>
-#include <error_public.h>
+#include <zstd_errors.h>
 #include <stdlib.h>
 
 JNIEXPORT jlong Java_com_github_luben_zstd_Zstd_trainFromBuffer

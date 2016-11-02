@@ -1,6 +1,6 @@
 #include <jni.h>
 #include <zstd_internal.h>
-#include <error_public.h>
+#include <zstd_errors.h>
 
 #define ZSTD_BLOCKSIZE_MAX (128 * 1024)   /* define, for static allocation */
 

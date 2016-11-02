@@ -1,6 +1,6 @@
 #include <jni.h>
 #include <zstd_internal.h>
-#include <error_public.h>
+#include <zstd_errors.h>
 #include <stdlib.h>
 
 /* field IDs can't change in the same VM */
