@@ -32,6 +32,7 @@ public class ZstdInputStream extends FilterInputStream {
 
     private boolean isContinuous = false;
     private boolean frameFinished = false;
+    private boolean isClosed = false;
 
     /* JNI methods */
     private static native long recommendedDInSize();
@@ -74,6 +75,10 @@ public class ZstdInputStream extends FilterInputStream {
     }
 
     public int read(byte[] dst, int offset, int len) throws IOException {
+
+        if (isClosed) {
+            throw new IOException("Stream closed");
+        }
 
         // guard agains buffer overflows
         if (offset < 0 || len > dst.length - offset) {
@@ -131,6 +136,9 @@ public class ZstdInputStream extends FilterInputStream {
     }
 
     public int available() throws IOException {
+        if (isClosed) {
+            throw new IOException("Stream closed");
+        }
         if (srcSize - srcPos > 0) {
             return 1;
         } else {
@@ -145,6 +153,9 @@ public class ZstdInputStream extends FilterInputStream {
 
     /* we can skip forward */
     public long skip(long toSkip) throws IOException {
+        if (isClosed) {
+            throw new IOException("Stream closed");
+        }
         long skipped = 0;
         int dstSize = (int) recommendedDOutSize();
         byte[] dst = new byte[dstSize];
@@ -158,7 +169,11 @@ public class ZstdInputStream extends FilterInputStream {
     }
 
     public void close() throws IOException {
+        if (isClosed) {
+            return;
+        }
         freeDStream(stream);
         in.close();
+        isClosed = true;
     }
 }

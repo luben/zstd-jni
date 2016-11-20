@@ -26,6 +26,7 @@ public class ZstdOutputStream extends FilterOutputStream {
     private long srcPos = 0;
     private long dstPos = 0;
     private byte[] dst = null;
+    private boolean isClosed = false;
     private static final int dstSize = (int) recommendedCOutSize();
 
     /* JNI methods */
@@ -57,6 +58,9 @@ public class ZstdOutputStream extends FilterOutputStream {
     }
 
     public void write(byte[] src, int offset, int len) throws IOException {
+        if (isClosed) {
+            throw new IOException("Stream closed");
+        }
         int srcSize = offset + len;
         srcPos = offset;
         while (srcPos < srcSize) {
@@ -80,6 +84,9 @@ public class ZstdOutputStream extends FilterOutputStream {
      * Flushes the output
      */
     public void flush() throws IOException {
+        if (isClosed) {
+            throw new IOException("Stream closed");
+        }
         // compress the remaining input
         int size = flushStream(stream, dst, dstSize);
         if (Zstd.isError(size)) {
@@ -90,6 +97,9 @@ public class ZstdOutputStream extends FilterOutputStream {
     }
 
     public void close() throws IOException {
+        if (isClosed) {
+            return;
+        }
         // compress the remaining input and close the frame
         int size = endStream(stream, dst, dstSize);
         if (Zstd.isError(size)) {
@@ -100,5 +110,6 @@ public class ZstdOutputStream extends FilterOutputStream {
         // release the resources
         freeCStream(stream);
         out.close();
+        isClosed = true;
     }
 }

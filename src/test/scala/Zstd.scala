@@ -164,7 +164,7 @@ class ZstdSpec extends FlatSpec with Checkers with Whenever {
 
   it should "fail to compress when the destination buffer is too small" in {
     check{ input: Array[Byte] =>
-      (input.length > 0) ==> {
+      (input.length > 1) ==> {
         val size = input.length
         val compressedSize = Zstd.compressBound(0)
         val compressedBuffer = ByteBuffer.allocateDirect(compressedSize.toInt)
@@ -337,6 +337,29 @@ class ZstdSpec extends FlatSpec with Checkers with Whenever {
       sys.error(s"Failed")
   }
 
+  "ZstdInputStream" should s"do nothing on double close but throw on reading of closed stream" in {
+    val file = new File(s"src/test/resources/xml-1x2.zst")
+    val fis  = new FileInputStream(file)
+    val zis  = new ZstdInputStream(fis)
+    zis.close()
+    zis.close()
+    assertThrows[IOException] {
+      val buff = Array.fill[Byte](100)(0)
+      zis.read(buff, 0, 100)
+    }
+  }
+
+  "ZstdOutputStream" should s"do nothing on double close but throw on writing on closed stream" in {
+    val os  = new ByteArrayOutputStream(100)
+    val zos = new ZstdOutputStream(os, 1)
+    zos.close()
+    zos.close()
+    assertThrows[IOException] {
+      zos.write("foo".toArray.map(_.toByte))
+    }
+  }
+
+
   for (level <- levels)
     "ZstdOutputStream" should s"produce the same compressed file as zstd binary at level $level" in {
       val file = new File("src/test/resources/xml")
@@ -352,7 +375,7 @@ class ZstdSpec extends FlatSpec with Checkers with Whenever {
       val zos = new ZstdOutputStream(os, level)
       zos.write(buff(0).toInt)
       zos.write(buff, 1, length - 1)
-      zos.close
+      zos.close()
 
       val compressed = os.toByteArray.toSeq
       val zst = Source.fromFile(s"src/test/resources/xml-$level.zst")(Codec.ISO8859).map{char => char.toByte}.to[WrappedArray]
