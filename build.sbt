@@ -57,7 +57,7 @@ jniGccFlags ++= Seq(
 jniGccFlags := (
   if (System.getProperty("os.name").toLowerCase startsWith "win")
     jniGccFlags.value.filterNot(_ == "-fPIC") ++
-      Seq("-D_JNI_IMPLEMENTATION_", "-Wl,--kill-at")
+      Seq("-D_JNI_IMPLEMENTATION_", "-Wl,--kill-at", "-static-libgcc", "-static-libstdc++")
   else
     jniGccFlags.value
   )
