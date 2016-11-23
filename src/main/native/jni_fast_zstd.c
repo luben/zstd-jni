@@ -1,6 +1,7 @@
 #include <jni.h>
 #include <zstd_internal.h>
 #include <zstd_errors.h>
+#include <stdint.h>
 
 static jfieldID nativePtrField(JNIEnv *env, jobject obj)
 {
@@ -13,7 +14,7 @@ static jfieldID nativePtrField(JNIEnv *env, jobject obj)
 static void* getNativePtr(JNIEnv *env, jobject obj)
 {
     jlong handle = (*env)->GetLongField(env, obj, nativePtrField(env, obj));
-    return (void*)handle;
+    return (void*)(intptr_t) handle;
 }
 
 /*
@@ -31,7 +32,7 @@ JNIEXPORT void JNICALL Java_com_github_luben_zstd_ZstdDictDecompress_init
     ZSTD_DDict* ddict = ZSTD_createDDict(dict_buff, dict_size);
     (*env)->ReleasePrimitiveArrayCritical(env, dict, dict_buff, JNI_ABORT);
     if (NULL == ddict) return;
-    (*env)->SetLongField(env, obj, nativePtrField(env, obj), (jlong)ddict);
+    (*env)->SetLongField(env, obj, nativePtrField(env, obj), (jlong)(intptr_t) ddict);
 }
 
 /*
@@ -62,7 +63,7 @@ JNIEXPORT void JNICALL Java_com_github_luben_zstd_ZstdDictCompress_init
     ZSTD_CDict* cdict = ZSTD_createCDict(dict_buff, dict_size, level);
     (*env)->ReleasePrimitiveArrayCritical(env, dict, dict_buff, JNI_ABORT);
     if (NULL == cdict) return;
-    (*env)->SetLongField(env, obj, nativePtrField(env, obj), (jlong)cdict);
+    (*env)->SetLongField(env, obj, nativePtrField(env, obj), (jlong)(intptr_t) cdict);
 }
 
 /*

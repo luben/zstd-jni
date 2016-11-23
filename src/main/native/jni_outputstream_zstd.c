@@ -2,6 +2,7 @@
 #include <zstd_internal.h>
 #include <zstd_errors.h>
 #include <stdlib.h>
+#include <stdint.h>
 
 /* field IDs can't change in the same VM */
 static jfieldID src_pos_id;
@@ -24,7 +25,7 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdOutputStream_recommendedCO
  */
 JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdOutputStream_createCStream
   (JNIEnv *env, jclass obj) {
-    return (jlong) ZSTD_createCStream();
+    return (jlong)(intptr_t) ZSTD_createCStream();
 }
 
 /*
@@ -34,7 +35,7 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdOutputStream_createCStrea
  */
 JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdOutputStream_freeCStream
   (JNIEnv *env, jclass obj, jlong stream) {
-    return ZSTD_freeCStream((ZSTD_CStream *) stream);
+    return ZSTD_freeCStream((ZSTD_CStream *)(intptr_t) stream);
 }
 
 /*
@@ -47,7 +48,7 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdOutputStream_initCStream
     jclass clazz = (*env)->GetObjectClass(env, obj);
     src_pos_id = (*env)->GetFieldID(env, clazz, "srcPos", "J");
     dst_pos_id = (*env)->GetFieldID(env, clazz, "dstPos", "J");
-    return ZSTD_initCStream((ZSTD_CStream *) stream, level);
+    return ZSTD_initCStream((ZSTD_CStream *)(intptr_t) stream, level);
 }
 
 /*
@@ -69,7 +70,7 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdOutputStream_compressStrea
     ZSTD_outBuffer output = { dst_buff, dst_size, 0 };
     ZSTD_inBuffer input = { src_buff, src_size, src_pos };
 
-    size = ZSTD_compressStream((ZSTD_CStream *) stream, &output, &input);
+    size = ZSTD_compressStream((ZSTD_CStream *)(intptr_t) stream, &output, &input);
 
     (*env)->ReleasePrimitiveArrayCritical(env, src, src_buff, 0);
 E2: (*env)->ReleasePrimitiveArrayCritical(env, dst, dst_buff, 0);
@@ -91,7 +92,7 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdOutputStream_endStream
     void *dst_buff = (*env)->GetPrimitiveArrayCritical(env, dst, NULL);
     if (dst_buff != NULL) {
         ZSTD_outBuffer output = { dst_buff, dst_size, 0 };
-        size = ZSTD_endStream((ZSTD_CStream *) stream, &output);
+        size = ZSTD_endStream((ZSTD_CStream *)(intptr_t) stream, &output);
         (*env)->ReleasePrimitiveArrayCritical(env, dst, dst_buff, 0);
         (*env)->SetLongField(env, obj, dst_pos_id, output.pos);
     }
@@ -111,7 +112,7 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdOutputStream_flushStream
     void *dst_buff = (*env)->GetPrimitiveArrayCritical(env, dst, NULL);
     if (dst_buff != NULL) {
         ZSTD_outBuffer output = { dst_buff, dst_size, 0 };
-        size = ZSTD_flushStream((ZSTD_CStream *) stream, &output);
+        size = ZSTD_flushStream((ZSTD_CStream *)(intptr_t) stream, &output);
         (*env)->ReleasePrimitiveArrayCritical(env, dst, dst_buff, 0);
         (*env)->SetLongField(env, obj, dst_pos_id, output.pos);
     }
