@@ -41,4 +41,3 @@ deploy:
 
 cache:
   - C:\Users\appveyor\.ivy2
-#  - C:\sbt\
