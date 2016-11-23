@@ -16,7 +16,7 @@ install:
       Add-Type -AssemblyName System.IO.Compression.FileSystem
       if (!(Test-Path -Path "C:\sbt" )) {
         (new-object System.Net.WebClient).DownloadFile(
-          "https://dl.bintray.com/sbt/native-packages/sbt/0.13.9/sbt-0.13.9.zip",
+          "https://dl.bintray.com/sbt/native-packages/sbt/0.13.13/sbt-0.13.13.zip",
           "C:\sbt-bin.zip"
         )
         [System.IO.Compression.ZipFile]::ExtractToDirectory("C:\sbt-bin.zip", "C:\sbt")
@@ -40,5 +40,5 @@ deploy:
   folder: appveyor
 
 cache:
-  - C:\sbt\
   - C:\Users\appveyor\.ivy2
+#  - C:\sbt\
