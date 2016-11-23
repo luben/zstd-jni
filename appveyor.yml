@@ -21,8 +21,7 @@ install:
         )
         [System.IO.Compression.ZipFile]::ExtractToDirectory("C:\sbt-bin.zip", "C:\sbt")
       }
-  - cmd: dir C:\sbt
-  - cmd: SET PATH=%MSYS_PATH%;C:\sbt\sbt\bin;%JAVA_HOME%\bin;%PATH%
+  - cmd: SET PATH=%MSYS_PATH%;C:\sbt\sbt-launcher-packaging-0.13.13\bin;%JAVA_HOME%\bin;%PATH%
 build_script:
   - sbt clean compile
 test_script:
