@@ -40,6 +40,43 @@ public class Zstd {
      */
     public static native long compressDirectByteBuffer  (ByteBuffer dst, int dstOffset, int dstSize, ByteBuffer src, int srcOffset, int srcSize, int level);
 
+   /**
+     * Compresses buffer 'src' into buffer 'dst' with dictionary.
+     *
+     * Destination buffer should be sized to handle worst cases situations (input
+     * data not compressible). Worst case size evaluation is provided by function
+     * ZSTD_compressBound().
+     *
+     * @param dst the destination buffer
+     * @param dstOffset the start offset of 'dst'
+     * @param src the source buffer
+     * @param srcOffset the start offset of 'src'
+     * @param length the length of 'src'
+     * @param dict the dictionary buffer
+     * @param level compression level
+     * @return  the number of bytes written into buffer 'dst' or an error code if
+     *          it fails (which can be tested using ZSTD_isError())
+     */
+    public static native long compressUsingDict (byte[] dst, int dstOffset, byte[] src, int srcOffset, int length, byte[] dict, int level);
+
+    /**
+     * Compresses buffer 'src' into buffer 'dst' with dictionary.
+     *
+     * Destination buffer should be sized to handle worst cases situations (input
+     * data not compressible). Worst case size evaluation is provided by function
+     * ZSTD_compressBound().
+     *
+     * @param dst the destination buffer
+     * @param dstOffset the start offset of 'dst'
+     * @param src the source buffer
+     * @param srcOffset the start offset of 'src'
+     * @param length the length of 'src'
+     * @param dict the dictionary
+     * @return  the number of bytes written into buffer 'dst' or an error code if
+     *          it fails (which can be tested using ZSTD_isError())
+     */
+    public static native long compressFastDict(byte[] dst, int dstOffset, byte[] src, int srcOffset, int length, ZstdDictCompress dict);
+
     /**
      * Decompresses buffer 'src' into buffer 'dst'.
      *
@@ -65,44 +102,6 @@ public class Zstd {
      *
      */
     public static native long decompressDirectByteBuffer(ByteBuffer dst, int dstOffset, int dstSize, ByteBuffer src, int srcOffset, int srcSize);
-
-
-    /**
-     * Return the original size of a compressed buffer (if known)
-     *
-     * @param src the compressed buffer
-     * @return the number of bytes of the original buffer
-     *         0 if the original size is now known
-     */
-    public static native long decompressedSize(byte[] src);
-
-    /**
-     * Return the original size of a compressed buffer (if known)
-     *
-     * @param src the compressed buffer
-     * @return the number of bytes of the original buffer
-     *         0 if the original size is now known
-     */
-    public static native long decompressedDirectByteBufferSize(ByteBuffer src, int srcPosition, int srcSize);
-
-   /**
-     * Compresses buffer 'src' into buffer 'dst' with dictionary.
-     *
-     * Destination buffer should be sized to handle worst cases situations (input
-     * data not compressible). Worst case size evaluation is provided by function
-     * ZSTD_compressBound().
-     *
-     * @param dst the destination buffer
-     * @param dstOffset the start offset of 'dst'
-     * @param src the source buffer
-     * @param srcOffset the start offset of 'src'
-     * @param length the length of 'src'
-     * @param dict the dictionary buffer
-     * @param level compression level
-     * @return  the number of bytes written into buffer 'dst' or an error code if
-     *          it fails (which can be tested using ZSTD_isError())
-     */
-    public static native long compressUsingDict (byte[] dst, int dstOffset, byte[] src, int srcOffset, int length, byte[] dict, int level);
 
     /**
      * Decompresses buffer 'src' into buffer 'dst' with dictionary.
@@ -138,25 +137,25 @@ public class Zstd {
      */
     public static native long decompressFastDict(byte[] dst, int dstOffset, byte[] src, int srcOffset, int length, ZstdDictDecompress dict);
 
-    /**
-     * Compresses buffer 'src' into buffer 'dst' with dictionary.
-     *
-     * Destination buffer should be sized to handle worst cases situations (input
-     * data not compressible). Worst case size evaluation is provided by function
-     * ZSTD_compressBound().
-     *
-     * @param dst the destination buffer
-     * @param dstOffset the start offset of 'dst'
-     * @param src the source buffer
-     * @param srcOffset the start offset of 'src'
-     * @param length the length of 'src'
-     * @param dict the dictionary
-     * @return  the number of bytes written into buffer 'dst' or an error code if
-     *          it fails (which can be tested using ZSTD_isError())
-     */
-    public static native long compressFastDict(byte[] dst, int dstOffset, byte[] src, int srcOffset, int length, ZstdDictCompress dict);
-
     /* Utility methods */
+
+    /**
+     * Return the original size of a compressed buffer (if known)
+     *
+     * @param src the compressed buffer
+     * @return the number of bytes of the original buffer
+     *         0 if the original size is now known
+     */
+    public static native long decompressedSize(byte[] src);
+
+    /**
+     * Return the original size of a compressed buffer (if known)
+     *
+     * @param src the compressed buffer
+     * @return the number of bytes of the original buffer
+     *         0 if the original size is now known
+     */
+    public static native long decompressedDirectByteBufferSize(ByteBuffer src, int srcPosition, int srcSize);
 
     /**
      * Maximum size of the compressed data
@@ -205,6 +204,16 @@ public class Zstd {
     public static native int blockSizeMax();
 
     /* Convenience methods */
+
+    /**
+     * Compresses the data in buffer 'src' using defaul compression level
+     *
+     * @param src the source buffer
+     * @return byte array with the compressed data
+     */
+    public static byte[] compress(byte[] src) {
+        return compress(src, 1);
+    }
 
     /**
      * Compresses the data in buffer 'src'
@@ -331,14 +340,22 @@ public class Zstd {
         return Arrays.copyOfRange(dst, 0, (int) size);
     }
 
-    /**
-     * Compresses the data in buffer 'src' using defaul compression level
+   /**
+     * Compresses buffer 'src' into buffer 'dst' with dictionary.
      *
+     * Destination buffer should be sized to handle worst cases situations (input
+     * data not compressible). Worst case size evaluation is provided by function
+     * ZSTD_compressBound().
+     *
+     * @param dst the destination buffer
      * @param src the source buffer
-     * @return byte array with the compressed data
+     * @param dict the dictionary buffer
+     * @param level compression level
+     * @return  the number of bytes written into buffer 'dst' or an error code if
+     *          it fails (which can be tested using ZSTD_isError())
      */
-    public static byte[] compress(byte[] src) {
-        return compress(src, 1);
+    public static long compressUsingDict(byte[] dst, byte[] src, byte[] dict, int level) {
+	return compressUsingDict(dst, 0, src, 0, src.length, dict, level);
     }
 
     /**
@@ -435,19 +452,6 @@ public class Zstd {
     }
 
     /**
-     * Return the original size of a compressed buffer (if known)
-     *
-     * @param srcBuf the compressed buffer.  must be direct.  It is assumed that the position() of this buffer marks the beginning of the
-     *               compressed data whose decompressed size is being queried, and that the limit() of this buffer marks its
-     *               end.
-     * @return the number of bytes of the original buffer
-     *         0 if the original size is not known
-     */
-    public static long decompressedSize(ByteBuffer srcBuf) {
-        return decompressedDirectByteBufferSize(srcBuf, srcBuf.position(), srcBuf.limit() - srcBuf.position());
-    }
-
-    /**
      * Decompress data
      *
      * @param src the source buffer
@@ -468,24 +472,6 @@ public class Zstd {
         }
     }
 
-   /**
-     * Compresses buffer 'src' into buffer 'dst' with dictionary.
-     *
-     * Destination buffer should be sized to handle worst cases situations (input
-     * data not compressible). Worst case size evaluation is provided by function
-     * ZSTD_compressBound().
-     *
-     * @param dst the destination buffer
-     * @param src the source buffer
-     * @param dict the dictionary buffer
-     * @param level compression level
-     * @return  the number of bytes written into buffer 'dst' or an error code if
-     *          it fails (which can be tested using ZSTD_isError())
-     */
-    public static long compressUsingDict(byte[] dst, byte[] src, byte[] dict, int level) {
-	return compressUsingDict(dst, 0, src, 0, src.length, dict, level);
-    }
-
     /**
      * Decompresses buffer 'src' into buffer 'dst' with dictionary.
      *
@@ -501,5 +487,19 @@ public class Zstd {
     public static long decompressUsingDict(byte[] dst, byte[] src, byte[] dict) {
 	return decompressUsingDict(dst, 0, src, 0, src.length, dict);
     }
+
+    /**
+     * Return the original size of a compressed buffer (if known)
+     *
+     * @param srcBuf the compressed buffer.  must be direct.  It is assumed that the position() of this buffer marks the beginning of the
+     *               compressed data whose decompressed size is being queried, and that the limit() of this buffer marks its
+     *               end.
+     * @return the number of bytes of the original buffer
+     *         0 if the original size is not known
+     */
+    public static long decompressedSize(ByteBuffer srcBuf) {
+        return decompressedDirectByteBufferSize(srcBuf, srcBuf.position(), srcBuf.limit() - srcBuf.position());
+    }
+
 
 }
