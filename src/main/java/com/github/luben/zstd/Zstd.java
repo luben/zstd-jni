@@ -343,6 +343,17 @@ public class Zstd {
    /**
      * Compresses buffer 'src' into buffer 'dst' with dictionary.
      *
+     * @deprecated
+     * Use compress(dst, src, dict, level) instead
+     */
+    @Deprecated
+    public static long compressUsingDict(byte[] dst, byte[] src, byte[] dict, int level) {
+	return compressUsingDict(dst, 0, src, 0, src.length, dict, level);
+    }
+
+   /**
+     * Compresses buffer 'src' into buffer 'dst' with dictionary.
+     *
      * Destination buffer should be sized to handle worst cases situations (input
      * data not compressible). Worst case size evaluation is provided by function
      * ZSTD_compressBound().
@@ -354,7 +365,7 @@ public class Zstd {
      * @return  the number of bytes written into buffer 'dst' or an error code if
      *          it fails (which can be tested using ZSTD_isError())
      */
-    public static long compressUsingDict(byte[] dst, byte[] src, byte[] dict, int level) {
+    public static long compress(byte[] dst, byte[] src, byte[] dict, int level) {
 	return compressUsingDict(dst, 0, src, 0, src.length, dict, level);
     }
 
@@ -475,6 +486,17 @@ public class Zstd {
     /**
      * Decompresses buffer 'src' into buffer 'dst' with dictionary.
      *
+     * @deprecated
+     * Use decompress(dst, src, dict) instead
+     */
+    @Deprecated
+    public static long decompressUsingDict(byte[] dst, byte[] src, byte[] dict) {
+	return decompressUsingDict(dst, 0, src, 0, src.length, dict);
+    }
+
+    /**
+     * Decompresses buffer 'src' into buffer 'dst' with dictionary.
+     *
      * Destination buffer should be sized to be larger of equal to the originalSize
      *
      * @param dst the destination buffer
@@ -482,9 +504,8 @@ public class Zstd {
      * @param dict the dictionary buffer
      * @return the number of bytes decompressed into destination buffer (originalSize)
      *          or an errorCode if it fails (which can be tested using ZSTD_isError())
-     *
      */
-    public static long decompressUsingDict(byte[] dst, byte[] src, byte[] dict) {
+    public static long decompress(byte[] dst, byte[] src, byte[] dict) {
 	return decompressUsingDict(dst, 0, src, 0, src.length, dict);
     }
 
