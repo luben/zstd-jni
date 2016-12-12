@@ -58,4 +58,9 @@ public class ZstdDictDecompress implements Closeable {
         free();
         nativePtr = 0;
     }
+
+    @Override
+    protected void finalize() throws Throwable {
+        close();
+    }
 }

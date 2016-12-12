@@ -176,4 +176,9 @@ public class ZstdInputStream extends FilterInputStream {
         in.close();
         isClosed = true;
     }
+
+    @Override
+    protected void finalize() throws Throwable {
+        close();
+    }
 }

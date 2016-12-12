@@ -112,4 +112,9 @@ public class ZstdOutputStream extends FilterOutputStream {
         out.close();
         isClosed = true;
     }
+
+    @Override
+    protected void finalize() throws Throwable {
+        close();
+    }
 }
