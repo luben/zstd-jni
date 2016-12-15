@@ -38,7 +38,7 @@ http://fastcompression.blogspot.com/2015/01/zstd-stronger-compression-algorithm.
 Status and availability
 -----------------------
 
-**Zstd** is production ready with stable format with release 1.0.0
+**Zstd** is production ready with stable format.
 
 **Zstd-jni** is tracking the release branch of **Zstd** (master) with
 compatibility support for the legacy formats.
@@ -78,12 +78,12 @@ You can find published releases on Maven Central.
     <dependency>
         <groupId>com.github.luben</groupId>
         <artifactId>zstd-jni</artifactId>
-        <version>1.1.0</version>
+        <version>1.1.2</version>
     </dependency>
 
 sbt dependency:
 
-    libraryDependencies += "com.github.luben" % "zstd-jni" % "1.1.0"
+    libraryDependencies += "com.github.luben" % "zstd-jni" % "1.1.2"
 
 Link for direct download if you don't use a dependency manager:
 

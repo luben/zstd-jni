@@ -1,7 +1,7 @@
 
 name := "zstd-jni"
 
-version := "1.1.1"
+version := "1.1.2"
 
 scalaVersion := "2.11.8"
 
@@ -14,7 +14,7 @@ crossPaths := false
 parallelExecution in Test := false
 
 libraryDependencies ++= Seq(
-  "org.scalatest"  %% "scalatest"  % "3.0.0"  % "test",
+  "org.scalatest"  %% "scalatest"  % "3.0.1"  % "test",
   "org.scalacheck" %% "scalacheck" % "1.13.4" % "test"
 )
 
