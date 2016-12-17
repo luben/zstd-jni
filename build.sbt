@@ -20,6 +20,8 @@ libraryDependencies ++= Seq(
 
 javacOptions ++= Seq("-source", "1.7", "-target", "1.7")
 
+javacOptions in doc := Seq("-source", "1.7")
+
 // sbt-jni configuration
 jniLibraryName := "zstd"
 
