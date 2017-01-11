@@ -14,6 +14,7 @@ public class ZstdDirectBufferDecompressingStream implements Closeable {
 
     private final ByteBuffer source;
     private final long stream;
+    private boolean finishedFrame = false;
     private boolean closed = false;
 
     private static native int recommendedDOutSize();
@@ -32,7 +33,7 @@ public class ZstdDirectBufferDecompressingStream implements Closeable {
     }
 
     public boolean hasRemaining() {
-        return source.hasRemaining();
+        return source.hasRemaining() || !finishedFrame;
     }
 
     public static int recommendedTargetBufferSize() {
@@ -57,18 +58,13 @@ public class ZstdDirectBufferDecompressingStream implements Closeable {
         source.position(source.position() + consumed);
         target.position(target.position() + produced);
 
-        if (remaining == 0 && source.hasRemaining()) {
+        finishedFrame = remaining == 0;
+        if (finishedFrame && source.hasRemaining()) {
             // finished a frame and there is more stuff to read
             // so let's initialize for the next frame
             long size = initDStream(stream);
             if (Zstd.isError(size)) {
                 throw new IOException("Decompression error: " + Zstd.getErrorName(size));
-            }
-            if (target.hasRemaining()) {
-                // we still have room left in our buffer
-                // let's start reading from the next frame too
-                int producedBefore = produced; // take a copy of the field since it will be overwritten
-                return producedBefore + read(target);
             }
         }
 

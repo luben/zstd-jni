@@ -371,7 +371,7 @@ class ZstdSpec extends FlatSpec with Checkers with Whenever {
       val buff = Array.fill[Byte](length)(0)
       var pos  = 0
       val block = ByteBuffer.allocateDirect(1)
-      while (pos < length) {
+      while (pos < length && zis.hasRemaining) {
         block.clear
         val read = zis.read(block)
         if (read != 1) {
@@ -417,9 +417,8 @@ class ZstdSpec extends FlatSpec with Checkers with Whenever {
     val length = orig.length.toInt
 
     val window = ByteBuffer.allocateDirect(length)
-    val read = zis.read(window)
-    if (read != length) {
-      sys.error(s"Couldn't read everyting: " + read + " instead of " + length)
+    while (zis.hasRemaining) {
+      zis.read(window)
     }
 
     val buff = new Array[Byte](length)
