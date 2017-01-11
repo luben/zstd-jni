@@ -110,6 +110,39 @@ class ZstdPerfSpec extends FlatSpec  {
     assert(input.toSeq == output.toSeq)
   }
 
+  def benchDirectBufferStream(name: String, input: Array[Byte], level: Int = 1): Unit = {
+    val cycles = 100
+
+    val compressedBuffer = ByteBuffer.allocateDirect(input.size)
+    val inputBuffer = ByteBuffer.allocateDirect(input.size)
+    inputBuffer.put(input)
+    inputBuffer.flip();
+    val c_start = System.nanoTime
+    Zstd.compress(compressedBuffer, inputBuffer, level);
+    val nsc = (System.nanoTime - c_start) * cycles
+    compressedBuffer.flip();
+
+    val decompressed = ByteBuffer.allocateDirect(input.size);
+    val d_start = System.nanoTime
+    for (i <- 1 to cycles)  {
+      compressedBuffer.rewind()
+      decompressed.clear();
+      val zstr = new ZstdDirectBufferDecompressingStream(compressedBuffer)
+      while (decompressed.hasRemaining) {
+        zstr.read(decompressed)
+      }
+      zstr.close()
+    }
+    val nsd = System.nanoTime - d_start
+
+    val output = new Array[Byte](input.size)
+    decompressed.flip()
+    decompressed.get(output)
+
+    report(name, compressedBuffer.limit(), input.size, cycles, nsc, nsd)
+    assert(input.toSeq == output.toSeq)
+  }
+
   val buff = Source.fromFile("src/test/resources/xml")(Codec.ISO8859).map{_.toByte }.take(1024 * 1024).toArray
   for (level <- List(1, 3, 6, 9)) {
     it should s"be fast for compressable data -$level" in {
@@ -123,6 +156,7 @@ class ZstdPerfSpec extends FlatSpec  {
   for (level <- List(1, 3, 6, 9)) {
     it should s"be fast with steaming -$level" in {
         benchStream(s"Streaming at $level", buff1, level)
+        benchDirectBufferStream(s"Streaming at $level to direct ByteBuffers", buff1, level)
     }
   }
 
