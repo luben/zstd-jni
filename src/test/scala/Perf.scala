@@ -113,20 +113,33 @@ class ZstdPerfSpec extends FlatSpec  {
   def benchDirectBufferStream(name: String, input: Array[Byte], level: Int = 1): Unit = {
     val cycles = 100
 
-    val compressedBuffer = ByteBuffer.allocateDirect(input.size)
-    val inputBuffer = ByteBuffer.allocateDirect(input.size)
+    val compressedBuffer = ByteBuffer.allocateDirect(Zstd.compressBound(input.length.toLong).toInt);
+    val inputBuffer = ByteBuffer.allocateDirect(input.length)
     inputBuffer.put(input)
-    inputBuffer.flip();
-    val c_start = System.nanoTime
-    Zstd.compress(compressedBuffer, inputBuffer, level);
-    val nsc = (System.nanoTime - c_start) * cycles
-    compressedBuffer.flip();
+    inputBuffer.flip
 
-    val decompressed = ByteBuffer.allocateDirect(input.size);
+    val c_start = System.nanoTime
+    for (i <- 1 to cycles)  {
+      val target = ByteBuffer.allocateDirect(Zstd.compressBound(input.length.toLong).toInt)
+      val compressor = new ZstdDirectBufferCompressingStream(target, level) {
+        override protected def flushBuffer(toFlush: ByteBuffer): ByteBuffer = toFlush
+      }
+      inputBuffer.rewind()
+      compressor.compress(inputBuffer)
+      compressor.close()
+      if (compressedBuffer.position() == 0) {
+        target.flip
+        compressedBuffer.put(target)
+      }
+    }
+    val nsc = System.nanoTime - c_start
+    compressedBuffer.flip
+
+    val decompressed = ByteBuffer.allocateDirect(input.length)
     val d_start = System.nanoTime
     for (i <- 1 to cycles)  {
-      compressedBuffer.rewind()
-      decompressed.clear();
+      compressedBuffer.rewind
+      decompressed.clear
       val zstr = new ZstdDirectBufferDecompressingStream(compressedBuffer)
       while (decompressed.hasRemaining) {
         zstr.read(decompressed)
@@ -135,11 +148,11 @@ class ZstdPerfSpec extends FlatSpec  {
     }
     val nsd = System.nanoTime - d_start
 
-    val output = new Array[Byte](input.size)
+    val output = new Array[Byte](input.length)
     decompressed.flip()
     decompressed.get(output)
 
-    report(name, compressedBuffer.limit(), input.size, cycles, nsc, nsd)
+    report(name, compressedBuffer.limit(), input.length, cycles, nsc, nsd)
     assert(input.toSeq == output.toSeq)
   }
 
