@@ -263,7 +263,9 @@ class ZstdSpec extends FlatSpec with Checkers with Whenever {
 
 
         // now decompress
-        val zis   = new ZstdDirectBufferDecompressingStream(os)
+        val zis   = new ZstdDirectBufferDecompressingStream(os) {
+          override protected def refill(toRefill: ByteBuffer) : ByteBuffer = toRefill
+        }
         val output= Array.fill[Byte](size)(0)
         val block = ByteBuffer.allocateDirect(128 * 1024)
         var offset = 0
@@ -370,7 +372,9 @@ class ZstdSpec extends FlatSpec with Checkers with Whenever {
       val file = new File(s"src/test/resources/xml-$level.zst")
       val fis  = new FileInputStream(file)
       val channel = FileChannel.open(file.toPath, StandardOpenOption.READ)
-      val zis  = new ZstdDirectBufferDecompressingStream(channel.map(MapMode.READ_ONLY, 0, channel.size))
+      val zis  = new ZstdDirectBufferDecompressingStream(channel.map(MapMode.READ_ONLY, 0, channel.size)) {
+        override protected def refill(toRefill: ByteBuffer) : ByteBuffer = toRefill
+      }
       val length = orig.length.toInt
       val buff = Array.fill[Byte](length)(0)
       var pos  = 0
@@ -417,7 +421,9 @@ class ZstdSpec extends FlatSpec with Checkers with Whenever {
     val fis  = new FileInputStream(file)
 
     val channel = FileChannel.open(file.toPath, StandardOpenOption.READ)
-    val zis  = new ZstdDirectBufferDecompressingStream(channel.map(MapMode.READ_ONLY, 0, channel.size))
+    val zis  = new ZstdDirectBufferDecompressingStream(channel.map(MapMode.READ_ONLY, 0, channel.size)) {
+      override protected def refill(toRefill: ByteBuffer) : ByteBuffer = toRefill
+    }
     val length = orig.length.toInt
 
     val window = ByteBuffer.allocateDirect(length)

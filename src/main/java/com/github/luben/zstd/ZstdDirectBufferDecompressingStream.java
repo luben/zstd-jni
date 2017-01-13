@@ -6,13 +6,15 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-public class ZstdDirectBufferDecompressingStream implements Closeable {
+public abstract class ZstdDirectBufferDecompressingStream implements Closeable {
 
     static {
         Native.load();
     }
 
-    private final ByteBuffer source;
+    protected abstract ByteBuffer refill(ByteBuffer toRefill);
+
+    private ByteBuffer source;
     private final long stream;
     private boolean finishedFrame = false;
     private boolean closed = false;
@@ -57,6 +59,9 @@ public class ZstdDirectBufferDecompressingStream implements Closeable {
 
         source.position(source.position() + consumed);
         target.position(target.position() + produced);
+        if (!source.hasRemaining()) {
+            source = refill(source);
+        }
 
         finishedFrame = remaining == 0;
         if (finishedFrame && source.hasRemaining()) {

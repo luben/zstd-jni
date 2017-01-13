@@ -139,7 +139,9 @@ class ZstdPerfSpec extends FlatSpec  {
     for (i <- 1 to cycles)  {
       compressedBuffer.rewind
       decompressed.clear
-      val zstr = new ZstdDirectBufferDecompressingStream(compressedBuffer)
+      val zstr = new ZstdDirectBufferDecompressingStream(compressedBuffer) {
+        override protected def refill(toRefill: ByteBuffer) : ByteBuffer = toRefill
+      }
       while (decompressed.hasRemaining) {
         zstr.read(decompressed)
       }
