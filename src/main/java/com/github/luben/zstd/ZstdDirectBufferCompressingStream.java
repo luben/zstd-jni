@@ -7,7 +7,7 @@ import java.io.Flushable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-public abstract class ZstdDirectBufferCompressingStream implements Closeable, Flushable {
+public class ZstdDirectBufferCompressingStream implements Closeable, Flushable {
 
     static {
         Native.load();
@@ -22,10 +22,15 @@ public abstract class ZstdDirectBufferCompressingStream implements Closeable, Fl
      * @param toFlush buffer that has to be flushed (or most cases, you want to call {@link ByteBuffer#flip()} first)
      * @return the new buffer to use, for most cases the same as the one passed in, after a call to {@link ByteBuffer#clear()}.
      */
-    protected abstract ByteBuffer flushBuffer(ByteBuffer toFlush) throws IOException;
+    protected ByteBuffer flushBuffer(ByteBuffer toFlush) throws IOException {
+        return toFlush;
+    }
 
     protected ZstdDirectBufferCompressingStream(ByteBuffer target, int level) throws IOException {
         this.target = target;
+        if (!target.isDirect()) {
+            throw new IllegalArgumentException("Target buffer should be a direct buffer");
+        }
         stream = createCStream();
         int size = initCStream(stream, level);
         if (Zstd.isError(size)) {
@@ -50,8 +55,8 @@ public abstract class ZstdDirectBufferCompressingStream implements Closeable, Fl
 
 
     public void compress(ByteBuffer source) throws IOException {
-        if (!target.isDirect()) {
-            throw new IllegalArgumentException("Target buffer should be a direct buffer");
+        if (!source.isDirect()) {
+            throw new IllegalArgumentException("Source buffer should be a direct buffer");
         }
         if (closed) {
             throw new IOException("Stream closed");
@@ -59,10 +64,16 @@ public abstract class ZstdDirectBufferCompressingStream implements Closeable, Fl
         while (source.hasRemaining()) {
             if (!target.hasRemaining()) {
                 target = flushBuffer(target);
+                if (!target.isDirect()) {
+                    throw new IllegalArgumentException("Target buffer should be a direct buffer");
+                }
+                if (!target.hasRemaining()) {
+                    throw new IOException("The target buffer has no more space, even after flushing, and there are still bytes to compress");
+                }
             }
-            int processed = compressDirectByteBuffer(stream, target, target.position(), target.remaining(), source, source.position(), source.remaining());
-            if (Zstd.isError(processed)) {
-                throw new IOException("Compression error: " + Zstd.getErrorName(processed));
+            int result = compressDirectByteBuffer(stream, target, target.position(), target.remaining(), source, source.position(), source.remaining());
+            if (Zstd.isError(result)) {
+                throw new IOException("Compression error: " + Zstd.getErrorName(result));
             }
             target.position(target.position() + produced);
             source.position(source.position() + consumed);
@@ -80,6 +91,13 @@ public abstract class ZstdDirectBufferCompressingStream implements Closeable, Fl
                 }
                 target.position(target.position() + produced);
                 target = flushBuffer(target);
+                if (!target.isDirect()) {
+                    throw new IllegalArgumentException("Target buffer should be a direct buffer");
+                }
+                if (needed > 0 && !target.hasRemaining()) {
+                    // don't check on the first iteration of the loop
+                    throw new IOException("The target buffer has no more space, even after flushing, and there are still bytes to compress");
+                }
             }
             while (needed > 0);
         }
@@ -97,6 +115,12 @@ public abstract class ZstdDirectBufferCompressingStream implements Closeable, Fl
                     }
                     target.position(target.position() + produced);
                     target = flushBuffer(target);
+                    if (!target.isDirect()) {
+                        throw new IllegalArgumentException("Target buffer should be a direct buffer");
+                    }
+                    if (needed > 0 && !target.hasRemaining()) {
+                        throw new IOException("The target buffer has no more space, even after flushing, and there are still bytes to compress");
+                    }
                 } while (needed > 0);
             }
             finally {

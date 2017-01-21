@@ -246,11 +246,9 @@ class ZstdSpec extends FlatSpec with Checkers with Whenever {
         val os    = ByteBuffer.allocateDirect(Zstd.compressBound(size.toLong).toInt)
 
         // compress
-        var ib    = ByteBuffer.allocateDirect(size)
+        val ib    = ByteBuffer.allocateDirect(size)
         ib.put(input)
-        val osw = new ZstdDirectBufferCompressingStream(os, level) {
-          override protected def flushBuffer(toFlush: ByteBuffer) = toFlush
-        }
+        val osw = new ZstdDirectBufferCompressingStream(os, level)
         ib.flip
         osw.compress(ib)
         osw.close
@@ -263,9 +261,7 @@ class ZstdSpec extends FlatSpec with Checkers with Whenever {
 
 
         // now decompress
-        val zis   = new ZstdDirectBufferDecompressingStream(os) {
-          override protected def refill(toRefill: ByteBuffer) : ByteBuffer = toRefill
-        }
+        val zis   = new ZstdDirectBufferDecompressingStream(os)
         val output= Array.fill[Byte](size)(0)
         val block = ByteBuffer.allocateDirect(128 * 1024)
         var offset = 0
@@ -371,9 +367,7 @@ class ZstdSpec extends FlatSpec with Checkers with Whenever {
       val orig = new File("src/test/resources/xml")
       val file = new File(s"src/test/resources/xml-$level.zst")
       val channel = FileChannel.open(file.toPath, StandardOpenOption.READ)
-      val zis  = new ZstdDirectBufferDecompressingStream(channel.map(MapMode.READ_ONLY, 0, channel.size)) {
-        override protected def refill(toRefill: ByteBuffer) : ByteBuffer = toRefill
-      }
+      val zis  = new ZstdDirectBufferDecompressingStream(channel.map(MapMode.READ_ONLY, 0, channel.size))
       val length = orig.length.toInt
       val buff = Array.fill[Byte](length)(0)
       var pos  = 0
@@ -546,9 +540,7 @@ class ZstdSpec extends FlatSpec with Checkers with Whenever {
 
   "ZstdDirectBufferCompressingStream" should s"do nothing on double close but throw on writing on closed stream" in {
     val os  = ByteBuffer.allocateDirect(100)
-    val zos = new ZstdDirectBufferCompressingStream(os, 1) {
-      override protected def flushBuffer(toFlush: ByteBuffer): ByteBuffer = toFlush
-    }
+    val zos = new ZstdDirectBufferCompressingStream(os, 1)
     zos.close()
     zos.close()
     assertThrows[IOException] {
@@ -589,9 +581,7 @@ class ZstdSpec extends FlatSpec with Checkers with Whenever {
       val channel = FileChannel.open(file.toPath, StandardOpenOption.READ)
       val target = ByteBuffer.allocateDirect(Zstd.compressBound(length).toInt)
 
-      val zos = new ZstdDirectBufferCompressingStream(target, level) {
-        override protected def flushBuffer(toFlush: ByteBuffer): ByteBuffer = toFlush
-      }
+      val zos = new ZstdDirectBufferCompressingStream(target, level)
       zos.compress(channel.map(MapMode.READ_ONLY, 0, length));
       zos.close()
       channel.close()

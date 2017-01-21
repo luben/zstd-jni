@@ -122,9 +122,7 @@ class ZstdPerfSpec extends FlatSpec  {
     val c_start = System.nanoTime
     for (i <- 1 to cycles)  {
       target.clear()
-      val compressor = new ZstdDirectBufferCompressingStream(target, level) {
-        override protected def flushBuffer(toFlush: ByteBuffer): ByteBuffer = toFlush
-      }
+      val compressor = new ZstdDirectBufferCompressingStream(target, level);
       inputBuffer.rewind()
       compressor.compress(inputBuffer)
       compressor.close()

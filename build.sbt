@@ -11,6 +11,8 @@ autoScalaLibrary := false
 
 crossPaths := false
 
+logBuffered in Test := false
+
 parallelExecution in Test := false
 
 libraryDependencies ++= Seq(
