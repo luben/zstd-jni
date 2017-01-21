@@ -597,6 +597,40 @@ class ZstdSpec extends FlatSpec with Checkers with Whenever {
       }
     }
 
+  for (level <- levels)
+    "ZstdDirectBufferCompressingStream" should s" even when writing one byte at a time produce the same compressed file as zstd binary at level $level" in {
+      val file = new File("src/test/resources/xml")
+      val length = file.length.toInt
+      val channel = FileChannel.open(file.toPath, StandardOpenOption.READ)
+      val target = ByteBuffer.allocateDirect(Zstd.compressBound(length).toInt)
+
+      val zos = new ZstdDirectBufferCompressingStream(ByteBuffer.allocateDirect(1), level) {
+        override protected def flushBuffer(toFlush: ByteBuffer): ByteBuffer = {
+          toFlush.flip()
+          target.put(toFlush)
+          toFlush.clear()
+          return toFlush
+        }
+
+      }
+      val source = channel.map(MapMode.READ_ONLY, 0, length)
+      while (source.hasRemaining) {
+        zos.compress(source);
+      }
+      zos.close()
+      channel.close()
+
+      target.flip()
+
+      val compressed = new Array[Byte](target.limit())
+      target.get(compressed)
+      val zst = Source.fromFile(s"src/test/resources/xml-$level.zst")(Codec.ISO8859).map{char => char.toByte}.to[WrappedArray]
+
+      if (zst != compressed.toSeq) {
+        sys.error(s"Failed original ${zst.length} != ${compressed.length} result")
+      }
+    }
+
 
   for (version <- List("04", "05", "06", "07"))
     "ZstdInputStream" should s"be able to consume files compressed by the zstd binary version $version" in {
