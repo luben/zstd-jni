@@ -11,6 +11,8 @@ autoScalaLibrary := false
 
 crossPaths := false
 
+logBuffered in Test := false
+
 parallelExecution in Test := false
 
 libraryDependencies ++= Seq(
@@ -30,7 +32,9 @@ jniNativeClasses := Seq(
   "com.github.luben.zstd.ZstdDictCompress",
   "com.github.luben.zstd.ZstdDictDecompress",
   "com.github.luben.zstd.ZstdOutputStream",
-  "com.github.luben.zstd.ZstdInputStream"
+  "com.github.luben.zstd.ZstdInputStream",
+  "com.github.luben.zstd.ZstdDirectBufferDecompressingStream",
+  "com.github.luben.zstd.ZstdDirectBufferCompressingStream"
 )
 
 jniLibSuffix := (System.getProperty("os.name").toLowerCase match {

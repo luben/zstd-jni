@@ -5,7 +5,10 @@ import org.scalatest.prop.{Checkers, Whenever}
 import org.scalacheck.Arbitrary._
 import org.scalacheck.Prop._
 import java.io._
-import java.nio.ByteBuffer
+import java.nio._
+import java.nio.channels.FileChannel
+import java.nio.channels.FileChannel.MapMode
+import java.nio.file.StandardOpenOption
 
 import scala.io._
 import scala.collection.mutable.WrappedArray
@@ -237,6 +240,50 @@ class ZstdSpec extends FlatSpec with Checkers with Whenever {
   }
 
   for (level <- levels) {
+    "ZstdDirectBufferDecompressingStream" should s"should round-trip compression/decompression at level $level" in {
+      check { input: Array[Byte] =>
+        val size  = input.length
+        val os    = ByteBuffer.allocateDirect(Zstd.compressBound(size.toLong).toInt)
+
+        // compress
+        val ib    = ByteBuffer.allocateDirect(size)
+        ib.put(input)
+        val osw = new ZstdDirectBufferCompressingStream(os, level)
+        ib.flip
+        osw.compress(ib)
+        osw.close
+        os.flip
+
+        // for debugging
+        val bytes = new Array[Byte](os.limit())
+        os.get(bytes)
+        os.rewind()
+
+
+        // now decompress
+        val zis   = new ZstdDirectBufferDecompressingStream(os)
+        val output= Array.fill[Byte](size)(0)
+        val block = ByteBuffer.allocateDirect(128 * 1024)
+        var offset = 0
+        while (zis.hasRemaining) {
+          block.clear()
+          val read = zis.read(block)
+          block.flip()
+          block.get(output, offset, read)
+          offset += read
+        }
+        zis.close
+        if (input.toSeq != output.toSeq) {
+          println(s"AT SIZE $size")
+          println(input.toSeq + "!=" + output.toSeq)
+          println("COMPRESSED: " + bytes.toSeq)
+        }
+        input.toSeq == output.toSeq
+      }
+    }
+  }
+
+  for (level <- levels) {
     "ZstdInputStream in continuous mode" should s"should round-trip using streaming API with unfinished chunks at level $level" in {
       check { input: Array[Byte] =>
         val size  = input.length
@@ -315,6 +362,68 @@ class ZstdSpec extends FlatSpec with Checkers with Whenever {
         sys.error(s"Failed")
     }
 
+  for (level <- levels) // the worst case
+    "ZstdDirectBufferDecompressingStream" should s"be able to produce 1 byte at a time files compressed by the zstd binary at level $level" in {
+      val orig = new File("src/test/resources/xml")
+      val file = new File(s"src/test/resources/xml-$level.zst")
+      val channel = FileChannel.open(file.toPath, StandardOpenOption.READ)
+      val zis  = new ZstdDirectBufferDecompressingStream(channel.map(MapMode.READ_ONLY, 0, channel.size))
+      val length = orig.length.toInt
+      val buff = Array.fill[Byte](length)(0)
+      var pos  = 0
+      val block = ByteBuffer.allocateDirect(1)
+      while (pos < length && zis.hasRemaining) {
+        block.clear
+        val read = zis.read(block)
+        if (read != 1) {
+          sys.error(s"Failed reading compressed file before end")
+        }
+        block.flip()
+        buff.update(pos, block.get())
+        pos += 1
+      }
+
+      val original = Source.fromFile(orig)(Codec.ISO8859).map{char => char.toByte}.to[WrappedArray]
+      if(original != buff.toSeq)
+        sys.error(s"Failed")
+    }
+  for (level <- levels) // the worst case
+    "ZstdDirectBufferDecompressingStream" should s"be able to read 1 byte at a time files compressed by the zstd binary at level $level" in {
+      val orig = new File("src/test/resources/xml")
+      val file = new File(s"src/test/resources/xml-$level.zst")
+      val channel = FileChannel.open(file.toPath, StandardOpenOption.READ)
+      val actualBuffer  = channel.map(MapMode.READ_ONLY, 0, channel.size)
+      val smallBuffer = ByteBuffer.allocateDirect(1)
+      while (smallBuffer.hasRemaining) {
+        smallBuffer.put(actualBuffer.get())
+      }
+      smallBuffer.flip()
+      val zis  = new ZstdDirectBufferDecompressingStream(smallBuffer) {
+        override protected def refill(toRefill: ByteBuffer) : ByteBuffer = {
+          if (actualBuffer.hasRemaining) {
+            toRefill.clear()
+            while (toRefill.hasRemaining && actualBuffer.hasRemaining) {
+              toRefill.put(actualBuffer.get())
+            }
+            toRefill.flip()
+          }
+          return toRefill
+        }
+      }
+      val length = orig.length.toInt
+      val buff = Array.fill[Byte](length)(0)
+      val block = ByteBuffer.allocateDirect(length)
+      while (zis.hasRemaining) {
+        zis.read(block)
+      }
+      block.flip()
+      block.get(buff)
+
+      val original = Source.fromFile(orig)(Codec.ISO8859).map{char => char.toByte}.to[WrappedArray]
+      if(original != buff.toSeq)
+        sys.error(s"Failed")
+    }
+
   "ZstdInputStream" should s"be able to consume 2 frames in a file compressed by the zstd binary" in {
     val orig = new File("src/test/resources/xmlx2")
     val file = new File(s"src/test/resources/xml-1x2.zst")
@@ -329,6 +438,78 @@ class ZstdSpec extends FlatSpec with Checkers with Whenever {
     while (pos < length) {
       pos += zis.read(buff, pos, length - pos)
     }
+
+    val original = Source.fromFile(orig)(Codec.ISO8859).map{char => char.toByte}.to[WrappedArray]
+    if(original != buff.toSeq)
+      sys.error(s"Failed")
+  }
+
+  "ZstdDirectBufferDecompressingStream" should s"be able to consume 2 frames in a file compressed by the zstd binary" in {
+    val orig = new File("src/test/resources/xmlx2")
+    val file = new File(s"src/test/resources/xml-1x2.zst")
+    val fis  = new FileInputStream(file)
+
+    val channel = FileChannel.open(file.toPath, StandardOpenOption.READ)
+    val zis  = new ZstdDirectBufferDecompressingStream(channel.map(MapMode.READ_ONLY, 0, channel.size))
+    val length = orig.length.toInt
+
+    val window = ByteBuffer.allocateDirect(length)
+    while (zis.hasRemaining) {
+      zis.read(window)
+    }
+
+    val buff = new Array[Byte](length)
+    window.flip()
+    window.get(buff)
+
+    val original = Source.fromFile(orig)(Codec.ISO8859).map{char => char.toByte}.to[WrappedArray]
+    if(original != buff.toSeq)
+      sys.error(s"Failed")
+  }
+
+  "ZstdDirectBufferDecompressingStream" should s"be able to consume 2 frames even when they are exactly at the buffers limit" in {
+    val orig = new File("src/test/resources/xmlx2")
+    val file = new File(s"src/test/resources/xml-1x2.zst")
+    val length = orig.length.toInt
+
+    val channel = FileChannel.open(file.toPath, StandardOpenOption.READ)
+    val readBuffer = channel.map(MapMode.READ_ONLY, 0, channel.size)
+    val zis  = new ZstdDirectBufferDecompressingStream(readBuffer)
+
+    val window = ByteBuffer.allocateDirect(length)
+    zis.read(window)
+    val firstFrameEnd = readBuffer.position()
+    zis.read(window)
+    if (zis.hasRemaining) {
+      sys.error(s"Failed for one big buffer, two reads should be enough")
+    }
+    zis.close()
+
+    val readBuffer2 = channel.map(MapMode.READ_ONLY, 0, firstFrameEnd);
+    val zis2  = new ZstdDirectBufferDecompressingStream(readBuffer2) {
+      override protected def refill(toRefill: ByteBuffer) : ByteBuffer = {
+        if (toRefill eq readBuffer2) {
+          val offset = firstFrameEnd - toRefill.remaining()
+          return channel.map(MapMode.READ_ONLY, offset, channel.size - offset)
+        }
+        return toRefill
+      }
+    }
+
+    window.clear()
+
+    zis2.read(window)
+    zis2.read(window)
+    if (zis2.hasRemaining) {
+      sys.error(s"Failed, two reads should be enough")
+    }
+    zis2.close()
+
+
+
+    val buff = new Array[Byte](length)
+    window.flip()
+    window.get(buff)
 
     val original = Source.fromFile(orig)(Codec.ISO8859).map{char => char.toByte}.to[WrappedArray]
     if(original != buff.toSeq)
@@ -357,6 +538,16 @@ class ZstdSpec extends FlatSpec with Checkers with Whenever {
     }
   }
 
+  "ZstdDirectBufferCompressingStream" should s"do nothing on double close but throw on writing on closed stream" in {
+    val os  = ByteBuffer.allocateDirect(100)
+    val zos = new ZstdDirectBufferCompressingStream(os, 1)
+    zos.close()
+    zos.close()
+    assertThrows[IOException] {
+      zos.compress(ByteBuffer.allocateDirect(3))
+    }
+  }
+
 
   for (level <- levels)
     "ZstdOutputStream" should s"produce the same compressed file as zstd binary at level $level" in {
@@ -379,6 +570,63 @@ class ZstdSpec extends FlatSpec with Checkers with Whenever {
       val zst = Source.fromFile(s"src/test/resources/xml-$level.zst")(Codec.ISO8859).map{char => char.toByte}.to[WrappedArray]
 
      if (zst != compressed) {
+        sys.error(s"Failed original ${zst.length} != ${compressed.length} result")
+      }
+    }
+
+  for (level <- levels)
+    "ZstdDirectBufferCompressingStream" should s"produce the same compressed file as zstd binary at level $level" in {
+      val file = new File("src/test/resources/xml")
+      val length = file.length.toInt
+      val channel = FileChannel.open(file.toPath, StandardOpenOption.READ)
+      val target = ByteBuffer.allocateDirect(Zstd.compressBound(length).toInt)
+
+      val zos = new ZstdDirectBufferCompressingStream(target, level)
+      zos.compress(channel.map(MapMode.READ_ONLY, 0, length));
+      zos.close()
+      channel.close()
+
+      target.flip()
+
+      val compressed = new Array[Byte](target.limit())
+      target.get(compressed)
+      val zst = Source.fromFile(s"src/test/resources/xml-$level.zst")(Codec.ISO8859).map{char => char.toByte}.to[WrappedArray]
+
+      if (zst != compressed.toSeq) {
+        sys.error(s"Failed original ${zst.length} != ${compressed.length} result")
+      }
+    }
+
+  for (level <- levels)
+    "ZstdDirectBufferCompressingStream" should s" even when writing one byte at a time produce the same compressed file as zstd binary at level $level" in {
+      val file = new File("src/test/resources/xml")
+      val length = file.length.toInt
+      val channel = FileChannel.open(file.toPath, StandardOpenOption.READ)
+      val target = ByteBuffer.allocateDirect(Zstd.compressBound(length).toInt)
+
+      val zos = new ZstdDirectBufferCompressingStream(ByteBuffer.allocateDirect(1), level) {
+        override protected def flushBuffer(toFlush: ByteBuffer): ByteBuffer = {
+          toFlush.flip()
+          target.put(toFlush)
+          toFlush.clear()
+          return toFlush
+        }
+
+      }
+      val source = channel.map(MapMode.READ_ONLY, 0, length)
+      while (source.hasRemaining) {
+        zos.compress(source);
+      }
+      zos.close()
+      channel.close()
+
+      target.flip()
+
+      val compressed = new Array[Byte](target.limit())
+      target.get(compressed)
+      val zst = Source.fromFile(s"src/test/resources/xml-$level.zst")(Codec.ISO8859).map{char => char.toByte}.to[WrappedArray]
+
+      if (zst != compressed.toSeq) {
         sys.error(s"Failed original ${zst.length} != ${compressed.length} result")
       }
     }
