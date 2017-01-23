@@ -126,6 +126,7 @@ public class ZstdDirectBufferCompressingStream implements Closeable, Flushable {
             finally {
                 freeCStream(stream);
                 closed = true;
+                target = null; // help GC with realizing the buffer can be released
             }
         }
     }
