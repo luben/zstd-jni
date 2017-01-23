@@ -114,6 +114,7 @@ public class ZstdDirectBufferDecompressingStream implements Closeable {
     protected void finalize() throws Throwable {
         if (!closed) {
             freeDStream(stream);
+            source = null; // help GC with realizing the buffer can be released
         }
     }
 }
