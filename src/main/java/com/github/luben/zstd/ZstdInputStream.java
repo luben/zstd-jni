@@ -140,9 +140,9 @@ public class ZstdInputStream extends FilterInputStream {
             throw new IOException("Stream closed");
         }
         if (srcSize - srcPos > 0) {
-            return 1;
+            return (int)(srcSize - srcPos);
         } else {
-            return 0;
+            return in.available();
         }
     }
 

@@ -327,7 +327,7 @@ class ZstdSpec extends FlatSpec with Checkers with Whenever {
       val fis  = new FileInputStream(file)
       val zis  = new ZstdInputStream(fis)
       assert(!zis.markSupported)
-      assert(zis.available == 0)
+      assert(zis.available > 0)
       assert(zis.skip(0) == 0)
       val length = orig.length.toInt
       val buff = Array.fill[Byte](length)(0)
@@ -339,6 +339,7 @@ class ZstdSpec extends FlatSpec with Checkers with Whenever {
       val original = Source.fromFile(orig)(Codec.ISO8859).map{char => char.toByte}.to[WrappedArray]
       if(original != buff.toSeq)
         sys.error(s"Failed")
+      assert(zis.available == 0)
     }
 
   for (level <- levels) // the worst case
@@ -430,7 +431,7 @@ class ZstdSpec extends FlatSpec with Checkers with Whenever {
     val fis  = new FileInputStream(file)
     val zis  = new ZstdInputStream(fis)
     assert(!zis.markSupported)
-    assert(zis.available == 0)
+    assert(zis.available > 0)
     assert(zis.skip(0) == 0)
     val length = orig.length.toInt
     val buff = Array.fill[Byte](length)(0)
@@ -442,6 +443,7 @@ class ZstdSpec extends FlatSpec with Checkers with Whenever {
     val original = Source.fromFile(orig)(Codec.ISO8859).map{char => char.toByte}.to[WrappedArray]
     if(original != buff.toSeq)
       sys.error(s"Failed")
+    assert(zis.available == 0)
   }
 
   "ZstdDirectBufferDecompressingStream" should s"be able to consume 2 frames in a file compressed by the zstd binary" in {
@@ -639,7 +641,7 @@ class ZstdSpec extends FlatSpec with Checkers with Whenever {
       val fis  = new FileInputStream(file)
       val zis  = new ZstdInputStream(fis)
       assert(!zis.markSupported)
-      assert(zis.available == 0)
+      assert(zis.available > 0)
       assert(zis.skip(0) == 0)
       val length = orig.length.toInt
       val buff = Array.fill[Byte](length)(0)
@@ -651,6 +653,7 @@ class ZstdSpec extends FlatSpec with Checkers with Whenever {
       val original = Source.fromFile(orig)(Codec.ISO8859).map{char => char.toByte}.to[WrappedArray]
       if(original != buff.toSeq)
         sys.error(s"Failed")
+      assert(zis.available == 0)
     }
 
   for (version <- List("04", "05", "06", "07"))
@@ -660,7 +663,7 @@ class ZstdSpec extends FlatSpec with Checkers with Whenever {
       val fis  = new FileInputStream(file)
       val zis  = new ZstdInputStream(fis).setContinuous(true);
       assert(!zis.markSupported)
-      assert(zis.available == 0)
+      assert(zis.available > 0)
       assert(zis.skip(0) == 0)
       val length = orig.length.toInt
       val buff = Array.fill[Byte](length)(0)
@@ -672,5 +675,6 @@ class ZstdSpec extends FlatSpec with Checkers with Whenever {
       val original = Source.fromFile(orig)(Codec.ISO8859).map{char => char.toByte}.to[WrappedArray]
       if(original != buff.toSeq)
         sys.error(s"Failed")
+      assert(zis.available == 0)
     }
 }
