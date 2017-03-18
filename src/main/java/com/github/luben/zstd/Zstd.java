@@ -59,6 +59,26 @@ public class Zstd {
      */
     public static native long compressUsingDict (byte[] dst, int dstOffset, byte[] src, int srcOffset, int length, byte[] dict, int level);
 
+   /**
+     * Compresses direct byte buffer 'src' into direct byte buffer 'dst' with dictionary.
+     *
+     * Destination buffer should be sized to handle worst cases situations (input
+     * data not compressible). Worst case size evaluation is provided by function
+     * ZSTD_compressBound().
+     *
+     * @param dst the destination buffer
+     * @param dstOffset the start offset of 'dst'
+     * @param dstSize size of 'dst'
+     * @param src the source buffer
+     * @param srcOffset the start offset of 'src'
+     * @param srcSize the length of 'src'
+     * @param dict the dictionary buffer
+     * @param level compression level
+     * @return  the number of bytes written into buffer 'dst' or an error code if
+     *          it fails (which can be tested using ZSTD_isError())
+     */
+    public static native long compressDirectByteBufferUsingDict (ByteBuffer dst, int dstOffset, int dstSize, ByteBuffer src, int srcOffset, int srcSize, byte[] dict, int level);
+
     /**
      * Compresses buffer 'src' into buffer 'dst' with dictionary.
      *
@@ -76,6 +96,26 @@ public class Zstd {
      *          it fails (which can be tested using ZSTD_isError())
      */
     public static native long compressFastDict(byte[] dst, int dstOffset, byte[] src, int srcOffset, int length, ZstdDictCompress dict);
+
+    /**
+     * Compresses buffer 'src' into buffer 'dst' with dictionary.
+     *
+     * Destination buffer should be sized to handle worst cases situations (input
+     * data not compressible). Worst case size evaluation is provided by function
+     * ZSTD_compressBound().
+     *
+     * @param dst the destination buffer
+     * @param dstOffset the start offset of 'dst'
+     * @param dstSize the size of 'dst'
+     * @param src the source buffer
+     * @param srcOffset the start offset of 'src'
+     * @param srcSize the length of 'src'
+     * @param dict the dictionary
+     * @return  the number of bytes written into buffer 'dst' or an error code if
+     *          it fails (which can be tested using ZSTD_isError())
+     */
+    public static native long compressDirectByteBufferFastDict(ByteBuffer dst, int dstOffset, int dstSize, ByteBuffer src, int srcOffset, int srcSize, ZstdDictCompress dict);
+
 
     /**
      * Decompresses buffer 'src' into buffer 'dst'.
@@ -127,6 +167,25 @@ public class Zstd {
      *
      * @param dst the destination buffer
      * @param dstOffset the start offset of 'dst'
+     * @param dstSize size of 'dst'
+     * @param src the source buffer
+     * @param srcOffset the start offset of 'src'
+     * @param srcSize the  size of 'src'
+     * @param dict the dictionary buffer
+     * @return the number of bytes decompressed into destination buffer (originalSize)
+     *          or an errorCode if it fails (which can be tested using ZSTD_isError())
+     *
+     */
+    public static native long decompressDirectByteBufferUsingDict(ByteBuffer dst, int dstOffset, int dstSize, ByteBuffer src, int srcOffset, int srcSize, byte[] dict);
+
+
+    /**
+     * Decompresses buffer 'src' into buffer 'dst' with dictionary.
+     *
+     * Destination buffer should be sized to be larger of equal to the originalSize
+     *
+     * @param dst the destination buffer
+     * @param dstOffset the start offset of 'dst'
      * @param src the source buffer
      * @param srcOffset the start offset of 'src'
      * @param length the length of 'src'
@@ -136,6 +195,25 @@ public class Zstd {
      *
      */
     public static native long decompressFastDict(byte[] dst, int dstOffset, byte[] src, int srcOffset, int length, ZstdDictDecompress dict);
+
+    /**
+     * Decompresses buffer 'src' into buffer 'dst' with dictionary.
+     *
+     * Destination buffer should be sized to be larger of equal to the originalSize
+     *
+     * @param dst the destination buffer
+     * @param dstOffset the start offset of 'dst'
+     * @param dstSize the size of 'dst'
+     * @param src the source buffer
+     * @param srcOffset the start offset of 'src'
+     * @param srcSize the size of 'src'
+     * @param dict the dictionary
+     * @return the number of bytes decompressed into destination buffer (originalSize)
+     *          or an errorCode if it fails (which can be tested using ZSTD_isError())
+     *
+     */
+    public static native long decompressDirectByteBufferFastDict(ByteBuffer dst, int dstOffset, int dstSize, ByteBuffer src, int srcOffset, int srcSize, ZstdDictDecompress dict);
+
 
     /* Utility methods */
 
@@ -315,7 +393,6 @@ public class Zstd {
         dstBuf.limit((int)size);
         //Since we allocated the buffer ourselves, we know it cannot be used to hold any further compressed data,
         //so leave the position at zero where the caller surely wants it
-        //dstBuf.position(dstBuf.position() + (int)size);
 
         return dstBuf;
     }
@@ -367,6 +444,182 @@ public class Zstd {
      */
     public static long compress(byte[] dst, byte[] src, byte[] dict, int level) {
 	return compressUsingDict(dst, 0, src, 0, src.length, dict, level);
+    }
+
+   /**
+     * Compresses buffer 'src' into buffer 'dst' with dictionary.
+     *
+     * Destination buffer should be sized to handle worst cases situations (input
+     * data not compressible). Worst case size evaluation is provided by function
+     * ZSTD_compressBound().
+     *
+     * @param dst the destination buffer
+     * @param src the source buffer
+     * @param dict the dictionary buffer
+     * @param level compression level
+     * @return  the number of bytes written into buffer 'dst' or an error code if
+     *          it fails (which can be tested using ZSTD_isError())
+     */
+    public static int compress(ByteBuffer dstBuff, ByteBuffer srcBuff, byte[] dict, int level) {
+        if (!srcBuff.isDirect()) {
+            throw new IllegalArgumentException("srcBuf must be a direct buffer");
+        }
+
+        if (!dstBuff.isDirect()) {
+            throw new IllegalArgumentException("dstBuf must be a direct buffer");
+        }
+
+        long size = compressDirectByteBufferUsingDict(
+                dstBuff, //compress into dstBuf
+                dstBuff.position(), //starting at offset 0
+                dstBuff.capacity() - dstBuff.position(), //write no more than capacity() - position() bytes
+                srcBuff, //read data to be compressed from srcBuf
+                srcBuff.position(), //start reading at offset position()
+                srcBuff.limit() - srcBuff.position(), //read limit() - position() bytes
+                dict, // use dictionary
+                level); //use this compression level
+        if (isError(size)) {
+            throw new RuntimeException(getErrorName(size));
+        }
+        srcBuff.position(srcBuff.limit());
+
+        dstBuff.limit((int)size);
+        //Since we allocated the buffer ourselves, we know it cannot be used to hold any further compressed data,
+        //so leave the position at zero where the caller surely wants it
+
+        return (int) size;
+    }
+
+   /**
+     * Compresses buffer 'src' into buffer 'dst' with dictionary.
+     *
+     * Destination buffer should be sized to handle worst cases situations (input
+     * data not compressible). Worst case size evaluation is provided by function
+     * ZSTD_compressBound().
+     *
+     * @param src the source buffer
+     * @param dict the dictionary buffer
+     * @param level compression level
+     * @return  compressed direct byte buffer
+     */
+    public static ByteBuffer compress(ByteBuffer srcBuff, byte[] dict, int level) {
+        if (!srcBuff.isDirect()) {
+            throw new IllegalArgumentException("srcBuf must be a direct buffer");
+        }
+
+        long maxDstSize = Zstd.compressBound((long)(srcBuff.limit() - srcBuff.position()));
+        if (maxDstSize > Integer.MAX_VALUE) {
+            throw new RuntimeException("Max output size is greater than MAX_INT");
+        }
+
+        ByteBuffer dstBuff = ByteBuffer.allocateDirect((int)maxDstSize);
+
+        long size = compressDirectByteBufferUsingDict(
+                dstBuff, //compress into dstBuf
+                0, //starting at offset 0
+                (int)maxDstSize, //writing no more than maxDstSize
+                srcBuff, //read data to be compressed from srcBuf
+                srcBuff.position(), //start reading at offset position()
+                srcBuff.limit() - srcBuff.position(), //read limit() - position() bytes
+                dict, // use dictionary
+                level); //use this compression level
+        if (isError(size)) {
+            throw new RuntimeException(getErrorName(size));
+        }
+        srcBuff.position(srcBuff.limit());
+
+        dstBuff.limit((int)size);
+        //Since we allocated the buffer ourselves, we know it cannot be used to hold any further compressed data,
+        //so leave the position at zero where the caller surely wants it
+
+        return dstBuff;
+    }
+
+    /**
+     * Compresses buffer 'src' into buffer 'dst' with dictionary.
+     *
+     * Destination buffer should be sized to handle worst cases situations (input
+     * data not compressible). Worst case size evaluation is provided by function
+     * ZSTD_compressBound().
+     *
+     * @param dst the destination buffer
+     * @param src the source buffer
+     * @param dict the dictionary buffer
+     * @return  the number of bytes written into buffer 'dst' or an error code if
+     *          it fails (which can be tested using ZSTD_isError())
+     */
+    public static int compress(ByteBuffer dstBuff, ByteBuffer srcBuff, ZstdDictCompress dict) {
+        if (!srcBuff.isDirect()) {
+            throw new IllegalArgumentException("srcBuf must be a direct buffer");
+        }
+
+        if (!dstBuff.isDirect()) {
+            throw new IllegalArgumentException("dstBuf must be a direct buffer");
+        }
+
+        long size = compressDirectByteBufferFastDict(
+                dstBuff, //compress into dstBuf
+                dstBuff.position(), //starting at offset 0
+                dstBuff.capacity() - dstBuff.position(), //write no more than capacity() - position() bytes
+                srcBuff, //read data to be compressed from srcBuf
+                srcBuff.position(), //start reading at offset position()
+                srcBuff.limit() - srcBuff.position(), //read limit() - position() bytes
+                dict // use dictionary
+                ); // the compression level is part of the dictionary
+        if (isError(size)) {
+            throw new RuntimeException(getErrorName(size));
+        }
+        srcBuff.position(srcBuff.limit());
+
+        dstBuff.limit((int)size);
+        //Since we allocated the buffer ourselves, we know it cannot be used to hold any further compressed data,
+        //so leave the position at zero where the caller surely wants it
+
+        return (int) size;
+    }
+
+   /**
+     * Compresses buffer 'src' into buffer 'dst' with dictionary.
+     *
+     * Destination buffer should be sized to handle worst cases situations (input
+     * data not compressible). Worst case size evaluation is provided by function
+     * ZSTD_compressBound().
+     *
+     * @param src the source buffer
+     * @param dict the dictionary buffer
+     * @return  compressed direct byte buffer
+     */
+    public static ByteBuffer compress(ByteBuffer srcBuff, ZstdDictCompress dict) {
+        if (!srcBuff.isDirect()) {
+            throw new IllegalArgumentException("srcBuf must be a direct buffer");
+        }
+
+        long maxDstSize = Zstd.compressBound((long)(srcBuff.limit() - srcBuff.position()));
+        if (maxDstSize > Integer.MAX_VALUE) {
+            throw new RuntimeException("Max output size is greater than MAX_INT");
+        }
+
+        ByteBuffer dstBuff = ByteBuffer.allocateDirect((int)maxDstSize);
+
+        long size = compressDirectByteBufferFastDict(
+                dstBuff, //compress into dstBuf
+                0, //starting at offset 0
+                (int)maxDstSize, //writing no more than maxDstSize
+                srcBuff, //read data to be compressed from srcBuf
+                srcBuff.position(), //start reading at offset position()
+                srcBuff.limit() - srcBuff.position(), //read limit() - position() bytes
+                dict // use dictionary
+                ); // the compression level is part of the dictionary
+        if (isError(size)) {
+            throw new RuntimeException(getErrorName(size));
+        }
+        srcBuff.position(srcBuff.limit());
+
+        dstBuff.limit((int)size);
+        //Since we allocated the buffer ourselves, we know it cannot be used to hold any further compressed data,
+        //so leave the position at zero where the caller surely wants it
+
+        return dstBuff;
     }
 
     /**
@@ -522,5 +775,154 @@ public class Zstd {
         return decompressedDirectByteBufferSize(srcBuf, srcBuf.position(), srcBuf.limit() - srcBuf.position());
     }
 
+    /**
+     * Decompress data
+     *
+     * @param dstBuff the destination buffer.  must be direct.  It is assumed that the position() of this buffer marks the offset
+     *               at which the decompressed data are to be written, and that the capacity() of this buffer is the maximum
+     *               decompressed data size to allow.
+     *               <p>
+     *               When this method returns successfully, dstBuff's position() will be set to its current position() plus the
+     *               decompressed size of the data.
+     *               </p>
+     * @param srcBuff the source buffer.  must be direct.  It is assumed that the position() of this buffer marks the beginning of the
+     *               compressed data to be decompressed, and that the limit() of this buffer marks its end.
+     *               <p>
+     *               When this method returns successfully, srcBuff's position() will be set to its limit().
+     *               </p>
+     * @param dict   the dictionary buffer to use for compression
+     * @return the size of the decompressed data.
+     */
+    public static int decompress(ByteBuffer dstBuff, ByteBuffer srcBuff, byte[] dict) {
+        if (!srcBuff.isDirect()) {
+            throw new IllegalArgumentException("srcBuff must be a direct buffer");
+        }
+
+        if (!dstBuff.isDirect()) {
+            throw new IllegalArgumentException("dstBuff must be a direct buffer");
+        }
+
+        long size = decompressDirectByteBufferUsingDict(dstBuff, //decompress into dstBuf
+                dstBuff.position(), //write decompressed data at offset position()
+                dstBuff.capacity() - dstBuff.position(), //write no more than capacity() - position()
+                srcBuff, //read compressed data from srcBuf
+                srcBuff.position(), //read starting at offset position()
+                srcBuff.limit() - srcBuff.position(), //read no more than limit() - position()
+                dict);
+        if (isError(size)) {
+            throw new RuntimeException(getErrorName(size));
+        }
+
+        srcBuff.position(srcBuff.limit());
+        dstBuff.position(dstBuff.position() + (int)size);
+        return (int) size;
+    }
+
+    /**
+     * Decompress data
+     *
+     * @param srcBuff the source buffer.  must be direct.  It is assumed that the position() of this buffer marks the beginning of the
+     *               compressed data to be decompressed, and that the limit() of this buffer marks its end.
+     *               <p>
+     *               When this method returns successfully, srcBuff's position() will be set to its limit().
+     *               </p>
+     * @param originalSize the maximum size of the uncompressed data
+     * @param dict   the dictionary used in the compression
+     * @return A newly-allocated ByteBuffer containing the decompressed data.  The position() of this buffer will be 0,
+     *          and the limit() will be the size of the decompressed data.  In other words the buffer is ready to be used for
+     *          reading.  Note that this is different behavior from the other decompress() overload which takes as a parameter
+     *          the destination ByteBuffer.
+     */
+    public static ByteBuffer decompress(ByteBuffer srcBuff, int originalSize, byte[] dict) {
+        if (!srcBuff.isDirect()) {
+            throw new IllegalArgumentException("srcBuff must be a direct buffer");
+        }
+
+        ByteBuffer dstBuff = ByteBuffer.allocateDirect(originalSize);
+        long size = decompressDirectByteBufferUsingDict(dstBuff, 0, originalSize, srcBuff, srcBuff.position(), srcBuff.limit(), dict);
+        if (isError(size)) {
+            throw new RuntimeException(getErrorName(size));
+        }
+
+        srcBuff.position(srcBuff.limit());
+        //Since we allocated the buffer ourselves, we know it cannot be used to hold any further decompressed data,
+        //so leave the position at zero where the caller surely wants it
+        return dstBuff;
+    }
+
+    /**
+     * Decompress data
+     *
+     * @param dstBuff the destination buffer.  must be direct.  It is assumed that the position() of this buffer marks the offset
+     *               at which the decompressed data are to be written, and that the capacity() of this buffer is the maximum
+     *               decompressed data size to allow.
+     *               <p>
+     *               When this method returns successfully, dstBuff's position() will be set to its current position() plus the
+     *               decompressed size of the data.
+     *               </p>
+     * @param srcBuff the source buffer.  must be direct.  It is assumed that the position() of this buffer marks the beginning of the
+     *               compressed data to be decompressed, and that the limit() of this buffer marks its end.
+     *               <p>
+     *               When this method returns successfully, srcBuff's position() will be set to its limit().
+     *               </p>
+     * @param dict   the dictionary buffer to use for compression
+     * @return the size of the decompressed data.
+     */
+    public static int decompress(ByteBuffer dstBuff, ByteBuffer srcBuff, ZstdDictDecompress dict) {
+        if (!srcBuff.isDirect()) {
+            throw new IllegalArgumentException("srcBuff must be a direct buffer");
+        }
+
+        if (!dstBuff.isDirect()) {
+            throw new IllegalArgumentException("dstBuff must be a direct buffer");
+        }
+
+        long size = decompressDirectByteBufferFastDict(dstBuff, //decompress into dstBuf
+                dstBuff.position(), //write decompressed data at offset position()
+                dstBuff.capacity() - dstBuff.position(), //write no more than capacity() - position()
+                srcBuff, //read compressed data from srcBuf
+                srcBuff.position(), //read starting at offset position()
+                srcBuff.limit() - srcBuff.position(), //read no more than limit() - position()
+                dict);
+        if (isError(size)) {
+            throw new RuntimeException(getErrorName(size));
+        }
+
+        srcBuff.position(srcBuff.limit());
+        dstBuff.position(dstBuff.position() + (int)size);
+        return (int) size;
+    }
+
+    /**
+     * Decompress data
+     *
+     * @param srcBuff the source buffer.  must be direct.  It is assumed that the position() of this buffer marks the beginning of the
+     *               compressed data to be decompressed, and that the limit() of this buffer marks its end.
+     *               <p>
+     *               When this method returns successfully, srcBuff's position() will be set to its limit().
+     *               </p>
+     * @param originalSize the maximum size of the uncompressed data
+     * @param dict   the dictionary used in the compression
+     * @return A newly-allocated ByteBuffer containing the decompressed data.  The position() of this buffer will be 0,
+     *          and the limit() will be the size of the decompressed data.  In other words the buffer is ready to be used for
+     *          reading.  Note that this is different behavior from the other decompress() overload which takes as a parameter
+     *          the destination ByteBuffer.
+     */
+    public static ByteBuffer decompress(ByteBuffer srcBuff, int originalSize, ZstdDictDecompress dict) {
+        if (!srcBuff.isDirect()) {
+            throw new IllegalArgumentException("srcBuff must be a direct buffer");
+        }
+
+        ByteBuffer dstBuff = ByteBuffer.allocateDirect(originalSize);
+        long size = decompressDirectByteBufferFastDict(dstBuff, 0, originalSize, srcBuff, srcBuff.position(), srcBuff.limit(), dict);
+        if (isError(size)) {
+            throw new RuntimeException(getErrorName(size));
+        }
+
+        srcBuff.position(srcBuff.limit());
+        //Since we allocated the buffer ourselves, we know it cannot be used to hold any further decompressed data,
+        //so leave the position at zero where the caller surely wants it
+        return dstBuff;
+    }
 
 }

@@ -148,3 +148,53 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_compressFastDict
 E2: (*env)->ReleasePrimitiveArrayCritical(env, dst, dst_buff, 0);
 E1: return size;
 }
+
+/*
+ * Class:     com_github_luben_zstd_Zstd
+ * Method:    compressDirectByteBufferFastDict
+ */
+JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_compressDirectByteBufferFastDict
+  (JNIEnv *env, jclass obj, jobject dst, jint dst_offset, jint dst_size, jobject src, jint src_offset, jint src_size, jobject dict) {
+    if (NULL == dict) return ZSTD_error_dictionary_wrong;
+    ZSTD_CDict* cdict = getNativePtr(env, dict);
+    if (NULL == cdict) return ZSTD_error_dictionary_wrong;
+    if (NULL == dst) return ZSTD_error_dstSize_tooSmall;
+    if (NULL == src) return ZSTD_error_srcSize_wrong;
+    if (0 > dst_offset) return ZSTD_error_dstSize_tooSmall;
+    if (0 > src_offset) return ZSTD_error_srcSize_wrong;
+    if (0 > src_size) return ZSTD_error_srcSize_wrong;
+
+
+    size_t size = (size_t)(0-ZSTD_error_memory_allocation);
+    char *dst_buff = (char*)(*env)->GetDirectBufferAddress(env, dst);
+    char *src_buff = (char*)(*env)->GetDirectBufferAddress(env, src);
+    ZSTD_CCtx* ctx = ZSTD_createCCtx();
+    size = ZSTD_compress_usingCDict(ctx, dst_buff + dst_offset, (size_t) dst_size, src_buff + src_offset, (size_t) src_size, cdict);
+    ZSTD_freeCCtx(ctx);
+    return size;
+}
+
+/*
+ * Class:     com_github_luben_zstd_Zstd
+ * Method:    decompressDirectByteBufferFastDict
+ */
+JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_decompressDirectByteBufferFastDict
+  (JNIEnv *env, jclass obj, jobject dst, jint dst_offset, jint dst_size, jobject src, jint src_offset, jint src_size, jobject dict)
+{
+    if (NULL == dict) return ZSTD_error_dictionary_wrong;
+    ZSTD_DDict* ddict = getNativePtr(env, dict);
+    if (NULL == ddict) return ZSTD_error_dictionary_wrong;
+    if (NULL == dst) return ZSTD_error_dstSize_tooSmall;
+    if (NULL == src) return ZSTD_error_srcSize_wrong;
+    if (0 > dst_offset) return ZSTD_error_dstSize_tooSmall;
+    if (0 > src_offset) return ZSTD_error_srcSize_wrong;
+    if (0 > src_size) return ZSTD_error_srcSize_wrong;
+
+    size_t size = (size_t)(0-ZSTD_error_memory_allocation);
+    char *dst_buff = (char*)(*env)->GetDirectBufferAddress(env, dst);
+    char *src_buff = (char*)(*env)->GetDirectBufferAddress(env, src);
+    ZSTD_DCtx* dctx = ZSTD_createDCtx();
+    size = ZSTD_decompress_usingDDict(dctx, dst_buff + dst_offset, (size_t) dst_size, src_buff + src_offset, (size_t) src_size, ddict);
+    ZSTD_freeDCtx(dctx);
+    return size;
+}

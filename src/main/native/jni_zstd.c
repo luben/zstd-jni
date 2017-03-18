@@ -37,12 +37,13 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_compressDirectByteBuffer
     jsize src_cap = (*env)->GetDirectBufferCapacity(env, src_buf);
     if (src_offset + src_size > src_cap) return ERROR(srcSize_wrong);
     char *dst_buf_ptr = (char*)(*env)->GetDirectBufferAddress(env, dst_buf);
-    if (dst_buf_ptr == NULL) goto E1;
+    if (dst_buf_ptr == NULL) return size;
     char *src_buf_ptr = (char*)(*env)->GetDirectBufferAddress(env, src_buf);
-    if (src_buf_ptr == NULL) goto E1;
+    if (src_buf_ptr == NULL) return size;
 
     size = ZSTD_compress(dst_buf_ptr + dst_offset, (size_t) dst_size, src_buf_ptr + src_offset, (size_t) src_size, (int) level);
-E1: return size;
+
+    return size;
 }
 
 JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_compressUsingDict
@@ -65,6 +66,26 @@ E2: (*env)->ReleasePrimitiveArrayCritical(env, dst, dst_buff, 0);
 E1: return size;
 }
 
+JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_compressDirectByteBufferUsingDict
+  (JNIEnv *env, jclass obj, jobject dst_buf, jint dst_offset, jint dst_size, jobject src_buf, jint src_offset, jint src_size, jbyteArray dict, jint level) {
+    size_t size = (size_t)ERROR(memory_allocation);
+    jsize dst_cap = (*env)->GetDirectBufferCapacity(env, dst_buf);
+    if (dst_offset + dst_size > dst_cap) return ERROR(dstSize_tooSmall);
+    jsize src_cap = (*env)->GetDirectBufferCapacity(env, src_buf);
+    if (src_offset + src_size > src_cap) return ERROR(srcSize_wrong);
+    char *dst_buff_ptr = (char*)(*env)->GetDirectBufferAddress(env, dst_buf);
+    if (dst_buff_ptr == NULL) return size;
+    char *src_buff_ptr = (char*)(*env)->GetDirectBufferAddress(env, src_buf);
+    if (src_buff_ptr == NULL) return size;
+    jsize dict_size = (*env)->GetArrayLength(env, dict);
+    void *dict_buff = (*env)->GetPrimitiveArrayCritical(env, dict, NULL);
+    if (dict_buff == NULL) return size;
+
+    ZSTD_CCtx* ctx = ZSTD_createCCtx();
+    size = ZSTD_compress_usingDict(ctx, dst_buff_ptr + dst_offset, (size_t) dst_size, src_buff_ptr + src_offset, (size_t) src_size, dict_buff, (size_t) dict_size, (int) level);
+    ZSTD_freeCCtx(ctx);
+    return size;
+}
 
 /*
  * Class:     com_github_luben_zstd_Zstd
@@ -100,12 +121,13 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_decompressDirectByteBuff
     jsize src_cap = (*env)->GetDirectBufferCapacity(env, src_buf);
     if (src_offset + src_size > src_cap) return ERROR(srcSize_wrong);
     char *dst_buf_ptr = (char*)(*env)->GetDirectBufferAddress(env, dst_buf);
-    if (dst_buf_ptr == NULL) goto E1;
+    if (dst_buf_ptr == NULL) return size;
     char *src_buf_ptr = (char*)(*env)->GetDirectBufferAddress(env, src_buf);
-    if (src_buf_ptr == NULL) goto E1;
+    if (src_buf_ptr == NULL) return size;
 
     size = ZSTD_decompress(dst_buf_ptr + dst_offset, (size_t) dst_size, src_buf_ptr + src_offset, (size_t) src_size);
-E1: return size;
+
+    return size;
 }
 
 JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_decompressUsingDict
@@ -128,6 +150,27 @@ E2: (*env)->ReleasePrimitiveArrayCritical(env, dst, dst_buff, 0);
 E1: return size;
 }
 
+JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_decompressDirectByteBufferUsingDict
+  (JNIEnv *env, jclass obj, jobject dst_buff, jint dst_offset, jint dst_size, jbyteArray src_buff, jint src_offset, jint src_size, jbyteArray dict) {
+    size_t size = (size_t)(0-ZSTD_error_memory_allocation);
+
+    jsize dst_cap = (*env)->GetDirectBufferCapacity(env, dst_buff);
+    if (dst_offset + dst_size > dst_cap) return ERROR(dstSize_tooSmall);
+    jsize src_cap = (*env)->GetDirectBufferCapacity(env, src_buff);
+    if (src_offset + src_size > src_cap) return ERROR(srcSize_wrong);
+    char *dst_buff_ptr = (char*)(*env)->GetDirectBufferAddress(env, dst_buff);
+    if (dst_buff_ptr == NULL) return size;
+    char *src_buff_ptr = (char*)(*env)->GetDirectBufferAddress(env, src_buff);
+    if (src_buff_ptr == NULL) return size;
+    jsize dict_size = (*env)->GetArrayLength(env, dict);
+    void *dict_buff = (*env)->GetPrimitiveArrayCritical(env, dict, NULL);
+    if (dict_buff == NULL) return size;
+    ZSTD_DCtx* dctx = ZSTD_createDCtx();
+    size = ZSTD_decompress_usingDict(dctx, dst_buff_ptr + dst_offset, (size_t) dst_size, src_buff_ptr + src_offset, (size_t) src_size, dict_buff, (size_t) dict_size);
+    ZSTD_freeDCtx(dctx);
+    (*env)->ReleasePrimitiveArrayCritical(env, dict, dict_buff, JNI_ABORT);
+    return size;
+}
 
 /*
  * Class:     com_github_luben_zstd_Zstd
