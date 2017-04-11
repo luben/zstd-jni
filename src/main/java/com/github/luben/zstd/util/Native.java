@@ -50,10 +50,11 @@ public enum Native {
             return;
         }
         String resourceName = resourceName();
-        InputStream is = Native.class.getResourceAsStream(resourceName);
+        InputStream is = Native.class.getResourceAsStream("../../../../.." + resourceName);
         if (is == null) {
-            throw new UnsupportedOperationException("Unsupported OS/arch, cannot find " +
-                    resourceName + ". Please try building from source.");
+            throw new UnsupportedOperationException(
+                    "Unsupported OS/arch, cannot find " + resourceName +
+                    ". Please try building from source.");
         }
         File tempLib;
         try {
