@@ -453,8 +453,8 @@ public class Zstd {
      * data not compressible). Worst case size evaluation is provided by function
      * ZSTD_compressBound().
      *
-     * @param dst the destination buffer
-     * @param src the source buffer
+     * @param dstBuff the destination buffer
+     * @param srcBuff the source buffer
      * @param dict the dictionary buffer
      * @param level compression level
      * @return  the number of bytes written into buffer 'dst' or an error code if
@@ -497,7 +497,7 @@ public class Zstd {
      * data not compressible). Worst case size evaluation is provided by function
      * ZSTD_compressBound().
      *
-     * @param src the source buffer
+     * @param srcBuff the source buffer
      * @param dict the dictionary buffer
      * @param level compression level
      * @return  compressed direct byte buffer
@@ -542,8 +542,8 @@ public class Zstd {
      * data not compressible). Worst case size evaluation is provided by function
      * ZSTD_compressBound().
      *
-     * @param dst the destination buffer
-     * @param src the source buffer
+     * @param dstBuff the destination buffer
+     * @param srcBuff the source buffer
      * @param dict the dictionary buffer
      * @return  the number of bytes written into buffer 'dst' or an error code if
      *          it fails (which can be tested using ZSTD_isError())
@@ -585,7 +585,7 @@ public class Zstd {
      * data not compressible). Worst case size evaluation is provided by function
      * ZSTD_compressBound().
      *
-     * @param src the source buffer
+     * @param srcBuff the source buffer
      * @param dict the dictionary buffer
      * @return  compressed direct byte buffer
      */
