@@ -10,10 +10,6 @@ import com.github.luben.zstd.Zstd;
 
 /**
  * OutputStream filter that compresses the data using Zstd compression
- *
- * Caveat: flush method with flush only the completed blocks of
- * 128KB size to the output
- *
  */
 public class ZstdOutputStream extends FilterOutputStream {
 
@@ -28,6 +24,8 @@ public class ZstdOutputStream extends FilterOutputStream {
     private byte[] dst = null;
     private boolean isClosed = false;
     private static final int dstSize = (int) recommendedCOutSize();
+    private boolean syncFlush;
+    private int level;
 
     /* JNI methods */
     private static native long recommendedCOutSize();
@@ -40,9 +38,11 @@ public class ZstdOutputStream extends FilterOutputStream {
 
 
     /* The constuctor */
-    public ZstdOutputStream(OutputStream outStream, int level) throws IOException {
+    public ZstdOutputStream(OutputStream outStream, int level, boolean syncFlush) throws IOException {
         // FilterOutputStream constructor
         super(outStream);
+        this.syncFlush = syncFlush;
+        this.level = level;
 
         // create compression context
         stream = createCStream();
@@ -53,8 +53,12 @@ public class ZstdOutputStream extends FilterOutputStream {
         }
     }
 
+    public ZstdOutputStream(OutputStream outStream, int level) throws IOException {
+        this(outStream, level, false);
+    }
+
     public ZstdOutputStream(OutputStream outStream) throws IOException {
-        this(outStream, 1);
+        this(outStream, 3, false);
     }
 
     public void write(byte[] src, int offset, int len) throws IOException {
@@ -87,15 +91,25 @@ public class ZstdOutputStream extends FilterOutputStream {
         if (isClosed) {
             throw new IOException("Stream closed");
         }
-        // compress the remaining input
-        int size = 1;
-        while (size > 0) {
-            size = flushStream(stream, dst, dstSize);
+        if (syncFlush) {
+            // compress the remaining input and close the frame
+            int size = endStream(stream, dst, dstSize);
             if (Zstd.isError(size)) {
                 throw new IOException("Compression error: " + Zstd.getErrorName(size));
             }
-            out.write(dst, 0, (int) dstPos);
+            // open the next frame
+            size = initCStream(stream, level);
+            if (Zstd.isError(size)) {
+                throw new IOException("Compression error: cannot create header: " + Zstd.getErrorName(size));
+            }
+        } else {
+            // compress the remaining input
+            int size = flushStream(stream, dst, dstSize);
+            if (Zstd.isError(size)) {
+                throw new IOException("Compression error: " + Zstd.getErrorName(size));
+            }
         }
+        out.write(dst, 0, (int) dstPos);
         out.flush();
     }
 
