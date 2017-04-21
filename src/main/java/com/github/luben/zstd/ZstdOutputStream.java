@@ -88,11 +88,14 @@ public class ZstdOutputStream extends FilterOutputStream {
             throw new IOException("Stream closed");
         }
         // compress the remaining input
-        int size = flushStream(stream, dst, dstSize);
-        if (Zstd.isError(size)) {
-            throw new IOException("Compression error: " + Zstd.getErrorName(size));
+        int size = 1;
+        while (size > 0) {
+            size = flushStream(stream, dst, dstSize);
+            if (Zstd.isError(size)) {
+                throw new IOException("Compression error: " + Zstd.getErrorName(size));
+            }
+            out.write(dst, 0, (int) dstPos);
         }
-        out.write(dst, 0, (int) dstPos);
         out.flush();
     }
 

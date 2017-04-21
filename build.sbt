@@ -3,7 +3,7 @@ name := "zstd-jni"
 
 version := "1.1.4"
 
-scalaVersion := "2.11.8"
+scalaVersion := "2.12.2"
 
 enablePlugins(JniPlugin, SbtOsgi)
 
