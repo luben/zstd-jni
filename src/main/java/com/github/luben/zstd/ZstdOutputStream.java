@@ -24,7 +24,8 @@ public class ZstdOutputStream extends FilterOutputStream {
     private byte[] dst = null;
     private boolean isClosed = false;
     private static final int dstSize = (int) recommendedCOutSize();
-    private boolean syncFlush;
+    private boolean closeFrameOnFlush;
+    private boolean frameClosed = true;
     private int level;
 
     /* JNI methods */
@@ -38,10 +39,10 @@ public class ZstdOutputStream extends FilterOutputStream {
 
 
     /* The constuctor */
-    public ZstdOutputStream(OutputStream outStream, int level, boolean syncFlush) throws IOException {
+    public ZstdOutputStream(OutputStream outStream, int level, boolean closeFrameOnFlush) throws IOException {
         // FilterOutputStream constructor
         super(outStream);
-        this.syncFlush = syncFlush;
+        this.closeFrameOnFlush = closeFrameOnFlush;
         this.level = level;
 
         // create compression context
@@ -65,6 +66,7 @@ public class ZstdOutputStream extends FilterOutputStream {
         if (isClosed) {
             throw new IOException("Stream closed");
         }
+        frameClosed = false;
         int srcSize = offset + len;
         srcPos = offset;
         while (srcPos < srcSize) {
@@ -91,8 +93,8 @@ public class ZstdOutputStream extends FilterOutputStream {
         if (isClosed) {
             throw new IOException("Stream closed");
         }
-        if (syncFlush) {
-            // compress the remaining input and close the frame
+        if (closeFrameOnFlush && !frameClosed) {
+            // compress the remaining output and close the frame
             int size = endStream(stream, dst, dstSize);
             if (Zstd.isError(size)) {
                 throw new IOException("Compression error: " + Zstd.getErrorName(size));
@@ -102,6 +104,7 @@ public class ZstdOutputStream extends FilterOutputStream {
             if (Zstd.isError(size)) {
                 throw new IOException("Compression error: cannot create header: " + Zstd.getErrorName(size));
             }
+            frameClosed = true;
         } else {
             // compress the remaining input
             int size = flushStream(stream, dst, dstSize);
