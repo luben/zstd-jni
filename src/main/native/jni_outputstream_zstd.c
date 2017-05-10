@@ -72,7 +72,7 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdOutputStream_compressStrea
 
     size = ZSTD_compressStream((ZSTD_CStream *)(intptr_t) stream, &output, &input);
 
-    (*env)->ReleasePrimitiveArrayCritical(env, src, src_buff, 0);
+    (*env)->ReleasePrimitiveArrayCritical(env, src, src_buff, JNI_ABORT);
 E2: (*env)->ReleasePrimitiveArrayCritical(env, dst, dst_buff, 0);
     (*env)->SetLongField(env, obj, src_pos_id, input.pos);
     (*env)->SetLongField(env, obj, dst_pos_id, output.pos);

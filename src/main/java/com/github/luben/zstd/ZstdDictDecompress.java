@@ -12,7 +12,11 @@ public class ZstdDictDecompress implements Closeable {
         Native.load();
     }
 
-    private long nativePtr = 0;
+    private long nativePtr = 0L;
+
+    private native void init(byte[] dict, int dict_offset, int dict_size);
+
+    private native void free();
 
     /**
      * Convenience constructor to create a new dictionary for use with fast decompress
@@ -32,26 +36,17 @@ public class ZstdDictDecompress implements Closeable {
      */
     public ZstdDictDecompress(byte[] dict, int offset, int length) {
         byte[] _dict;
-        if (0 == offset && length == dict.length) {
-            _dict = dict;
-        } else {
-            _dict = Arrays.copyOfRange(dict, offset, offset + length);
-        }
-
-        if (_dict.length <= 0) {
+        if (dict.length < 0) {
             throw new IllegalArgumentException("Dictionary buffer is to short");
         }
 
-        init(_dict);
+        init(dict, offset, length);
 
-        if (0 == nativePtr) {
-            throw new IllegalStateException("ZSTD_createCDict failed");
+        if (nativePtr == 0L) {
+           throw new IllegalStateException("ZSTD_createDDict failed");
         }
     }
 
-    private native void init(byte[] dict);
-
-    private native void free();
 
     @Override
     public void close() throws IOException {

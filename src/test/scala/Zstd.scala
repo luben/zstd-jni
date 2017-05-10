@@ -168,14 +168,14 @@ class ZstdSpec extends FlatSpec with Checkers with Whenever {
   it should "fail to compress when the destination buffer is too small" in {
     check{ input: Array[Byte] =>
       val size = input.length
-      val compressedSize = Zstd.compress(input).length-1
-      val compressedBuffer = ByteBuffer.allocateDirect(compressedSize.toInt)
+      val compressedSize = Zstd.compress(input, 3).length
+      val compressedBuffer = ByteBuffer.allocateDirect(compressedSize.toInt - 1)
       val inputBuffer = ByteBuffer.allocateDirect(size)
       inputBuffer.put(input)
       inputBuffer.rewind()
 
       val e = intercept[RuntimeException] {
-        Zstd.compress(compressedBuffer, inputBuffer, 1)
+        Zstd.compress(compressedBuffer, inputBuffer, 3)
       }
 
       e.getMessage().contains("Destination buffer is too small")

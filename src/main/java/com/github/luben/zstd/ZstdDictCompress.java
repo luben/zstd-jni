@@ -14,6 +14,10 @@ public class ZstdDictCompress implements Closeable {
 
     private long nativePtr = 0;
 
+    private native void init(byte[] dict, int dict_offset, int dict_size, int level);
+
+    private native void free();
+
     /**
      * Convenience constructor to create a new dictionary for use with fast compress
      *
@@ -33,27 +37,17 @@ public class ZstdDictCompress implements Closeable {
      * @param level  compression level
      */
     public ZstdDictCompress(byte[] dict, int offset, int length, int level) {
-        byte[] _dict;
-        if (0 == offset && length == dict.length) {
-            _dict = dict;
-        } else {
-            _dict = Arrays.copyOfRange(dict, offset, offset + length);
-        }
-
-        if (_dict.length <= 0) {
+        if (dict.length - offset < 0) {
             throw new IllegalArgumentException("Dictionary buffer is to short");
         }
 
-        init(_dict, level);
+        init(dict, offset, length, level);
 
         if (0 == nativePtr) {
             throw new IllegalStateException("ZSTD_createCDict failed");
         }
     }
 
-    private native void init(byte[] dict, int level);
-
-    private native void free();
 
     @Override
     public void close() throws IOException {
