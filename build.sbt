@@ -54,8 +54,8 @@ jniGccFlags ++= Seq(
   "-std=c99", "-Wundef", "-Wshadow", "-Wcast-align", "-Wstrict-prototypes",
   "-Wno-unused-variable", "-DZSTD_LEGACY_SUPPORT=4"
 ) ++ (System.getProperty("os.arch") match {
-  case "amd64"|"x86_64"   => Seq("-msse4")
-  case "i386"             => Seq("-msse4")
+  case "amd64"|"x86_64"   => Seq("-msse3")
+  case "i386"             => Seq("-msse3")
   case _                  => Seq()
 })
 
