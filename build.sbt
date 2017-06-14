@@ -1,7 +1,7 @@
 
 name := "zstd-jni"
 
-version := "1.2.0"
+version := "1.2.0-1"
 
 scalaVersion := "2.12.2"
 
@@ -25,7 +25,7 @@ javacOptions ++= Seq("-source", "1.7", "-target", "1.7")
 javacOptions in doc := Seq("-source", "1.7")
 
 // sbt-jni configuration
-jniLibraryName := "zstd"
+jniLibraryName := "zstd-jni"
 
 jniNativeClasses := Seq(
   "com.github.luben.zstd.Zstd",

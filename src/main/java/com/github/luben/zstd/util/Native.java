@@ -4,11 +4,16 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.UnsatisfiedLinkError;
 
 public enum Native {
     ;
 
-    private static final String libname = "libzstd";
+    private static final String libnameShort = "zstd-jni";
+    private static final String libname = "lib" + libnameShort;
+    private static final String errorMsg = "Unsupported OS/arch, cannot find " +
+        resourceName() + " or load " + libnameShort + " from system libraries. Please " +
+        "try building from source the jar or providing " + libname + " in you system.";
 
     private static String osName() {
         String os = System.getProperty("os.name").toLowerCase().replace(' ', '_');
@@ -45,15 +50,28 @@ public enum Native {
         return loaded;
     }
 
+    private static UnsatisfiedLinkError linkError(UnsatisfiedLinkError e) {
+        UnsatisfiedLinkError err = new UnsatisfiedLinkError(e.getMessage() + "\n" + errorMsg);
+        err.setStackTrace(e.getStackTrace());
+        return err;
+    }
+
     public static synchronized void load() {
         if (loaded) {
             return;
         }
+
         String resourceName = resourceName();
         InputStream is = Native.class.getResourceAsStream(resourceName);
         if (is == null) {
-            throw new UnsupportedOperationException("Unsupported OS/arch, cannot find " +
-                    resourceName + ". Please try building from source.");
+            // fall-back to loading the zstd-jni from the system library path
+            try {
+                System.loadLibrary(libnameShort);
+                loaded = true;
+                return;
+            } catch (UnsatisfiedLinkError e) {
+                throw linkError(e);
+            }
         }
         File tempLib;
         try {
@@ -75,7 +93,16 @@ public enum Native {
                 } catch (IOException e) {
                     // ignore
                 }
-                System.load(tempLib.getAbsolutePath());
+                try {
+                    System.load(tempLib.getAbsolutePath());
+                } catch (UnsatisfiedLinkError e) {
+                    // fall-back to loading the zstd-jni from the system library path
+                    try {
+                        System.loadLibrary(libnameShort);
+                    } catch (UnsatisfiedLinkError e1) {
+                        throw linkError(e1);
+                    }
+                }
                 loaded = true;
             } finally {
                 try {
