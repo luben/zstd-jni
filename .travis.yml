@@ -1,10 +1,13 @@
 language: java
 
-os:
-    - linux
-    - osx
 
-osx_image: xcode8.3
+matrix:
+  include:
+    - os:  linux
+      jdk: oraclejdk8
+
+    - os:  osx
+      osx_image: xcode8.3
 
 script: ./sbt compile jacoco:cover
 
@@ -19,4 +22,4 @@ addons:
     s3_region: "us-east-1"
     artifacts:
         paths:
-            - $(git ls-files -o | grep libzstd-jni | tr "\n" ":")
+            - $(git ls-files -o | grep libzstd | tr "\n" ":")
