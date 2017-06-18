@@ -317,7 +317,7 @@ public class Zstd {
      * Compresses the data in buffer 'srcBuf'
      *
      * @param dstBuf the destination buffer.  must be direct.  It is assumed that the position() of this buffer marks the offset
-     *               at which the compressed data are to be written, and that the capacity() of this buffer is the maximum
+     *               at which the compressed data are to be written, and that the limit() of this buffer is the maximum
      *               compressed data size to allow.
      *               <p>
      *               When this method returns successfully, dstBuf's position() will be set to its current position() plus the
@@ -340,13 +340,13 @@ public class Zstd {
             throw new IllegalArgumentException("dstBuf must be a direct buffer");
         }
 
-        long size = compressDirectByteBuffer(dstBuf, //compress into dstBuf
-                dstBuf.position(), //write compressed data starting at offset position()
-                dstBuf.capacity() - dstBuf.position(), //write no more than capacity() - position() bytes
-                srcBuf, //read data to compress from srcBuf
-                srcBuf.position(), //start reading at position()
-                srcBuf.limit() - srcBuf.position(), //read limit() - position() bytes
-                level); //use this compression level
+        long size = compressDirectByteBuffer(dstBuf, // compress into dstBuf
+                dstBuf.position(),                   // write compressed data starting at offset position()
+                dstBuf.limit() - dstBuf.position(),  // write no more than limit() - position() bytes
+                srcBuf,                              // read data to compress from srcBuf
+                srcBuf.position(),                   // start reading at position()
+                srcBuf.limit() - srcBuf.position(),  // read limit() - position() bytes
+                level);                              // use this compression level
         if (isError(size)) {
             throw new RuntimeException(getErrorName(size));
         }
@@ -378,21 +378,21 @@ public class Zstd {
 
         ByteBuffer dstBuf = ByteBuffer.allocateDirect((int) maxDstSize);
 
-        long size = compressDirectByteBuffer(dstBuf, //compress into dstBuf
-                0, //starting at offset 0
-                (int)maxDstSize, //writing no more than maxDstSize
-                srcBuf, //read data to be compressed from srcBuf
-                srcBuf.position(), //start reading at offset position()
-                srcBuf.limit() - srcBuf.position(), //read limit() - position() bytes
-                level); //use this compression level
+        long size = compressDirectByteBuffer(dstBuf, // compress into dstBuf
+                0,                                   // starting at offset 0
+                (int) maxDstSize,                    // writing no more than maxDstSize
+                srcBuf,                              // read data to be compressed from srcBuf
+                srcBuf.position(),                   // start reading at offset position()
+                srcBuf.limit() - srcBuf.position(),  // read limit() - position() bytes
+                level);                              // use this compression level
         if (isError(size)) {
             throw new RuntimeException(getErrorName(size));
         }
         srcBuf.position(srcBuf.limit());
 
         dstBuf.limit((int)size);
-        //Since we allocated the buffer ourselves, we know it cannot be used to hold any further compressed data,
-        //so leave the position at zero where the caller surely wants it
+        // Since we allocated the buffer ourselves, we know it cannot be used to hold any further compressed data,
+        // so leave the position at zero where the caller surely wants it, ready to read
 
         return dstBuf;
     }
@@ -492,22 +492,22 @@ public class Zstd {
         }
 
         long size = compressDirectByteBufferUsingDict(
-                dstBuff, //compress into dstBuf
-                dstBuff.position(), //starting at offset 0
-                dstBuff.capacity() - dstBuff.position(), //write no more than capacity() - position() bytes
-                srcBuff, //read data to be compressed from srcBuf
-                srcBuff.position(), //start reading at offset position()
-                srcBuff.limit() - srcBuff.position(), //read limit() - position() bytes
-                dict, // use dictionary
-                level); //use this compression level
+                dstBuff,                                // compress into dstBuf
+                dstBuff.position(),                     // starting at offset 0
+                dstBuff.limit() - dstBuff.position(),   // write no more than limit() - position() bytes
+                srcBuff,                                // read data to be compressed from srcBuf
+                srcBuff.position(),                     // start reading at offset position()
+                srcBuff.limit() - srcBuff.position(),   // read limit() - position() bytes
+                dict,                                   // use dictionary
+                level);                                 // use this compression level
         if (isError(size)) {
             throw new RuntimeException(getErrorName(size));
         }
         srcBuff.position(srcBuff.limit());
 
         dstBuff.limit((int) size);
-        //Since we allocated the buffer ourselves, we know it cannot be used to hold any further compressed data,
-        //so leave the position at zero where the caller surely wants it
+        // Since we allocated the buffer ourselves, we know it cannot be used to hold any further compressed data,
+        // so leave the position at zero where the caller surely wants it, ready to read
 
         return (int) size;
     }
@@ -537,14 +537,14 @@ public class Zstd {
         ByteBuffer dstBuff = ByteBuffer.allocateDirect((int) maxDstSize);
 
         long size = compressDirectByteBufferUsingDict(
-                dstBuff, //compress into dstBuf
-                0, //starting at offset 0
-                (int) maxDstSize, //writing no more than maxDstSize
-                srcBuff, //read data to be compressed from srcBuf
-                srcBuff.position(), //start reading at offset position()
-                srcBuff.limit() - srcBuff.position(), //read limit() - position() bytes
-                dict, // use dictionary
-                level); //use this compression level
+                dstBuff,                                // compress into dstBuf
+                0,                                      // starting at offset 0
+                (int) maxDstSize,                       // writing no more than maxDstSize
+                srcBuff,                                // read data to be compressed from srcBuf
+                srcBuff.position(),                     // start reading at offset position()
+                srcBuff.limit() - srcBuff.position(),   // read limit() - position() bytes
+                dict,                                   // use dictionary
+                level);                                 // use this compression level
         if (isError(size)) {
             throw new RuntimeException(getErrorName(size));
         }
@@ -552,7 +552,7 @@ public class Zstd {
 
         dstBuff.limit((int) size);
         //Since we allocated the buffer ourselves, we know it cannot be used to hold any further compressed data,
-        //so leave the position at zero where the caller surely wants it
+        //so leave the position at zero where the caller surely wants it, ready to read
 
         return dstBuff;
     }
@@ -580,14 +580,14 @@ public class Zstd {
         }
 
         long size = compressDirectByteBufferFastDict(
-                dstBuff, //compress into dstBuf
-                dstBuff.position(), //starting at offset 0
-                dstBuff.capacity() - dstBuff.position(), //write no more than capacity() - position() bytes
-                srcBuff, //read data to be compressed from srcBuf
-                srcBuff.position(), //start reading at offset position()
-                srcBuff.limit() - srcBuff.position(), //read limit() - position() bytes
-                dict // use dictionary
-                ); // the compression level is part of the dictionary
+                dstBuff,                                // compress into dstBuf
+                dstBuff.position(),                     // starting at offset 0
+                dstBuff.limit() - dstBuff.position(),   // write no more than limit() - position() bytes
+                srcBuff,                                // read data to be compressed from srcBuf
+                srcBuff.position(),                     // start reading at offset position()
+                srcBuff.limit() - srcBuff.position(),   // read limit() - position() bytes
+                dict                                    // use dictionary
+                );                                      // the compression level is part of the dictionary
         if (isError(size)) {
             throw new RuntimeException(getErrorName(size));
         }
@@ -595,7 +595,7 @@ public class Zstd {
 
         dstBuff.limit((int)size);
         //Since we allocated the buffer ourselves, we know it cannot be used to hold any further compressed data,
-        //so leave the position at zero where the caller surely wants it
+        //so leave the position at zero where the caller surely wants it, ready to read
 
         return (int) size;
     }
@@ -624,14 +624,14 @@ public class Zstd {
         ByteBuffer dstBuff = ByteBuffer.allocateDirect((int)maxDstSize);
 
         long size = compressDirectByteBufferFastDict(
-                dstBuff, //compress into dstBuf
-                0, //starting at offset 0
-                (int)maxDstSize, //writing no more than maxDstSize
-                srcBuff, //read data to be compressed from srcBuf
-                srcBuff.position(), //start reading at offset position()
-                srcBuff.limit() - srcBuff.position(), //read limit() - position() bytes
-                dict // use dictionary
-                ); // the compression level is part of the dictionary
+                dstBuff,                                // compress into dstBuf
+                0,                                      // starting at offset 0
+                (int) maxDstSize,                       // writing no more than maxDstSize
+                srcBuff,                                // read data to be compressed from srcBuf
+                srcBuff.position(),                     // start reading at offset position()
+                srcBuff.limit() - srcBuff.position(),   // read limit() - position() bytes
+                dict                                    // use dictionary
+                );                                      // the compression level is part of the dictionary
         if (isError(size)) {
             throw new RuntimeException(getErrorName(size));
         }
@@ -639,7 +639,7 @@ public class Zstd {
 
         dstBuff.limit((int)size);
         //Since we allocated the buffer ourselves, we know it cannot be used to hold any further compressed data,
-        //so leave the position at zero where the caller surely wants it
+        //so leave the position at zero where the caller surely wants it, ready to read
 
         return dstBuff;
     }
@@ -668,7 +668,7 @@ public class Zstd {
      * Decompress data
      *
      * @param dstBuf the destination buffer.  must be direct.  It is assumed that the position() of this buffer marks the offset
-     *               at which the decompressed data are to be written, and that the capacity() of this buffer is the maximum
+     *               at which the decompressed data are to be written, and that the limit() of this buffer is the maximum
      *               decompressed data size to allow.
      *               <p>
      *               When this method returns successfully, dstBuf's position() will be set to its current position() plus the
@@ -690,12 +690,12 @@ public class Zstd {
             throw new IllegalArgumentException("dstBuf must be a direct buffer");
         }
 
-        long size = decompressDirectByteBuffer(dstBuf, //decompress into dstBuf
-                dstBuf.position(), //write decompressed data at offset position()
-                dstBuf.capacity() - dstBuf.position(), //write no more than capacity() - position()
-                srcBuf, //read compressed data from srcBuf
-                srcBuf.position(), //read starting at offset position()
-                srcBuf.limit() - srcBuf.position()); //read no more than limit() - position()
+        long size = decompressDirectByteBuffer(dstBuf,  // decompress into dstBuf
+                dstBuf.position(),                      // write decompressed data at offset position()
+                dstBuf.limit() - dstBuf.position(),     // write no more than limit() - position()
+                srcBuf,                                 // read compressed data from srcBuf
+                srcBuf.position(),                      // read starting at offset position()
+                srcBuf.limit() - srcBuf.position());    // read no more than limit() - position()
         if (isError(size)) {
             throw new RuntimeException(getErrorName(size));
         }
@@ -732,8 +732,7 @@ public class Zstd {
 
         srcBuf.position(srcBuf.limit());
         //Since we allocated the buffer ourselves, we know it cannot be used to hold any further decompressed data,
-        //so leave the position at zero where the caller surely wants it
-        //dstBuf.position(dstBuf.position() + (int)size);
+        //so leave the position at zero where the caller surely wants it, ready to read
         return dstBuf;
     }
 
@@ -820,7 +819,7 @@ public class Zstd {
      * Decompress data
      *
      * @param dstBuff the destination buffer.  must be direct.  It is assumed that the position() of this buffer marks the offset
-     *               at which the decompressed data are to be written, and that the capacity() of this buffer is the maximum
+     *               at which the decompressed data are to be written, and that the limit() of this buffer is the maximum
      *               decompressed data size to allow.
      *               <p>
      *               When this method returns successfully, dstBuff's position() will be set to its current position() plus the
@@ -843,12 +842,12 @@ public class Zstd {
             throw new IllegalArgumentException("dstBuff must be a direct buffer");
         }
 
-        long size = decompressDirectByteBufferUsingDict(dstBuff, //decompress into dstBuf
-                dstBuff.position(), //write decompressed data at offset position()
-                dstBuff.capacity() - dstBuff.position(), //write no more than capacity() - position()
-                srcBuff, //read compressed data from srcBuf
-                srcBuff.position(), //read starting at offset position()
-                srcBuff.limit() - srcBuff.position(), //read no more than limit() - position()
+        long size = decompressDirectByteBufferUsingDict(dstBuff, // decompress into dstBuf
+                dstBuff.position(),                              // write decompressed data at offset position()
+                dstBuff.limit() - dstBuff.position(),            // write no more than limit() - position()
+                srcBuff,                                         // read compressed data from srcBuf
+                srcBuff.position(),                              // read starting at offset position()
+                srcBuff.limit() - srcBuff.position(),            // read no more than limit() - position()
                 dict);
         if (isError(size)) {
             throw new RuntimeException(getErrorName(size));
@@ -886,8 +885,8 @@ public class Zstd {
         }
 
         srcBuff.position(srcBuff.limit());
-        //Since we allocated the buffer ourselves, we know it cannot be used to hold any further decompressed data,
-        //so leave the position at zero where the caller surely wants it
+        // Since we allocated the buffer ourselves, we know it cannot be used to hold any further compressed data,
+        // so leave the position at zero where the caller surely wants it, ready to read
         return dstBuff;
     }
 
@@ -895,7 +894,7 @@ public class Zstd {
      * Decompress data
      *
      * @param dstBuff the destination buffer.  must be direct.  It is assumed that the position() of this buffer marks the offset
-     *               at which the decompressed data are to be written, and that the capacity() of this buffer is the maximum
+     *               at which the decompressed data are to be written, and that the limit() of this buffer is the maximum
      *               decompressed data size to allow.
      *               <p>
      *               When this method returns successfully, dstBuff's position() will be set to its current position() plus the
@@ -918,12 +917,12 @@ public class Zstd {
             throw new IllegalArgumentException("dstBuff must be a direct buffer");
         }
 
-        long size = decompressDirectByteBufferFastDict(dstBuff, //decompress into dstBuf
-                dstBuff.position(), //write decompressed data at offset position()
-                dstBuff.capacity() - dstBuff.position(), //write no more than capacity() - position()
-                srcBuff, //read compressed data from srcBuf
-                srcBuff.position(), //read starting at offset position()
-                srcBuff.limit() - srcBuff.position(), //read no more than limit() - position()
+        long size = decompressDirectByteBufferFastDict(dstBuff, // decompress into dstBuf
+                dstBuff.position(),                             // write decompressed data at offset position()
+                dstBuff.limit() - dstBuff.position(),           // write no more than limit() - position()
+                srcBuff,                                        // read compressed data from srcBuf
+                srcBuff.position(),                             // read starting at offset position()
+                srcBuff.limit() - srcBuff.position(),           // read no more than limit() - position()
                 dict);
         if (isError(size)) {
             throw new RuntimeException(getErrorName(size));

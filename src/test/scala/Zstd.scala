@@ -38,13 +38,11 @@ class ZstdSpec extends FlatSpec with Checkers with Whenever {
           val size        = input.length
           val inputBuffer = ByteBuffer.allocateDirect(size)
           inputBuffer.put(input)
-          inputBuffer.rewind()
+          inputBuffer.flip()
           val compressedBuffer = ByteBuffer.allocateDirect(Zstd.compressBound(size).toInt)
-          val decompressedBuffer = ByteBuffer.allocateDirect(size)
-
           val compressedSize = Zstd.compress(compressedBuffer, inputBuffer, level)
-
           compressedBuffer.flip()
+          val decompressedBuffer = ByteBuffer.allocateDirect(size)
           val decompressedSize = Zstd.decompress(decompressedBuffer, compressedBuffer)
           assert(decompressedSize == input.length)
 
@@ -67,7 +65,7 @@ class ZstdSpec extends FlatSpec with Checkers with Whenever {
         val compressedBuffer = ByteBuffer.allocateDirect(Zstd.compressBound(size.toLong).toInt)
         compressedBuffer.put(compressed)
         compressedBuffer.limit(compressedBuffer.position())
-        compressedBuffer.rewind()
+        compressedBuffer.flip()
 
         val decompressedBuffer = Zstd.decompress(compressedBuffer, size)
         val decompressed = new Array[Byte](size)
@@ -81,7 +79,7 @@ class ZstdSpec extends FlatSpec with Checkers with Whenever {
         val size        = input.length
         val inputBuffer = ByteBuffer.allocateDirect(size)
         inputBuffer.put(input)
-        inputBuffer.rewind()
+        inputBuffer.flip()
         val compressedBuffer  = Zstd.compress(inputBuffer, level)
         val compressed = new Array[Byte](compressedBuffer.limit() - compressedBuffer.position())
         compressedBuffer.get(compressed)
@@ -102,7 +100,7 @@ class ZstdSpec extends FlatSpec with Checkers with Whenever {
       //and limit as they go
       val inputBuffer = ByteBuffer.allocateDirect(size)
       inputBuffer.put(input)
-      inputBuffer.rewind()
+      inputBuffer.flip()
       val compressedBuffer = ByteBuffer.allocateDirect(Zstd.compressBound(size).toInt * levels.size)
       val decompressedBuffer = ByteBuffer.allocateDirect(size * levels.size)
 
@@ -172,7 +170,7 @@ class ZstdSpec extends FlatSpec with Checkers with Whenever {
       val compressedBuffer = ByteBuffer.allocateDirect(compressedSize.toInt - 1)
       val inputBuffer = ByteBuffer.allocateDirect(size)
       inputBuffer.put(input)
-      inputBuffer.rewind()
+      inputBuffer.flip()
 
       val e = intercept[RuntimeException] {
         Zstd.compress(compressedBuffer, inputBuffer, 3)
@@ -189,7 +187,7 @@ class ZstdSpec extends FlatSpec with Checkers with Whenever {
         val compressedSize = Zstd.compressBound(size.toLong)
         val inputBuffer = ByteBuffer.allocateDirect(size)
         inputBuffer.put(input)
-        inputBuffer.rewind()
+        inputBuffer.flip()
         val compressedBuffer = Zstd.compress(inputBuffer, 1)
         val decompressedBuffer = ByteBuffer.allocateDirect(size - 1)
 
@@ -506,7 +504,6 @@ class ZstdSpec extends FlatSpec with Checkers with Whenever {
       sys.error(s"Failed, two reads should be enough")
     }
     zis2.close()
-
 
 
     val buff = new Array[Byte](length)
