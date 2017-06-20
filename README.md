@@ -10,7 +10,7 @@ Overview
 --------
 
 JNI bindings for **Zstd** native library that provides fast and high
-compression lossless algorythm for Java and all JVM languages:
+compression lossless algorithm for Java and all JVM languages:
 
 * static compress/decompress methods
 
@@ -38,7 +38,7 @@ http://fastcompression.blogspot.com/2015/01/zstd-stronger-compression-algorithm.
 Status and availability
 -----------------------
 
-**Zstd** is production ready with stable format.
+**Zstd** is production ready with a stable format.
 
 **Zstd-jni** is tracking the release branch of **Zstd** (master) with
 compatibility support for the legacy formats (since version 0.4).
@@ -90,7 +90,7 @@ Link for direct download if you don't use a dependency manager:
  - https://repo1.maven.org/maven2/com/github/luben/zstd-jni/
 
 If there is not yet a binary release compatible with your platform look how
-to build it locally [Building](#building-and-dependencies)
+to build it locally under the [Building](#building-and-dependencies) section.
 
 License
 -------
@@ -98,4 +98,4 @@ License
 The code for these JNI bindings is licenced under 2-clause BSD license.
 The native **Zstd** library is licensed under 3-clause BSD license with
 a patent grant. See the LICENSE and src/main/native/LICENSE for full
-copythight and conditions.
+copyright and conditions.
