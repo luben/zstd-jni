@@ -25,6 +25,7 @@ public class ZstdOutputStream extends FilterOutputStream {
     private boolean isClosed = false;
     private static final int dstSize = (int) recommendedCOutSize();
     private boolean closeFrameOnFlush;
+    private boolean useChecksum;
     private boolean frameClosed = true;
     private int level;
 
@@ -32,26 +33,31 @@ public class ZstdOutputStream extends FilterOutputStream {
     private static native long recommendedCOutSize();
     private static native long createCStream();
     private static native int  freeCStream(long ctx);
-    private native int  initCStream(long ctx, int level);
+    private native int  initCStream(long ctx, int level, int checksum);
     private native int  compressStream(long ctx, byte[] dst, int dst_size, byte[] src, int src_size);
     private native int  flushStream(long ctx, byte[] dst, int dst_size);
     private native int  endStream(long ctx, byte[] dst, int dst_size);
 
 
     /* The constuctor */
-    public ZstdOutputStream(OutputStream outStream, int level, boolean closeFrameOnFlush) throws IOException {
+    public ZstdOutputStream(OutputStream outStream, int level, boolean closeFrameOnFlush, boolean useChecksum) throws IOException {
         // FilterOutputStream constructor
         super(outStream);
         this.closeFrameOnFlush = closeFrameOnFlush;
         this.level = level;
+        this.useChecksum = useChecksum;
 
         // create compression context
         stream = createCStream();
         dst = new byte[(int) dstSize];
-        int size = initCStream(stream, level);
+        int size = initCStream(stream, level, useChecksum ? 1 : 0);
         if (Zstd.isError(size)) {
             throw new IOException("Compression error: cannot create header: " + Zstd.getErrorName(size));
         }
+    }
+
+    public ZstdOutputStream(OutputStream outStream, int level, boolean closeFrameOnFlush) throws IOException {
+        this(outStream, level, closeFrameOnFlush, false);
     }
 
     public ZstdOutputStream(OutputStream outStream, int level) throws IOException {
@@ -100,7 +106,7 @@ public class ZstdOutputStream extends FilterOutputStream {
                 throw new IOException("Compression error: " + Zstd.getErrorName(size));
             }
             // open the next frame
-            size = initCStream(stream, level);
+            size = initCStream(stream, level, useChecksum ? 1 : 0);
             if (Zstd.isError(size)) {
                 throw new IOException("Compression error: cannot create header: " + Zstd.getErrorName(size));
             }

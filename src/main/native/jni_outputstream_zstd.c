@@ -41,13 +41,14 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdOutputStream_freeCStream
 /*
  * Class:     com_github_luben_zstd_ZstdOutputStream
  * Method:    initCStream
- * Signature: (JI)I
+ * Signature: (JII)I
  */
 JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdOutputStream_initCStream
-  (JNIEnv *env, jclass obj, jlong stream, jint level) {
+  (JNIEnv *env, jclass obj, jlong stream, jint level, jint checksum) {
     jclass clazz = (*env)->GetObjectClass(env, obj);
     src_pos_id = (*env)->GetFieldID(env, clazz, "srcPos", "J");
     dst_pos_id = (*env)->GetFieldID(env, clazz, "dstPos", "J");
+    ZSTD_CCtx_setParameter((ZSTD_CStream *)(intptr_t) stream, ZSTD_p_checksumFlag, checksum);
     return ZSTD_initCStream((ZSTD_CStream *)(intptr_t) stream, level);
 }
 
