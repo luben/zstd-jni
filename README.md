@@ -43,6 +43,10 @@ Status and availability
 **Zstd-jni** is tracking the release branch of **Zstd** (master) with
 compatibility support for the legacy formats (since version 0.4).
 
+**Zstd-jni** uses the base **Zstd** with **Zstd-jni** appended with a
+dash, e.g. "1.2.0-2" is the second **Zstd-jni** release based on **Zstd**
+version 1.2.0.
+
 Building and dependencies
 -------------------------
 
@@ -78,12 +82,12 @@ You can find published releases on Maven Central.
     <dependency>
         <groupId>com.github.luben</groupId>
         <artifactId>zstd-jni</artifactId>
-        <version>1.2.0</version>
+        <version>1.3.0-1</version>
     </dependency>
 
 sbt dependency:
 
-    libraryDependencies += "com.github.luben" % "zstd-jni" % "1.2.0"
+    libraryDependencies += "com.github.luben" % "zstd-jni" % "1.3.0-1"
 
 Link for direct download if you don't use a dependency manager:
 

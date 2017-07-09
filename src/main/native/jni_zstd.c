@@ -2,8 +2,6 @@
 #include <zstd_internal.h>
 #include <zstd_errors.h>
 
-#define ZSTD_BLOCKSIZE_MAX (128 * 1024)   /* define, for static allocation */
-
 /*
  * Class:     com_github_luben_zstd_Zstd
  * Method:    compress

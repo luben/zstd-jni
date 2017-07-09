@@ -1,7 +1,7 @@
 
 name := "zstd-jni"
 
-version := "1.2.0-2"
+version := "1.3.0-1"
 
 scalaVersion := "2.12.2"
 
