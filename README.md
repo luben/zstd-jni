@@ -43,9 +43,9 @@ Status and availability
 **Zstd-jni** is tracking the release branch of **Zstd** (master) with
 compatibility support for the legacy formats (since version 0.4).
 
-**Zstd-jni** uses the base **Zstd** with **Zstd-jni** appended with a
-dash, e.g. "1.2.0-2" is the second **Zstd-jni** release based on **Zstd**
-version 1.2.0.
+**Zstd-jni** version uses the base **Zstd** version with **Zstd-jni** release
+appended with a dash, e.g. "1.2.0-2" is the second **Zstd-jni** release based
+on **Zstd** version 1.2.0.
 
 Building and dependencies
 -------------------------
