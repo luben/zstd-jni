@@ -72,22 +72,22 @@ Binary releases
 ---------------
 
 The binary releases are architecture dependent because we are embedding the
-native library in the provided Jar file. Currently they are built for *win-amd64*, *win-x86*,
-*linux-amd64*, *linux-i386*, *linux-aarch64*, *linux-ppc64*, *aix-ppc64*
-and *max_os_x-x86_64*. More builds will be available if I get access to more
-platforms.
+native library in the provided Jar file. Currently they are built for
+*linux-amd64*, *linux-i386*, *linux-aarch64*, *linux-ppc64*,  *win-amd64*,
+*win-x86*, *aix-ppc64* and *max_os_x-x86_64*. More builds will be available
+if I get access to more platforms.
 
 You can find published releases on Maven Central.
 
     <dependency>
         <groupId>com.github.luben</groupId>
         <artifactId>zstd-jni</artifactId>
-        <version>1.3.0-1</version>
+        <version>1.3.1-1</version>
     </dependency>
 
 sbt dependency:
 
-    libraryDependencies += "com.github.luben" % "zstd-jni" % "1.3.0-1"
+    libraryDependencies += "com.github.luben" % "zstd-jni" % "1.3.1-1"
 
 Link for direct download if you don't use a dependency manager:
 
@@ -100,6 +100,6 @@ License
 -------
 
 The code for these JNI bindings is licenced under 2-clause BSD license.
-The native **Zstd** library is licensed under 3-clause BSD license with
-a patent grant. See the LICENSE and src/main/native/LICENSE for full
-copyright and conditions.
+The native **Zstd** library is licensed under 3-clause BSD license and
+GPL2. See the LICENSE file and LICENSE and COPYRIGHT in src/main/native
+for full copyright and conditions.
