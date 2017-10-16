@@ -82,12 +82,12 @@ You can find published releases on Maven Central.
     <dependency>
         <groupId>com.github.luben</groupId>
         <artifactId>zstd-jni</artifactId>
-        <version>1.3.1-1</version>
+        <version>VERSION</version>
     </dependency>
 
 sbt dependency:
 
-    libraryDependencies += "com.github.luben" % "zstd-jni" % "1.3.1-1"
+    libraryDependencies += "com.github.luben" % "zstd-jni" % "VERSION"
 
 Link for direct download if you don't use a dependency manager:
 
