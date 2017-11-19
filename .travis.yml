@@ -13,7 +13,14 @@ script: ./sbt compile jacoco:cover
 
 before_install:
     - curl -s https://raw.githubusercontent.com/paulp/sbt-extras/master/sbt > sbt && chmod 0755 sbt
-    - pip install --user codecov
+
+install:
+    if [[ $TRAVIS_OS_NAME == "osx" ]]; then
+        brew update
+        brew install python
+    else
+        pip install --user codecov
+    fi
 
 after_success:
     - codecov
