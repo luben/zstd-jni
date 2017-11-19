@@ -23,7 +23,7 @@ public class Zstd {
      * @return  the number of bytes written into buffer 'dst' or an error code if
      *          it fails (which can be tested using ZSTD_isError())
      */
-    public static native long compress  (byte[] dst, byte[] src, int level);
+    public static native long compress(byte[] dst, byte[] src, int level);
 
     /**
      * Compresses buffer 'src' into buffer 'dst'.
@@ -33,7 +33,30 @@ public class Zstd {
      * ZSTD_compressBound().
      *
      * @param dst the destination buffer
+     * @param dstOffset offset from the start of the destination buffer
+     * @param dstSize available space in the destination buffer after the offset
      * @param src the source buffer
+     * @param srcOffset offset from the start of the source buffer
+     * @param srcSize available data in the source buffer after the offset
+     * @param level compression level
+     * @return  the number of bytes written into buffer 'dst' or an error code if
+     *          it fails (which can be tested using ZSTD_isError())
+     */
+    public static native long compressByteArray(byte[] dst, int dstOffset, int dstSize, byte[] src, int srcOffset, int srcSize, int level);
+
+    /**
+     * Compresses direct buffer 'src' into direct buffer 'dst'.
+     *
+     * Destination buffer should be sized to handle worst cases situations (input
+     * data not compressible). Worst case size evaluation is provided by function
+     * ZSTD_compressBound().
+     *
+     * @param dst the destination buffer
+     * @param dstOffset offset from the start of the destination buffer
+     * @param dstSize available space in the destination buffer after the offset
+     * @param src the source buffer
+     * @param srcOffset offset from the start of the source buffer
+     * @param srcSize available data in the source buffer after the offset
      * @param level compression level
      * @return  the number of bytes written into buffer 'dst' or an error code if
      *          it fails (which can be tested using ZSTD_isError())
@@ -136,7 +159,29 @@ public class Zstd {
      * Destination buffer should be sized to be larger of equal to the originalSize
      *
      * @param dst the destination buffer
+     * @param dstOffset offset from the start of the destination buffer
+     * @param dstSize available space in the destination buffer after the offset
      * @param src the source buffer
+     * @param srcOffset offset from the start of the source buffer
+     * @param srcSize available data in the source buffer after the offset
+     * @return the number of bytes decompressed into destination buffer (originalSize)
+     *          or an errorCode if it fails (which can be tested using ZSTD_isError())
+     *
+     */
+    public static native long decompressByteArray(byte[] dst, int dstOffset, int dstSize, byte[] src, int srcOffset, int srcSize);
+
+    /**
+     * Decompresses direct buffer 'src' into direct buffer 'dst'.
+     *
+     * Destination buffer should be sized to be larger of equal to the originalSize
+     *
+     * @param dst the destination buffer
+     * @param dstOffset offset from the start of the destination buffer
+     * @param dstSize available space in the destination buffer after the offset
+     * @param src the source buffer
+     * @param srcOffset offset from the start of the source buffer
+     * @param srcSize available data in the source buffer after the offset
+     *
      * @return the number of bytes decompressed into destination buffer (originalSize)
      *          or an errorCode if it fails (which can be tested using ZSTD_isError())
      *

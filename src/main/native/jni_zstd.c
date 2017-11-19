@@ -24,6 +24,26 @@ E1: return size;
 
 /*
  * Class:     com_github_luben_zstd_Zstd
+ * Method:    compressByteArray
+ * Signature: ([B[IIBIII)J
+ */
+JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_compressByteArray
+  (JNIEnv *env, jclass obj, jbyteArray dst, jint dst_offset, jint dst_size, jbyteArray src, jint src_offset, jint src_size, jint level) {
+    size_t size = (size_t)(0-ZSTD_error_memory_allocation);
+    if (dst_offset + dst_size > (*env)->GetArrayLength(env, dst)) return ERROR(dstSize_tooSmall);
+    if (src_offset + src_size > (*env)->GetArrayLength(env, src)) return ERROR(srcSize_wrong);
+    void *dst_buff = (*env)->GetPrimitiveArrayCritical(env, dst, NULL);
+    if (dst_buff == NULL) goto E1;
+    void *src_buff = (*env)->GetPrimitiveArrayCritical(env, src, NULL);
+    if (src_buff == NULL) goto E2;
+    size = ZSTD_compress(dst_buff + dst_offset, (size_t) dst_size, src_buff + src_offset, (size_t) src_size, (int) level);
+    (*env)->ReleasePrimitiveArrayCritical(env, src, src_buff, JNI_ABORT);
+E2: (*env)->ReleasePrimitiveArrayCritical(env, dst, dst_buff, 0);
+E1: return size;
+}
+
+/*
+ * Class:     com_github_luben_zstd_Zstd
  * Method:    compressDirectByteBuffer
  * Signature: (Ljava/nio/ByteBuffer;IILjava/nio/ByteBuffer;III)J
  */
@@ -101,6 +121,26 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_decompress
     void *src_buff = (*env)->GetPrimitiveArrayCritical(env, src, NULL);
     if (src_buff == NULL) goto E2;
     size = ZSTD_decompress(dst_buff, (size_t) dst_size, src_buff, (size_t) src_size);
+    (*env)->ReleasePrimitiveArrayCritical(env, src, src_buff, JNI_ABORT);
+E2: (*env)->ReleasePrimitiveArrayCritical(env, dst, dst_buff, 0);
+E1: return size;
+}
+
+/*
+ * Class:     com_github_luben_zstd_Zstd
+ * Method:    decompressByteArray
+ * Signature: ([BII[BII)J
+ */
+JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_decompressByteArray
+  (JNIEnv *env, jclass obj, jbyteArray dst, jint dst_offset, jint dst_size, jbyteArray src, jint src_offset, jint src_size) {
+    size_t size = (size_t)(0-ZSTD_error_memory_allocation);
+    if (dst_offset + dst_size > (*env)->GetArrayLength(env, dst)) return ERROR(dstSize_tooSmall);
+    if (src_offset + src_size > (*env)->GetArrayLength(env, src)) return ERROR(srcSize_wrong);
+    void *dst_buff = (*env)->GetPrimitiveArrayCritical(env, dst, NULL);
+    if (dst_buff == NULL) goto E1;
+    void *src_buff = (*env)->GetPrimitiveArrayCritical(env, src, NULL);
+    if (src_buff == NULL) goto E2;
+    size = ZSTD_decompress(dst_buff + dst_offset, (size_t) dst_size, src_buff + src_offset, (size_t) src_size);
     (*env)->ReleasePrimitiveArrayCritical(env, src, src_buff, JNI_ABORT);
 E2: (*env)->ReleasePrimitiveArrayCritical(env, dst, dst_buff, 0);
 E1: return size;

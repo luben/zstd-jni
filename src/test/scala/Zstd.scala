@@ -32,6 +32,23 @@ class ZstdSpec extends FlatSpec with Checkers with Whenever {
       }
     }
 
+    "Zstd" should s"should round-trip compression/decompression with manual array buffers at level $level" in {
+      check { input: Array[Byte] =>
+        {
+          val size        = input.length
+          val decompressed= new Array[Byte](size)
+          val dstSize     = Zstd.compressBound(size).toInt
+
+          val compressed  = new Array[Byte](dstSize)
+          val csize       = Zstd.compressByteArray(compressed, 0, dstSize, input, 0, size, level)
+          if (Zstd.isError(csize)) sys.error(Zstd.getErrorName(csize))
+          val dsize       = Zstd.decompressByteArray(decompressed, 0, size, compressed, 0, csize.toInt)
+          if (Zstd.isError(dsize)) sys.error(Zstd.getErrorName(dsize))
+          size == dsize && input.toSeq == decompressed.toSeq
+        }
+      }
+    }
+
     it should s"round-trip compression/decompression with ByteBuffers at level $level" in {
       check { input: Array[Byte] =>
         {

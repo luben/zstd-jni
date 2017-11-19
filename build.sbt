@@ -144,6 +144,9 @@ licenses := Seq("BSD 2-Clause License" -> url("https://opensource.org/licenses/B
 description := "JNI bindings for Zstd native library that provides fast and high " +
 		"compression lossless algorithm for Java and all JVM languages."
 
+packageOptions in (Compile, packageBin) +=
+  Package.ManifestAttributes( new java.util.jar.Attributes.Name("Automatic-Module-Name") -> "com.github.luben.zstd-jni" )
+
 pomExtra := (
   <url>https://github.com/luben/zstd-jni</url>
   <scm>
