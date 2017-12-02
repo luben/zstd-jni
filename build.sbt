@@ -1,7 +1,7 @@
 
 name := "zstd-jni"
 
-version := "1.3.2-4"
+version := "1.3.2-6"
 
 scalaVersion := "2.12.3"
 
@@ -171,6 +171,6 @@ osgiSettings
 OsgiKeys.bundleSymbolicName := "com.github.luben.zstd-jni"
 OsgiKeys.exportPackage  := Seq(s"""com.github.luben.zstd;version="${version.value}"""")
 OsgiKeys.privatePackage := Seq("com.github.luben.zstd.util", "include",
-  "linux.amd64", "linux.i386", "linux.aarch64", "linux.ppc64",
+  "linux.amd64", "linux.i386", "linux.aarch64", "linux.ppc64", "linux.ppc64le",
   "aix.ppc64", "darwin.x86_64", "win.amd64", "win.x86"
 )
