@@ -20,11 +20,26 @@ class ZstdDictSpec extends FlatSpec with Checkers {
 
   val levels = List(1,3,6,9,16)
 
+  def trainDictDirectBuffers(input: Array[Byte]) = {
+    val dict_size  = 32 * 1024
+    val trainer = new ZstdDictTrainer(input.length, dict_size)
+    trainer.addSample(input)
+    val dict_buff = trainer.trainSamples()
+    if (dict_buff.length > 0)
+      dict_buff
+    else
+      Array.empty[Byte]
+  }
+
   def trainDict(input: Array[Byte]) = {
     val dict_buff = Array.fill[Byte](32*1024)(0)
     val dict_size = Zstd.trainFromBuffer(Array(input), dict_buff).toInt
-    if (dict_size > 0)
-      dict_buff.slice(0, dict_size);
+    if (dict_size > 0) {
+      val dictDirectBuffer = trainDictDirectBuffers(input);
+      val dictRef = dict_buff.slice(0, dict_size)
+      assert(dictDirectBuffer sameElements dictRef)
+      dictRef
+    }
     else
       Array.empty[Byte]
   }

@@ -43,3 +43,30 @@ E2: free(samples_sizes);
 E1: return size;
 }
 
+JNIEXPORT jlong Java_com_github_luben_zstd_Zstd_trainFromBufferNative
+  (JNIEnv *env, jclass obj, jobject samples, jintArray sampleSizes, jobject dictBuffer) {
+
+    jbyte* samples_buffer = (jbyte *) (*env)->GetDirectBufferAddress(env, samples);
+    size_t samples_buffer_size = (*env)->GetDirectBufferCapacity(env, sampleSizes);
+
+    jbyte* dict_buff = (jbyte * ) (*env)->GetDirectBufferAddress(env, dictBuffer);
+    size_t dict_capacity = (*env)->GetDirectBufferCapacity(env, dictBuffer);
+
+    jsize num_samples = (*env)->GetArrayLength(env, sampleSizes);
+    jint *sample_sizes_array = (*env)->GetIntArrayElements(env, sampleSizes, 0);
+    size_t *samples_sizes = malloc(sizeof(size_t) * num_samples);
+    if (!samples_sizes) {
+        jclass eClass = (*env)->FindClass(env, "Ljava/lang/OutOfMemoryError;");
+        (*env)->ThrowNew(env, eClass, "native heap");
+        goto E1;
+    }
+    for (int i = 0; i < num_samples; i++) {
+        samples_sizes[i] = sample_sizes_array[i];
+    }
+   (*env)->ReleaseIntArrayElements(env, sampleSizes, sample_sizes_array, 0);
+
+    size_t size = ZDICT_trainFromBuffer(dict_buff, dict_capacity, samples_buffer, samples_sizes, num_samples);
+E2: free(samples_sizes);
+E1: return size;
+}
+
