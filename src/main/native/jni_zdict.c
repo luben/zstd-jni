@@ -43,7 +43,7 @@ E2: free(samples_sizes);
 E1: return size;
 }
 
-JNIEXPORT jlong Java_com_github_luben_zstd_Zstd_trainFromBufferNative
+JNIEXPORT jlong Java_com_github_luben_zstd_Zstd_trainFromBufferDirect
   (JNIEnv *env, jclass obj, jobject samples, jintArray sampleSizes, jobject dictBuffer) {
 
     jbyte* samples_buffer = (jbyte *) (*env)->GetDirectBufferAddress(env, samples);
