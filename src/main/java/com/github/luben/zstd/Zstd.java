@@ -308,6 +308,17 @@ public class Zstd {
      */
     public static native long trainFromBuffer(byte[][] samples, byte[] dictBuffer);
 
+    /**
+     * Creates a new dictionary to tune a kind of samples
+     *
+     * @param samples the samples direct byte buffer array
+     * @param sampleSizes java integer array of sizes
+     * @param dictBuffer the new dictionary buffer (preallocated direct byte buffer)
+     * @return the number of bytes into buffer 'dictBuffer' or an error code if
+     *          it fails (which can be tested using ZSTD_isError())
+     */
+    public static native long trainFromBufferDirect(ByteBuffer samples, int[] sampleSizes, ByteBuffer dictBuffer);
+
     /* Constants from the zstd_static header */
     public static native int magicNumber();
     public static native int windowLogMin();
