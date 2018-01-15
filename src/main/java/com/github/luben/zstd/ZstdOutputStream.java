@@ -102,18 +102,20 @@ public class ZstdOutputStream extends FilterOutputStream {
         if (isClosed) {
             throw new IOException("Stream closed");
         }
-        if (closeFrameOnFlush && !frameClosed) {
-            // compress the remaining output and close the frame
-            int size = endStream(stream, dst, dstSize);
-            if (Zstd.isError(size)) {
-                throw new IOException("Compression error: " + Zstd.getErrorName(size));
-            }
-            frameClosed = true;
-        } else {
-            // compress the remaining input
-            int size = flushStream(stream, dst, dstSize);
-            if (Zstd.isError(size)) {
-                throw new IOException("Compression error: " + Zstd.getErrorName(size));
+        if (!frameClosed) {
+            if (closeFrameOnFlush) {
+                // compress the remaining output and close the frame
+                int size = endStream(stream, dst, dstSize);
+                if (Zstd.isError(size)) {
+                    throw new IOException("Compression error: " + Zstd.getErrorName(size));
+                }
+                frameClosed = true;
+            } else {
+                // compress the remaining input
+                int size = flushStream(stream, dst, dstSize);
+                if (Zstd.isError(size)) {
+                    throw new IOException("Compression error: " + Zstd.getErrorName(size));
+                }
             }
         }
         out.write(dst, 0, (int) dstPos);
