@@ -14,11 +14,8 @@ script: ./sbt compile jacoco:cover
 before_install:
     - curl -s https://raw.githubusercontent.com/paulp/sbt-extras/master/sbt > sbt && chmod 0755 sbt
 
-install:
-    - pip install --user codecov
-
 after_success:
-    - codecov
+     - bash <(curl -s https://codecov.io/bash)
 
 addons:
     s3_region: "us-east-1"
