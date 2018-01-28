@@ -481,7 +481,7 @@ public class Zstd {
      */
     @Deprecated
     public static long compressUsingDict(byte[] dst, byte[] src, byte[] dict, int level) {
-	return compressUsingDict(dst, 0, src, 0, src.length, dict, level);
+        return compressUsingDict(dst, 0, src, 0, src.length, dict, level);
     }
 
    /**
@@ -499,7 +499,7 @@ public class Zstd {
             throw new RuntimeException("Max output size is greater than MAX_INT");
         }
         byte[] dst = new byte[(int) maxDstSize];
-	long size = compressUsingDict(dst, 0, src, 0, src.length, dict, level);
+        long size = compressUsingDict(dst, 0, src, 0, src.length, dict, level);
         if (isError(size)) {
             throw new RuntimeException(getErrorName(size));
         }
@@ -521,7 +521,7 @@ public class Zstd {
      *          it fails (which can be tested using ZSTD_isError())
      */
     public static long compress(byte[] dst, byte[] src, byte[] dict, int level) {
-	return compressUsingDict(dst, 0, src, 0, src.length, dict, level);
+        return compressUsingDict(dst, 0, src, 0, src.length, dict, level);
     }
 
    /**
@@ -821,7 +821,7 @@ public class Zstd {
      */
     @Deprecated
     public static long decompressUsingDict(byte[] dst, byte[] src, byte[] dict) {
-	return decompressUsingDict(dst, 0, src, 0, src.length, dict);
+        return decompressUsingDict(dst, 0, src, 0, src.length, dict);
     }
 
     /**
@@ -836,7 +836,7 @@ public class Zstd {
      *          or an errorCode if it fails (which can be tested using ZSTD_isError())
      */
     public static long decompress(byte[] dst, byte[] src, byte[] dict) {
-	return decompressUsingDict(dst, 0, src, 0, src.length, dict);
+        return decompressUsingDict(dst, 0, src, 0, src.length, dict);
     }
 
     /**
