@@ -1,5 +1,8 @@
 target/
 build/
 local.properties
+gradle*
+.idea
+.gradle
 *.swp
 *.o
