@@ -1,8 +1,10 @@
 target/
 build/
+.externalNativeBuild/
+.idea/
 local.properties
+zstd-jni.iml
 gradle*
-.idea
 .gradle
 *.swp
 *.o
