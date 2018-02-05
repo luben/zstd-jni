@@ -1,6 +1,5 @@
 language: java
 
-
 matrix:
   include:
     - os:  linux
@@ -8,6 +7,8 @@ matrix:
 
     - os:  osx
       osx_image: xcode8.3
+
+install: true
 
 script: ./sbt compile jacoco:cover
 
