@@ -10,7 +10,7 @@ Overview
 --------
 
 JNI bindings for **Zstd** native library that provides fast and high
-compression lossless algorithm for Java and all JVM languages:
+compression lossless algorithm for Android, Java and all JVM languages:
 
 * static compress/decompress methods
 
@@ -95,6 +95,16 @@ Link for direct download if you don't use a dependency manager:
 
 If there is not yet a binary release compatible with your platform look how
 to build it locally under the [Building](#building-and-dependencies) section.
+
+Android support
+---------------
+
+Zstd-jni is usable in Android applications by importing the sources in Android
+Studio. I guess using git sub-modules will also work. If you have better idea
+how to make dependency management for Android easier, please give a suggestion
+in:
+
+https://github.com/luben/zstd-jni/issues/54
 
 License
 -------
