@@ -47,8 +47,6 @@ JNIEXPORT jlong Java_com_github_luben_zstd_Zstd_trainFromBufferDirect
   (JNIEnv *env, jclass obj, jobject samples, jintArray sampleSizes, jobject dictBuffer) {
 
     jbyte* samples_buffer = (jbyte *) (*env)->GetDirectBufferAddress(env, samples);
-    size_t samples_buffer_size = (*env)->GetDirectBufferCapacity(env, sampleSizes);
-
     jbyte* dict_buff = (jbyte * ) (*env)->GetDirectBufferAddress(env, dictBuffer);
     size_t dict_capacity = (*env)->GetDirectBufferCapacity(env, dictBuffer);
 
