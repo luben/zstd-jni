@@ -6,14 +6,11 @@ matrix:
       jdk: oraclejdk8
 
     - os:  osx
-      osx_image: xcode8.3
+      osx_image: xcode9.2
 
 install: true
 
 script: ./sbt compile jacoco:cover
-
-before_install:
-    - curl -s https://raw.githubusercontent.com/paulp/sbt-extras/master/sbt > sbt && chmod 0755 sbt
 
 after_success:
      - bash <(curl -s https://codecov.io/bash)
@@ -22,4 +19,4 @@ addons:
     s3_region: "us-east-1"
     artifacts:
         paths:
-            - $(git ls-files -o | grep libzstd | tr "\n" ":")
+            - $(git ls-files -o | grep libzstd-jni | tr "\n" ":")
