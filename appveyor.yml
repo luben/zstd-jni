@@ -32,9 +32,9 @@ deploy:
   provider: S3
   region: us-east-1
   access_key_id:
-    secure: ACQ24Wiqzklv2JpYXATc8CYSDFpBDSObRA6K5rme4eI=
+    secure: LNEc8yfvz2PyjkYX656TNvnSWME38nXCQJHZOUq1u/0=
   secret_access_key:
-    secure: d8vzb7gfYxlpZuyLzdDQzrvDt6WVoi9H6RPJKwCX8aLxMwYGDW55szksQ9MxFxCi
+    secure: 1Vzzva9kkNMGUDMqzEvWnVE5JXZJsttUW85HcYsGP6ukWq8580COXgMFXtrt0W3p
   bucket: zstd-jni
   set_public: false
   folder: appveyor
