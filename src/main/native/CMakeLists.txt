@@ -12,6 +12,7 @@ get_filename_component(JAVA_HOME ${JAVA_HOME}/.. ABSOLUTE)
 message(STATUS "Java home: ${JAVA_HOME}")
 
 set(SOURCES
+  jni_directbuffercompress_zstd.c
   jni_directbufferdecompress_zstd.c
   jni_fast_zstd.c
   jni_inputstream_zstd.c
@@ -28,7 +29,12 @@ set(SOURCES
   compress/fse_compress.c
   compress/huf_compress.c
   compress/zstd_compress.c
+  compress/zstd_double_fast.c
+  compress/zstd_fast.c
+  compress/zstd_lazy.c
+  compress/zstd_ldm.c
   compress/zstdmt_compress.c
+  compress/zstd_opt.c
   decompress/huf_decompress.c
   decompress/zstd_decompress.c
   dictBuilder/cover.c
@@ -37,7 +43,8 @@ set(SOURCES
   legacy/zstd_v04.c
   legacy/zstd_v05.c
   legacy/zstd_v06.c
-  legacy/zstd_v07.c)
+  legacy/zstd_v07.c
+)
 
 add_library(zstd-jni SHARED ${SOURCES})
 

@@ -154,8 +154,8 @@ class ZstdPerfSpec extends FlatSpec  {
   }
 
   val buff = Source.fromFile("src/test/resources/xml")(Codec.ISO8859).map{_.toByte }.take(1024 * 1024).toArray
-  for (level <- List(1, 3, 6, 9)) {
-    it should s"be fast for compressable data -$level" in {
+  for (level <- List(-3, -1, 1, 3, 6, 9)) {
+    it should s"be fast for compressable data at level $level" in {
       import scala.io._
       bench(s"Compressable data at $level", buff, level)
       benchDirectByteBuffer(s"Compressable data at $level in a direct ByteBuffer", buff, level)
@@ -163,11 +163,10 @@ class ZstdPerfSpec extends FlatSpec  {
   }
 
   val buff1 = Source.fromFile("src/test/resources/xml")(Codec.ISO8859).map{_.toByte }.take(5 * 1024 * 1024).toArray
-  for (level <- List(1, 3, 6, 9)) {
-    it should s"be fast with steaming -$level" in {
+  for (level <- List(-3, -1, 1, 3, 6, 9)) {
+    it should s"be fast with steaming at level $level" in {
         benchStream(s"Streaming at $level", buff1, level)
         benchDirectBufferStream(s"Streaming at $level to direct ByteBuffers", buff1, level)
     }
   }
-
 }

@@ -1,9 +1,9 @@
 
 name := "zstd-jni"
 
-version := "1.3.3-4"
+version := "1.3.4-1"
 
-scalaVersion := "2.12.3"
+scalaVersion := "2.12.4"
 
 enablePlugins(JniPlugin, SbtOsgi)
 
@@ -16,7 +16,7 @@ logBuffered in Test := false
 parallelExecution in Test := false
 
 libraryDependencies ++= Seq(
-  "org.scalatest"  %% "scalatest"  % "3.0.1"  % "test",
+  "org.scalatest"  %% "scalatest"  % "3.0.5"  % "test",
   "org.scalacheck" %% "scalacheck" % "1.13.4" % "test"
 )
 
