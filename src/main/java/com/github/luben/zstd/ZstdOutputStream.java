@@ -117,9 +117,9 @@ public class ZstdOutputStream extends FilterOutputStream {
                     throw new IOException("Compression error: " + Zstd.getErrorName(size));
                 }
             }
+            out.write(dst, 0, (int) dstPos);
+            out.flush();
         }
-        out.write(dst, 0, (int) dstPos);
-        out.flush();
     }
 
     public void close() throws IOException {
