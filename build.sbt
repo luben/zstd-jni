@@ -1,7 +1,7 @@
 
 name := "zstd-jni"
 
-version := "1.3.4-2"
+version := "1.3.4-3"
 
 scalaVersion := "2.12.4"
 
@@ -110,17 +110,6 @@ jniBinPath := {
 // Where to put the generated headers for the JNI lib
 jniHeadersPath := (target in Compile).value / "classes" / "include"
 
-// JaCoCo
-
-import de.johoop.jacoco4sbt._
-
-jacoco.settings
-
-jacoco.reportFormats in jacoco.Config := Seq(
-  XMLReport(encoding = "utf-8"),
-  ScalaHTMLReport(withBranchCoverage = true)
-)
-
 // Sonatype
 
 publishTo := {
@@ -172,5 +161,5 @@ OsgiKeys.bundleSymbolicName := "com.github.luben.zstd-jni"
 OsgiKeys.exportPackage  := Seq(s"""com.github.luben.zstd;version="${version.value}"""")
 OsgiKeys.privatePackage := Seq("com.github.luben.zstd.util", "include",
   "linux.amd64", "linux.i386", "linux.aarch64", "linux.ppc64", "linux.ppc64le",
-  "aix.ppc64", "darwin.x86_64", "win.amd64", "win.x86"
+  "linux.mips64", "linux.sparc64", "aix.ppc64", "darwin.x86_64", "win.amd64", "win.x86"
 )

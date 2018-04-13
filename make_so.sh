@@ -19,3 +19,5 @@ compile ppc64   linux
 compile ppc64le linux
 compile ppc64   aix
 compile aarch64 linux
+compile sparc64 linux
+compile mips64  linux
