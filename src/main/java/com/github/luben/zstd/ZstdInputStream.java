@@ -152,20 +152,24 @@ public class ZstdInputStream extends FilterInputStream {
     }
 
     /* we can skip forward */
-    public long skip(long toSkip) throws IOException {
+    public long skip(long numBytes) throws IOException {
         if (isClosed) {
             throw new IOException("Stream closed");
         }
-        long skipped = 0;
-        int dstSize = (int) recommendedDOutSize();
-        byte[] dst = new byte[dstSize];
-        while (toSkip > dstSize) {
-            long size = read(dst, 0, dstSize);
-            toSkip -= size;
-            skipped += size;
+        if (numBytes <= 0) {
+            return 0;
         }
-        skipped += read(dst, 0, (int) toSkip);
-        return skipped;
+        long toSkip = numBytes;
+        int bufferLen = (int) Math.min(recommendedDOutSize(), toSkip);
+        byte data[] = new byte[bufferLen];
+        while (toSkip > 0) {
+            int read = read(data, 0, (int) Math.min((long) bufferLen, toSkip));
+            if (read < 0) {
+                break;
+            }
+            toSkip -= read;
+        }
+        return numBytes - toSkip;
     }
 
     public void close() throws IOException {
