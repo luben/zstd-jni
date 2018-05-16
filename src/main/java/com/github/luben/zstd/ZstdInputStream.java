@@ -31,7 +31,7 @@ public class ZstdInputStream extends FilterInputStream {
     private static final int srcBuffSize = (int) recommendedDInSize();
 
     private boolean isContinuous = false;
-    private boolean frameFinished = false;
+    private boolean frameFinished = true;
     private boolean isClosed = false;
 
     /* JNI methods */
