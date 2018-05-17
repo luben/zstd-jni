@@ -44,7 +44,7 @@ JNIEXPORT jlong Java_com_github_luben_zstd_Zstd_trainFromBuffer
 	size_t size;
     if (legacy == JNI_TRUE) {
 	   ZDICT_legacy_params_t params;
-	   memset(&params,0,sizeof(ZDICT_legacy_params_t));
+	   memset(&params,0,sizeof(params));
 	   size = ZDICT_trainFromBuffer_legacy(dict_buff, dict_capacity, samples_buffer, samples_sizes, num_samples, params);
     } else {
        size = ZDICT_trainFromBuffer(dict_buff, dict_capacity, samples_buffer, samples_sizes, num_samples);
@@ -78,7 +78,7 @@ JNIEXPORT jlong Java_com_github_luben_zstd_Zstd_trainFromBufferDirect
    size_t size;
    if (legacy == JNI_TRUE) {
 	   ZDICT_legacy_params_t params;
-	   memset(&params,0, sizeof(ZDICT_legacy_params_t));
+	   memset(&params,0, sizeof(params));
 	   size = ZDICT_trainFromBuffer_legacy(dict_buff, dict_capacity, samples_buffer, samples_sizes, num_samples, params);
    } else {
 	   size = ZDICT_trainFromBuffer(dict_buff, dict_capacity, samples_buffer, samples_sizes, num_samples);
