@@ -303,10 +303,11 @@ public class Zstd {
      *
      * @param samples the samples buffer array
      * @param dictBuffer the new dictionary buffer
+     * @param legacy  use the legacy training algorithm; otherwise cover
      * @return the number of bytes into buffer 'dictBuffer' or an error code if
      *          it fails (which can be tested using ZSTD_isError())
      */
-    public static native long trainFromBuffer(byte[][] samples, byte[] dictBuffer);
+    public static native long trainFromBuffer(byte[][] samples, byte[] dictBuffer, boolean legacy);
 
     /**
      * Creates a new dictionary to tune a kind of samples
@@ -314,10 +315,39 @@ public class Zstd {
      * @param samples the samples direct byte buffer array
      * @param sampleSizes java integer array of sizes
      * @param dictBuffer the new dictionary buffer (preallocated direct byte buffer)
+     * @param legacy  use the legacy training algorithm; oter
      * @return the number of bytes into buffer 'dictBuffer' or an error code if
      *          it fails (which can be tested using ZSTD_isError())
      */
-    public static native long trainFromBufferDirect(ByteBuffer samples, int[] sampleSizes, ByteBuffer dictBuffer);
+    public static native long trainFromBufferDirect(ByteBuffer samples, int[] sampleSizes, ByteBuffer dictBuffer, boolean legacy);
+
+    /** Stub methods for backward comatibility
+     */
+
+    /**
+     * Creates a new dictionary to tune a kind of samples (uses Cover algorithm)
+     *
+     * @param samples the samples buffer array
+     * @param dictBuffer the new dictionary buffer
+     * @return the number of bytes into buffer 'dictBuffer' or an error code if
+     *          it fails (which can be tested using ZSTD_isError())
+     */
+    public static long trainFromBuffer(byte[][] samples, byte[] dictBuffer) {
+        return trainFromBuffer(samples, dictBuffer, false);
+    }
+
+    /**
+     * Creates a new dictionary to tune a kind of samples (uses Cover algorithm)
+     *
+     * @param samples the samples direct byte buffer array
+     * @param sampleSizes java integer array of sizes
+     * @param dictBuffer the new dictionary buffer (preallocated direct byte buffer)
+     * @return the number of bytes into buffer 'dictBuffer' or an error code if
+     *          it fails (which can be tested using ZSTD_isError())
+     */
+    public static long trainFromBufferDirect(ByteBuffer samples, int[] sampleSizes, ByteBuffer dictBuffer) {
+        return trainFromBufferDirect(samples, sampleSizes, dictBuffer, false);
+    }
 
     /* Constants from the zstd_static header */
     public static native int magicNumber();

@@ -20,6 +20,17 @@ class ZstdDictSpec extends FlatSpec with Checkers {
 
   val levels = List(1,3,6,9,16)
 
+  def trainDictDirectBuffersLegacy(input: Array[Byte]) = {
+    val dict_size  = 32 * 1024
+    val trainer = new ZstdDictTrainer(input.length, dict_size)
+    trainer.addSample(input)
+    val dict_buff = trainer.trainSamples(true)
+    if (dict_buff.length > 0)
+      dict_buff
+    else
+      Array.empty[Byte]
+  }
+
   def trainDictDirectBuffers(input: Array[Byte]) = {
     val dict_size  = 32 * 1024
     val trainer = new ZstdDictTrainer(input.length, dict_size)
@@ -44,7 +55,45 @@ class ZstdDictSpec extends FlatSpec with Checkers {
       Array.empty[Byte]
   }
 
+  def trainDictLegacy(input: Array[Byte]) = {
+    val dict_buff = Array.fill[Byte](32*1024)(0)
+    val dict_size = Zstd.trainFromBuffer(Array(input), dict_buff, true).toInt
+    if (dict_size > 0) {
+      val dictDirectBuffer = trainDictDirectBuffers(input);
+      val dictRef = dict_buff.slice(0, dict_size)
+      assert(dictDirectBuffer sameElements dictRef)
+      dictRef
+    }
+    else
+      Array.empty[Byte]
+  }
+
   for (level <- levels) {
+    "Zstd" should s"should round-trip compression/decompression with dict; legacy trainer; at level $level" in {
+      check { input: Array[Byte] =>
+        val in          = input.map{ byte => (byte % 4).toByte }
+        val size        = input.length
+        val dict        = trainDictLegacy(in)
+        (dict.size > 0) ==> {
+          val compressed  = Zstd.compressUsingDict(in, dict, level)
+          val decompressed= Zstd.decompress(compressed, dict, size)
+          in.toSeq == decompressed.toSeq
+        }
+      }
+    }
+
+    "Zstd" should s"should round-trip compression/decompression with dict; direct buffers; legacy trainer; at level $level" in {
+      check { input: Array[Byte] =>
+        val in          = input.map{ byte => (byte % 4).toByte }
+        val size        = input.length
+        val dict        = trainDictDirectBuffersLegacy(in)
+        (dict.size > 0) ==> {
+          val compressed  = Zstd.compressUsingDict(in, dict, level)
+          val decompressed= Zstd.decompress(compressed, dict, size)
+          in.toSeq == decompressed.toSeq
+        }
+      }
+    }
 
     "Zstd" should s"should round-trip compression/decompression with dict at level $level" in {
       check { input: Array[Byte] =>
