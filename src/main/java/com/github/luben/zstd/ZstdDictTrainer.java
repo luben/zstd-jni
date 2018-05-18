@@ -29,8 +29,12 @@ public class ZstdDictTrainer {
     }
 
     public ByteBuffer trainSamplesDirect() {
+        return trainSamplesDirect(false);
+    }
+
+    public ByteBuffer trainSamplesDirect(boolean legacy) {
         ByteBuffer dictBuffer = ByteBuffer.allocateDirect(dictSize);
-        long l = Zstd.trainFromBufferDirect(trainingSamples, copyToIntArray(sampleSizes), dictBuffer);
+        long l = Zstd.trainFromBufferDirect(trainingSamples, copyToIntArray(sampleSizes), dictBuffer, legacy);
         if (Zstd.isError(l)) {
             dictBuffer.limit(0);
             // TODO: throw exception here?
@@ -41,7 +45,11 @@ public class ZstdDictTrainer {
     }
 
     public byte[] trainSamples() {
-        ByteBuffer byteBuffer = trainSamplesDirect();
+        return trainSamples(false);
+    }
+
+    public byte[] trainSamples(boolean legacy) {
+        ByteBuffer byteBuffer = trainSamplesDirect(legacy);
         byte[] bytes = new byte[byteBuffer.remaining()];
         byteBuffer.get(bytes);
         return bytes;

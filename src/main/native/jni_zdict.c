@@ -1,10 +1,14 @@
+#ifndef ZDICT_STATIC_LINKING_ONLY
+#define ZDICT_STATIC_LINKING_ONLY
+#endif
 #include <jni.h>
 #include <dictBuilder/zdict.h>
 #include <zstd_errors.h>
 #include <stdlib.h>
+#include <string.h>
 
 JNIEXPORT jlong Java_com_github_luben_zstd_Zstd_trainFromBuffer
-  (JNIEnv *env, jclass obj, jobjectArray samples, jbyteArray dictBuffer) {
+  (JNIEnv *env, jclass obj, jobjectArray samples, jbyteArray dictBuffer, jboolean legacy) {
     jsize num_samples = (*env)->GetArrayLength(env, samples);
     size_t *samples_sizes = malloc(sizeof(size_t) * num_samples);
     if (!samples_sizes) {
@@ -36,7 +40,15 @@ JNIEXPORT jlong Java_com_github_luben_zstd_Zstd_trainFromBuffer
     }
     size_t dict_capacity = (*env)->GetArrayLength(env, dictBuffer);
     void *dict_buff =  (*env)->GetPrimitiveArrayCritical(env, dictBuffer, NULL);
-    size_t size = ZDICT_trainFromBuffer(dict_buff, dict_capacity, samples_buffer, samples_sizes, num_samples);
+   
+	size_t size;
+    if (legacy == JNI_TRUE) {
+	   ZDICT_legacy_params_t params;
+	   memset(&params,0,sizeof(params));
+	   size = ZDICT_trainFromBuffer_legacy(dict_buff, dict_capacity, samples_buffer, samples_sizes, num_samples, params);
+    } else {
+       size = ZDICT_trainFromBuffer(dict_buff, dict_capacity, samples_buffer, samples_sizes, num_samples);
+    }
     (*env)->ReleasePrimitiveArrayCritical(env, dictBuffer, dict_buff, 0);
     free(samples_buffer);
 E2: free(samples_sizes);
@@ -44,7 +56,7 @@ E1: return size;
 }
 
 JNIEXPORT jlong Java_com_github_luben_zstd_Zstd_trainFromBufferDirect
-  (JNIEnv *env, jclass obj, jobject samples, jintArray sampleSizes, jobject dictBuffer) {
+  (JNIEnv *env, jclass obj, jobject samples, jintArray sampleSizes, jobject dictBuffer, jboolean legacy) {
 
     jbyte* samples_buffer = (jbyte *) (*env)->GetDirectBufferAddress(env, samples);
     jbyte* dict_buff = (jbyte * ) (*env)->GetDirectBufferAddress(env, dictBuffer);
@@ -63,7 +75,14 @@ JNIEXPORT jlong Java_com_github_luben_zstd_Zstd_trainFromBufferDirect
     }
    (*env)->ReleaseIntArrayElements(env, sampleSizes, sample_sizes_array, 0);
 
-    size_t size = ZDICT_trainFromBuffer(dict_buff, dict_capacity, samples_buffer, samples_sizes, num_samples);
+   size_t size;
+   if (legacy == JNI_TRUE) {
+	   ZDICT_legacy_params_t params;
+	   memset(&params,0, sizeof(params));
+	   size = ZDICT_trainFromBuffer_legacy(dict_buff, dict_capacity, samples_buffer, samples_sizes, num_samples, params);
+   } else {
+	   size = ZDICT_trainFromBuffer(dict_buff, dict_capacity, samples_buffer, samples_sizes, num_samples);
+   }
 E2: free(samples_sizes);
 E1: return size;
 }
