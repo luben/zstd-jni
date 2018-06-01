@@ -1,7 +1,8 @@
+val nameValue = "zstd-jni"
 
-name := "zstd-jni"
+name := nameValue
 
-version := "1.3.4-8"
+version := "1.3.4-10"
 
 scalaVersion := "2.12.4"
 
@@ -163,3 +164,12 @@ OsgiKeys.privatePackage := Seq("com.github.luben.zstd.util", "include",
   "linux.amd64", "linux.i386", "linux.aarch64", "linux.ppc64", "linux.ppc64le",
   "linux.mips64", "aix.ppc64", "darwin.x86_64", "win.amd64", "win.x86"
 )
+
+val aarTask = taskKey[File]("aar Task")
+
+
+aarTask := {
+  file(s"target/${name.value}-${version.value}.aar")
+}
+
+addArtifact(Artifact(nameValue, "aar", "aar"), aarTask)
