@@ -31,7 +31,7 @@ LZ4 covers).
 **Zstd** is developed by Yann Collet and the source is available at:
 https://github.com/facebook/zstd
 
-The motivation for development, the algotithm used and its properties are
+The motivation for development, the algorithm used and its properties are
 explained in the blog post that introduces the library:
 http://fastcompression.blogspot.com/2015/01/zstd-stronger-compression-algorithm.html
 
