@@ -168,7 +168,11 @@ OsgiKeys.privatePackage := Seq("com.github.luben.zstd.util", "include",
 // Android .aar
 val aarTask = taskKey[File]("aar Task")
 aarTask := {
-  file(s"target/${name.value}-${version.value}.aar")
+  import scala.sys.process._
+  val aarName = s"target/${nameValue}-${version.value}.aar";
+  Process("./gradlew",  "assembleRelease" :: Nil).!
+  (file("build/outputs/aar/zstd-jni-release.aar") #> file(aarName)).!
+  file(aarName)
 }
 addArtifact(Artifact(nameValue, "aar", "aar"), aarTask)
 
