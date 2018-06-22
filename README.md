@@ -5,6 +5,7 @@ Zstd-jni
 [![Windows Build](https://ci.appveyor.com/api/projects/status/qs6j4n9t3bsi5p4w/branch/master?svg=true)](https://ci.appveyor.com/project/luben/zstd-jni)
 [![codecov.io](http://codecov.io/github/luben/zstd-jni/coverage.svg?branch=master)](http://codecov.io/github/luben/zstd-jni?branch=master)
 [![Maven Central](https://img.shields.io/maven-central/v/com.github.luben/zstd-jni.svg)](https://maven-badges.herokuapp.com/maven-central/com.github.luben/zstd-jni)
+[![Javadocs](https://www.javadoc.io/badge/com.github.luben/zstd-jni.svg)](https://www.javadoc.io/doc/com.github.luben/zstd-jni)
 
 Overview
 --------
