@@ -89,6 +89,10 @@ sbt dependency:
 
     libraryDependencies += "com.github.luben" % "zstd-jni" % "VERSION"
 
+There are also architecture dependent jars publushed that can be used like:
+
+    libraryDependencies += "com.github.luben" % "zstd-jni" % "VERSION" classifier "linux-amd64"
+
 Link for direct download if you don't use a dependency manager:
 
  - https://repo1.maven.org/maven2/com/github/luben/zstd-jni/
@@ -100,11 +104,19 @@ Android support
 ---------------
 
 Zstd-jni is usable in Android applications by importing the sources in Android
-Studio. I guess using git sub-modules will also work. If you have better idea
-how to make dependency management for Android easier, please give a suggestion
-in:
+Studio. I guess using git sub-modules will also work.
 
-https://github.com/luben/zstd-jni/issues/54
+Android archive (*zstd-jni.aar*) is also published on maven central. You will need
+to add the repository in your build.gradle, e.g.:
+
+    allprojects {
+        repositories {
+            jcenter()
+            mavenCentral()
+        }
+    }
+
+as it is not added by default by Android Studio.
 
 License
 -------

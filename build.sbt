@@ -186,67 +186,67 @@ inConfig(Linux_amd64)(Defaults.compileSettings)
 mappings in (Linux_amd64, packageBin) := {
   (file("target/classes/linux/amd64/libzstd-jni.so"), "linux/amd64/libzstd-jni.so") :: classes
 }
-addArtifact(Artifact(nameValue, "linux_amd64"), Linux_amd64/packageBin)
+addArtifact(Artifact(nameValue, "linux_amd64"), packageBin in Linux_amd64)
 
 lazy val Linux_i386 = config("linux_i386").extend(Compile)
 inConfig(Linux_i386)(Defaults.compileSettings)
 mappings in (Linux_i386, packageBin) := {
   (file("target/classes/linux/i386/libzstd-jni.so"), "linux/i386/libzstd-jni.so") :: classes
 }
-addArtifact(Artifact(nameValue, "linux_i386"), Linux_i386/packageBin)
+addArtifact(Artifact(nameValue, "linux_i386"), packageBin in Linux_i386)
 
 lazy val Linux_aarch64 = config("linux_aarch64").extend(Compile)
 inConfig(Linux_aarch64)(Defaults.compileSettings)
 mappings in (Linux_aarch64, packageBin) := {
   (file("target/classes/linux/aarch64/libzstd-jni.so"), "linux/aarch64/libzstd-jni.so") :: classes
 }
-addArtifact(Artifact(nameValue, "linux_aarch64"), Linux_aarch64/packageBin)
+addArtifact(Artifact(nameValue, "linux_aarch64"), packageBin in Linux_aarch64)
 
 lazy val Linux_ppc64le = config("linux_ppc64le").extend(Compile)
 inConfig(Linux_ppc64le)(Defaults.compileSettings)
 mappings in (Linux_ppc64le, packageBin) := {
   (file("target/classes/linux/ppc64le/libzstd-jni.so"), "linux/ppc64le/libzstd-jni.so") :: classes
 }
-addArtifact(Artifact(nameValue, "linux_ppc64le"), Linux_ppc64le/packageBin)
+addArtifact(Artifact(nameValue, "linux_ppc64le"), packageBin in Linux_ppc64le)
 
 lazy val Linux_ppc64 = config("linux_ppc64").extend(Compile)
 inConfig(Linux_ppc64)(Defaults.compileSettings)
 mappings in (Linux_ppc64, packageBin) := {
   (file("target/classes/linux/ppc64/libzstd-jni.so"), "linux/ppc64/libzstd-jni.so") :: classes
 }
-addArtifact(Artifact(nameValue, "linux_ppc64"), Linux_ppc64/packageBin)
+addArtifact(Artifact(nameValue, "linux_ppc64"), packageBin in Linux_ppc64)
 
 lazy val Linux_mips64 = config("linux_mips64").extend(Compile)
 inConfig(Linux_mips64)(Defaults.compileSettings)
 mappings in (Linux_mips64, packageBin) := {
   (file("target/classes/linux/mips64/libzstd-jni.so"), "linux/mips64/libzstd-jni.so") :: classes
 }
-addArtifact(Artifact(nameValue, "linux_mips64"), Linux_mips64/packageBin)
+addArtifact(Artifact(nameValue, "linux_mips64"), packageBin in Linux_mips64)
 
 lazy val Aix_ppc64 = config("aix_ppc64").extend(Compile)
 inConfig(Aix_ppc64)(Defaults.compileSettings)
 mappings in (Aix_ppc64, packageBin) := {
   (file("target/classes/aix/ppc64/libzstd-jni.so"), "aix/ppc64/libzstd-jni.so") :: classes
 }
-addArtifact(Artifact(nameValue, "aix_ppc64"), Aix_ppc64/packageBin)
+addArtifact(Artifact(nameValue, "aix_ppc64"), packageBin in Aix_ppc64)
 
 lazy val Darwin_x86_64 = config("darwin_x86_64").extend(Compile)
 inConfig(Darwin_x86_64)(Defaults.compileSettings)
 mappings in (Darwin_x86_64, packageBin) := {
   (file("target/classes/darwin/x86_64/libzstd-jni.dylib"), "darwin/x86_64/libzstd-jni.dylib") :: classes
 }
-addArtifact(Artifact(nameValue, "darwin_x86_64"), Darwin_x86_64/packageBin)
+addArtifact(Artifact(nameValue, "darwin_x86_64"), packageBin in Darwin_x86_64)
 
 val Win_x86 = config("win_x86").extend(Compile)
 inConfig(Win_x86)(Defaults.compileSettings)
 mappings in (Win_x86, packageBin) := {
   (file("target/classes/win/x86/libzstd-jni.dll"), "win/x86/libzstd-jni.dll") :: classes
 }
-addArtifact(Artifact(nameValue, "win_x86"), Win_x86/packageBin)
+addArtifact(Artifact(nameValue, "win_x86"), packageBin in Win_x86)
 
 val Win_amd64 = config("win_amd64").extend(Compile)
 inConfig(Win_amd64)(Defaults.compileSettings)
 mappings in (Win_amd64, packageBin) := {
   (file("target/classes/win/amd64/libzstd-jni.dll"), "win/amd64/libzstd-jni.dll") :: classes
 }
-addArtifact(Artifact(nameValue, "win_amd64"), Win_amd64/packageBin)
+addArtifact(Artifact(nameValue, "win_amd64"), packageBin in Win_amd64)
