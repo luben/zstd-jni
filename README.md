@@ -92,6 +92,15 @@ sbt dependency:
 
 Single architecture classified jars are also published. They can be used like:
 
+    <dependency>
+        <groupId>com.github.luben</groupId>
+        <artifactId>zstd-jni</artifactId>
+        <version>VERSION</version>
+        <classifier>linux_amd64</classifier>
+    </dependency>
+
+or for sbt:
+
     libraryDependencies += "com.github.luben" % "zstd-jni" % "VERSION" classifier "linux_amd64"
 
 Link for direct download if you don't use a dependency manager:
