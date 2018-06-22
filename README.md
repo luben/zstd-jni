@@ -75,7 +75,7 @@ Binary releases
 The binary releases are architecture dependent because we are embedding the
 native library in the provided Jar file. Currently they are built for
 *linux-amd64*, *linux-i386*, *linux-aarch64*, *linux-ppc64*, *linux-ppc64le*,
-*linux-mips64*, *win-amd64*, *win-x86*, *aix-ppc64* and *max_os_x-x86_64*.
+*linux-mips64*, *win-amd64*, *win-x86*, *aix-ppc64* and *darwin-x86_64* (MacOS X).
 More builds will be available if I get access to more platforms.
 
 You can find published releases on Maven Central.
@@ -90,9 +90,9 @@ sbt dependency:
 
     libraryDependencies += "com.github.luben" % "zstd-jni" % "VERSION"
 
-There are also architecture dependent jars publushed that can be used like:
+Single architecture classified jars are also published. They can be used like:
 
-    libraryDependencies += "com.github.luben" % "zstd-jni" % "VERSION" classifier "linux-amd64"
+    libraryDependencies += "com.github.luben" % "zstd-jni" % "VERSION" classifier "linux_amd64"
 
 Link for direct download if you don't use a dependency manager:
 
