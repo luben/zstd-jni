@@ -2,9 +2,11 @@ val nameValue = "zstd-jni"
 
 name := nameValue
 
-version := "1.3.4-10"
+version := {
+  scala.io.Source.fromFile("version").getLines.next
+}
 
-scalaVersion := "2.12.4"
+scalaVersion := "2.12.6"
 
 enablePlugins(JniPlugin, SbtOsgi)
 
@@ -116,9 +118,9 @@ jniHeadersPath := (target in Compile).value / "classes" / "include"
 publishTo := {
   val nexus = "https://oss.sonatype.org/"
   if (version.value.toString.trim.endsWith("SNAPSHOT"))
-      Some("snapshots" at nexus + "content/repositories/snapshots")
+    Some("snapshots" at nexus + "content/repositories/snapshots")
   else
-      Some("releases" at nexus + "service/local/staging/deploy/maven2")
+    Some("releases" at nexus + "service/local/staging/deploy/maven2")
 }
 
 publishMavenStyle := true
@@ -132,7 +134,7 @@ organization := "com.github.luben"
 licenses := Seq("BSD 2-Clause License" -> url("https://opensource.org/licenses/BSD-2-Clause"))
 
 description := "JNI bindings for Zstd native library that provides fast and high " +
-		"compression lossless algorithm for Java and all JVM languages."
+                "compression lossless algorithm for Java and all JVM languages."
 
 packageOptions in (Compile, packageBin) +=
   Package.ManifestAttributes(new java.util.jar.Attributes.Name("Automatic-Module-Name") -> "com.github.luben.zstd_jni")
