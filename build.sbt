@@ -172,7 +172,7 @@ val aarTask = taskKey[File]("aar Task")
 aarTask := {
   import scala.sys.process._
   val aarName = s"target/${nameValue}-${version.value}.aar";
-  Process("./gradlew",  "assembleRelease" :: Nil).!
+  Process("gradle",  "assembleRelease" :: Nil).!
   (file("build/outputs/aar/zstd-jni-release.aar") #> file(aarName)).!
   file(aarName)
 }
