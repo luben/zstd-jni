@@ -18,7 +18,7 @@ class ZstdSpec extends FlatSpec with Checkers with Whenever {
   implicit override val generatorDrivenConfig =
     PropertyCheckConfiguration(minSize = 0, sizeRange = 130 * 1024)
 
-  val levels = List(1,3,6,9,16)
+  val levels = List(1,3)
 
   for (level <- levels) {
     "Zstd" should s"should round-trip compression/decompression at level $level" in {

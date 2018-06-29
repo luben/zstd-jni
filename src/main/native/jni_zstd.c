@@ -329,11 +329,6 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_searchLengthMax
     return ZSTD_SEARCHLENGTH_MAX;
 }
 
-JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_targetLengthMin
-  (JNIEnv *env, jclass obj) {
-    return ZSTD_TARGETLENGTH_MIN;
-}
-
 JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_magicNumber
   (JNIEnv *env, jclass obj) {
     return ZSTD_MAGICNUMBER;

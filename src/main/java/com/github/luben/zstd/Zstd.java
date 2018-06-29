@@ -361,7 +361,6 @@ public class Zstd {
     public static native int searchLogMax();
     public static native int searchLengthMin();
     public static native int searchLengthMax();
-    public static native int targetLengthMin();
     public static native int frameHeaderSizeMin();
     public static native int frameHeaderSizeMax();
     public static native int blockSizeMax();
