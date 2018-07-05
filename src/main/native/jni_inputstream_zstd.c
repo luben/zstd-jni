@@ -64,7 +64,7 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdInputStream_initDStream
 /*
  * Class:     com_github_luben_zstd_ZstdInputStream
  * Method:    initDStreamWithDict
- * Signature: (J)I
+ * Signature: (J[BI)I
  */
 JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdInputStream_initDStreamWithDict
   (JNIEnv *env, jclass obj, jlong stream, jbyteArray dict, jint dict_size) {
@@ -79,6 +79,23 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdInputStream_initDStreamWit
 E1:
     (*env)->ReleasePrimitiveArrayCritical(env, dict, dict_buff, JNI_ABORT);
     return size;
+}
+
+/*
+ * Class:     com_github_luben_zstd_ZstdInputStream
+ * Method:    initDStreamWithFastDict
+ * Signature: (J)I
+ */
+JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdInputStream_initDStreamWithFastDict
+  (JNIEnv *env, jclass obj, jlong stream, jobject dict) {
+    jclass clazz = (*env)->GetObjectClass(env, obj);
+    src_pos_id = (*env)->GetFieldID(env, clazz, "srcPos", "J");
+    dst_pos_id = (*env)->GetFieldID(env, clazz, "dstPos", "J");
+    jclass dict_clazz = (*env)->GetObjectClass(env, dict);
+    jfieldID decompress_dict = (*env)->GetFieldID(env, dict_clazz, "nativePtr", "J");
+    ZSTD_DDict* ddict = (ZSTD_DDict*)(*env)->GetLongField(env, dict, decompress_dict);
+    if (ddict == NULL) return ZSTD_error_dictionary_wrong;
+    return ZSTD_initDStream_usingDDict((ZSTD_DStream *)(intptr_t) stream, ddict);
 }
 
 /*

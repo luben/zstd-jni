@@ -72,6 +72,23 @@ E1:
 
 /*
  * Class:     com_github_luben_zstd_ZstdDirectBufferDecompressingStream
+ * Method:    initDStreamWithFastDict
+ * Signature: (J[BI)I
+ */
+JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdDirectBufferDecompressingStream_initDStreamWithFastDict
+  (JNIEnv *env, jclass obj, jlong stream, jobject dict) {
+    jclass clazz = (*env)->GetObjectClass(env, obj);
+    consumed_id = (*env)->GetFieldID(env, clazz, "consumed", "I");
+    produced_id = (*env)->GetFieldID(env, clazz, "produced", "I");
+    jclass dict_clazz = (*env)->GetObjectClass(env, dict);
+    jfieldID decompress_dict = (*env)->GetFieldID(env, dict_clazz, "nativePtr", "J");
+    ZSTD_DDict* ddict = (ZSTD_DDict*)(*env)->GetLongField(env, dict, decompress_dict);
+    if (ddict == NULL) return ZSTD_error_dictionary_wrong;
+    return ZSTD_initDStream_usingDDict((ZSTD_DStream *)(intptr_t) stream, ddict);
+}
+
+/*
+ * Class:     com_github_luben_zstd_ZstdDirectBufferDecompressingStream
  * Method:    decompressStream
  * Signature: (JLjava/nio/ByteBuffer;IILjava/nio/ByteBuffer;II)I
  */

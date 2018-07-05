@@ -29,6 +29,7 @@ public class ZstdOutputStream extends FilterOutputStream {
     private boolean frameClosed = true;
     private int level;
     private byte[] dict = null;
+    private ZstdDictCompress fastDict = null;
 
     /* JNI methods */
     private static native long recommendedCOutSize();
@@ -36,6 +37,7 @@ public class ZstdOutputStream extends FilterOutputStream {
     private static native int  freeCStream(long ctx);
     private native int  initCStream(long ctx, int level, int checksum);
     private native int  initCStreamWithDict(long ctx, byte[] dict, int dict_size, int level, int checksum);
+    private native int  initCStreamWithFastDict(long ctx, ZstdDictCompress dict, int checksum);
     private native int  compressStream(long ctx, byte[] dst, int dst_size, byte[] src, int src_size);
     private native int  flushStream(long ctx, byte[] dst, int dst_size);
     private native int  endStream(long ctx, byte[] dst, int dst_size);
@@ -78,7 +80,17 @@ public class ZstdOutputStream extends FilterOutputStream {
         if (!frameClosed) {
             throw new IOException("Change of parameter on initialized stream");
         }
+        this.fastDict = null;
         this.dict = dict;
+        return this;
+    }
+
+    public ZstdOutputStream setDict(ZstdDictCompress dict) throws IOException {
+        if (!frameClosed) {
+            throw new IOException("Change of parameter on initialized stream");
+        }
+        this.dict = null;
+        this.fastDict = dict;
         return this;
     }
 
@@ -89,7 +101,9 @@ public class ZstdOutputStream extends FilterOutputStream {
         if (frameClosed) {
             // open the next frame
             int size = 0;
-            if (dict != null) {
+            if (fastDict != null) {
+                size = initCStreamWithFastDict(stream, fastDict, useChecksum ? 1 : 0);
+            } else if (dict != null) {
                 size = initCStreamWithDict(stream, dict, dict.length, level, useChecksum ? 1 : 0);
             } else {
                 size = initCStream(stream, level, useChecksum ? 1 : 0);

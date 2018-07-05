@@ -34,6 +34,7 @@ public class ZstdInputStream extends FilterInputStream {
     private boolean frameFinished = true;
     private boolean isClosed = false;
     private byte[] dict = null;
+    private ZstdDictDecompress fastDict = null;
 
     /* JNI methods */
     private static native long recommendedDInSize();
@@ -42,6 +43,7 @@ public class ZstdInputStream extends FilterInputStream {
     private static native int  freeDStream(long stream);
     private native int  initDStream(long stream);
     private native int  initDStreamWithDict(long stream, byte[] dict, int dict_size);
+    private native int  initDStreamWithFastDict(long stream, ZstdDictDecompress dict);
     private native int  decompressStream(long stream, byte[] dst, int dst_size, byte[] src, int src_size);
 
     // The main constuctor / legacy version dispatcher
@@ -77,8 +79,19 @@ public class ZstdInputStream extends FilterInputStream {
             throw new IOException("Change of parameter on initialized stream");
         }
         this.dict = dict;
+        this.fastDict = null;
         return this;
     }
+
+    public ZstdInputStream setDict(ZstdDictDecompress dict) throws IOException {
+        if (!frameFinished) {
+            throw new IOException("Change of parameter on initialized stream");
+        }
+        this.fastDict = dict;
+        this.dict = null;
+        return this;
+    }
+
 
     public int read(byte[] dst, int offset, int len) throws IOException {
 
@@ -88,7 +101,9 @@ public class ZstdInputStream extends FilterInputStream {
 
         if (frameFinished) {
             int size = 0;
-            if (dict != null) {
+            if (fastDict != null) {
+                size = initDStreamWithFastDict(stream, fastDict);
+            } else if (dict != null) {
                 size = initDStreamWithDict(stream, dict, dict.length);
             } else {
                 size = initDStream(stream);

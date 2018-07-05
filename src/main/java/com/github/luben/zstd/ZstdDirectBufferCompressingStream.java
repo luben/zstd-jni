@@ -43,6 +43,7 @@ public class ZstdDirectBufferCompressingStream implements Closeable, Flushable {
     private boolean initialized = false;
     private int level = 3;
     private byte[] dict = null;
+    private ZstdDictCompress fastDict = null;
 
     /* JNI methods */
     private static native long recommendedCOutSize();
@@ -50,6 +51,7 @@ public class ZstdDirectBufferCompressingStream implements Closeable, Flushable {
     private static native int  freeCStream(long ctx);
     private native int  initCStream(long ctx, int level);
     private native int  initCStreamWithDict(long ctx, byte[] dict, int dict_size, int level);
+    private native int  initCStreamWithFastDict(long ctx, ZstdDictCompress dict);
     private native int  compressDirectByteBuffer(long ctx, ByteBuffer dst, int dstOffset, int dstSize, ByteBuffer src, int srcOffset, int srcSize);
     private native int  flushStream(long ctx, ByteBuffer dst, int dstOffset, int dstSize);
     private native int  endStream(long ctx, ByteBuffer dst, int dstOffset, int dstSize);
@@ -59,6 +61,16 @@ public class ZstdDirectBufferCompressingStream implements Closeable, Flushable {
             throw new IOException("Change of parameter on initialized stream");
         }
         this.dict = dict;
+        this.fastDict = null;
+        return this;
+    }
+
+    public ZstdDirectBufferCompressingStream setDict(ZstdDictCompress dict) throws IOException {
+        if (initialized) {
+            throw new IOException("Change of parameter on initialized stream");
+        }
+        this.dict = null;
+        this.fastDict = dict;
         return this;
     }
 
@@ -71,7 +83,9 @@ public class ZstdDirectBufferCompressingStream implements Closeable, Flushable {
         }
         if (!initialized) {
             int result = 0;
-            if (dict != null) {
+            if (fastDict != null) {
+                result = initCStreamWithFastDict(stream, fastDict);
+            } else if (dict != null) {
                 result = initCStreamWithDict(stream, dict, dict.length, level);
             } else {
                 result = initCStream(stream, level);

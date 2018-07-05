@@ -28,12 +28,14 @@ public class ZstdDirectBufferDecompressingStream implements Closeable {
     private boolean streamEnd = false;
     private boolean initialized = false;
     private byte[] dict = null;
+    private ZstdDictDecompress fastDict = null;
 
     private static native int recommendedDOutSize();
     private static native long createDStream();
     private static native int  freeDStream(long stream);
     private native int initDStream(long stream);
     private native int initDStreamWithDict(long stream, byte[] dict, int dict_size);
+    private native int initDStreamWithFastDict(long stream, ZstdDictDecompress dict);
     private native long decompressStream(long stream, ByteBuffer dst, int dstOffset, int dstSize, ByteBuffer src, int srcOffset, int srcSize);
 
     public ZstdDirectBufferDecompressingStream(ByteBuffer source) {
@@ -57,12 +59,24 @@ public class ZstdDirectBufferDecompressingStream implements Closeable {
             throw new IOException("Change of parameter on initialized stream");
         }
         this.dict = dict;
+        this.fastDict = null;
+        return this;
+    }
+
+    public ZstdDirectBufferDecompressingStream setDict(ZstdDictDecompress dict) throws IOException {
+        if (initialized) {
+            throw new IOException("Change of parameter on initialized stream");
+        }
+        this.fastDict = dict;
+        this.dict = null;
         return this;
     }
 
     private void initStream() throws IOException {
         int result = 0;
-        if (dict != null) {
+        if (fastDict != null) {
+            result = initDStreamWithFastDict(stream, fastDict);
+        } else if (dict != null) {
             result = initDStreamWithDict(stream, dict, dict.length);
         } else {
             result = initDStream(stream);

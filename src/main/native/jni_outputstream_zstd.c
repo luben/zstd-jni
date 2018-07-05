@@ -73,6 +73,22 @@ E1:
     return result;
 }
 
+/*
+ * Class:     com_github_luben_zstd_ZstdOutputStream
+ * Method:    initCStreamWithFastDict
+ */
+JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdOutputStream_initCStreamWithFastDict
+  (JNIEnv *env, jclass obj, jlong stream, jobject dict, jint checksum) {
+    jclass clazz = (*env)->GetObjectClass(env, obj);
+    src_pos_id = (*env)->GetFieldID(env, clazz, "srcPos", "J");
+    dst_pos_id = (*env)->GetFieldID(env, clazz, "dstPos", "J");
+    jclass dict_clazz = (*env)->GetObjectClass(env, dict);
+    jfieldID compress_dict = (*env)->GetFieldID(env, dict_clazz, "nativePtr", "J");
+    ZSTD_CDict* cdict = (ZSTD_CDict*)(*env)->GetLongField(env, dict, compress_dict);
+    if (cdict == NULL) return ZSTD_error_dictionary_wrong;
+    ZSTD_CCtx_setParameter((ZSTD_CStream *)(intptr_t) stream, ZSTD_p_checksumFlag, checksum);
+    return ZSTD_initCStream_usingCDict((ZSTD_CStream *)(intptr_t) stream, cdict);
+}
 
 /*
  * Class:     com_github_luben_zstd_ZstdOutputStream
