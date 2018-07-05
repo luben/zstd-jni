@@ -53,6 +53,25 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdDirectBufferDecompressingS
 
 /*
  * Class:     com_github_luben_zstd_ZstdDirectBufferDecompressingStream
+ * Method:    initDStreamWithDict
+ * Signature: (J[BI)I
+ */
+JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdDirectBufferDecompressingStream_initDStreamWithDict
+  (JNIEnv *env, jclass obj, jlong stream, jbyteArray dict, jint dict_size) {
+    size_t result = (size_t)(0-ZSTD_error_memory_allocation);
+    jclass clazz = (*env)->GetObjectClass(env, obj);
+    consumed_id = (*env)->GetFieldID(env, clazz, "consumed", "I");
+    produced_id = (*env)->GetFieldID(env, clazz, "produced", "I");
+    void *dict_buff = (*env)->GetPrimitiveArrayCritical(env, dict, NULL);
+    if (dict_buff == NULL) goto E1;
+    result = ZSTD_initDStream((ZSTD_DStream *)(intptr_t) stream);
+    (*env)->ReleasePrimitiveArrayCritical(env, dict, dict_buff, JNI_ABORT);
+E1:
+    return result;
+}
+
+/*
+ * Class:     com_github_luben_zstd_ZstdDirectBufferDecompressingStream
  * Method:    decompressStream
  * Signature: (JLjava/nio/ByteBuffer;IILjava/nio/ByteBuffer;II)I
  */

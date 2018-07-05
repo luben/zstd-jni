@@ -54,6 +54,28 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdOutputStream_initCStream
 
 /*
  * Class:     com_github_luben_zstd_ZstdOutputStream
+ * Method:    initCStreamWithDict
+ * Signature: (J[BIII)I
+ */
+JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdOutputStream_initCStreamWithDict
+  (JNIEnv *env, jclass obj, jlong stream, jbyteArray dict, jint dict_size, jint level, jint checksum) {
+    size_t result = (size_t)(0-ZSTD_error_memory_allocation);
+    jclass clazz = (*env)->GetObjectClass(env, obj);
+    src_pos_id = (*env)->GetFieldID(env, clazz, "srcPos", "J");
+    dst_pos_id = (*env)->GetFieldID(env, clazz, "dstPos", "J");
+    void *dict_buff = (*env)->GetPrimitiveArrayCritical(env, dict, NULL);
+    if (dict_buff == NULL) goto E1;
+
+    ZSTD_CCtx_setParameter((ZSTD_CStream *)(intptr_t) stream, ZSTD_p_checksumFlag, checksum);
+    result = ZSTD_initCStream_usingDict((ZSTD_CStream *)(intptr_t) stream, dict_buff, dict_size, level);
+    (*env)->ReleasePrimitiveArrayCritical(env, dict, dict_buff, JNI_ABORT);
+E1:
+    return result;
+}
+
+
+/*
+ * Class:     com_github_luben_zstd_ZstdOutputStream
  * Method:    compressStream
  * Signature: (J[BI[BI)I
  */

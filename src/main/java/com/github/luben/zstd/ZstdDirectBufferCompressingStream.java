@@ -28,14 +28,11 @@ public class ZstdDirectBufferCompressingStream implements Closeable, Flushable {
 
     protected ZstdDirectBufferCompressingStream(ByteBuffer target, int level) throws IOException {
         this.target = target;
+        this.level = level;
         if (!target.isDirect()) {
             throw new IllegalArgumentException("Target buffer should be a direct buffer");
         }
         stream = createCStream();
-        int size = initCStream(stream, level);
-        if (Zstd.isError(size)) {
-            throw new IOException("Compression error: cannot create header: " + Zstd.getErrorName(size));
-        }
     }
 
     public static int recommendedOutputBufferSize() { return (int)recommendedCOutSize(); }
@@ -43,16 +40,27 @@ public class ZstdDirectBufferCompressingStream implements Closeable, Flushable {
     private int consumed = 0;
     private int produced = 0;
     private boolean closed = false;
+    private boolean initialized = false;
+    private int level = 3;
+    private byte[] dict = null;
 
     /* JNI methods */
     private static native long recommendedCOutSize();
     private static native long createCStream();
     private static native int  freeCStream(long ctx);
     private native int  initCStream(long ctx, int level);
+    private native int  initCStreamWithDict(long ctx, byte[] dict, int dict_size, int level);
     private native int  compressDirectByteBuffer(long ctx, ByteBuffer dst, int dstOffset, int dstSize, ByteBuffer src, int srcOffset, int srcSize);
     private native int  flushStream(long ctx, ByteBuffer dst, int dstOffset, int dstSize);
     private native int  endStream(long ctx, ByteBuffer dst, int dstOffset, int dstSize);
 
+    public ZstdDirectBufferCompressingStream setDict(byte[] dict) throws IOException {
+        if (initialized) {
+            throw new IOException("Change of parameter on initialized stream");
+        }
+        this.dict = dict;
+        return this;
+    }
 
     public void compress(ByteBuffer source) throws IOException {
         if (!source.isDirect()) {
@@ -60,6 +68,18 @@ public class ZstdDirectBufferCompressingStream implements Closeable, Flushable {
         }
         if (closed) {
             throw new IOException("Stream closed");
+        }
+        if (!initialized) {
+            int result = 0;
+            if (dict != null) {
+                result = initCStreamWithDict(stream, dict, dict.length, level);
+            } else {
+                result = initCStream(stream, level);
+            }
+            if (Zstd.isError(result)) {
+                throw new IOException("Compression error: cannot create header: " + Zstd.getErrorName(result));
+            }
+            initialized = true;
         }
         while (source.hasRemaining()) {
             if (!target.hasRemaining()) {
@@ -82,7 +102,7 @@ public class ZstdDirectBufferCompressingStream implements Closeable, Flushable {
 
     @Override
     public void flush() throws IOException {
-        if (!closed) {
+        if (!closed && initialized) {
             int needed;
             do {
                 needed = flushStream(stream, target, target.position(), target.remaining());
@@ -107,25 +127,28 @@ public class ZstdDirectBufferCompressingStream implements Closeable, Flushable {
     public void close() throws IOException {
         if (!closed) {
             try {
-                int needed;
-                do {
-                    needed = endStream(stream, target, target.position(), target.remaining());
-                    if (Zstd.isError(needed)) {
-                        throw new IOException("Compression error: " + Zstd.getErrorName(needed));
-                    }
-                    target.position(target.position() + produced);
-                    target = flushBuffer(target);
-                    if (!target.isDirect()) {
-                        throw new IllegalArgumentException("Target buffer should be a direct buffer");
-                    }
-                    if (needed > 0 && !target.hasRemaining()) {
-                        throw new IOException("The target buffer has no more space, even after flushing, and there are still bytes to compress");
-                    }
-                } while (needed > 0);
+                if (initialized) {
+                    int needed;
+                    do {
+                        needed = endStream(stream, target, target.position(), target.remaining());
+                        if (Zstd.isError(needed)) {
+                            throw new IOException("Compression error: " + Zstd.getErrorName(needed));
+                        }
+                        target.position(target.position() + produced);
+                        target = flushBuffer(target);
+                        if (!target.isDirect()) {
+                            throw new IllegalArgumentException("Target buffer should be a direct buffer");
+                        }
+                        if (needed > 0 && !target.hasRemaining()) {
+                            throw new IOException("The target buffer has no more space, even after flushing, and there are still bytes to compress");
+                        }
+                    } while (needed > 0);
+                }
             }
             finally {
                 freeCStream(stream);
                 closed = true;
+                initialized = false;
                 target = null; // help GC with realizing the buffer can be released
             }
         }

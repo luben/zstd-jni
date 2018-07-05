@@ -28,12 +28,14 @@ public class ZstdOutputStream extends FilterOutputStream {
     private boolean useChecksum;
     private boolean frameClosed = true;
     private int level;
+    private byte[] dict = null;
 
     /* JNI methods */
     private static native long recommendedCOutSize();
     private static native long createCStream();
     private static native int  freeCStream(long ctx);
     private native int  initCStream(long ctx, int level, int checksum);
+    private native int  initCStreamWithDict(long ctx, byte[] dict, int dict_size, int level, int checksum);
     private native int  compressStream(long ctx, byte[] dst, int dst_size, byte[] src, int src_size);
     private native int  flushStream(long ctx, byte[] dst, int dst_size);
     private native int  endStream(long ctx, byte[] dst, int dst_size);
@@ -64,13 +66,34 @@ public class ZstdOutputStream extends FilterOutputStream {
         this(outStream, 3, false);
     }
 
+    public ZstdOutputStream setChecksum(boolean useChecksum) throws IOException {
+        if (!frameClosed) {
+            throw new IOException("Change of parameter on initialized stream");
+        }
+        this.useChecksum = useChecksum;
+        return this;
+    }
+
+    public ZstdOutputStream setDict(byte[] dict) throws IOException {
+        if (!frameClosed) {
+            throw new IOException("Change of parameter on initialized stream");
+        }
+        this.dict = dict;
+        return this;
+    }
+
     public void write(byte[] src, int offset, int len) throws IOException {
         if (isClosed) {
             throw new IOException("Stream closed");
         }
         if (frameClosed) {
             // open the next frame
-            int size = initCStream(stream, level, useChecksum ? 1 : 0);
+            int size = 0;
+            if (dict != null) {
+                size = initCStreamWithDict(stream, dict, dict.length, level, useChecksum ? 1 : 0);
+            } else {
+                size = initCStream(stream, level, useChecksum ? 1 : 0);
+            }
             if (Zstd.isError(size)) {
                 throw new IOException("Compression error: cannot create header: " + Zstd.getErrorName(size));
             }

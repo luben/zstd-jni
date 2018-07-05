@@ -26,11 +26,14 @@ public class ZstdDirectBufferDecompressingStream implements Closeable {
     private boolean finishedFrame = false;
     private boolean closed = false;
     private boolean streamEnd = false;
+    private boolean initialized = false;
+    private byte[] dict = null;
 
     private static native int recommendedDOutSize();
     private static native long createDStream();
     private static native int  freeDStream(long stream);
     private native int initDStream(long stream);
+    private native int initDStreamWithDict(long stream, byte[] dict, int dict_size);
     private native long decompressStream(long stream, ByteBuffer dst, int dstOffset, int dstSize, ByteBuffer src, int srcOffset, int srcSize);
 
     public ZstdDirectBufferDecompressingStream(ByteBuffer source) {
@@ -39,7 +42,6 @@ public class ZstdDirectBufferDecompressingStream implements Closeable {
         }
         this.source = source;
         stream = createDStream();
-        initDStream(stream);
     }
 
     public boolean hasRemaining() {
@@ -48,6 +50,27 @@ public class ZstdDirectBufferDecompressingStream implements Closeable {
 
     public static int recommendedTargetBufferSize() {
         return (int) recommendedDOutSize();
+    }
+
+    public ZstdDirectBufferDecompressingStream setDict(byte[] dict) throws IOException {
+        if (initialized) {
+            throw new IOException("Change of parameter on initialized stream");
+        }
+        this.dict = dict;
+        return this;
+    }
+
+    private void initStream() throws IOException {
+        int result = 0;
+        if (dict != null) {
+            result = initDStreamWithDict(stream, dict, dict.length);
+        } else {
+            result = initDStream(stream);
+        }
+        if (Zstd.isError(result)) {
+            throw new IOException("Decompression error: " + Zstd.getErrorName(result));
+        }
+        initialized = true;
     }
 
     private int consumed;
@@ -61,6 +84,9 @@ public class ZstdDirectBufferDecompressingStream implements Closeable {
         }
         if (streamEnd) {
             return 0;
+        }
+        if (!initialized) {
+            initStream();
         }
 
         long remaining = decompressStream(stream, target, target.position(), target.remaining(), source, source.position(), source.remaining());
@@ -83,12 +109,8 @@ public class ZstdDirectBufferDecompressingStream implements Closeable {
             if (source.hasRemaining()) {
                 // finished a frame and there is more stuff to read
                 // so let's initialize for the next frame
-                long size = initDStream(stream);
-                if (Zstd.isError(size)) {
-                    throw new IOException("Decompression error: " + Zstd.getErrorName(size));
-                }
-            }
-            else {
+                initStream();
+            } else {
                 // nothing left, so at end of the stream
                 streamEnd = true;
             }
@@ -102,19 +124,22 @@ public class ZstdDirectBufferDecompressingStream implements Closeable {
     public void close() throws IOException {
         if (!closed) {
             try {
-                freeDStream(stream);
+                if (initialized) {
+                    freeDStream(stream);
+                }
             }
             finally {
                 closed = true;
+                initialized = false;
             }
         }
     }
 
     @Override
     protected void finalize() throws Throwable {
-        if (!closed) {
+        if (!closed && initialized) {
             freeDStream(stream);
-            source = null; // help GC with realizing the buffer can be released
         }
+        source = null; // help GC with realizing the buffer can be released
     }
 }

@@ -63,6 +63,26 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdInputStream_initDStream
 
 /*
  * Class:     com_github_luben_zstd_ZstdInputStream
+ * Method:    initDStreamWithDict
+ * Signature: (J)I
+ */
+JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdInputStream_initDStreamWithDict
+  (JNIEnv *env, jclass obj, jlong stream, jbyteArray dict, jint dict_size) {
+    size_t size = (size_t)(0-ZSTD_error_memory_allocation);
+    jclass clazz = (*env)->GetObjectClass(env, obj);
+    src_pos_id = (*env)->GetFieldID(env, clazz, "srcPos", "J");
+    dst_pos_id = (*env)->GetFieldID(env, clazz, "dstPos", "J");
+    void *dict_buff = (*env)->GetPrimitiveArrayCritical(env, dict, NULL);
+    if (dict_buff == NULL) goto E1;
+
+    size = ZSTD_initDStream_usingDict((ZSTD_DStream *)(intptr_t) stream, dict_buff, dict_size);
+E1:
+    (*env)->ReleasePrimitiveArrayCritical(env, dict, dict_buff, JNI_ABORT);
+    return size;
+}
+
+/*
+ * Class:     com_github_luben_zstd_ZstdInputStream
  * Method:    decompressStream
  * Signature: (J[BI[BI)I
  */

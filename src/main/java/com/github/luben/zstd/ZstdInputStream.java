@@ -33,6 +33,7 @@ public class ZstdInputStream extends FilterInputStream {
     private boolean isContinuous = false;
     private boolean frameFinished = true;
     private boolean isClosed = false;
+    private byte[] dict = null;
 
     /* JNI methods */
     private static native long recommendedDInSize();
@@ -40,6 +41,7 @@ public class ZstdInputStream extends FilterInputStream {
     private static native long createDStream();
     private static native int  freeDStream(long stream);
     private native int  initDStream(long stream);
+    private native int  initDStreamWithDict(long stream, byte[] dict, int dict_size);
     private native int  decompressStream(long stream, byte[] dst, int dst_size, byte[] src, int src_size);
 
     // The main constuctor / legacy version dispatcher
@@ -53,10 +55,6 @@ public class ZstdInputStream extends FilterInputStream {
             throw new IOException("Error allocating the input buffer of size " + srcBuffSize);
         }
         stream = createDStream();
-        int size = initDStream(stream);
-        if (Zstd.isError(size)) {
-            throw new IOException("Decompression error: " + Zstd.getErrorName(size));
-        }
     }
 
     /**
@@ -74,10 +72,30 @@ public class ZstdInputStream extends FilterInputStream {
         return this.isContinuous;
     }
 
+    public ZstdInputStream setDict(byte[] dict) throws IOException {
+        if (!frameFinished) {
+            throw new IOException("Change of parameter on initialized stream");
+        }
+        this.dict = dict;
+        return this;
+    }
+
     public int read(byte[] dst, int offset, int len) throws IOException {
 
         if (isClosed) {
             throw new IOException("Stream closed");
+        }
+
+        if (frameFinished) {
+            int size = 0;
+            if (dict != null) {
+                size = initDStreamWithDict(stream, dict, dict.length);
+            } else {
+                size = initDStream(stream);
+            }
+            if (Zstd.isError(size)) {
+                throw new IOException("Decompression error: " + Zstd.getErrorName(size));
+            }
         }
 
         // guard agains buffer overflows
@@ -114,11 +132,6 @@ public class ZstdInputStream extends FilterInputStream {
             // we have completed a frame
             if (size == 0) {
                 frameFinished = true;
-                // re-init the codec so it can start decoding next frame
-                size = initDStream(stream);
-                if (Zstd.isError(size)) {
-                    throw new IOException("Decompression error: " + Zstd.getErrorName(size));
-                }
                 return (int)(dstPos - offset);
             }
         }
