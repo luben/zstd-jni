@@ -26,7 +26,7 @@ public class ZstdDirectBufferCompressingStream implements Closeable, Flushable {
         return toFlush;
     }
 
-    protected ZstdDirectBufferCompressingStream(ByteBuffer target, int level) throws IOException {
+    public ZstdDirectBufferCompressingStream(ByteBuffer target, int level) throws IOException {
         this.target = target;
         this.level = level;
         if (!target.isDirect()) {

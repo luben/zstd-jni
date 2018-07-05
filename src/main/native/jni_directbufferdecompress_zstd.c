@@ -64,7 +64,7 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdDirectBufferDecompressingS
     produced_id = (*env)->GetFieldID(env, clazz, "produced", "I");
     void *dict_buff = (*env)->GetPrimitiveArrayCritical(env, dict, NULL);
     if (dict_buff == NULL) goto E1;
-    result = ZSTD_initDStream((ZSTD_DStream *)(intptr_t) stream);
+    result = ZSTD_initDStream_usingDict((ZSTD_DStream *)(intptr_t) stream, dict_buff, dict_size);
     (*env)->ReleasePrimitiveArrayCritical(env, dict, dict_buff, JNI_ABORT);
 E1:
     return result;

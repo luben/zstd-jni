@@ -212,5 +212,95 @@ class ZstdDictSpec extends FlatSpec with Checkers {
         }
       }
     }
+
+    it should s"should round-trip streaming compression/decompression with byte[] dict with legacy $legacy " in {
+      check { input: Array[Byte] =>
+        val in = input.map { byte => (byte % 4).toByte }
+        val size = input.length
+        val dict = trainDict(in, legacy)
+        (dict.size > 0) ==> {
+          val size  = input.length
+          val os    = new ByteArrayOutputStream(Zstd.compressBound(size.toLong).toInt)
+          val zos   = new ZstdOutputStream(os, 1)
+          zos.setDict(dict)
+          val block = 128 * 1024
+          var ptr   = 0
+          while (ptr < size) {
+            val chunk = if (size - ptr > block) block else size - ptr
+            zos.write(input, ptr, chunk)
+            ptr += chunk
+          }
+          zos.close
+          val compressed = os.toByteArray
+          // now decompress
+          val is    = new ByteArrayInputStream(compressed)
+          val zis   = new ZstdInputStream(is)
+          zis.setDict(dict)
+          val output= Array.fill[Byte](size)(0)
+          ptr       = 0
+
+          while (ptr < size) {
+            val chunk = if (size - ptr > block) block else size - ptr
+            zis.read(output, ptr, chunk)
+            ptr += chunk
+          }
+          zis.close
+          if (input.toSeq != output.toSeq) {
+            println(s"AT SIZE $size")
+            println(input.toSeq + "!=" + output.toSeq)
+            println("COMPRESSED: " + compressed.toSeq)
+          }
+          input.toSeq == output.toSeq
+        }
+      }
+    }
+
+    it should s"should round-trip streaming ByteBuffer compression/decompression with byte[] dict with legacy $legacy" in {
+      check { input: Array[Byte] =>
+        val in = input.map { byte => (byte % 4).toByte }
+        val size = input.length
+        val dict = trainDict(in, legacy)
+        (dict.size > 0) ==> {
+          val size  = input.length
+          val os    = ByteBuffer.allocateDirect(Zstd.compressBound(size.toLong).toInt)
+
+          // compress
+          val ib    = ByteBuffer.allocateDirect(size)
+          ib.put(input)
+          val osw = new ZstdDirectBufferCompressingStream(os, 1)
+          osw.setDict(dict)
+          ib.flip
+          osw.compress(ib)
+          osw.close
+          os.flip
+
+          // for debugging
+          val bytes = new Array[Byte](os.limit())
+          os.get(bytes)
+          os.rewind()
+
+          // now decompress
+          val zis   = new ZstdDirectBufferDecompressingStream(os)
+          zis.setDict(dict)
+          val output= Array.fill[Byte](size)(0)
+          val block = ByteBuffer.allocateDirect(128 * 1024)
+          var offset = 0
+          while (zis.hasRemaining) {
+            block.clear()
+            val read = zis.read(block)
+            block.flip()
+            block.get(output, offset, read)
+            offset += read
+          }
+          zis.close
+          if (input.toSeq != output.toSeq) {
+            println(s"AT SIZE $size")
+            println(input.toSeq + "!=" + output.toSeq)
+            println("COMPRESSED: " + bytes.toSeq)
+          }
+          input.toSeq == output.toSeq
+        }
+      }
+    }
   }
 }
