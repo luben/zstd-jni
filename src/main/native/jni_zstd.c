@@ -64,6 +64,17 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_compressDirectByteBuffer
     return size;
 }
 
+/*
+ * Class:     com_github_luben_zstd_Zstd
+ * Method:    compressUnsafe
+ * Signature: (JJJJI)J
+ */
+JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_compressUnsafe
+  (JNIEnv *env, jclass obj, jlong dst_buf_ptr, jlong dst_size, jlong src_buf_ptr, jlong src_size, jint level) {
+    return ZSTD_compress((void *) dst_buf_ptr, (size_t) dst_size, (void *) src_buf_ptr, (size_t) src_size, (int) level);
+}
+
+
 JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_compressUsingDict
   (JNIEnv *env, jclass obj, jbyteArray dst, jint dst_offset, jbyteArray src, jint src_offset, jint src_size, jbyteArray dict, jint level) {
     size_t size = (size_t)(0-ZSTD_error_memory_allocation);
@@ -91,9 +102,9 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_compressDirectByteBuffer
     if (dst_offset + dst_size > dst_cap) return ERROR(dstSize_tooSmall);
     jsize src_cap = (*env)->GetDirectBufferCapacity(env, src_buf);
     if (src_offset + src_size > src_cap) return ERROR(srcSize_wrong);
-    char *dst_buff_ptr = (char*)(*env)->GetDirectBufferAddress(env, dst_buf);
+    void *dst_buff_ptr = (*env)->GetDirectBufferAddress(env, dst_buf);
     if (dst_buff_ptr == NULL) return size;
-    char *src_buff_ptr = (char*)(*env)->GetDirectBufferAddress(env, src_buf);
+    void *src_buff_ptr = (*env)->GetDirectBufferAddress(env, src_buf);
     if (src_buff_ptr == NULL) return size;
     jsize dict_size = (*env)->GetArrayLength(env, dict);
     void *dict_buff = (*env)->GetPrimitiveArrayCritical(env, dict, NULL);
@@ -159,14 +170,24 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_decompressDirectByteBuff
     if (dst_offset + dst_size > dst_cap) return ERROR(dstSize_tooSmall);
     jsize src_cap = (*env)->GetDirectBufferCapacity(env, src_buf);
     if (src_offset + src_size > src_cap) return ERROR(srcSize_wrong);
-    char *dst_buf_ptr = (char*)(*env)->GetDirectBufferAddress(env, dst_buf);
+    void *dst_buf_ptr = (*env)->GetDirectBufferAddress(env, dst_buf);
     if (dst_buf_ptr == NULL) return size;
-    char *src_buf_ptr = (char*)(*env)->GetDirectBufferAddress(env, src_buf);
+    void *src_buf_ptr = (*env)->GetDirectBufferAddress(env, src_buf);
     if (src_buf_ptr == NULL) return size;
 
     size = ZSTD_decompress(dst_buf_ptr + dst_offset, (size_t) dst_size, src_buf_ptr + src_offset, (size_t) src_size);
 
     return size;
+}
+
+/*
+ * Class:     com_github_luben_zstd_Zstd
+ * Method:    decompressUnsafe
+ * Signature: (JJJJ)J
+ */
+JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_decompressUnsafe
+  (JNIEnv *env, jclass obj, jlong dst_buf_ptr, jlong dst_size, jlong src_buf_ptr, jlong src_size) {
+    return ZSTD_decompress((void *) dst_buf_ptr, (size_t) dst_size, (void *) src_buf_ptr, (size_t) src_size);
 }
 
 JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_decompressUsingDict

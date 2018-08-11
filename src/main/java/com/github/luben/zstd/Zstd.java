@@ -63,6 +63,23 @@ public class Zstd {
      */
     public static native long compressDirectByteBuffer  (ByteBuffer dst, int dstOffset, int dstSize, ByteBuffer src, int srcOffset, int srcSize, int level);
 
+    /**
+     * Compresses buffer 'src' into direct buffer 'dst'.
+     *
+     * Destination buffer should be sized to handle worst cases situations (input
+     * data not compressible). Worst case size evaluation is provided by function
+     * ZSTD_compressBound().
+     *
+     * @param dst pointer to the destination buffer
+     * @param dstSize available space in the destination buffer
+     * @param src pointer to the source buffer
+     * @param srcSize available data in the source buffer
+     * @param level compression level
+     * @return  the number of bytes written into buffer 'dst' or an error code if
+     *          it fails (which can be tested using ZSTD_isError())
+     */
+    public static native long compressUnsafe  (long dst, long dstSize,  long src, long srcSize, int level);
+
    /**
      * Compresses buffer 'src' into buffer 'dst' with dictionary.
      *
@@ -187,6 +204,22 @@ public class Zstd {
      *
      */
     public static native long decompressDirectByteBuffer(ByteBuffer dst, int dstOffset, int dstSize, ByteBuffer src, int srcOffset, int srcSize);
+
+    /**
+     * Decompresses buffer 'src' into direct buffer 'dst'.
+     *
+     * Destination buffer should be sized to be larger of equal to the originalSize
+     *
+     * @param dst pointer to the destination buffer
+     * @param dstSize available space in the destination buffer after the offset
+     * @param src pointer the source buffer
+     * @param srcSize available data in the source buffer after the offset
+     *
+     * @return the number of bytes decompressed into destination buffer (originalSize)
+     *          or an errorCode if it fails (which can be tested using ZSTD_isError())
+     *
+     */
+    public static native long decompressUnsafe(long dst, long dstSize, long src, long srcSize);
 
     /**
      * Decompresses buffer 'src' into buffer 'dst' with dictionary.
