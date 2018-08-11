@@ -167,6 +167,14 @@ OsgiKeys.privatePackage := Seq("com.github.luben.zstd.util", "include",
   "linux.mips64", "aix.ppc64", "darwin.x86_64", "win.amd64", "win.x86"
 )
 
+// Jacoco coverage setting
+jacocoReportSettings := JacocoReportSettings(
+  "Jacoco Coverage Report",
+  None,
+  JacocoThresholds(),
+  Seq(JacocoReportFormats.XML),
+  "utf-8")
+
 // Android .aar
 val aarTask = taskKey[File]("aar Task")
 aarTask := {
