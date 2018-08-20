@@ -57,6 +57,10 @@ public enum Native {
     }
 
     public static synchronized void load() {
+        load(null);
+    }
+
+    public static synchronized void load(final File tempFolder) {
         if (loaded) {
             return;
         }
@@ -75,7 +79,7 @@ public enum Native {
         }
         File tempLib;
         try {
-            tempLib = File.createTempFile(libname, "." + libExtension());
+            tempLib = File.createTempFile(libname, "." + libExtension(), tempFolder);
             // copy to tempLib
             FileOutputStream out = new FileOutputStream(tempLib);
             try {
