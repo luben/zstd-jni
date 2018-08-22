@@ -77,56 +77,59 @@ public enum Native {
                 throw linkError(e);
             }
         }
-        File tempLib;
+        File tempLib = null;
+        FileOutputStream out = null;
         try {
             tempLib = File.createTempFile(libname, "." + libExtension(), tempFolder);
+            // try to delete on exit, does not work on Windows
+            tempLib.deleteOnExit();
             // copy to tempLib
-            FileOutputStream out = new FileOutputStream(tempLib);
+            out = new FileOutputStream(tempLib);
+            byte[] buf = new byte[4096];
+            while (true) {
+                int read = is.read(buf);
+                if (read == -1) {
+                    break;
+                }
+                out.write(buf, 0, read);
+            }
             try {
-                byte[] buf = new byte[4096];
-                while (true) {
-                    int read = is.read(buf);
-                    if (read == -1) {
-                        break;
-                    }
-                    out.write(buf, 0, read);
-                }
+                out.flush();
+                out.close();
+                out = null;
+            } catch (IOException e) {
+                // ignore
+            }
+            try {
+                System.load(tempLib.getAbsolutePath());
+            } catch (UnsatisfiedLinkError e) {
+                // fall-back to loading the zstd-jni from the system library path
                 try {
-                    out.close();
-                    out = null;
-                } catch (IOException e) {
-                    // ignore
-                }
-                try {
-                    System.load(tempLib.getAbsolutePath());
-                } catch (UnsatisfiedLinkError e) {
-                    // fall-back to loading the zstd-jni from the system library path
-                    try {
-                        System.loadLibrary(libnameShort);
-                    } catch (UnsatisfiedLinkError e1) {
-                        throw linkError(e1);
-                    }
-                }
-                loaded = true;
-            } finally {
-                try {
-                    if (out != null) {
-                        out.close();
-                    }
-                } catch (IOException e) {
-                  // ignore
-                }
-                if (tempLib != null && tempLib.exists()) {
-                    if (!loaded) {
-                        tempLib.delete();
-                    } else {
-                        // try to delete on exit, does it work on Windows?
-                        tempLib.deleteOnExit();
-                    }
+                    System.loadLibrary(libnameShort);
+                } catch (UnsatisfiedLinkError e1) {
+                    // display error in case problem with loading from temp folder
+                    e.printStackTrace();
+                    throw linkError(e1);
                 }
             }
+            loaded = true;
         } catch (IOException e) {
             throw new ExceptionInInitializerError("Cannot unpack " + libname);
+        }
+        finally {
+            try {
+                if (is != null) {
+                    is.close();
+                }
+                if (out != null) {
+                    out.close();
+                }
+                if (tempLib != null && tempLib.exists()) {
+                    tempLib.delete();
+                }
+            } catch (IOException e) {
+                // ignore
+            }
         }
     }
 }
