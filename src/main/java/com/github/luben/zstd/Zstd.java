@@ -431,6 +431,28 @@ public class Zstd {
     }
 
     /**
+     * Compresses the data in buffer 'srcBuf' using default compression level
+     *
+     * @param dstBuf the destination buffer.  must be direct.  It is assumed that the position() of this buffer marks the offset
+     *               at which the compressed data are to be written, and that the limit() of this buffer is the maximum
+     *               compressed data size to allow.
+     *               <p>
+     *               When this method returns successfully, dstBuf's position() will be set to its current position() plus the
+     *               compressed size of the data.
+     *               </p>
+     * @param srcBuf the source buffer.  must be direct.  It is assumed that the position() of this buffer marks the beginning of the
+     *               uncompressed data to be compressed, and that the limit() of this buffer marks its end.
+     *               <p>
+     *               When this method returns successfully, srcBuf's position() will be set to its limit().
+     *               </p>
+     * @return the size of the compressed data
+     */
+
+    public static int compress(ByteBuffer dstBuf, ByteBuffer srcBuf) {
+        return compress(dstBuf, srcBuf, 3);
+    }
+
+    /**
      * Compresses the data in buffer 'srcBuf'
      *
      * @param dstBuf the destination buffer.  must be direct.  It is assumed that the position() of this buffer marks the offset

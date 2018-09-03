@@ -36,7 +36,11 @@ class ZstdDictSpec extends FlatSpec with Checkers {
 
   def trainDict(input: Array[Byte], legacy: Boolean) = {
     val dict_buff = Array.fill[Byte](32*1024)(0)
-    val dict_size = Zstd.trainFromBuffer(Array(input), dict_buff, legacy).toInt
+    val dict_size = if (legacy) {
+      Zstd.trainFromBuffer(Array(input), dict_buff, true).toInt
+    } else {
+      Zstd.trainFromBuffer(Array(input), dict_buff).toInt
+    }
     if (dict_size > 0) {
       val dictDirectBuffer = trainDictDirectBuffers(input, legacy);
       val dictRef = dict_buff.slice(0, dict_size)
@@ -83,7 +87,7 @@ class ZstdDictSpec extends FlatSpec with Checkers {
         val size = input.length
         val dict = trainDict(in, legacy)
         (dict.size > 0) ==> {
-          val cdict = new ZstdDictCompress(dict, 0, dict.size, level)
+          val cdict = new ZstdDictCompress(dict, level)
           val compressed = Zstd.compress(in, cdict)
           cdict.close
           val ddict = new ZstdDictDecompress(dict)

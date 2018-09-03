@@ -25,7 +25,7 @@ class ZstdSpec extends FlatSpec with Checkers with Whenever {
       check { input: Array[Byte] =>
         {
           val size        = input.length
-          val compressed  = Zstd.compress(input, level)
+          val compressed  = if (level != 3) Zstd.compress(input, level) else Zstd.compress(input)
           val decompressed= Zstd.decompress(compressed, size)
           input.toSeq == decompressed.toSeq
         }
@@ -57,7 +57,10 @@ class ZstdSpec extends FlatSpec with Checkers with Whenever {
           inputBuffer.put(input)
           inputBuffer.flip()
           val compressedBuffer = ByteBuffer.allocateDirect(Zstd.compressBound(size).toInt)
-          val compressedSize = Zstd.compress(compressedBuffer, inputBuffer, level)
+          val compressedSize = if (level != 3)
+            Zstd.compress(compressedBuffer, inputBuffer, level)
+          else
+            Zstd.compress(compressedBuffer, inputBuffer)
           compressedBuffer.flip()
           val decompressedBuffer = ByteBuffer.allocateDirect(size)
           val decompressedSize = Zstd.decompress(decompressedBuffer, compressedBuffer)
