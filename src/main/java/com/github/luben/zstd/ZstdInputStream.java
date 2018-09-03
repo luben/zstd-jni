@@ -53,9 +53,6 @@ public class ZstdInputStream extends FilterInputStream {
 
         // allocate input buffer with max frame header size
         src = new byte[srcBuffSize];
-        if (src == null) {
-            throw new IOException("Error allocating the input buffer of size " + srcBuffSize);
-        }
         stream = createDStream();
     }
 

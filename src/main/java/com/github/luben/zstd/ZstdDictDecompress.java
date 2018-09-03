@@ -35,10 +35,6 @@ public class ZstdDictDecompress implements Closeable {
      * @param length number of bytes to use from the buffer
      */
     public ZstdDictDecompress(byte[] dict, int offset, int length) {
-        byte[] _dict;
-        if (dict.length < 0) {
-            throw new IllegalArgumentException("Dictionary buffer is to short");
-        }
 
         init(dict, offset, length);
 

@@ -117,9 +117,7 @@ public enum Native {
         }
         finally {
             try {
-                if (is != null) {
-                    is.close();
-                }
+                is.close();
                 if (out != null) {
                     out.close();
                 }
