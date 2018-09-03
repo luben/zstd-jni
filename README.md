@@ -6,6 +6,8 @@ Zstd-jni
 [![codecov.io](http://codecov.io/github/luben/zstd-jni/coverage.svg?branch=master)](http://codecov.io/github/luben/zstd-jni?branch=master)
 [![Maven Central](https://img.shields.io/maven-central/v/com.github.luben/zstd-jni.svg?label=Maven%20Central)](https://search.maven.org/artifact/com.github.luben/zstd-jni/)
 [![Javadocs](https://www.javadoc.io/badge/com.github.luben/zstd-jni.svg)](https://www.javadoc.io/doc/com.github.luben/zstd-jni)
+[![Code Quality: Cpp](https://img.shields.io/lgtm/grade/cpp/g/luben/zstd-jni.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/luben/zstd-jni/context:cpp)
+[![Total Alerts](https://img.shields.io/lgtm/alerts/g/luben/zstd-jni.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/luben/zstd-jni/alerts)
 
 Overview
 --------
