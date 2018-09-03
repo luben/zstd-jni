@@ -4,10 +4,11 @@ Zstd-jni
 [![Build Status](https://api.travis-ci.org/luben/zstd-jni.svg)](https://travis-ci.org/luben/zstd-jni)
 [![Windows Build](https://ci.appveyor.com/api/projects/status/qs6j4n9t3bsi5p4w/branch/master?svg=true)](https://ci.appveyor.com/project/luben/zstd-jni)
 [![codecov.io](http://codecov.io/github/luben/zstd-jni/coverage.svg?branch=master)](http://codecov.io/github/luben/zstd-jni?branch=master)
+[![Code Quality: C](https://img.shields.io/lgtm/grade/cpp/g/luben/zstd-jni.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/luben/zstd-jni/context:cpp)
+[![Code Quality: Java](https://img.shields.io/lgtm/grade/java/g/luben/zstd-jni.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/luben/zstd-jni/context:java)
+[![Total Alerts](https://img.shields.io/lgtm/alerts/g/luben/zstd-jni.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/luben/zstd-jni/alerts)
 [![Maven Central](https://img.shields.io/maven-central/v/com.github.luben/zstd-jni.svg?label=Maven%20Central)](https://search.maven.org/artifact/com.github.luben/zstd-jni/)
 [![Javadocs](https://www.javadoc.io/badge/com.github.luben/zstd-jni.svg)](https://www.javadoc.io/doc/com.github.luben/zstd-jni)
-[![Code Quality: Cpp](https://img.shields.io/lgtm/grade/cpp/g/luben/zstd-jni.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/luben/zstd-jni/context:cpp)
-[![Total Alerts](https://img.shields.io/lgtm/alerts/g/luben/zstd-jni.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/luben/zstd-jni/alerts)
 
 Overview
 --------
