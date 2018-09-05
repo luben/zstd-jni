@@ -37,8 +37,7 @@ public class ZstdDictTrainer {
         long l = Zstd.trainFromBufferDirect(trainingSamples, copyToIntArray(sampleSizes), dictBuffer, legacy);
         if (Zstd.isError(l)) {
             dictBuffer.limit(0);
-            // TODO: throw exception here?
-            return null;
+            throw new RuntimeException(Zstd.getErrorName(l));
         }
         dictBuffer.limit(Long.valueOf(l).intValue());
         return dictBuffer;

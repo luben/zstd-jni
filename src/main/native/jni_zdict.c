@@ -40,14 +40,14 @@ JNIEXPORT jlong Java_com_github_luben_zstd_Zstd_trainFromBuffer
     }
     size_t dict_capacity = (*env)->GetArrayLength(env, dictBuffer);
     void *dict_buff =  (*env)->GetPrimitiveArrayCritical(env, dictBuffer, NULL);
-   
-	size_t size;
+
+    size_t size;
     if (legacy == JNI_TRUE) {
-	   ZDICT_legacy_params_t params;
-	   memset(&params,0,sizeof(params));
-	   size = ZDICT_trainFromBuffer_legacy(dict_buff, dict_capacity, samples_buffer, samples_sizes, num_samples, params);
+        ZDICT_legacy_params_t params;
+        memset(&params,0,sizeof(params));
+        size = ZDICT_trainFromBuffer_legacy(dict_buff, dict_capacity, samples_buffer, samples_sizes, num_samples, params);
     } else {
-       size = ZDICT_trainFromBuffer(dict_buff, dict_capacity, samples_buffer, samples_sizes, num_samples);
+        size = ZDICT_trainFromBuffer(dict_buff, dict_capacity, samples_buffer, samples_sizes, num_samples);
     }
     (*env)->ReleasePrimitiveArrayCritical(env, dictBuffer, dict_buff, 0);
     free(samples_buffer);
@@ -58,30 +58,32 @@ E1: return size;
 JNIEXPORT jlong Java_com_github_luben_zstd_Zstd_trainFromBufferDirect
   (JNIEnv *env, jclass obj, jobject samples, jintArray sampleSizes, jobject dictBuffer, jboolean legacy) {
 
-    jbyte* samples_buffer = (jbyte *) (*env)->GetDirectBufferAddress(env, samples);
-    jbyte* dict_buff = (jbyte * ) (*env)->GetDirectBufferAddress(env, dictBuffer);
+    void *samples_buffer = (*env)->GetDirectBufferAddress(env, samples);
+    void *dict_buff = (*env)->GetDirectBufferAddress(env, dictBuffer);
     size_t dict_capacity = (*env)->GetDirectBufferCapacity(env, dictBuffer);
 
+    /* convert sized from int to size_t */
     jsize num_samples = (*env)->GetArrayLength(env, sampleSizes);
-    jint *sample_sizes_array = (*env)->GetIntArrayElements(env, sampleSizes, 0);
     size_t *samples_sizes = malloc(sizeof(size_t) * num_samples);
     if (!samples_sizes) {
         jclass eClass = (*env)->FindClass(env, "Ljava/lang/OutOfMemoryError;");
         (*env)->ThrowNew(env, eClass, "native heap");
         goto E1;
     }
+    jint *sample_sizes_array = (*env)->GetPrimitiveArrayCritical(env, sampleSizes, NULL);
+    if (sample_sizes_array == NULL) goto E2;
     for (int i = 0; i < num_samples; i++) {
         samples_sizes[i] = sample_sizes_array[i];
     }
-   (*env)->ReleaseIntArrayElements(env, sampleSizes, sample_sizes_array, 0);
+   (*env)->ReleasePrimitiveArrayCritical(env, sampleSizes, sample_sizes_array, JNI_ABORT);
 
    size_t size;
    if (legacy == JNI_TRUE) {
-	   ZDICT_legacy_params_t params;
-	   memset(&params,0, sizeof(params));
-	   size = ZDICT_trainFromBuffer_legacy(dict_buff, dict_capacity, samples_buffer, samples_sizes, num_samples, params);
+        ZDICT_legacy_params_t params;
+        memset(&params, 0, sizeof(params));
+        size = ZDICT_trainFromBuffer_legacy(dict_buff, dict_capacity, samples_buffer, samples_sizes, num_samples, params);
    } else {
-	   size = ZDICT_trainFromBuffer(dict_buff, dict_capacity, samples_buffer, samples_sizes, num_samples);
+        size = ZDICT_trainFromBuffer(dict_buff, dict_capacity, samples_buffer, samples_sizes, num_samples);
    }
 E2: free(samples_sizes);
 E1: return size;
