@@ -694,4 +694,10 @@ class ZstdSpec extends FlatSpec with Checkers with Whenever {
         sys.error(s"Failed")
       assert(zis.available == 0)
     }
+
+  "ZstdInputStream of empty frame" should "return -1" in {
+    val compressed = Zstd.compress(Array.empty[Byte])
+    val zis = new ZstdInputStream(new ByteArrayInputStream(compressed))
+    assert(zis.read == -1)
+  }
 }

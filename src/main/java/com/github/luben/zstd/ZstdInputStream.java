@@ -152,12 +152,14 @@ public class ZstdInputStream extends FilterInputStream {
 
     public int read() throws IOException {
         byte[] oneByte = new byte[1];
-        int result = read(oneByte, 0, 1);
-        if (result > 0) {
-            return oneByte[0] & 0xff;
-        } else {
-            return result;
+        int result = 0;
+        while (result == 0) {
+            result = read(oneByte, 0, 1);
+            if (result > 0) {
+                return oneByte[0] & 0xff;
+            }
         }
+        return result;
     }
 
     public int available() throws IOException {
