@@ -89,8 +89,15 @@ public class ZstdInputStream extends FilterInputStream {
         return this;
     }
 
-
     public int read(byte[] dst, int offset, int len) throws IOException {
+        int result = 0;
+        while (result == 0) {
+            result = readInternal(dst, offset, len);
+        }
+        return result;
+    }
+
+    int readInternal(byte[] dst, int offset, int len) throws IOException {
 
         if (isClosed) {
             throw new IOException("Stream closed");
@@ -154,12 +161,13 @@ public class ZstdInputStream extends FilterInputStream {
         byte[] oneByte = new byte[1];
         int result = 0;
         while (result == 0) {
-            result = read(oneByte, 0, 1);
-            if (result > 0) {
-                return oneByte[0] & 0xff;
-            }
+            result = readInternal(oneByte, 0, 1);
         }
-        return result;
+        if (result == 1) {
+            return oneByte[0] & 0xff;
+        } else {
+            return result;
+        }
     }
 
     public int available() throws IOException {
