@@ -97,8 +97,8 @@ public enum Native {
                 loaded = true;
             }
         }
-        catch (final IOException e) {
-            // i.e. can't open the shared object from resources
+        catch (final Throwable e) {
+            // e.g. can't load the shared object from resources
         }
         finally {
             try {
