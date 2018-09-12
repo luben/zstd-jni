@@ -97,8 +97,8 @@ public enum Native {
                 loaded = true;
             }
         }
-        catch (final Throwable e) {
-        	// e.printStackTrace();
+        catch (final IOException e) {
+            // i.e. can't open the shared object from resources
         }
         finally {
             try {
