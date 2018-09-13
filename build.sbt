@@ -56,11 +56,7 @@ jniCppExtensions := Seq("c")
 jniGccFlags ++= Seq(
   "-std=c99", "-Wundef", "-Wshadow", "-Wcast-align", "-Wstrict-prototypes",
   "-Wno-unused-variable", "-DZSTD_LEGACY_SUPPORT=4"
-) ++ (System.getProperty("os.arch") match {
-  case "amd64"|"x86_64"   => Seq("-msse3")
-  case "i386"             => Seq("-msse3")
-  case _                  => Seq()
-})
+)
 
 // compilation on Windows with MSYS/gcc needs extra flags in order
 // to produce correct DLLs, also it alway produces position independent
