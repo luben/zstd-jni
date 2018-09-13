@@ -172,7 +172,7 @@ jacocoReportSettings := JacocoReportSettings(
   "Jacoco Coverage Report",
   None,
   JacocoThresholds(),
-  Seq(JacocoReportFormats.XML),
+  Seq(JacocoReportFormats.XML, JacocoReportFormats.HTML),
   "utf-8")
 
 // Android .aar

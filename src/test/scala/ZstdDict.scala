@@ -23,7 +23,7 @@ class ZstdDictSpec extends FlatSpec with Checkers {
   //val levels = List(1,3,6,9,16)
 
 
-  def trainDictDirectBuffers(input: Array[Byte], legacy: Boolean) = {
+  def trainDictDirectBuffers(input: Array[Byte], legacy: Boolean): Array[Byte] = {
     val dict_size  = 32 * 1024
     val trainer = new ZstdDictTrainer(input.length, dict_size)
     trainer.addSample(input)
@@ -34,7 +34,7 @@ class ZstdDictSpec extends FlatSpec with Checkers {
       Array.empty[Byte]
   }
 
-  def trainDict(input: Array[Byte], legacy: Boolean) = {
+  def trainDict(input: Array[Byte], legacy: Boolean): Array[Byte] = {
     val dict_buff = Array.fill[Byte](32*1024)(0)
     val dict_size = if (legacy) {
       Zstd.trainFromBuffer(Array(input), dict_buff, true).toInt
@@ -49,20 +49,6 @@ class ZstdDictSpec extends FlatSpec with Checkers {
     }
     else
       Array.empty[Byte]
-  }
-
-
-  "Zstd" should s"should round-trip compression/decompression with legacy dict at level 1" in {
-    check { input: Array[Byte] =>
-      val in = input.map { byte => (byte % 4).toByte }
-      val size = input.length
-      val dict = trainDict(in, true)
-      (dict.size > 0) ==> {
-        val compressed = Zstd.compressUsingDict(in, dict, 1)
-        val decompressed = Zstd.decompress(compressed, dict, size)
-        in.toSeq == decompressed.toSeq
-      }
-    }
   }
 
   val legacyS = List(true, false)
@@ -81,6 +67,27 @@ class ZstdDictSpec extends FlatSpec with Checkers {
       }
     }
 
+    it should s"should round-trip compression/decompression ByteBuffers with dict at level $level with legacy $legacy" in {
+      check { input: Array[Byte] =>
+        val in = input.map { byte => (byte % 4).toByte }
+        val size = input.length
+        val inBuf = ByteBuffer.allocateDirect(size)
+        inBuf.put(in)
+        inBuf.flip()
+        val dict = trainDict(in, legacy)
+        (dict.size > 0) ==> {
+          val compressed = ByteBuffer.allocateDirect(Zstd.compressBound(size).toInt);
+          Zstd.compress(compressed, inBuf, dict, level)
+          val decompressed = ByteBuffer.allocateDirect(size)
+          Zstd.decompress(decompressed, compressed, dict)
+          decompressed.flip()
+          val out = new Array[Byte](decompressed.remaining)
+          decompressed.get(out)
+          in.toSeq == out.toSeq
+        }
+      }
+    }
+
     it should s"should round-trip compression/decompression with fast dict at level $level with legacy $legacy" in {
       check { input: Array[Byte] =>
         val in = input.map { byte => (byte % 4).toByte }
@@ -94,6 +101,31 @@ class ZstdDictSpec extends FlatSpec with Checkers {
           val decompressed = Zstd.decompress(compressed, ddict, size)
           ddict.close
           in.toSeq == decompressed.toSeq
+        }
+      }
+    }
+
+    it should s"should round-trip compression/decompression ByteBuffers with fast dict at level $level with legacy $legacy" in {
+      check { input: Array[Byte] =>
+        val in = input.map { byte => (byte % 4).toByte }
+        val size = input.length
+        val inBuf = ByteBuffer.allocateDirect(size)
+        inBuf.put(in)
+        inBuf.flip()
+        val dict = trainDict(in, legacy)
+        (dict.size > 0) ==> {
+          val cdict = new ZstdDictCompress(dict, level)
+          val compressed = ByteBuffer.allocateDirect(Zstd.compressBound(size).toInt);
+          Zstd.compress(compressed, inBuf, cdict)
+          cdict.close
+          val ddict = new ZstdDictDecompress(dict)
+          val decompressed = ByteBuffer.allocateDirect(size)
+          Zstd.decompress(decompressed, compressed, ddict)
+          decompressed.flip()
+          ddict.close
+          val out = new Array[Byte](decompressed.remaining)
+          decompressed.get(out)
+          in.toSeq == out.toSeq
         }
       }
     }
@@ -159,7 +191,6 @@ class ZstdDictSpec extends FlatSpec with Checkers {
           val compressed = Zstd.compress(in, cdict)
           val compressedBuffer = ByteBuffer.allocateDirect(compressed.size)
           compressedBuffer.put(compressed)
-          compressedBuffer.limit(compressedBuffer.position())
           compressedBuffer.flip()
           cdict.close
 
@@ -182,7 +213,6 @@ class ZstdDictSpec extends FlatSpec with Checkers {
           val cdict = new ZstdDictCompress(dict, 0, dict.size, level)
           val inputBuffer = ByteBuffer.allocateDirect(size)
           inputBuffer.put(in)
-          inputBuffer.limit(inputBuffer.position)
           inputBuffer.flip()
           val compressedBuffer = Zstd.compress(inputBuffer, cdict)
           val compressed = new Array[Byte](compressedBuffer.limit - compressedBuffer.position)
@@ -205,7 +235,6 @@ class ZstdDictSpec extends FlatSpec with Checkers {
           val cdict = new ZstdDictCompress(dict, 0, dict.size, level)
           val inputBuffer = ByteBuffer.allocateDirect(size)
           inputBuffer.put(in)
-          inputBuffer.limit(inputBuffer.position)
           inputBuffer.flip()
           val compressedBuffer = Zstd.compress(inputBuffer, dict, level)
           val compressed = new Array[Byte](compressedBuffer.limit - compressedBuffer.position)
