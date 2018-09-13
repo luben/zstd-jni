@@ -90,11 +90,15 @@ public class ZstdInputStream extends FilterInputStream {
     }
 
     public int read(byte[] dst, int offset, int len) throws IOException {
-        int result = 0;
-        while (result == 0) {
-            result = readInternal(dst, offset, len);
+        if (len == 0) {
+            return 0;
+        } else {
+            int result = 0;
+            while (result == 0) {
+                result = readInternal(dst, offset, len);
+            }
+            return result;
         }
-        return result;
     }
 
     int readInternal(byte[] dst, int offset, int len) throws IOException {
