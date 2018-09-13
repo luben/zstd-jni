@@ -263,6 +263,7 @@ class ZstdDictSpec extends FlatSpec with Checkers {
             zos.write(input, ptr, chunk)
             ptr += chunk
           }
+          zos.flush
           zos.close
           val compressed = os.toByteArray
           // now decompress
@@ -349,6 +350,7 @@ class ZstdDictSpec extends FlatSpec with Checkers {
           osw.setDict(dict)
           ib.flip
           osw.compress(ib)
+          osw.flush
           osw.close
           os.flip
 
