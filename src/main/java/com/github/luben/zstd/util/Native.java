@@ -1,10 +1,10 @@
 package com.github.luben.zstd.util;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.lang.UnsatisfiedLinkError;
 
 public enum Native {
     ;
@@ -16,7 +16,7 @@ public enum Native {
         "try building from source the jar or providing " + libname + " in you system.";
 
     private static String osName() {
-        final String os = System.getProperty("os.name").toLowerCase().replace(' ', '_');
+        String os = System.getProperty("os.name").toLowerCase().replace(' ', '_');
         if (os.startsWith("win")){
             return "win";
         } else if (os.startsWith("mac")) {
@@ -51,7 +51,7 @@ public enum Native {
     }
 
     private static UnsatisfiedLinkError linkError(UnsatisfiedLinkError e) {
-        final UnsatisfiedLinkError err = new UnsatisfiedLinkError(e.getMessage() + "\n" + errorMsg);
+        UnsatisfiedLinkError err = new UnsatisfiedLinkError(e.getMessage() + "\n" + errorMsg);
         err.setStackTrace(e.getStackTrace());
         return err;
     }
@@ -60,64 +60,72 @@ public enum Native {
         load(null);
     }
 
-    public static synchronized void load(final Path tempFolder) {
+    public static synchronized void load(final File tempFolder) {
         if (loaded) {
             return;
         }
 
-        // First attempt: Read zstd-jni native library from jar, write in temporary file, then load it
-        Path tempLib = null;
-        try {
-            // Mark temporary file for deletion on Java VM exit as backup.
-            // On Windows, once native library has been loaded, temp file can not be deleted in finally block.
-            // However Windows user temp folder gets removed on logout - C:\Users\<userid>\AppData\Local\Temp\#\
-            tempLib = (tempFolder == null) ?
-                      Files.createTempFile(            libname, "." + libExtension()) :
-                      Files.createTempFile(tempFolder, libname, "." + libExtension());
-            tempLib.toFile().deleteOnExit();
-
-            try (final InputStream  in  = Native.class.getResourceAsStream(resourceName());
-                 final OutputStream out = Files.newOutputStream(tempLib)) {
-
-                // Read from jar in chunks and write to temporary file.
-                // Allocate 64 KiB buffer to maximize chunk size, around 16 to 32 KiB
-                final byte[] buffer = new byte[65536];
-                while (true) {
-                    final int numBytes = in.read(buffer);
-                    // System.out.format("Bytes read: %d\n", numBytes);
-                    if (numBytes == -1) {
-                        break;
-                    }
-                    out.write(buffer, 0, numBytes);
-                }
-                out.flush();
-                out.close();
-
-                System.load(tempLib.toAbsolutePath().toString());
-                loaded = true;
-            }
-        }
-        catch (final Throwable e) {
-            // e.g. can't load the shared object from resources
-        }
-        finally {
-            try {
-                if (tempLib != null) {
-                    Files.deleteIfExists(tempLib);
-                }
-            }
-            catch (final IOException e) {
-            }
-        }
-
-        // Second attempt: Fall back to loading the zstd-jni from the system library path
-        if (! loaded) {
+        String resourceName = resourceName();
+        InputStream is = Native.class.getResourceAsStream(resourceName);
+        if (is == null) {
+            // fall-back to loading the zstd-jni from the system library path
             try {
                 System.loadLibrary(libnameShort);
                 loaded = true;
-            }
-            catch (final UnsatisfiedLinkError e) {
+                return;
+            } catch (UnsatisfiedLinkError e) {
                 throw linkError(e);
+            }
+        }
+        File tempLib = null;
+        FileOutputStream out = null;
+        try {
+            tempLib = File.createTempFile(libname, "." + libExtension(), tempFolder);
+            // try to delete on exit, does not work on Windows
+            tempLib.deleteOnExit();
+            // copy to tempLib
+            out = new FileOutputStream(tempLib);
+            byte[] buf = new byte[4096];
+            while (true) {
+                int read = is.read(buf);
+                if (read == -1) {
+                    break;
+                }
+                out.write(buf, 0, read);
+            }
+            try {
+                out.flush();
+                out.close();
+                out = null;
+            } catch (IOException e) {
+                // ignore
+            }
+            try {
+                System.load(tempLib.getAbsolutePath());
+            } catch (UnsatisfiedLinkError e) {
+                // fall-back to loading the zstd-jni from the system library path
+                try {
+                    System.loadLibrary(libnameShort);
+                } catch (UnsatisfiedLinkError e1) {
+                    // display error in case problem with loading from temp folder
+                    throw linkError(e1);
+                }
+            }
+            loaded = true;
+        } catch (IOException e) {
+            throw new ExceptionInInitializerError("Cannot unpack " + libname);
+        }
+        finally {
+            try {
+                is.close();
+                if (out != null) {
+                    out.close();
+                }
+                if (tempLib != null && tempLib.exists()) {
+                    tempLib.delete();
+                }
+            } catch (IOException e) {
+                // ignore
             }
         }
     }
