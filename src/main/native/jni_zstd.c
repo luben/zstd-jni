@@ -250,6 +250,38 @@ E1: return size;
 
 /*
  * Class:     com_github_luben_zstd_Zstd
+ * Method:    getDictIdFromFrame
+ * Signature: ([B)J
+ */
+JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_getDictIdFromFrame
+  (JNIEnv *env, jclass obj, jbyteArray src) {
+    unsigned dict_id = 0;
+    jsize src_size = (*env)->GetArrayLength(env, src);
+    void *src_buff = (*env)->GetPrimitiveArrayCritical(env, src, NULL);
+    if (src_buff == NULL) goto E1;
+    dict_id = ZSTD_getDictID_fromFrame(src_buff, (size_t) src_size);
+    (*env)->ReleasePrimitiveArrayCritical(env, src, src_buff, JNI_ABORT);
+E1: return (jlong) dict_id;
+}
+
+/*
+ * Class:     com_github_luben_zstd_Zstd
+ * Method:    getDictIdFromDict
+ * Signature: ([B)J
+ */
+JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_getDictIdFromDict
+  (JNIEnv *env, jclass obj, jbyteArray src) {
+    unsigned dict_id = 0;
+    jsize src_size = (*env)->GetArrayLength(env, src);
+    void *src_buff = (*env)->GetPrimitiveArrayCritical(env, src, NULL);
+    if (src_buff == NULL) goto E1;
+    dict_id = ZSTD_getDictID_fromDict(src_buff, (size_t) src_size);
+    (*env)->ReleasePrimitiveArrayCritical(env, src, src_buff, JNI_ABORT);
+E1: return (jlong) dict_id;
+}
+
+/*
+ * Class:     com_github_luben_zstd_Zstd
  * Method:    decompressedDirectByteBufferSize
  * Signature: (Ljava/nio/ByteBuffer;II)J
  */
