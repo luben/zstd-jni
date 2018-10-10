@@ -363,6 +363,14 @@ public class Zstd {
     public static native long getDictIdFromFrame(byte[] src);
 
     /**
+     * Get DictId from a compressed ByteBuffer frame
+     *
+     * @param src compressed frame
+     * @return DictId or 0 if not available
+     */
+    public static native long getDictIdFromFrameBuffer(ByteBuffer src);
+
+    /**
      * Get DictId of a dictionary
      *
      * @param dict dictionary

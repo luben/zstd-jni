@@ -23,7 +23,9 @@ class ZstdDictSpec extends FlatSpec {
     for (sample <- src) {
       trainer.addSample(sample)
     }
-    trainer.trainSamples(legacy)
+    val dict = trainer.trainSamples(legacy)
+    assert(Zstd.getDictIdFromDict(dict) != 0)
+    dict
   }
 
   val input = source.toArray
@@ -38,6 +40,7 @@ class ZstdDictSpec extends FlatSpec {
     "Zstd" should s"should round-trip compression/decompression with dict at level $level with legacy $legacy" in {
       val compressed = Zstd.compressUsingDict(input, dict, level)
       val decompressed = Zstd.decompress(compressed, dict, input.length)
+      assert(Zstd.getDictIdFromFrame(compressed) == Zstd.getDictIdFromDict(dict))
       assert(input.toSeq == decompressed.toSeq)
     }
 
@@ -64,6 +67,7 @@ class ZstdDictSpec extends FlatSpec {
       val ddict = new ZstdDictDecompress(dict)
       val decompressed = Zstd.decompress(compressed, ddict, size)
       ddict.close
+      assert(Zstd.getDictIdFromFrame(compressed) == Zstd.getDictIdFromDict(dict))
       assert(input.toSeq == decompressed.toSeq)
     }
 
@@ -83,6 +87,7 @@ class ZstdDictSpec extends FlatSpec {
       ddict.close
       val out = new Array[Byte](decompressed.remaining)
       decompressed.get(out)
+      assert(Zstd.getDictIdFromFrameBuffer(compressed) == Zstd.getDictIdFromDict(dict))
       assert(input.toSeq == out.toSeq)
     }
 
@@ -92,6 +97,7 @@ class ZstdDictSpec extends FlatSpec {
       val ddict = new ZstdDictDecompress(dict)
       val decompressed = Zstd.decompress(compressed, ddict, size)
       ddict.close
+      assert(Zstd.getDictIdFromFrame(compressed) == Zstd.getDictIdFromDict(dict))
       assert(input.toSeq == decompressed.toSeq)
     }
 
@@ -101,6 +107,7 @@ class ZstdDictSpec extends FlatSpec {
       val compressed = Zstd.compress(input, cdict)
       cdict.close
       val decompressed = Zstd.decompress(compressed, dict, size)
+      assert(Zstd.getDictIdFromFrame(compressed) == Zstd.getDictIdFromDict(dict))
       assert(input.toSeq == decompressed.toSeq)
     }
 
@@ -115,6 +122,8 @@ class ZstdDictSpec extends FlatSpec {
       val decompressedBuffer = Zstd.decompress(compressedBuffer, dict, size)
       val decompressed = new Array[Byte](size)
       decompressedBuffer.get(decompressed)
+      assert(Zstd.getDictIdFromFrameBuffer(compressedBuffer) == Zstd.getDictIdFromDict(dict))
+      assert(Zstd.getDictIdFromFrame(compressed) == Zstd.getDictIdFromDict(dict))
       assert(input.toSeq == decompressed.toSeq)
     }
 
@@ -132,6 +141,8 @@ class ZstdDictSpec extends FlatSpec {
       val decompressed = new Array[Byte](size)
       decompressedBuffer.get(decompressed)
       ddict.close
+      assert(Zstd.getDictIdFromFrameBuffer(compressedBuffer) == Zstd.getDictIdFromDict(dict))
+      assert(Zstd.getDictIdFromFrame(compressed) == Zstd.getDictIdFromDict(dict))
       assert(input.toSeq == decompressed.toSeq)
     }
 
@@ -148,6 +159,8 @@ class ZstdDictSpec extends FlatSpec {
       val ddict = new ZstdDictDecompress(dict)
       val decompressed = Zstd.decompress(compressed, ddict, size)
       ddict.close
+      assert(Zstd.getDictIdFromFrameBuffer(compressedBuffer) == Zstd.getDictIdFromDict(dict))
+      assert(Zstd.getDictIdFromFrame(compressed) == Zstd.getDictIdFromDict(dict))
       assert(input.toSeq == decompressed.toSeq)
     }
 
@@ -162,6 +175,8 @@ class ZstdDictSpec extends FlatSpec {
       compressedBuffer.get(compressed)
       cdict.close
       val decompressed = Zstd.decompress(compressed, dict, size)
+      assert(Zstd.getDictIdFromFrameBuffer(compressedBuffer) == Zstd.getDictIdFromDict(dict))
+      assert(Zstd.getDictIdFromFrame(compressed) == Zstd.getDictIdFromDict(dict))
       assert(input.toSeq == decompressed.toSeq)
     }
 
@@ -193,6 +208,7 @@ class ZstdDictSpec extends FlatSpec {
         ptr += chunk
       }
       zis.close
+      assert(Zstd.getDictIdFromFrame(compressed) == Zstd.getDictIdFromDict(dict))
       assert(input.toSeq == output.toSeq)
     }
 
@@ -226,6 +242,7 @@ class ZstdDictSpec extends FlatSpec {
         ptr += chunk
       }
       zis.close
+      assert(Zstd.getDictIdFromFrame(compressed) == Zstd.getDictIdFromDict(dict))
       assert(input.toSeq == output.toSeq)
     }
 
@@ -235,13 +252,16 @@ class ZstdDictSpec extends FlatSpec {
       // compress
       val ib    = ByteBuffer.allocateDirect(size)
       ib.put(input)
+      ib.flip
+
       val osw = new ZstdDirectBufferCompressingStream(os, 1)
       osw.setDict(dict)
-      ib.flip
       osw.compress(ib)
       osw.flush
       osw.close
       os.flip
+
+      assert(Zstd.getDictIdFromFrameBuffer(os) == Zstd.getDictIdFromDict(dict))
 
       // now decompress
       val zis   = new ZstdDirectBufferDecompressingStream(os)
@@ -268,12 +288,15 @@ class ZstdDictSpec extends FlatSpec {
       // compress
       val ib    = ByteBuffer.allocateDirect(size)
       ib.put(input)
+      ib.flip
+
       val osw = new ZstdDirectBufferCompressingStream(os, 1)
       osw.setDict(cdict)
-      ib.flip
       osw.compress(ib)
       osw.close
       os.flip
+
+      assert(Zstd.getDictIdFromFrameBuffer(os) == Zstd.getDictIdFromDict(dict))
 
       // now decompress
       val zis   = new ZstdDirectBufferDecompressingStream(os)

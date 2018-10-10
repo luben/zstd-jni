@@ -266,6 +266,22 @@ E1: return (jlong) dict_id;
 
 /*
  * Class:     com_github_luben_zstd_Zstd
+ * Method:    getDictIdFromFrameBuffer
+ * Signature: ([B)J
+ */
+JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_getDictIdFromFrameBuffer
+  (JNIEnv *env, jclass obj, jobject src) {
+    unsigned dict_id = 0;
+    jsize src_size = (*env)->GetDirectBufferCapacity(env, src);
+    if (src_size == 0) goto E1;
+    char *src_buff = (char*)(*env)->GetDirectBufferAddress(env, src);
+    if (src_buff == NULL) goto E1;
+    dict_id = ZSTD_getDictID_fromFrame(src_buff, (size_t) src_size);
+E1: return (jlong) dict_id;
+}
+
+/*
+ * Class:     com_github_luben_zstd_Zstd
  * Method:    getDictIdFromDict
  * Signature: ([B)J
  */
