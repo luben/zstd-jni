@@ -18,7 +18,7 @@ class ZstdDictSpec extends FlatSpec {
   def source = Source.fromFile("src/test/resources/xml")(Codec.ISO8859).map{_.toByte}
 
   def train(legacy: Boolean): Array[Byte] = {
-    val src = source.sliding(1024,1024).take(1024).map(_.toArray)
+    val src = source.sliding(1024, 1024).take(1024).map(_.toArray)
     val trainer = new ZstdDictTrainer(1024 * 1024, 32 * 1024)
     for (sample <- src) {
       trainer.addSample(sample)

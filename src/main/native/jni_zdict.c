@@ -75,16 +75,16 @@ JNIEXPORT jlong Java_com_github_luben_zstd_Zstd_trainFromBufferDirect
     for (int i = 0; i < num_samples; i++) {
         samples_sizes[i] = sample_sizes_array[i];
     }
-   (*env)->ReleasePrimitiveArrayCritical(env, sampleSizes, sample_sizes_array, JNI_ABORT);
+    (*env)->ReleasePrimitiveArrayCritical(env, sampleSizes, sample_sizes_array, JNI_ABORT);
 
-   size_t size;
-   if (legacy == JNI_TRUE) {
+    size_t size;
+    if (legacy == JNI_TRUE) {
         ZDICT_legacy_params_t params;
         memset(&params, 0, sizeof(params));
         size = ZDICT_trainFromBuffer_legacy(dict_buff, dict_capacity, samples_buffer, samples_sizes, num_samples, params);
-   } else {
+    } else {
         size = ZDICT_trainFromBuffer(dict_buff, dict_capacity, samples_buffer, samples_sizes, num_samples);
-   }
+    }
 E2: free(samples_sizes);
 E1: return size;
 }
