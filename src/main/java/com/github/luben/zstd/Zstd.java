@@ -667,10 +667,7 @@ public class Zstd {
             throw new RuntimeException(getErrorName(size));
         }
         srcBuff.position(srcBuff.limit());
-
-        dstBuff.limit((int) size);
-        // Since we allocated the buffer ourselves, we know it cannot be used to hold any further compressed data,
-        // so leave the position at zero where the caller surely wants it, ready to read
+        dstBuff.position(dstBuff.position() + (int) size);
 
         return (int) size;
     }
@@ -755,10 +752,7 @@ public class Zstd {
             throw new RuntimeException(getErrorName(size));
         }
         srcBuff.position(srcBuff.limit());
-
-        dstBuff.limit((int)size);
-        //Since we allocated the buffer ourselves, we know it cannot be used to hold any further compressed data,
-        //so leave the position at zero where the caller surely wants it, ready to read
+        dstBuff.position(dstBuff.position() + (int) size);
 
         return (int) size;
     }

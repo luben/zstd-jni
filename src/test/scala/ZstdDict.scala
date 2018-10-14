@@ -51,6 +51,7 @@ class ZstdDictSpec extends FlatSpec {
       inBuf.flip()
       val compressed = ByteBuffer.allocateDirect(Zstd.compressBound(size).toInt);
       Zstd.compress(compressed, inBuf, dict, level)
+      compressed.flip()
       val decompressed = ByteBuffer.allocateDirect(size)
       Zstd.decompress(decompressed, compressed, dict)
       decompressed.flip()
@@ -79,6 +80,7 @@ class ZstdDictSpec extends FlatSpec {
       val cdict = new ZstdDictCompress(dict, level)
       val compressed = ByteBuffer.allocateDirect(Zstd.compressBound(size).toInt);
       Zstd.compress(compressed, inBuf, cdict)
+      compressed.flip()
       cdict.close
       val ddict = new ZstdDictDecompress(dict)
       val decompressed = ByteBuffer.allocateDirect(size)

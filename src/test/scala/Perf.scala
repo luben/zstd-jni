@@ -164,7 +164,7 @@ class ZstdPerfSpec extends FlatSpec  {
 
   val buff1 = Source.fromFile("src/test/resources/xml")(Codec.ISO8859).map{_.toByte }.take(5 * 1024 * 1024).toArray
   for (level <- List(-3, -1, 1, 3, 6, 9)) {
-    it should s"be fast with steaming at level $level" in {
+    it should s"be fast with streaming at level $level" in {
         benchStream(s"Streaming at $level", buff1, level)
         benchDirectBufferStream(s"Streaming at $level to direct ByteBuffers", buff1, level)
     }
