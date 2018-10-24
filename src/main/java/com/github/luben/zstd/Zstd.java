@@ -421,6 +421,9 @@ public class Zstd {
     public static native int frameHeaderSizeMin();
     public static native int frameHeaderSizeMax();
     public static native int blockSizeMax();
+    /* Min/max compression levels */
+    public static native int minCompressionLevel();
+    public static native int maxCompressionLevel();
 
     /* Convenience methods */
 

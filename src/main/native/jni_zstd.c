@@ -417,3 +417,13 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_blockSizeMax
   (JNIEnv *env, jclass obj) {
     return ZSTD_BLOCKSIZE_MAX;
 }
+
+JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_minCompressionLevel
+  (JNIEnv *env, jclass obj) {
+    return ZSTD_minCLevel();
+}
+
+JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_maxCompressionLevel
+  (JNIEnv *env, jclass obj) {
+    return ZSTD_maxCLevel();
+}
