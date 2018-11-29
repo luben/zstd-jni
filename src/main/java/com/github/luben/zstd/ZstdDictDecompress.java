@@ -2,11 +2,7 @@ package com.github.luben.zstd;
 
 import com.github.luben.zstd.util.Native;
 
-import java.io.Closeable;
-import java.io.IOException;
-import java.util.Arrays;
-
-public class ZstdDictDecompress implements Closeable {
+public class ZstdDictDecompress extends SharedDictBase {
 
     static {
         Native.load();
@@ -41,19 +37,17 @@ public class ZstdDictDecompress implements Closeable {
         if (nativePtr == 0L) {
            throw new IllegalStateException("ZSTD_createDDict failed");
         }
+        // Ensures that even if ZstdDictDecompress is created and published through a race, no thread could observe
+        // nativePtr == 0.
+        storeFence();
     }
 
 
     @Override
-    public synchronized void close() throws IOException {
+     void doClose() {
         if (nativePtr != 0) {
             free();
             nativePtr = 0;
         }
-    }
-
-    @Override
-    protected void finalize() throws Throwable {
-        close();
     }
 }

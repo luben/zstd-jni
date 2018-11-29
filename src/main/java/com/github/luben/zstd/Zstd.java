@@ -135,7 +135,16 @@ public class Zstd {
      * @return  the number of bytes written into buffer 'dst' or an error code if
      *          it fails (which can be tested using ZSTD_isError())
      */
-    public static native long compressFastDict(byte[] dst, int dstOffset, byte[] src, int srcOffset, int length, ZstdDictCompress dict);
+    public static long compressFastDict(byte[] dst, int dstOffset, byte[] src, int srcOffset, int length, ZstdDictCompress dict) {
+        dict.acquireSharedLock();
+        try {
+            return compressFastDict0(dst, dstOffset, src, srcOffset, length, dict);
+        } finally {
+            dict.releaseSharedLock();
+        }
+    }
+
+    private static native long compressFastDict0(byte[] dst, int dstOffset, byte[] src, int srcOffset, int length, ZstdDictCompress dict);
 
     /**
      * Compresses buffer 'src' into buffer 'dst' with dictionary.
@@ -154,7 +163,16 @@ public class Zstd {
      * @return  the number of bytes written into buffer 'dst' or an error code if
      *          it fails (which can be tested using ZSTD_isError())
      */
-    public static native long compressDirectByteBufferFastDict(ByteBuffer dst, int dstOffset, int dstSize, ByteBuffer src, int srcOffset, int srcSize, ZstdDictCompress dict);
+    public static long compressDirectByteBufferFastDict(ByteBuffer dst, int dstOffset, int dstSize, ByteBuffer src, int srcOffset, int srcSize, ZstdDictCompress dict) {
+        dict.acquireSharedLock();
+        try {
+            return compressDirectByteBufferFastDict0(dst, dstOffset, dstSize, src, srcOffset, srcSize, dict);
+        } finally {
+            dict.releaseSharedLock();
+        }
+    }
+
+    public static native long compressDirectByteBufferFastDict0(ByteBuffer dst, int dstOffset, int dstSize, ByteBuffer src, int srcOffset, int srcSize, ZstdDictCompress dict);
 
 
     /**
@@ -272,7 +290,16 @@ public class Zstd {
      *          or an errorCode if it fails (which can be tested using ZSTD_isError())
      *
      */
-    public static native long decompressFastDict(byte[] dst, int dstOffset, byte[] src, int srcOffset, int length, ZstdDictDecompress dict);
+    public static long decompressFastDict(byte[] dst, int dstOffset, byte[] src, int srcOffset, int length, ZstdDictDecompress dict) {
+        dict.acquireSharedLock();
+        try {
+            return decompressFastDict0(dst, dstOffset, src, srcOffset, length, dict);
+        } finally {
+            dict.releaseSharedLock();
+        }
+    }
+
+    private static native long decompressFastDict0(byte[] dst, int dstOffset, byte[] src, int srcOffset, int length, ZstdDictDecompress dict);
 
     /**
      * Decompresses buffer 'src' into buffer 'dst' with dictionary.
@@ -290,8 +317,16 @@ public class Zstd {
      *          or an errorCode if it fails (which can be tested using ZSTD_isError())
      *
      */
-    public static native long decompressDirectByteBufferFastDict(ByteBuffer dst, int dstOffset, int dstSize, ByteBuffer src, int srcOffset, int srcSize, ZstdDictDecompress dict);
+    public static long decompressDirectByteBufferFastDict(ByteBuffer dst, int dstOffset, int dstSize, ByteBuffer src, int srcOffset, int srcSize, ZstdDictDecompress dict) {
+        dict.acquireSharedLock();
+        try {
+            return decompressDirectByteBufferFastDict0(dst, dstOffset, dstSize, src, srcOffset, srcSize, dict);
+        } finally {
+            dict.releaseSharedLock();
+        }
+    }
 
+    private static native long decompressDirectByteBufferFastDict0(ByteBuffer dst, int dstOffset, int dstSize, ByteBuffer src, int srcOffset, int srcSize, ZstdDictDecompress dict);
 
     /* Utility methods */
 

@@ -77,10 +77,10 @@ JNIEXPORT void JNICALL Java_com_github_luben_zstd_ZstdDictDecompress_free
 
 /*
  * Class:     com_github_luben_zstd_Zstd
- * Method:    decompressFast
+ * Method:    decompressFastDict0
  * Signature: ([BI[BIILcom/github/luben/zstd/ZstdDictDecompress;)J
  */
-JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_decompressFastDict
+JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_decompressFastDict0
   (JNIEnv *env, jclass obj, jbyteArray dst, jint dst_offset, jbyteArray src, jint src_offset, jint src_length, jobject dict)
 {
     if (NULL == dict) return ZSTD_error_dictionary_wrong;
@@ -112,10 +112,10 @@ E1: return size;
 
 /*
  * Class:     com_github_luben_zstd_Zstd
- * Method:    compressFast
+ * Method:    compressFastDict0
  * Signature: ([BI[BIILcom/github/luben/zstd/ZstdDictCompress;)J
  */
-JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_compressFastDict
+JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_compressFastDict0
   (JNIEnv *env, jclass obj, jbyteArray dst, jint dst_offset, jbyteArray src, jint src_offset, jint src_length, jobject dict) {
     if (NULL == dict) return ZSTD_error_dictionary_wrong;
     ZSTD_CDict* cdict = (ZSTD_CDict*)(*env)->GetLongField(env, dict, compress_dict);
@@ -147,9 +147,9 @@ E1: return size;
 
 /*
  * Class:     com_github_luben_zstd_Zstd
- * Method:    compressDirectByteBufferFastDict
+ * Method:    compressDirectByteBufferFastDict0
  */
-JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_compressDirectByteBufferFastDict
+JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_compressDirectByteBufferFastDict0
   (JNIEnv *env, jclass obj, jobject dst, jint dst_offset, jint dst_size, jobject src, jint src_offset, jint src_size, jobject dict) {
     if (NULL == dict) return ZSTD_error_dictionary_wrong;
     ZSTD_CDict* cdict = (ZSTD_CDict*)(*env)->GetLongField(env, dict, compress_dict);
@@ -170,9 +170,9 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_compressDirectByteBuffer
 
 /*
  * Class:     com_github_luben_zstd_Zstd
- * Method:    decompressDirectByteBufferFastDict
+ * Method:    decompressDirectByteBufferFastDict0
  */
-JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_decompressDirectByteBufferFastDict
+JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_decompressDirectByteBufferFastDict0
   (JNIEnv *env, jclass obj, jobject dst, jint dst_offset, jint dst_size, jobject src, jint src_offset, jint src_size, jobject dict)
 {
     if (NULL == dict) return ZSTD_error_dictionary_wrong;
