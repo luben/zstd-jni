@@ -89,7 +89,7 @@ public class ZstdInputStream extends FilterInputStream {
         return this;
     }
 
-    public int read(byte[] dst, int offset, int len) throws IOException {
+    public synchronized int read(byte[] dst, int offset, int len) throws IOException {
         if (len == 0) {
             return 0;
         } else {
@@ -161,7 +161,7 @@ public class ZstdInputStream extends FilterInputStream {
         return len;
     }
 
-    public int read() throws IOException {
+    public synchronized int read() throws IOException {
         byte[] oneByte = new byte[1];
         int result = 0;
         while (result == 0) {
@@ -174,7 +174,7 @@ public class ZstdInputStream extends FilterInputStream {
         }
     }
 
-    public int available() throws IOException {
+    public synchronized int available() throws IOException {
         if (isClosed) {
             throw new IOException("Stream closed");
         }
@@ -191,7 +191,7 @@ public class ZstdInputStream extends FilterInputStream {
     }
 
     /* we can skip forward */
-    public long skip(long numBytes) throws IOException {
+    public synchronized long skip(long numBytes) throws IOException {
         if (isClosed) {
             throw new IOException("Stream closed");
         }
@@ -211,7 +211,7 @@ public class ZstdInputStream extends FilterInputStream {
         return numBytes - toSkip;
     }
 
-    public void close() throws IOException {
+    public synchronized void close() throws IOException {
         if (isClosed) {
             return;
         }

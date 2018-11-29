@@ -50,9 +50,11 @@ public class ZstdDictCompress implements Closeable {
 
 
     @Override
-    public void close() throws IOException {
-        free();
-        nativePtr = 0;
+    public synchronized void close() throws IOException {
+        if (nativePtr != 0) {
+            free();
+            nativePtr = 0;
+        }
     }
 
     @Override

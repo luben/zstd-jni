@@ -94,7 +94,7 @@ public class ZstdOutputStream extends FilterOutputStream {
         return this;
     }
 
-    public void write(byte[] src, int offset, int len) throws IOException {
+    public synchronized void write(byte[] src, int offset, int len) throws IOException {
         if (isClosed) {
             throw new IOException("Stream closed");
         }
@@ -135,7 +135,7 @@ public class ZstdOutputStream extends FilterOutputStream {
     /**
      * Flushes the output
      */
-    public void flush() throws IOException {
+    public synchronized void flush() throws IOException {
         if (isClosed) {
             throw new IOException("Stream closed");
         }
@@ -159,7 +159,7 @@ public class ZstdOutputStream extends FilterOutputStream {
         }
     }
 
-    public void close() throws IOException {
+    public synchronized void close() throws IOException {
         if (isClosed) {
             return;
         }

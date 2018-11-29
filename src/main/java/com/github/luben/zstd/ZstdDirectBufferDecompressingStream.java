@@ -46,7 +46,7 @@ public class ZstdDirectBufferDecompressingStream implements Closeable {
         stream = createDStream();
     }
 
-    public boolean hasRemaining() {
+    public synchronized boolean hasRemaining() {
         return !streamEnd && (source.hasRemaining() || !finishedFrame);
     }
 
@@ -89,7 +89,7 @@ public class ZstdDirectBufferDecompressingStream implements Closeable {
 
     private int consumed;
     private int produced;
-    public int read(ByteBuffer target) throws IOException {
+    public synchronized int read(ByteBuffer target) throws IOException {
         if (!target.isDirect()) {
             throw new IllegalArgumentException("Target buffer should be a direct buffer");
         }
@@ -135,7 +135,7 @@ public class ZstdDirectBufferDecompressingStream implements Closeable {
 
 
     @Override
-    public void close() throws IOException {
+    public synchronized void close() throws IOException {
         if (!closed) {
             try {
                 if (initialized) {
@@ -145,15 +145,13 @@ public class ZstdDirectBufferDecompressingStream implements Closeable {
             finally {
                 closed = true;
                 initialized = false;
+                source = null; // help GC with realizing the buffer can be released
             }
         }
     }
 
     @Override
     protected void finalize() throws Throwable {
-        if (!closed && initialized) {
-            freeDStream(stream);
-        }
-        source = null; // help GC with realizing the buffer can be released
+        close();
     }
 }

@@ -18,7 +18,7 @@ public class ZstdDictTrainer {
         this.dictSize = dictSize;
     }
 
-    public boolean addSample(byte[] sample) {
+    public synchronized boolean addSample(byte[] sample) {
         if (filledSize + sample.length > allocatedSize) {
             return false;
         }
@@ -32,7 +32,7 @@ public class ZstdDictTrainer {
         return trainSamplesDirect(false);
     }
 
-    public ByteBuffer trainSamplesDirect(boolean legacy) {
+    public synchronized ByteBuffer trainSamplesDirect(boolean legacy) {
         ByteBuffer dictBuffer = ByteBuffer.allocateDirect(dictSize);
         long l = Zstd.trainFromBufferDirect(trainingSamples, copyToIntArray(sampleSizes), dictBuffer, legacy);
         if (Zstd.isError(l)) {
@@ -63,6 +63,4 @@ public class ZstdDictTrainer {
         }
         return ints;
     }
-
-
 }
