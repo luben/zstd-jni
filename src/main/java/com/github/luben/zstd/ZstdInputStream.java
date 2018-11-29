@@ -108,6 +108,7 @@ public class ZstdInputStream extends FilterInputStream {
 
         if (frameFinished) {
             int size = 0;
+            ZstdDictDecompress fastDict = this.fastDict;
             if (fastDict != null) {
                 fastDict.acquireSharedLock();
                 try {

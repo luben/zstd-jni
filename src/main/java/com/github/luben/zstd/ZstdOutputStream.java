@@ -99,6 +99,7 @@ public class ZstdOutputStream extends FilterOutputStream {
         if (frameClosed) {
             // open the next frame
             int size = 0;
+            ZstdDictCompress fastDict = this.fastDict;
             if (fastDict != null) {
                 fastDict.acquireSharedLock();
                 try {

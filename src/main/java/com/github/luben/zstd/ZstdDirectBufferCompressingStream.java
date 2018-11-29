@@ -83,6 +83,7 @@ public class ZstdDirectBufferCompressingStream implements Closeable, Flushable {
         }
         if (!initialized) {
             int result = 0;
+            ZstdDictCompress fastDict = this.fastDict;
             if (fastDict != null) {
                 fastDict.acquireSharedLock();
                 try {
