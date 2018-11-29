@@ -1,12 +1,10 @@
 package com.github.luben.zstd;
 
-import java.nio.ByteBuffer;
 import java.io.OutputStream;
 import java.io.FilterOutputStream;
 import java.io.IOException;
 
 import com.github.luben.zstd.util.Native;
-import com.github.luben.zstd.Zstd;
 
 /**
  * OutputStream filter that compresses the data using Zstd compression
@@ -102,7 +100,12 @@ public class ZstdOutputStream extends FilterOutputStream {
             // open the next frame
             int size = 0;
             if (fastDict != null) {
-                size = initCStreamWithFastDict(stream, fastDict, useChecksum ? 1 : 0);
+                fastDict.acquireSharedLock();
+                try {
+                    size = initCStreamWithFastDict(stream, fastDict, useChecksum ? 1 : 0);
+                } finally {
+                    fastDict.releaseSharedLock();
+                }
             } else if (dict != null) {
                 size = initCStreamWithDict(stream, dict, dict.length, level, useChecksum ? 1 : 0);
             } else {

@@ -75,7 +75,12 @@ public class ZstdDirectBufferDecompressingStream implements Closeable {
     private void initStream() throws IOException {
         int result = 0;
         if (fastDict != null) {
-            result = initDStreamWithFastDict(stream, fastDict);
+            fastDict.acquireSharedLock();
+            try {
+                result = initDStreamWithFastDict(stream, fastDict);
+            } finally {
+                fastDict.releaseSharedLock();
+            }
         } else if (dict != null) {
             result = initDStreamWithDict(stream, dict, dict.length);
         } else {

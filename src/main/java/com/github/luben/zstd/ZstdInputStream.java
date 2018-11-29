@@ -6,7 +6,6 @@ import java.io.IOException;
 import java.lang.IndexOutOfBoundsException;
 
 import com.github.luben.zstd.util.Native;
-import com.github.luben.zstd.Zstd;
 
 /**
  * InputStream filter that decompresses the data provided
@@ -110,7 +109,12 @@ public class ZstdInputStream extends FilterInputStream {
         if (frameFinished) {
             int size = 0;
             if (fastDict != null) {
-                size = initDStreamWithFastDict(stream, fastDict);
+                fastDict.acquireSharedLock();
+                try {
+                    size = initDStreamWithFastDict(stream, fastDict);
+                } finally {
+                    fastDict.releaseSharedLock();
+                }
             } else if (dict != null) {
                 size = initDStreamWithDict(stream, dict, dict.length);
             } else {
