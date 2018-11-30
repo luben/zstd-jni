@@ -45,13 +45,15 @@ public class ZstdOutputStream extends FilterOutputStream {
     public ZstdOutputStream(OutputStream outStream, int level, boolean closeFrameOnFlush, boolean useChecksum) throws IOException {
         // FilterOutputStream constructor
         super(outStream);
-        this.closeFrameOnFlush = closeFrameOnFlush;
-        this.level = level;
-        this.useChecksum = useChecksum;
+        synchronized(this) {
+            this.closeFrameOnFlush = closeFrameOnFlush;
+            this.level = level;
+            this.useChecksum = useChecksum;
 
-        // create compression context
-        stream = createCStream();
-        dst = new byte[(int) dstSize];
+            // create compression context
+            stream = createCStream();
+            dst = new byte[(int) dstSize];
+        }
     }
 
     public ZstdOutputStream(OutputStream outStream, int level, boolean closeFrameOnFlush) throws IOException {
@@ -66,7 +68,7 @@ public class ZstdOutputStream extends FilterOutputStream {
         this(outStream, 3, false);
     }
 
-    public ZstdOutputStream setChecksum(boolean useChecksum) throws IOException {
+    public synchronized ZstdOutputStream setChecksum(boolean useChecksum) throws IOException {
         if (!frameClosed) {
             throw new IOException("Change of parameter on initialized stream");
         }
@@ -74,7 +76,7 @@ public class ZstdOutputStream extends FilterOutputStream {
         return this;
     }
 
-    public ZstdOutputStream setDict(byte[] dict) throws IOException {
+    public synchronized ZstdOutputStream setDict(byte[] dict) throws IOException {
         if (!frameClosed) {
             throw new IOException("Change of parameter on initialized stream");
         }
@@ -83,7 +85,7 @@ public class ZstdOutputStream extends FilterOutputStream {
         return this;
     }
 
-    public ZstdOutputStream setDict(ZstdDictCompress dict) throws IOException {
+    public synchronized ZstdOutputStream setDict(ZstdDictCompress dict) throws IOException {
         if (!frameClosed) {
             throw new IOException("Change of parameter on initialized stream");
         }

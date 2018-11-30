@@ -42,8 +42,10 @@ public class ZstdDirectBufferDecompressingStream implements Closeable {
         if (!source.isDirect()) {
             throw new IllegalArgumentException("Source buffer should be a direct buffer");
         }
-        this.source = source;
-        stream = createDStream();
+        synchronized(this) {
+            this.source = source;
+            stream = createDStream();
+        }
     }
 
     public synchronized boolean hasRemaining() {
@@ -54,7 +56,7 @@ public class ZstdDirectBufferDecompressingStream implements Closeable {
         return (int) recommendedDOutSize();
     }
 
-    public ZstdDirectBufferDecompressingStream setDict(byte[] dict) throws IOException {
+    public synchronized ZstdDirectBufferDecompressingStream setDict(byte[] dict) throws IOException {
         if (initialized) {
             throw new IOException("Change of parameter on initialized stream");
         }
@@ -63,7 +65,7 @@ public class ZstdDirectBufferDecompressingStream implements Closeable {
         return this;
     }
 
-    public ZstdDirectBufferDecompressingStream setDict(ZstdDictDecompress dict) throws IOException {
+    public synchronized ZstdDirectBufferDecompressingStream setDict(ZstdDictDecompress dict) throws IOException {
         if (initialized) {
             throw new IOException("Change of parameter on initialized stream");
         }

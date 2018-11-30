@@ -51,8 +51,10 @@ public class ZstdInputStream extends FilterInputStream {
         super(inStream);
 
         // allocate input buffer with max frame header size
-        src = new byte[srcBuffSize];
-        stream = createDStream();
+        synchronized(this) {
+            src = new byte[srcBuffSize];
+            stream = createDStream();
+        }
     }
 
     /**
@@ -61,16 +63,16 @@ public class ZstdInputStream extends FilterInputStream {
      * Use case: decompressing files that are not
      * yet finished writing and compressing
      */
-    public ZstdInputStream setContinuous(boolean b) {
+    public synchronized ZstdInputStream setContinuous(boolean b) {
         isContinuous = b;
         return this;
     }
 
-    public boolean getContinuous() {
+    public synchronized boolean getContinuous() {
         return this.isContinuous;
     }
 
-    public ZstdInputStream setDict(byte[] dict) throws IOException {
+    public synchronized ZstdInputStream setDict(byte[] dict) throws IOException {
         if (!frameFinished) {
             throw new IOException("Change of parameter on initialized stream");
         }
@@ -79,7 +81,7 @@ public class ZstdInputStream extends FilterInputStream {
         return this;
     }
 
-    public ZstdInputStream setDict(ZstdDictDecompress dict) throws IOException {
+    public synchronized ZstdInputStream setDict(ZstdDictDecompress dict) throws IOException {
         if (!frameFinished) {
             throw new IOException("Change of parameter on initialized stream");
         }
@@ -175,7 +177,7 @@ public class ZstdInputStream extends FilterInputStream {
         if (result == 1) {
             return oneByte[0] & 0xff;
         } else {
-            return result;
+            return -1;
         }
     }
 

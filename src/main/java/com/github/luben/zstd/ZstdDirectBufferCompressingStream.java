@@ -27,12 +27,14 @@ public class ZstdDirectBufferCompressingStream implements Closeable, Flushable {
     }
 
     public ZstdDirectBufferCompressingStream(ByteBuffer target, int level) throws IOException {
-        this.target = target;
-        this.level = level;
         if (!target.isDirect()) {
             throw new IllegalArgumentException("Target buffer should be a direct buffer");
         }
-        stream = createCStream();
+        synchronized(this) {
+            this.target = target;
+            this.level = level;
+            stream = createCStream();
+        }
     }
 
     public static int recommendedOutputBufferSize() { return (int)recommendedCOutSize(); }
@@ -56,7 +58,7 @@ public class ZstdDirectBufferCompressingStream implements Closeable, Flushable {
     private native int  flushStream(long ctx, ByteBuffer dst, int dstOffset, int dstSize);
     private native int  endStream(long ctx, ByteBuffer dst, int dstOffset, int dstSize);
 
-    public ZstdDirectBufferCompressingStream setDict(byte[] dict) throws IOException {
+    public synchronized ZstdDirectBufferCompressingStream setDict(byte[] dict) throws IOException {
         if (initialized) {
             throw new IOException("Change of parameter on initialized stream");
         }
@@ -65,7 +67,7 @@ public class ZstdDirectBufferCompressingStream implements Closeable, Flushable {
         return this;
     }
 
-    public ZstdDirectBufferCompressingStream setDict(ZstdDictCompress dict) throws IOException {
+    public synchronized ZstdDirectBufferCompressingStream setDict(ZstdDictCompress dict) throws IOException {
         if (initialized) {
             throw new IOException("Change of parameter on initialized stream");
         }
@@ -122,7 +124,10 @@ public class ZstdDirectBufferCompressingStream implements Closeable, Flushable {
 
     @Override
     public synchronized void flush() throws IOException {
-        if (!closed && initialized) {
+        if (closed) {
+            throw new IOException("Already closed");
+        }
+        if (initialized) {
             int needed;
             do {
                 needed = flushStream(stream, target, target.position(), target.remaining());
