@@ -16,16 +16,16 @@ public class ZstdOutputStream extends FilterOutputStream {
     }
 
     /* Opaque pointer to Zstd context object */
-    private long stream;
+    private final long stream;
     private long srcPos = 0;
     private long dstPos = 0;
-    private byte[] dst = null;
+    private final byte[] dst;
     private boolean isClosed = false;
     private static final int dstSize = (int) recommendedCOutSize();
-    private boolean closeFrameOnFlush;
+    private final boolean closeFrameOnFlush;
     private boolean useChecksum;
     private boolean frameClosed = true;
-    private int level;
+    private final int level;
     private byte[] dict = null;
     private ZstdDictCompress fastDict = null;
 
@@ -45,15 +45,13 @@ public class ZstdOutputStream extends FilterOutputStream {
     public ZstdOutputStream(OutputStream outStream, int level, boolean closeFrameOnFlush, boolean useChecksum) throws IOException {
         // FilterOutputStream constructor
         super(outStream);
-        synchronized(this) {
-            this.closeFrameOnFlush = closeFrameOnFlush;
-            this.level = level;
-            this.useChecksum = useChecksum;
+        this.closeFrameOnFlush = closeFrameOnFlush;
+        this.level = level;
+        this.useChecksum = useChecksum;
 
-            // create compression context
-            stream = createCStream();
-            dst = new byte[(int) dstSize];
-        }
+        // create compression context
+        this.stream = createCStream();
+        this.dst = new byte[(int) dstSize];
     }
 
     public ZstdOutputStream(OutputStream outStream, int level, boolean closeFrameOnFlush) throws IOException {

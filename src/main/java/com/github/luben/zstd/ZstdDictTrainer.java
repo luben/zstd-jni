@@ -12,12 +12,10 @@ public class ZstdDictTrainer {
     private long filledSize;
 
     public ZstdDictTrainer(int sampleSize, int dictSize) {
-        synchronized(this) {
-            trainingSamples = ByteBuffer.allocateDirect(sampleSize);
-            sampleSizes =  new ArrayList<>();
-            this.allocatedSize = sampleSize;
-            this.dictSize = dictSize;
-        }
+        trainingSamples = ByteBuffer.allocateDirect(sampleSize);
+        sampleSizes =  new ArrayList<>();
+        this.allocatedSize = sampleSize;
+        this.dictSize = dictSize;
     }
 
     public synchronized boolean addSample(byte[] sample) {

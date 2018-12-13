@@ -22,11 +22,11 @@ public class ZstdInputStream extends FilterInputStream {
     }
 
     // Opaque pointer to Zstd context object
-    private long stream;
+    private final long stream;
     private long dstPos = 0;
     private long srcPos = 0;
     private long srcSize = 0;
-    private byte[] src = null;
+    private byte[] src;
     private static final int srcBuffSize = (int) recommendedDInSize();
 
     private boolean isContinuous = false;
@@ -51,10 +51,9 @@ public class ZstdInputStream extends FilterInputStream {
         super(inStream);
 
         // allocate input buffer with max frame header size
-        synchronized(this) {
-            src = new byte[srcBuffSize];
-            stream = createDStream();
-        }
+        // no need to synchronize as these a finals
+        this.src = new byte[srcBuffSize];
+        this.stream = createDStream();
     }
 
     /**
