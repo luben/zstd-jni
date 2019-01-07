@@ -48,7 +48,7 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdOutputStream_initCStream
     jclass clazz = (*env)->GetObjectClass(env, obj);
     src_pos_id = (*env)->GetFieldID(env, clazz, "srcPos", "J");
     dst_pos_id = (*env)->GetFieldID(env, clazz, "dstPos", "J");
-    ZSTD_CCtx_setParameter((ZSTD_CStream *)(intptr_t) stream, ZSTD_p_checksumFlag, checksum);
+    ZSTD_CCtx_setParameter((ZSTD_CStream *)(intptr_t) stream, ZSTD_c_checksumFlag, checksum);
     return ZSTD_initCStream((ZSTD_CStream *)(intptr_t) stream, level);
 }
 
@@ -66,7 +66,7 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdOutputStream_initCStreamWi
     void *dict_buff = (*env)->GetPrimitiveArrayCritical(env, dict, NULL);
     if (dict_buff == NULL) goto E1;
 
-    ZSTD_CCtx_setParameter((ZSTD_CStream *)(intptr_t) stream, ZSTD_p_checksumFlag, checksum);
+    ZSTD_CCtx_setParameter((ZSTD_CStream *)(intptr_t) stream, ZSTD_c_checksumFlag, checksum);
     result = ZSTD_initCStream_usingDict((ZSTD_CStream *)(intptr_t) stream, dict_buff, dict_size, level);
     (*env)->ReleasePrimitiveArrayCritical(env, dict, dict_buff, JNI_ABORT);
 E1:
@@ -86,7 +86,7 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdOutputStream_initCStreamWi
     jfieldID compress_dict = (*env)->GetFieldID(env, dict_clazz, "nativePtr", "J");
     ZSTD_CDict* cdict = (ZSTD_CDict*)(*env)->GetLongField(env, dict, compress_dict);
     if (cdict == NULL) return ZSTD_error_dictionary_wrong;
-    ZSTD_CCtx_setParameter((ZSTD_CStream *)(intptr_t) stream, ZSTD_p_checksumFlag, checksum);
+    ZSTD_CCtx_setParameter((ZSTD_CStream *)(intptr_t) stream, ZSTD_c_checksumFlag, checksum);
     return ZSTD_initCStream_usingCDict((ZSTD_CStream *)(intptr_t) stream, cdict);
 }
 

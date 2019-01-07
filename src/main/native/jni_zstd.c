@@ -388,29 +388,9 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_searchLogMax
     return ZSTD_SEARCHLOG_MAX;
 }
 
-JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_searchLengthMin
-  (JNIEnv *env, jclass obj) {
-    return ZSTD_SEARCHLENGTH_MIN;
-}
-
-JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_searchLengthMax
-  (JNIEnv *env, jclass obj) {
-    return ZSTD_SEARCHLENGTH_MAX;
-}
-
 JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_magicNumber
   (JNIEnv *env, jclass obj) {
     return ZSTD_MAGICNUMBER;
-}
-
-JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_frameHeaderSizeMin
-  (JNIEnv *env, jclass obj) {
-    return ZSTD_frameHeaderSize_min;
-}
-
-JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_frameHeaderSizeMax
-  (JNIEnv *env, jclass obj) {
-    return ZSTD_frameHeaderSize_max;
 }
 
 JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_blockSizeMax
