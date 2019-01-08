@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.5)
 project(zstd-jni)
 find_package(JNI)
-include_directories("src/main/native" "src/main/native/common" "src/main/native/compress" "src/main/native/dictBuilder" "src/main/native/legacy")
+include_directories("src/main/native" "src/main/native/common" "src/main/native/compress" "src/main/native/decompress" "src/main/native/dictBuilder" "src/main/native/legacy")
 if (JNI_FOUND)
     include_directories(${JNI_INCLUDE_DIRS})
 endif (JNI_FOUND)
