@@ -129,7 +129,12 @@ to add the repository in your build.gradle, e.g.:
         }
     }
 
-as it is not added by default by Android Studio.
+as it is not added by default by Android Studio. And then add dependency on the
+prebuilt android archive (aar):
+
+    dependencies {
+        implementation "com.github.luben:zstd-jni:VERSION@aar"
+    }
 
 License
 -------
