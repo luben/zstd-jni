@@ -23,9 +23,9 @@ libraryDependencies ++= Seq(
   "org.scalacheck" %% "scalacheck" % "1.13.4" % "test"
 )
 
-javacOptions ++= Seq("-source", "1.7", "-target", "1.7")
+javacOptions ++= Seq("-source", "1.6", "-target", "1.6")
 
-javacOptions in doc := Seq("-source", "1.7")
+javacOptions in doc := Seq("-source", "1.6")
 
 // sbt-jni configuration
 jniLibraryName := "zstd-jni"
