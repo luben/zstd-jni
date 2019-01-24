@@ -13,7 +13,7 @@ public class ZstdDictTrainer {
 
     public ZstdDictTrainer(int sampleSize, int dictSize) {
         trainingSamples = ByteBuffer.allocateDirect(sampleSize);
-        sampleSizes =  new ArrayList<>();
+        sampleSizes =  new ArrayList<Integer>();
         this.allocatedSize = sampleSize;
         this.dictSize = dictSize;
     }
