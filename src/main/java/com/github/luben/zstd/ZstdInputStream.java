@@ -30,7 +30,6 @@ public class ZstdInputStream extends FilterInputStream {
     private static final int srcBuffSize = (int) recommendedDInSize();
 
     private boolean isContinuous = false;
-    private boolean initialized = false;
     private boolean frameFinished = true;
     private boolean isClosed = false;
     private byte[] dict = null;
@@ -42,8 +41,8 @@ public class ZstdInputStream extends FilterInputStream {
     private static native long createDStream();
     private static native int  freeDStream(long stream);
     private native int  initDStream(long stream);
-    private native int  initDStreamWithDict(long stream, byte[] dict, int dict_size);
-    private native int  initDStreamWithFastDict(long stream, ZstdDictDecompress dict);
+    private native int  loadDict(long stream, byte[] dict, int dict_size);
+    private native int  loadFastDict(long stream, ZstdDictDecompress dict);
     private native int  decompressStream(long stream, byte[] dst, int dst_size, byte[] src, int src_size);
 
     // The main constuctor / legacy version dispatcher
@@ -55,6 +54,7 @@ public class ZstdInputStream extends FilterInputStream {
         // no need to synchronize as these a finals
         this.src = new byte[srcBuffSize];
         this.stream = createDStream();
+        initDStream(stream);
     }
 
     /**
@@ -76,8 +76,7 @@ public class ZstdInputStream extends FilterInputStream {
         if (!frameFinished) {
             throw new IOException("Change of parameter on initialized stream");
         }
-        this.dict = dict;
-        this.fastDict = null;
+        loadDict(stream, dict, dict.length);
         return this;
     }
 
@@ -85,8 +84,7 @@ public class ZstdInputStream extends FilterInputStream {
         if (!frameFinished) {
             throw new IOException("Change of parameter on initialized stream");
         }
-        this.fastDict = dict;
-        this.dict = null;
+        loadFastDict(stream, dict);
         return this;
     }
 
@@ -106,29 +104,6 @@ public class ZstdInputStream extends FilterInputStream {
 
         if (isClosed) {
             throw new IOException("Stream closed");
-        }
-
-        // Initialize the stream - it cannot be done in the constuctor as
-        // some dictionaries are appied on constructed object
-        if (!initialized) {
-            int size = 0;
-            ZstdDictDecompress fastDict = this.fastDict;
-            if (fastDict != null) {
-                fastDict.acquireSharedLock();
-                try {
-                    size = initDStreamWithFastDict(stream, fastDict);
-                } finally {
-                    fastDict.releaseSharedLock();
-                }
-            } else if (dict != null) {
-                size = initDStreamWithDict(stream, dict, dict.length);
-            } else {
-                size = initDStream(stream);
-            }
-            if (Zstd.isError(size)) {
-                throw new IOException("Decompression error: " + Zstd.getErrorName(size));
-            }
-            initialized = true;
         }
 
         // guard agains buffer overflows
