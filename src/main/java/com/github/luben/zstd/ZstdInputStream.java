@@ -30,6 +30,7 @@ public class ZstdInputStream extends FilterInputStream {
     private static final int srcBuffSize = (int) recommendedDInSize();
 
     private boolean isContinuous = false;
+    private boolean initialized = false;
     private boolean frameFinished = true;
     private boolean isClosed = false;
     private byte[] dict = null;
@@ -107,7 +108,9 @@ public class ZstdInputStream extends FilterInputStream {
             throw new IOException("Stream closed");
         }
 
-        if (frameFinished) {
+        // Initialize the stream - it cannot be done in the constuctor as
+        // some dictionaries are appied on constructed object
+        if (!initialized) {
             int size = 0;
             ZstdDictDecompress fastDict = this.fastDict;
             if (fastDict != null) {
@@ -125,6 +128,7 @@ public class ZstdInputStream extends FilterInputStream {
             if (Zstd.isError(size)) {
                 throw new IOException("Decompression error: " + Zstd.getErrorName(size));
             }
+            initialized = true;
         }
 
         // guard agains buffer overflows
