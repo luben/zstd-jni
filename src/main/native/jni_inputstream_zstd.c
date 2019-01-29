@@ -93,37 +93,3 @@ E2: (*env)->ReleasePrimitiveArrayCritical(env, dst, dst_buff, 0);
     (*env)->SetLongField(env, obj, src_pos_id, input.pos);
 E1: return (jint) size;
 }
-
-/*
- * Class:     com_github_luben_zstd_ZstdInputStream
- * Method:    loadDict
- * Signature: (J[BI)I
- */
-JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdInputStream_loadDict
-  (JNIEnv *env, jclass obj, jlong stream, jbyteArray dict, jint dict_size) {
-    size_t size = (size_t)(0-ZSTD_error_memory_allocation);
-    jclass clazz = (*env)->GetObjectClass(env, obj);
-    void *dict_buff = (*env)->GetPrimitiveArrayCritical(env, dict, NULL);
-    if (dict_buff == NULL) goto E1;
-
-    size = ZSTD_DCtx_loadDictionary((ZSTD_DStream *)(intptr_t) stream, dict_buff, dict_size);
-E1:
-    (*env)->ReleasePrimitiveArrayCritical(env, dict, dict_buff, JNI_ABORT);
-    return size;
-}
-
-/*
- * Class:     com_github_luben_zstd_ZstdInputStream
- * Method:    loadFastDict
- * Signature: (J)I
- */
-JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdInputStream_loadFastDict
-  (JNIEnv *env, jclass obj, jlong stream, jobject dict) {
-    jclass clazz = (*env)->GetObjectClass(env, obj);
-    jclass dict_clazz = (*env)->GetObjectClass(env, dict);
-    jfieldID decompress_dict = (*env)->GetFieldID(env, dict_clazz, "nativePtr", "J");
-    ZSTD_DDict* ddict = (ZSTD_DDict*)(*env)->GetLongField(env, dict, decompress_dict);
-    if (ddict == NULL) return ZSTD_error_dictionary_wrong;
-    return ZSTD_DCtx_refDDict((ZSTD_DStream *)(intptr_t) stream, ddict);
-}
-

@@ -32,8 +32,6 @@ public class ZstdInputStream extends FilterInputStream {
     private boolean isContinuous = false;
     private boolean frameFinished = true;
     private boolean isClosed = false;
-    private byte[] dict = null;
-    private ZstdDictDecompress fastDict = null;
 
     /* JNI methods */
     private static native long recommendedDInSize();
@@ -41,8 +39,6 @@ public class ZstdInputStream extends FilterInputStream {
     private static native long createDStream();
     private static native int  freeDStream(long stream);
     private native int  initDStream(long stream);
-    private native int  loadDict(long stream, byte[] dict, int dict_size);
-    private native int  loadFastDict(long stream, ZstdDictDecompress dict);
     private native int  decompressStream(long stream, byte[] dst, int dst_size, byte[] src, int src_size);
 
     // The main constuctor / legacy version dispatcher
@@ -53,8 +49,11 @@ public class ZstdInputStream extends FilterInputStream {
         // allocate input buffer with max frame header size
         // no need to synchronize as these a finals
         this.src = new byte[srcBuffSize];
-        this.stream = createDStream();
-        initDStream(stream);
+        // memory barrier
+        synchronized(this) {
+            this.stream = createDStream();
+            initDStream(stream);
+        }
     }
 
     /**
@@ -73,18 +72,24 @@ public class ZstdInputStream extends FilterInputStream {
     }
 
     public synchronized ZstdInputStream setDict(byte[] dict) throws IOException {
-        if (!frameFinished) {
-            throw new IOException("Change of parameter on initialized stream");
+        int size = Zstd.loadDictDecompress(stream, dict, dict.length);
+        if (Zstd.isError(size)) {
+            throw new IOException("Decompression error: " + Zstd.getErrorName(size));
         }
-        loadDict(stream, dict, dict.length);
         return this;
     }
 
     public synchronized ZstdInputStream setDict(ZstdDictDecompress dict) throws IOException {
-        if (!frameFinished) {
-            throw new IOException("Change of parameter on initialized stream");
+
+        dict.acquireSharedLock();
+        try {
+            int size = Zstd.loadFastDictDecompress(stream, dict);
+            if (Zstd.isError(size)) {
+                throw new IOException("Decompression error: " + Zstd.getErrorName(size));
+            }
+        } finally {
+            dict.releaseSharedLock();
         }
-        loadFastDict(stream, dict);
         return this;
     }
 

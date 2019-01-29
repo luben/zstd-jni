@@ -345,6 +345,40 @@ JNIEXPORT jstring JNICALL Java_com_github_luben_zstd_Zstd_getErrorName
 
 /*
  * Class:     com_github_luben_zstd_Zstd
+ * Method:    loadDictDecompress
+ * Signature: (J[BI)I
+ */
+JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_loadDictDecompress
+  (JNIEnv *env, jclass obj, jlong stream, jbyteArray dict, jint dict_size) {
+    size_t size = (size_t)(0-ZSTD_error_memory_allocation);
+    jclass clazz = (*env)->GetObjectClass(env, obj);
+    void *dict_buff = (*env)->GetPrimitiveArrayCritical(env, dict, NULL);
+    if (dict_buff == NULL) goto E1;
+
+    size = ZSTD_DCtx_loadDictionary((ZSTD_DStream *)(intptr_t) stream, dict_buff, dict_size);
+E1:
+    (*env)->ReleasePrimitiveArrayCritical(env, dict, dict_buff, JNI_ABORT);
+    return size;
+}
+
+/*
+ * Class:     com_github_luben_zstd_Zstd
+ * Method:    loadFastDictDecompress
+ * Signature: (J)I
+ */
+JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_loadFastDictDecompress
+  (JNIEnv *env, jclass obj, jlong stream, jobject dict) {
+    jclass clazz = (*env)->GetObjectClass(env, obj);
+    jclass dict_clazz = (*env)->GetObjectClass(env, dict);
+    jfieldID decompress_dict = (*env)->GetFieldID(env, dict_clazz, "nativePtr", "J");
+    ZSTD_DDict* ddict = (ZSTD_DDict*)(*env)->GetLongField(env, dict, decompress_dict);
+    if (ddict == NULL) return ZSTD_error_dictionary_wrong;
+    return ZSTD_DCtx_refDDict((ZSTD_DStream *)(intptr_t) stream, ddict);
+}
+
+
+/*
+ * Class:     com_github_luben_zstd_Zstd
  * Methods:   header constants access
  * Signature: ()I
  */

@@ -328,6 +328,11 @@ public class Zstd {
 
     private static native long decompressDirectByteBufferFastDict0(ByteBuffer dst, int dstOffset, int dstSize, ByteBuffer src, int srcOffset, int srcSize, ZstdDictDecompress dict);
 
+
+    /* Advance API */
+    public static native int loadDictDecompress(long stream, byte[] dict, int dict_size);
+    public static native int loadFastDictDecompress(long stream, ZstdDictDecompress dict);
+
     /* Utility methods */
 
     /**
