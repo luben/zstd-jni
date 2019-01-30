@@ -99,14 +99,10 @@ public class ZstdOutputStream extends FilterOutputStream {
         if (frameClosed) {
             // open the next frame
             int size = 0;
-            ZstdDictCompress fastDict = this.fastDict;
             if (fastDict != null) {
                 fastDict.acquireSharedLock();
-                try {
-                    size = initCStreamWithFastDict(stream, fastDict, useChecksum ? 1 : 0);
-                } finally {
-                    fastDict.releaseSharedLock();
-                }
+                size = initCStreamWithFastDict(stream, fastDict, useChecksum ? 1 : 0);
+                fastDict.releaseSharedLock();
             } else if (dict != null) {
                 size = initCStreamWithDict(stream, dict, dict.length, level, useChecksum ? 1 : 0);
             } else {

@@ -37,14 +37,14 @@ class ZstdDictSpec extends FlatSpec {
        level <- levels
   } {
 
-    "Zstd" should s"should round-trip compression/decompression with dict at level $level with legacy $legacy" in {
+    "Zstd" should s"round-trip compression/decompression with dict at level $level with legacy $legacy" in {
       val compressed = Zstd.compressUsingDict(input, dict, level)
       val decompressed = Zstd.decompress(compressed, dict, input.length)
       assert(Zstd.getDictIdFromFrame(compressed) == Zstd.getDictIdFromDict(dict))
       assert(input.toSeq == decompressed.toSeq)
     }
 
-    it should s"should round-trip compression/decompression ByteBuffers with dict at level $level with legacy $legacy" in {
+    it should s"round-trip compression/decompression ByteBuffers with dict at level $level with legacy $legacy" in {
       val size = input.length
       val inBuf = ByteBuffer.allocateDirect(size)
       inBuf.put(input)
@@ -60,7 +60,7 @@ class ZstdDictSpec extends FlatSpec {
       assert(input.toSeq == out.toSeq)
     }
 
-    it should s"should round-trip compression/decompression with fast dict at level $level with legacy $legacy" in {
+    it should s"round-trip compression/decompression with fast dict at level $level with legacy $legacy" in {
       val size = input.length
       val cdict = new ZstdDictCompress(dict, level)
       val compressed = Zstd.compress(input, cdict)
@@ -72,7 +72,7 @@ class ZstdDictSpec extends FlatSpec {
       assert(input.toSeq == decompressed.toSeq)
     }
 
-    it should s"should round-trip compression/decompression ByteBuffers with fast dict at level $level with legacy $legacy" in {
+    it should s"round-trip compression/decompression ByteBuffers with fast dict at level $level with legacy $legacy" in {
       val size = input.length
       val inBuf = ByteBuffer.allocateDirect(size)
       inBuf.put(input)
@@ -93,7 +93,7 @@ class ZstdDictSpec extends FlatSpec {
       assert(input.toSeq == out.toSeq)
     }
 
-    it should s"should round-trip compression/decompression with byte[]/fast dict at level $level with legacy $legacy" in {
+    it should s"round-trip compression/decompression with byte[]/fast dict at level $level with legacy $legacy" in {
       val size = input.length
       val compressed = Zstd.compressUsingDict(input, dict, level)
       val ddict = new ZstdDictDecompress(dict)
@@ -103,7 +103,7 @@ class ZstdDictSpec extends FlatSpec {
       assert(input.toSeq == decompressed.toSeq)
     }
 
-    it should s"should round-trip compression/decompression with fast/byte[] dict at level $level with legacy $legacy" in {
+    it should s"round-trip compression/decompression with fast/byte[] dict at level $level with legacy $legacy" in {
       val size = input.length
       val cdict = new ZstdDictCompress(dict, 0, dict.size, level)
       val compressed = Zstd.compress(input, cdict)
@@ -182,7 +182,7 @@ class ZstdDictSpec extends FlatSpec {
       assert(input.toSeq == decompressed.toSeq)
     }
 
-    it should s"should round-trip streaming compression/decompression with byte[] dict with legacy $legacy " in {
+    it should s"round-trip streaming compression/decompression with byte[] dict with legacy $legacy " in {
       val size  = input.length
       val os    = new ByteArrayOutputStream(Zstd.compressBound(size.toLong).toInt)
       val zos   = new ZstdOutputStream(os, 1)
@@ -214,7 +214,7 @@ class ZstdDictSpec extends FlatSpec {
       assert(input.toSeq == output.toSeq)
     }
 
-    it should s"should round-trip streaming compression/decompression with fast dict with legacy $legacy " in {
+    it should s"round-trip streaming compression/decompression with fast dict with legacy $legacy " in {
       val size  = input.length
       val cdict = new ZstdDictCompress(dict, 0, dict.size, 1)
       val os    = new ByteArrayOutputStream(Zstd.compressBound(size.toLong).toInt)
@@ -248,7 +248,7 @@ class ZstdDictSpec extends FlatSpec {
       assert(input.toSeq == output.toSeq)
     }
 
-    it should s"should round-trip streaming ByteBuffer compression/decompression with byte[] dict with legacy $legacy" in {
+    it should s"round-trip streaming ByteBuffer compression/decompression with byte[] dict with legacy $legacy" in {
       val size  = input.length
       val os    = ByteBuffer.allocateDirect(Zstd.compressBound(size.toLong).toInt)
       // compress
@@ -282,7 +282,7 @@ class ZstdDictSpec extends FlatSpec {
       assert(input.toSeq == output.toSeq)
     }
 
-    it should s"should round-trip streaming ByteBuffer compression/decompression with fast dict with legacy $legacy" in {
+    it should s"round-trip streaming ByteBuffer compression/decompression with fast dict with legacy $legacy" in {
       val cdict = new ZstdDictCompress(dict, 0, dict.size, 1)
       val size  = input.length
       val os    = ByteBuffer.allocateDirect(Zstd.compressBound(size.toLong).toInt)
