@@ -355,7 +355,7 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_loadDictDecompress
     void *dict_buff = (*env)->GetPrimitiveArrayCritical(env, dict, NULL);
     if (dict_buff == NULL) goto E1;
 
-    size = ZSTD_DCtx_loadDictionary((ZSTD_DStream *)(intptr_t) stream, dict_buff, dict_size);
+    size = ZSTD_DCtx_loadDictionary((ZSTD_DCtx *)(intptr_t) stream, dict_buff, dict_size);
 E1:
     (*env)->ReleasePrimitiveArrayCritical(env, dict, dict_buff, JNI_ABORT);
     return size;
@@ -373,9 +373,42 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_loadFastDictDecompress
     jfieldID decompress_dict = (*env)->GetFieldID(env, dict_clazz, "nativePtr", "J");
     ZSTD_DDict* ddict = (ZSTD_DDict*)(*env)->GetLongField(env, dict, decompress_dict);
     if (ddict == NULL) return ZSTD_error_dictionary_wrong;
-    return ZSTD_DCtx_refDDict((ZSTD_DStream *)(intptr_t) stream, ddict);
+    return ZSTD_DCtx_refDDict((ZSTD_DCtx *)(intptr_t) stream, ddict);
 }
 
+
+/*
+ * Class:     com_github_luben_zstd_Zstd
+ * Method:    loadDictCompress
+ * Signature: (J[BI)I
+ */
+JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_loadDictCompress
+  (JNIEnv *env, jclass obj, jlong stream, jbyteArray dict, jint dict_size) {
+    size_t size = (size_t)(0-ZSTD_error_memory_allocation);
+    jclass clazz = (*env)->GetObjectClass(env, obj);
+    void *dict_buff = (*env)->GetPrimitiveArrayCritical(env, dict, NULL);
+    if (dict_buff == NULL) goto E1;
+
+    size = ZSTD_CCtx_loadDictionary((ZSTD_CCtx *)(intptr_t) stream, dict_buff, dict_size);
+E1:
+    (*env)->ReleasePrimitiveArrayCritical(env, dict, dict_buff, JNI_ABORT);
+    return size;
+}
+
+/*
+ * Class:     com_github_luben_zstd_Zstd
+ * Method:    loadFastDictCompress
+ * Signature: (J)I
+ */
+JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_loadFastDictCompress
+  (JNIEnv *env, jclass obj, jlong stream, jobject dict) {
+    jclass clazz = (*env)->GetObjectClass(env, obj);
+    jclass dict_clazz = (*env)->GetObjectClass(env, dict);
+    jfieldID compress_dict = (*env)->GetFieldID(env, dict_clazz, "nativePtr", "J");
+    ZSTD_CDict* cdict = (ZSTD_CDict*)(*env)->GetLongField(env, dict, compress_dict);
+    if (cdict == NULL) return ZSTD_error_dictionary_wrong;
+    return ZSTD_CCtx_refCDict((ZSTD_CCtx *)(intptr_t) stream, cdict);
+}
 
 /*
  * Class:     com_github_luben_zstd_Zstd

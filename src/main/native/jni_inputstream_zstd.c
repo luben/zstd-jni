@@ -45,7 +45,7 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdInputStream_createDStream
  */
 JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdInputStream_freeDStream
   (JNIEnv *env, jclass obj, jlong stream) {
-    return ZSTD_freeDStream((ZSTD_DStream *)(intptr_t) stream);
+    return ZSTD_freeDCtx((ZSTD_DCtx *)(intptr_t) stream);
 }
 
 /*
@@ -59,7 +59,7 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdInputStream_initDStream
     // Initialize the fields ids only once - they can't change
     src_pos_id = (*env)->GetFieldID(env, clazz, "srcPos", "J");
     dst_pos_id = (*env)->GetFieldID(env, clazz, "dstPos", "J");
-    return ZSTD_initDStream((ZSTD_DStream *)(intptr_t) stream);
+    return ZSTD_initDStream((ZSTD_DCtx *)(intptr_t) stream);
 }
 
 /*
@@ -85,7 +85,7 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdInputStream_decompressStre
     ZSTD_outBuffer output = { dst_buff, dst_size, dst_pos };
     ZSTD_inBuffer input = { src_buff, src_size, src_pos };
 
-    size = ZSTD_decompressStream((ZSTD_DStream *)(intptr_t) stream, &output, &input);
+    size = ZSTD_decompressStream((ZSTD_DCtx *)(intptr_t) stream, &output, &input);
 
     (*env)->ReleasePrimitiveArrayCritical(env, src, src_buff, JNI_ABORT);
 E2: (*env)->ReleasePrimitiveArrayCritical(env, dst, dst_buff, 0);
