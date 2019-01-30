@@ -382,6 +382,7 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_loadFastDictDecompress
  * Method:    loadDictCompress
  * Signature: (J[BI)I
  */
+/*
 JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_loadDictCompress
   (JNIEnv *env, jclass obj, jlong stream, jbyteArray dict, jint dict_size) {
     size_t size = (size_t)(0-ZSTD_error_memory_allocation);
@@ -394,12 +395,14 @@ E1:
     (*env)->ReleasePrimitiveArrayCritical(env, dict, dict_buff, JNI_ABORT);
     return size;
 }
+*/
 
 /*
  * Class:     com_github_luben_zstd_Zstd
  * Method:    loadFastDictCompress
  * Signature: (J)I
  */
+/*
 JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_loadFastDictCompress
   (JNIEnv *env, jclass obj, jlong stream, jobject dict) {
     jclass clazz = (*env)->GetObjectClass(env, obj);
@@ -409,6 +412,7 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_loadFastDictCompress
     if (cdict == NULL) return ZSTD_error_dictionary_wrong;
     return ZSTD_CCtx_refCDict((ZSTD_CCtx *)(intptr_t) stream, cdict);
 }
+*/
 
 /*
  * Class:     com_github_luben_zstd_Zstd

@@ -332,8 +332,10 @@ public class Zstd {
     /* Advance API */
     public static native int loadDictDecompress(long stream, byte[] dict, int dict_size);
     public static native int loadFastDictDecompress(long stream, ZstdDictDecompress dict);
+    /*
     public static native int loadDictCompress(long stream, byte[] dict, int dict_size);
     public static native int loadFastDictCompress(long stream, ZstdDictCompress dict);
+    */
 
     /* Utility methods */
 
