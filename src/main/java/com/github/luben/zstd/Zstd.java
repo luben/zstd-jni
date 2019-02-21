@@ -20,10 +20,49 @@ public class Zstd {
      * @param dst the destination buffer
      * @param src the source buffer
      * @param level compression level
+     * @param checksumFlag flag to enable or disable checksum
      * @return  the number of bytes written into buffer 'dst' or an error code if
      *          it fails (which can be tested using ZSTD_isError())
      */
-    public static native long compress(byte[] dst, byte[] src, int level);
+    public static native long compress(byte[] dst, byte[] src, int level, boolean checksumFlag);
+
+    /**
+     * Compresses buffer 'src' into buffer 'dst'.
+     *
+     * Destination buffer should be sized to handle worst cases situations (input
+     * data not compressible). Worst case size evaluation is provided by function
+     * ZSTD_compressBound().
+     *
+     * @param dst the destination buffer
+     * @param src the source buffer
+     * @param level compression level
+     * @param checksumFlag flag to enable or disable checksum
+     * @return  the number of bytes written into buffer 'dst' or an error code if
+     *          it fails (which can be tested using ZSTD_isError())
+     */
+    public static long compress(byte[] dst, byte[] src, int level) {
+        return compress(dst, src, level, false);
+    }
+
+    /**
+     * Compresses buffer 'src' into buffer 'dst'.
+     *
+     * Destination buffer should be sized to handle worst cases situations (input
+     * data not compressible). Worst case size evaluation is provided by function
+     * ZSTD_compressBound().
+     *
+     * @param dst the destination buffer
+     * @param dstOffset offset from the start of the destination buffer
+     * @param dstSize available space in the destination buffer after the offset
+     * @param src the source buffer
+     * @param srcOffset offset from the start of the source buffer
+     * @param srcSize available data in the source buffer after the offset
+     * @param level compression level
+     * @param checksumFlag flag to enable or disable checksum
+     * @return  the number of bytes written into buffer 'dst' or an error code if
+     *          it fails (which can be tested using ZSTD_isError())
+     */
+    public static native long compressByteArray(byte[] dst, int dstOffset, int dstSize, byte[] src, int srcOffset, int srcSize, int level, boolean checksumFlag);
 
     /**
      * Compresses buffer 'src' into buffer 'dst'.
@@ -42,7 +81,29 @@ public class Zstd {
      * @return  the number of bytes written into buffer 'dst' or an error code if
      *          it fails (which can be tested using ZSTD_isError())
      */
-    public static native long compressByteArray(byte[] dst, int dstOffset, int dstSize, byte[] src, int srcOffset, int srcSize, int level);
+    public static long compressByteArray(byte[] dst, int dstOffset, int dstSize, byte[] src, int srcOffset, int srcSize, int level) {
+        return compressByteArray(dst, dstOffset, dstSize, src, srcOffset, srcSize, level, false);
+    }
+
+    /**
+     * Compresses direct buffer 'src' into direct buffer 'dst'.
+     *
+     * Destination buffer should be sized to handle worst cases situations (input
+     * data not compressible). Worst case size evaluation is provided by function
+     * ZSTD_compressBound().
+     *
+     * @param dst the destination buffer
+     * @param dstOffset offset from the start of the destination buffer
+     * @param dstSize available space in the destination buffer after the offset
+     * @param src the source buffer
+     * @param srcOffset offset from the start of the source buffer
+     * @param srcSize available data in the source buffer after the offset
+     * @param level compression level
+     * @param checksumFlag flag to enable or disable checksum
+     * @return  the number of bytes written into buffer 'dst' or an error code if
+     *          it fails (which can be tested using ZSTD_isError())
+     */
+    public static native long compressDirectByteBuffer(ByteBuffer dst, int dstOffset, int dstSize, ByteBuffer src, int srcOffset, int srcSize, int level, boolean checksumFlag);
 
     /**
      * Compresses direct buffer 'src' into direct buffer 'dst'.
@@ -61,7 +122,28 @@ public class Zstd {
      * @return  the number of bytes written into buffer 'dst' or an error code if
      *          it fails (which can be tested using ZSTD_isError())
      */
-    public static native long compressDirectByteBuffer  (ByteBuffer dst, int dstOffset, int dstSize, ByteBuffer src, int srcOffset, int srcSize, int level);
+    public static long compressDirectByteBuffer(ByteBuffer dst, int dstOffset, int dstSize, ByteBuffer src, int srcOffset, int srcSize, int level) {
+        return compressDirectByteBuffer(dst, dstOffset, dstSize, src, srcOffset, srcSize, level, false);
+    }
+
+
+    /**
+     * Compresses buffer 'src' into direct buffer 'dst'.
+     *
+     * Destination buffer should be sized to handle worst cases situations (input
+     * data not compressible). Worst case size evaluation is provided by function
+     * ZSTD_compressBound().
+     *
+     * @param dst pointer to the destination buffer
+     * @param dstSize available space in the destination buffer
+     * @param src pointer to the source buffer
+     * @param srcSize available data in the source buffer
+     * @param level compression level
+     * @param checksumFlag flag to enable or disable checksum
+     * @return  the number of bytes written into buffer 'dst' or an error code if
+     *          it fails (which can be tested using ZSTD_isError())
+     */
+    public static native long compressUnsafe  (long dst, long dstSize,  long src, long srcSize, int level, boolean checksumFlag);
 
     /**
      * Compresses buffer 'src' into direct buffer 'dst'.
@@ -78,7 +160,9 @@ public class Zstd {
      * @return  the number of bytes written into buffer 'dst' or an error code if
      *          it fails (which can be tested using ZSTD_isError())
      */
-    public static native long compressUnsafe  (long dst, long dstSize,  long src, long srcSize, int level);
+    public static long compressUnsafe  (long dst, long dstSize,  long src, long srcSize, int level) {
+        return compressUnsafe(dst, dstSize, src, srcSize, level, false);
+    }
 
    /**
      * Compresses buffer 'src' into buffer 'dst' with dictionary.
@@ -541,7 +625,7 @@ public class Zstd {
      * @param level compression level
      * @return the size of the compressed data
      */
-    public static int compress(ByteBuffer dstBuf, ByteBuffer srcBuf, int level) {
+    public static int compress(ByteBuffer dstBuf, ByteBuffer srcBuf, int level, boolean checksumFlag) {
         if (!srcBuf.isDirect()) {
             throw new IllegalArgumentException("srcBuf must be a direct buffer");
         }
@@ -556,13 +640,18 @@ public class Zstd {
                 srcBuf,                              // read data to compress from srcBuf
                 srcBuf.position(),                   // start reading at position()
                 srcBuf.limit() - srcBuf.position(),  // read limit() - position() bytes
-                level);                              // use this compression level
+                level,                               // use this compression level
+                checksumFlag);                       // enable or disable checksum based on this flag
         if (isError(size)) {
             throw new RuntimeException(getErrorName(size));
         }
         srcBuf.position(srcBuf.limit());
         dstBuf.position(dstBuf.position() + (int) size);
         return (int) size;
+    }
+
+    public static int compress(ByteBuffer dstBuf, ByteBuffer srcBuf, int level) {
+        return compress(dstBuf, srcBuf, level, false);
     }
 
     /**

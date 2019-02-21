@@ -614,6 +614,7 @@ static size_t ZSTD_decompressFrame(ZSTD_DCtx* dctx,
     }   }
     if (dctx->fParams.checksumFlag) { /* Frame content checksum verification */
         U32 const checkCalc = (U32)XXH64_digest(&dctx->xxhState);
+        DEBUGLOG(4, "ZSTD_decompressFrame computed checksum: %08X", checkCalc);
         U32 checkRead;
         if (remainingSrcSize<4) return ERROR(checksum_wrong);
         checkRead = MEM_readLE32(ip);
