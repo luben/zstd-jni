@@ -2,13 +2,34 @@
 #include <zstd_internal.h>
 #include <zstd_errors.h>
 
+
+/*
+ * Private shim for JNI <-> ZSTD
+ */
+static size_t JNI_ZSTD_compress(void* dst, size_t dstCapacity,
+                          const void* src, size_t srcSize,
+                                int compressionLevel,
+                                jboolean checksumFlag) {
+
+    ZSTD_CCtx* const cctx = ZSTD_createCCtx();
+
+    ZSTD_CCtx_setParameter(cctx, ZSTD_c_compressionLevel, compressionLevel);
+    ZSTD_CCtx_setParameter(cctx, ZSTD_c_checksumFlag, (checksumFlag == JNI_TRUE));
+
+    size_t const size = ZSTD_compress2(cctx, dst, dstCapacity, src, srcSize);
+
+    ZSTD_freeCCtx(cctx);
+    return size;
+}
+
+
 /*
  * Class:     com_github_luben_zstd_Zstd
  * Method:    compress
  * Signature: ([B[BI)J
  */
 JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_compress
-  (JNIEnv *env, jclass obj, jbyteArray dst, jbyteArray src, jint level) {
+  (JNIEnv *env, jclass obj, jbyteArray dst, jbyteArray src, jint level, jboolean checksumFlag) {
     size_t size = (size_t)(0-ZSTD_error_memory_allocation);
     jsize dst_size = (*env)->GetArrayLength(env, dst);
     jsize src_size = (*env)->GetArrayLength(env, src);
@@ -16,7 +37,9 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_compress
     if (dst_buff == NULL) goto E1;
     void *src_buff = (*env)->GetPrimitiveArrayCritical(env, src, NULL);
     if (src_buff == NULL) goto E2;
-    size = ZSTD_compress(dst_buff, (size_t) dst_size, src_buff, (size_t) src_size, (int) level);
+
+    size = JNI_ZSTD_compress(dst_buff, (size_t) dst_size, src_buff, (size_t) src_size, (int) level, checksumFlag);
+
     (*env)->ReleasePrimitiveArrayCritical(env, src, src_buff, JNI_ABORT);
 E2: (*env)->ReleasePrimitiveArrayCritical(env, dst, dst_buff, 0);
 E1: return size;
@@ -28,7 +51,7 @@ E1: return size;
  * Signature: ([B[IIBIII)J
  */
 JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_compressByteArray
-  (JNIEnv *env, jclass obj, jbyteArray dst, jint dst_offset, jint dst_size, jbyteArray src, jint src_offset, jint src_size, jint level) {
+  (JNIEnv *env, jclass obj, jbyteArray dst, jint dst_offset, jint dst_size, jbyteArray src, jint src_offset, jint src_size, jint level, jboolean checksumFlag) {
     size_t size = (size_t)(0-ZSTD_error_memory_allocation);
     if (dst_offset + dst_size > (*env)->GetArrayLength(env, dst)) return ERROR(dstSize_tooSmall);
     if (src_offset + src_size > (*env)->GetArrayLength(env, src)) return ERROR(srcSize_wrong);
@@ -36,7 +59,7 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_compressByteArray
     if (dst_buff == NULL) goto E1;
     void *src_buff = (*env)->GetPrimitiveArrayCritical(env, src, NULL);
     if (src_buff == NULL) goto E2;
-    size = ZSTD_compress(dst_buff + dst_offset, (size_t) dst_size, src_buff + src_offset, (size_t) src_size, (int) level);
+    size = JNI_ZSTD_compress(dst_buff + dst_offset, (size_t) dst_size, src_buff + src_offset, (size_t) src_size, (int) level, checksumFlag);
     (*env)->ReleasePrimitiveArrayCritical(env, src, src_buff, JNI_ABORT);
 E2: (*env)->ReleasePrimitiveArrayCritical(env, dst, dst_buff, 0);
 E1: return size;
@@ -48,7 +71,7 @@ E1: return size;
  * Signature: (Ljava/nio/ByteBuffer;IILjava/nio/ByteBuffer;III)J
  */
 JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_compressDirectByteBuffer
-  (JNIEnv *env, jclass obj, jobject dst_buf, jint dst_offset, jint dst_size, jobject src_buf, jint src_offset, jint src_size, jint level) {
+  (JNIEnv *env, jclass obj, jobject dst_buf, jint dst_offset, jint dst_size, jobject src_buf, jint src_offset, jint src_size, jint level, jboolean checksumFlag) {
     size_t size = (size_t)ERROR(memory_allocation);
     jsize dst_cap = (*env)->GetDirectBufferCapacity(env, dst_buf);
     if (dst_offset + dst_size > dst_cap) return ERROR(dstSize_tooSmall);
@@ -59,7 +82,7 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_compressDirectByteBuffer
     char *src_buf_ptr = (char*)(*env)->GetDirectBufferAddress(env, src_buf);
     if (src_buf_ptr == NULL) return size;
 
-    size = ZSTD_compress(dst_buf_ptr + dst_offset, (size_t) dst_size, src_buf_ptr + src_offset, (size_t) src_size, (int) level);
+    size = JNI_ZSTD_compress(dst_buf_ptr + dst_offset, (size_t) dst_size, src_buf_ptr + src_offset, (size_t) src_size, (int) level, checksumFlag);
 
     return size;
 }
@@ -70,8 +93,8 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_compressDirectByteBuffer
  * Signature: (JJJJI)J
  */
 JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_compressUnsafe
-  (JNIEnv *env, jclass obj, jlong dst_buf_ptr, jlong dst_size, jlong src_buf_ptr, jlong src_size, jint level) {
-    return ZSTD_compress((void *) dst_buf_ptr, (size_t) dst_size, (void *) src_buf_ptr, (size_t) src_size, (int) level);
+  (JNIEnv *env, jclass obj, jlong dst_buf_ptr, jlong dst_size, jlong src_buf_ptr, jlong src_size, jint level, jboolean checksumFlag) {
+    return JNI_ZSTD_compress((void *) dst_buf_ptr, (size_t) dst_size, (void *) src_buf_ptr, (size_t) src_size, (int) level, checksumFlag);
 }
 
 
