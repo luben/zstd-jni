@@ -59,7 +59,7 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdInputStream_initDStream
     // Initialize the fields ids only once - they can't change
     src_pos_id = (*env)->GetFieldID(env, clazz, "srcPos", "J");
     dst_pos_id = (*env)->GetFieldID(env, clazz, "dstPos", "J");
-    return ZSTD_initDStream((ZSTD_DCtx *)(intptr_t) stream);
+    return 0;
 }
 
 /*

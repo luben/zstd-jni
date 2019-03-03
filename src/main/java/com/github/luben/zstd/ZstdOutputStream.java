@@ -22,55 +22,95 @@ public class ZstdOutputStream extends FilterOutputStream {
     private final byte[] dst;
     private boolean isClosed = false;
     private static final int dstSize = (int) recommendedCOutSize();
-    private final boolean closeFrameOnFlush;
-    private boolean useChecksum;
+    private boolean closeFrameOnFlush;
     private boolean frameClosed = true;
-    private final int level;
-    private byte[] dict = null;
-    private ZstdDictCompress fastDict = null;
 
     /* JNI methods */
     private static native long recommendedCOutSize();
     private static native long createCStream();
     private static native int  freeCStream(long ctx);
-    private native int  initCStream(long ctx, int level, int checksum);
-    private native int  initCStreamWithDict(long ctx, byte[] dict, int dict_size, int level, int checksum);
-    private native int  initCStreamWithFastDict(long ctx, ZstdDictCompress dict, int checksum);
-    private native int  compressStream(long ctx, byte[] dst, int dst_size, byte[] src, int src_size);
-    private native int  flushStream(long ctx, byte[] dst, int dst_size);
-    private native int  endStream(long ctx, byte[] dst, int dst_size);
+    private native int resetCStream(long ctx);
+    private native int initCStream(long ctx, int level, int checksum);
+    private native int compressStream(long ctx, byte[] dst, int dst_size, byte[] src, int src_size);
+    private native int flushStream(long ctx, byte[] dst, int dst_size);
+    private native int endStream(long ctx, byte[] dst, int dst_size);
 
+
+    /**
+     *  @deprecated
+     *  Use ZstdOutputStream() or ZstdOutputStream(level) and set the other params with the setters
+     **/
+    public ZstdOutputStream(OutputStream outStream, int level, boolean closeFrameOnFlush, boolean useChecksums) throws IOException {
+        this(outStream);
+        this.closeFrameOnFlush = closeFrameOnFlush;
+        Zstd.setCompressionLevel(this.stream, level);
+        Zstd.setCompressionChecksums(this.stream, useChecksums);
+    }
+
+    /**
+     *  @deprecated
+     *  Use ZstdOutputStream() or ZstdOutputStream(level) and set the other params with the setters
+     **/
+    public ZstdOutputStream(OutputStream outStream, int level, boolean closeFrameOnFlush) throws IOException {
+        this(outStream);
+        this.closeFrameOnFlush = closeFrameOnFlush;
+        Zstd.setCompressionLevel(this.stream, level);
+    }
 
     /* The constuctor */
-    public ZstdOutputStream(OutputStream outStream, int level, boolean closeFrameOnFlush, boolean useChecksum) throws IOException {
-        // FilterOutputStream constructor
-        super(outStream);
-        this.closeFrameOnFlush = closeFrameOnFlush;
-        this.level = level;
-        this.useChecksum = useChecksum;
+    public ZstdOutputStream(OutputStream outStream, int level) throws IOException {
+        this(outStream);
+        this.closeFrameOnFlush = false;
+        Zstd.setCompressionLevel(this.stream, level);
+    }
 
+    /* The constuctor */
+    public ZstdOutputStream(OutputStream outStream) throws IOException {
+        super(outStream);
         // create compression context
         this.stream = createCStream();
+        this.closeFrameOnFlush = false;
         this.dst = new byte[(int) dstSize];
     }
 
-    public ZstdOutputStream(OutputStream outStream, int level, boolean closeFrameOnFlush) throws IOException {
-        this(outStream, level, closeFrameOnFlush, false);
-    }
-
-    public ZstdOutputStream(OutputStream outStream, int level) throws IOException {
-        this(outStream, level, false);
-    }
-
-    public ZstdOutputStream(OutputStream outStream) throws IOException {
-        this(outStream, 3, false);
-    }
-
-    public synchronized ZstdOutputStream setChecksum(boolean useChecksum) throws IOException {
+    public synchronized ZstdOutputStream setChecksum(boolean useChecksums) throws IOException {
         if (!frameClosed) {
             throw new IOException("Change of parameter on initialized stream");
         }
-        this.useChecksum = useChecksum;
+        int size = Zstd.setCompressionChecksums(stream, useChecksums);
+        if (Zstd.isError(size)) {
+            throw new IOException("Compression param: " + Zstd.getErrorName(size));
+        }
+        return this;
+    }
+
+    public synchronized ZstdOutputStream setLevel(int level) throws IOException {
+        if (!frameClosed) {
+            throw new IOException("Change of parameter on initialized stream");
+        }
+        int size = Zstd.setCompressionLevel(stream, level);
+        if (Zstd.isError(size)) {
+            throw new IOException("Compression param: " + Zstd.getErrorName(size));
+        }
+        return this;
+    }
+
+    public synchronized ZstdOutputStream setWorkers(int level) throws IOException {
+        if (!frameClosed) {
+            throw new IOException("Change of parameter on initialized stream");
+        }
+        int size = Zstd.setCompressionWorkers(stream, level);
+        if (Zstd.isError(size)) {
+            throw new IOException("Compression param: " + Zstd.getErrorName(size));
+        }
+        return this;
+    }
+
+    public synchronized ZstdOutputStream setCloseFrameOnFlush(boolean closeOnFlush) throws IOException {
+        if (!frameClosed) {
+            throw new IOException("Change of parameter on initialized stream");
+        }
+        this.closeFrameOnFlush = closeOnFlush;
         return this;
     }
 
@@ -78,8 +118,10 @@ public class ZstdOutputStream extends FilterOutputStream {
         if (!frameClosed) {
             throw new IOException("Change of parameter on initialized stream");
         }
-        this.fastDict = null;
-        this.dict = dict;
+        int size = Zstd.loadDictCompress(stream, dict, dict.length);
+        if (Zstd.isError(size)) {
+            throw new IOException("Compression param: " + Zstd.getErrorName(size));
+        }
         return this;
     }
 
@@ -87,8 +129,10 @@ public class ZstdOutputStream extends FilterOutputStream {
         if (!frameClosed) {
             throw new IOException("Change of parameter on initialized stream");
         }
-        this.dict = null;
-        this.fastDict = dict;
+        int size = Zstd.loadFastDictCompress(stream, dict);
+        if (Zstd.isError(size)) {
+            throw new IOException("Compression param: " + Zstd.getErrorName(size));
+        }
         return this;
     }
 
@@ -97,17 +141,7 @@ public class ZstdOutputStream extends FilterOutputStream {
             throw new IOException("Stream closed");
         }
         if (frameClosed) {
-            // open the next frame
-            int size = 0;
-            if (fastDict != null) {
-                fastDict.acquireSharedLock();
-                size = initCStreamWithFastDict(stream, fastDict, useChecksum ? 1 : 0);
-                fastDict.releaseSharedLock();
-            } else if (dict != null) {
-                size = initCStreamWithDict(stream, dict, dict.length, level, useChecksum ? 1 : 0);
-            } else {
-                size = initCStream(stream, level, useChecksum ? 1 : 0);
-            }
+            int size = resetCStream(this.stream);
             if (Zstd.isError(size)) {
                 throw new IOException("Compression error: cannot create header: " + Zstd.getErrorName(size));
             }
