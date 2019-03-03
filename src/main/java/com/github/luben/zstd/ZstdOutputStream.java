@@ -30,7 +30,6 @@ public class ZstdOutputStream extends FilterOutputStream {
     private static native long createCStream();
     private static native int  freeCStream(long ctx);
     private native int resetCStream(long ctx);
-    private native int initCStream(long ctx, int level, int checksum);
     private native int compressStream(long ctx, byte[] dst, int dst_size, byte[] src, int src_size);
     private native int flushStream(long ctx, byte[] dst, int dst_size);
     private native int endStream(long ctx, byte[] dst, int dst_size);
