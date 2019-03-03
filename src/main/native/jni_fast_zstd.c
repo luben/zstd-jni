@@ -23,7 +23,7 @@ JNIEXPORT void JNICALL Java_com_github_luben_zstd_ZstdDictCompress_init
     ZSTD_CDict* cdict = ZSTD_createCDict(dict_buff + dict_offset, dict_size, level);
     (*env)->ReleasePrimitiveArrayCritical(env, dict, dict_buff, JNI_ABORT);
     if (NULL == cdict) return;
-    (*env)->SetLongField(env, obj, compress_dict, (jlong) cdict);
+    (*env)->SetLongField(env, obj, compress_dict, (jlong)(intptr_t) cdict);
 }
 
 /*
@@ -35,7 +35,7 @@ JNIEXPORT void JNICALL Java_com_github_luben_zstd_ZstdDictCompress_free
   (JNIEnv *env, jobject obj)
 {
     if (compress_dict == 0) return;
-    ZSTD_CDict* cdict = (ZSTD_CDict*)(*env)->GetLongField(env, obj, compress_dict);
+    ZSTD_CDict* cdict = (ZSTD_CDict*)(intptr_t)(*env)->GetLongField(env, obj, compress_dict);
     if (NULL == cdict) return;
     ZSTD_freeCDict(cdict);
 }
@@ -58,7 +58,7 @@ JNIEXPORT void JNICALL Java_com_github_luben_zstd_ZstdDictDecompress_init
 
     (*env)->ReleasePrimitiveArrayCritical(env, dict, dict_buff, JNI_ABORT);
     if (NULL == ddict) return;
-    (*env)->SetLongField(env, obj, decompress_dict, (jlong) ddict);
+    (*env)->SetLongField(env, obj, decompress_dict, (jlong)(intptr_t) ddict);
 }
 
 /*
@@ -70,7 +70,7 @@ JNIEXPORT void JNICALL Java_com_github_luben_zstd_ZstdDictDecompress_free
   (JNIEnv *env, jobject obj)
 {
     if (decompress_dict == 0) return;
-    ZSTD_DDict* ddict = (ZSTD_DDict*)(*env)->GetLongField(env, obj, decompress_dict);
+    ZSTD_DDict* ddict = (ZSTD_DDict*)(intptr_t)(*env)->GetLongField(env, obj, decompress_dict);
     if (NULL == ddict) return;
     ZSTD_freeDDict(ddict);
 }
@@ -84,7 +84,7 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_decompressFastDict0
   (JNIEnv *env, jclass obj, jbyteArray dst, jint dst_offset, jbyteArray src, jint src_offset, jint src_length, jobject dict)
 {
     if (NULL == dict) return ZSTD_error_dictionary_wrong;
-    ZSTD_DDict* ddict = (ZSTD_DDict*)(*env)->GetLongField(env, dict, decompress_dict);
+    ZSTD_DDict* ddict = (ZSTD_DDict*)(intptr_t)(*env)->GetLongField(env, dict, decompress_dict);
     if (NULL == ddict) return ZSTD_error_dictionary_wrong;
     if (NULL == dst) return ZSTD_error_dstSize_tooSmall;
     if (NULL == src) return ZSTD_error_srcSize_wrong;
@@ -118,7 +118,7 @@ E1: return size;
 JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_compressFastDict0
   (JNIEnv *env, jclass obj, jbyteArray dst, jint dst_offset, jbyteArray src, jint src_offset, jint src_length, jobject dict) {
     if (NULL == dict) return ZSTD_error_dictionary_wrong;
-    ZSTD_CDict* cdict = (ZSTD_CDict*)(*env)->GetLongField(env, dict, compress_dict);
+    ZSTD_CDict* cdict = (ZSTD_CDict*)(intptr_t)(*env)->GetLongField(env, dict, compress_dict);
     if (NULL == cdict) return ZSTD_error_dictionary_wrong;
     if (NULL == dst) return ZSTD_error_dstSize_tooSmall;
     if (NULL == src) return ZSTD_error_srcSize_wrong;
@@ -152,7 +152,7 @@ E1: return size;
 JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_compressDirectByteBufferFastDict0
   (JNIEnv *env, jclass obj, jobject dst, jint dst_offset, jint dst_size, jobject src, jint src_offset, jint src_size, jobject dict) {
     if (NULL == dict) return ZSTD_error_dictionary_wrong;
-    ZSTD_CDict* cdict = (ZSTD_CDict*)(*env)->GetLongField(env, dict, compress_dict);
+    ZSTD_CDict* cdict = (ZSTD_CDict*)(intptr_t)(*env)->GetLongField(env, dict, compress_dict);
     if (NULL == cdict) return ZSTD_error_dictionary_wrong;
     if (NULL == dst) return ZSTD_error_dstSize_tooSmall;
     if (NULL == src) return ZSTD_error_srcSize_wrong;
@@ -176,7 +176,7 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_decompressDirectByteBuff
   (JNIEnv *env, jclass obj, jobject dst, jint dst_offset, jint dst_size, jobject src, jint src_offset, jint src_size, jobject dict)
 {
     if (NULL == dict) return ZSTD_error_dictionary_wrong;
-    ZSTD_DDict* ddict = (ZSTD_DDict*)(*env)->GetLongField(env, dict, decompress_dict);
+    ZSTD_DDict* ddict = (ZSTD_DDict*)(intptr_t)(*env)->GetLongField(env, dict, decompress_dict);
     if (NULL == ddict) return ZSTD_error_dictionary_wrong;
     if (NULL == dst) return ZSTD_error_dstSize_tooSmall;
     if (NULL == src) return ZSTD_error_srcSize_wrong;
