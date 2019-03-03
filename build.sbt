@@ -257,6 +257,15 @@ packageOptions in (Darwin_x86_64, packageBin) +=
   Package.ManifestAttributes(new java.util.jar.Attributes.Name("Automatic-Module-Name") -> "com.github.luben.zstd_jni")
 addArtifact(Artifact(nameValue, "darwin_x86_64"), packageBin in Darwin_x86_64)
 
+lazy val FreeBSD_amd64 = config("freebsd_amd64").extend(Compile)
+inConfig(FreeBSD_amd64)(Defaults.compileSettings)
+mappings in (FreeBSD_amd64, packageBin) := {
+  (file("target/classes/freebsd/amd64/libzstd-jni.so"), "freebsd/amd64/libzstd-jni.so") :: classes
+}
+packageOptions in (FreeBSD_amd64, packageBin) +=
+  Package.ManifestAttributes(new java.util.jar.Attributes.Name("Automatic-Module-Name") -> "com.github.luben.zstd_jni")
+addArtifact(Artifact(nameValue, "freebsd_amd64"), packageBin in FreeBSD_amd64)
+
 val Win_x86 = config("win_x86").extend(Compile)
 inConfig(Win_x86)(Defaults.compileSettings)
 mappings in (Win_x86, packageBin) := {
