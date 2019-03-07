@@ -228,6 +228,15 @@ public class Zstd {
         }
     }
 
+    public static long compress(byte[] dst, byte[] src, ZstdDictCompress dict) {
+        dict.acquireSharedLock();
+        try {
+            return compressFastDict0(dst, 0, src, 0, src.length, dict);
+        } finally {
+            dict.releaseSharedLock();
+        }
+    }
+
     private static native long compressFastDict0(byte[] dst, int dstOffset, byte[] src, int srcOffset, int length, ZstdDictCompress dict);
 
     /**

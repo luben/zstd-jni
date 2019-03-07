@@ -72,6 +72,20 @@ class ZstdDictSpec extends FlatSpec {
       assert(input.toSeq == decompressed.toSeq)
     }
 
+    it should s"round-trip compression/decompression in place with fast dict at level $level with legacy $legacy" in {
+      val size = input.length
+      val cdict = new ZstdDictCompress(dict, level)
+      val compressed = new Array[Byte](size)
+      val compressed_size = Zstd.compress(compressed, input, cdict)
+      cdict.close
+      val ddict = new ZstdDictDecompress(dict)
+      val decompressed = new Array[Byte](size)
+      Zstd.decompressFastDict(decompressed, 0, compressed, 0, compressed_size.toInt, ddict)
+      ddict.close
+      assert(Zstd.getDictIdFromFrame(compressed) == Zstd.getDictIdFromDict(dict))
+      assert(input.toSeq == decompressed.toSeq)
+    }
+
     it should s"round-trip compression/decompression ByteBuffers with fast dict at level $level with legacy $legacy" in {
       val size = input.length
       val inBuf = ByteBuffer.allocateDirect(size)
