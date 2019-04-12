@@ -36,7 +36,6 @@ public class Zstd {
      * @param dst the destination buffer
      * @param src the source buffer
      * @param level compression level
-     * @param checksumFlag flag to enable or disable checksum
      * @return  the number of bytes written into buffer 'dst' or an error code if
      *          it fails (which can be tested using ZSTD_isError())
      */
