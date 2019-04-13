@@ -13,7 +13,7 @@ public enum Native {
     private static final String libname = "lib" + libnameShort;
     private static final String errorMsg = "Unsupported OS/arch, cannot find " +
         resourceName() + " or load " + libnameShort + " from system libraries. Please " +
-        "try building from source the jar or providing " + libname + " in you system.";
+        "try building from source the jar or providing " + libname + " in your system.";
 
     private static String osName() {
         String os = System.getProperty("os.name").toLowerCase().replace(' ', '_');
