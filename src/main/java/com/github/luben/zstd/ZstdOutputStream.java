@@ -94,11 +94,11 @@ public class ZstdOutputStream extends FilterOutputStream {
         return this;
     }
 
-    public synchronized ZstdOutputStream setWorkers(int level) throws IOException {
+    public synchronized ZstdOutputStream setWorkers(int n) throws IOException {
         if (!frameClosed) {
             throw new IOException("Change of parameter on initialized stream");
         }
-        int size = Zstd.setCompressionWorkers(stream, level);
+        int size = Zstd.setCompressionWorkers(stream, n);
         if (Zstd.isError(size)) {
             throw new IOException("Compression param: " + Zstd.getErrorName(size));
         }

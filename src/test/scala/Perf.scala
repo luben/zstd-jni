@@ -110,6 +110,45 @@ class ZstdPerfSpec extends FlatSpec  {
     assert(input.toSeq == output.toSeq)
   }
 
+  def benchStreamMT(name: String, input: Array[Byte], level: Int = 1): Unit = {
+    val cycles = 100
+    val size  = input.length
+    var compressed: Array[Byte] = null
+
+    val c_start = System.nanoTime
+    for (i <- 1 to cycles)  {
+      val os = new ByteArrayOutputStream(Zstd.compressBound(size.toLong).toInt)
+      val zos = new ZstdOutputStream(os, level)
+      zos.setWorkers(2)
+      zos.write(input)
+      zos.close()
+      if (compressed == null)
+        compressed = os.toByteArray
+    }
+    val nsc = System.nanoTime - c_start
+
+    val output= Array.fill[Byte](size)(0)
+    val d_start = System.nanoTime
+    for (i <- 1 to cycles)  {
+
+      // now decompress
+      val is    = new ByteArrayInputStream(compressed)
+      val zis   = new ZstdInputStream(is)
+      var ptr   = 0
+
+      while (ptr < size) {
+        ptr += zis.read(output, ptr, size - ptr)
+      }
+      zis.close
+
+    }
+    val nsd = System.nanoTime - d_start
+
+    report(name, compressed.size, size, cycles, nsc, nsd)
+    assert(input.toSeq == output.toSeq)
+  }
+
+
   def benchDirectBufferStream(name: String, input: Array[Byte], level: Int = 1): Unit = {
     val cycles = 100
 
@@ -166,6 +205,7 @@ class ZstdPerfSpec extends FlatSpec  {
   for (level <- List(-3, -1, 1, 3, 6, 9)) {
     it should s"be fast with streaming at level $level" in {
         benchStream(s"Streaming at $level", buff1, level)
+        benchStreamMT(s"Streaming (multi-threaded) at $level", buff1, level)
         benchDirectBufferStream(s"Streaming at $level to direct ByteBuffers", buff1, level)
     }
   }
