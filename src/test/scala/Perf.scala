@@ -74,7 +74,7 @@ class ZstdPerfSpec extends FlatSpec  {
   }
 
   def benchStream(name: String, input: Array[Byte], level: Int = 1): Unit = {
-    val cycles = 100
+    val cycles = 50
     val size  = input.length
     var compressed: Array[Byte] = null
 
@@ -111,7 +111,7 @@ class ZstdPerfSpec extends FlatSpec  {
   }
 
   def benchStreamMT(name: String, input: Array[Byte], level: Int = 1): Unit = {
-    val cycles = 100
+    val cycles = 50
     val size  = input.length
     var compressed: Array[Byte] = null
 
@@ -150,7 +150,7 @@ class ZstdPerfSpec extends FlatSpec  {
 
 
   def benchDirectBufferStream(name: String, input: Array[Byte], level: Int = 1): Unit = {
-    val cycles = 100
+    val cycles = 50
 
     val compressedBuffer = ByteBuffer.allocateDirect(Zstd.compressBound(input.length.toLong).toInt);
     val inputBuffer = ByteBuffer.allocateDirect(input.length)
@@ -201,7 +201,7 @@ class ZstdPerfSpec extends FlatSpec  {
     }
   }
 
-  val buff1 = Source.fromFile("src/test/resources/xml")(Codec.ISO8859).map{_.toByte }.take(5 * 1024 * 1024).toArray
+  val buff1 = Source.fromFile("src/test/resources/xmlx2")(Codec.ISO8859).map{_.toByte }.take(10 * 1024 * 1024).toArray
   for (level <- List(-3, -1, 1, 3, 6, 9)) {
     it should s"be fast with streaming at level $level" in {
         benchStream(s"Streaming at $level", buff1, level)

@@ -175,19 +175,26 @@ public class ZstdOutputStream extends FilterOutputStream {
         if (!frameClosed) {
             if (closeFrameOnFlush) {
                 // compress the remaining output and close the frame
-                int size = endStream(stream, dst, dstSize);
-                if (Zstd.isError(size)) {
-                    throw new IOException("Compression error: " + Zstd.getErrorName(size));
-                }
+                int size;
+                do {
+                    size = endStream(stream, dst, dstSize);
+                    if (Zstd.isError(size)) {
+                        throw new IOException("Compression error: " + Zstd.getErrorName(size));
+                    }
+                    out.write(dst, 0, (int) dstPos);
+                } while (size > 0);
                 frameClosed = true;
             } else {
                 // compress the remaining input
-                int size = flushStream(stream, dst, dstSize);
-                if (Zstd.isError(size)) {
-                    throw new IOException("Compression error: " + Zstd.getErrorName(size));
-                }
+                int size;
+                do {
+                    size = flushStream(stream, dst, dstSize);
+                    if (Zstd.isError(size)) {
+                        throw new IOException("Compression error: " + Zstd.getErrorName(size));
+                    }
+                    out.write(dst, 0, (int) dstPos);
+                } while (size > 0);
             }
-            out.write(dst, 0, (int) dstPos);
             out.flush();
         }
     }
@@ -198,11 +205,14 @@ public class ZstdOutputStream extends FilterOutputStream {
         }
         if (!frameClosed) {
             // compress the remaining input and close the frame
-            int size = endStream(stream, dst, dstSize);
-            if (Zstd.isError(size)) {
-                throw new IOException("Compression error: " + Zstd.getErrorName(size));
-            }
-            out.write(dst, 0, (int) dstPos);
+            int size;
+            do {
+                size = endStream(stream, dst, dstSize);
+                if (Zstd.isError(size)) {
+                    throw new IOException("Compression error: " + Zstd.getErrorName(size));
+                }
+                out.write(dst, 0, (int) dstPos);
+            } while (size > 0);
         }
         // release the resources
         freeCStream(stream);
