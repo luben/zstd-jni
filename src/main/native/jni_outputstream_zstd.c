@@ -70,7 +70,7 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdOutputStream_compressStrea
     ZSTD_outBuffer output = { dst_buff, dst_size, 0 };
     ZSTD_inBuffer input = { src_buff, src_size, src_pos };
 
-    size = ZSTD_compressStream((ZSTD_CStream *)(intptr_t) stream, &output, &input);
+    size = ZSTD_compressStream2((ZSTD_CStream *)(intptr_t) stream, &output, &input, ZSTD_e_continue);
 
     (*env)->ReleasePrimitiveArrayCritical(env, src, src_buff, JNI_ABORT);
 E2: (*env)->ReleasePrimitiveArrayCritical(env, dst, dst_buff, 0);
@@ -88,11 +88,11 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdOutputStream_endStream
   (JNIEnv *env, jclass obj, jlong stream, jbyteArray dst, jint dst_size) {
 
     size_t size = (size_t)(0-ZSTD_error_memory_allocation);
-
     void *dst_buff = (*env)->GetPrimitiveArrayCritical(env, dst, NULL);
     if (dst_buff != NULL) {
         ZSTD_outBuffer output = { dst_buff, dst_size, 0 };
-        size = ZSTD_endStream((ZSTD_CStream *)(intptr_t) stream, &output);
+        ZSTD_inBuffer input = {NULL, 0, 0};
+        size = ZSTD_compressStream2((ZSTD_CStream *)(intptr_t) stream, &output, &input, ZSTD_e_end);
         (*env)->ReleasePrimitiveArrayCritical(env, dst, dst_buff, 0);
         (*env)->SetLongField(env, obj, dst_pos_id, output.pos);
     }
@@ -108,11 +108,11 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdOutputStream_flushStream
   (JNIEnv *env, jclass obj, jlong stream, jbyteArray dst, jint dst_size) {
 
     size_t size = (size_t)(0-ZSTD_error_memory_allocation);
-
     void *dst_buff = (*env)->GetPrimitiveArrayCritical(env, dst, NULL);
     if (dst_buff != NULL) {
         ZSTD_outBuffer output = { dst_buff, dst_size, 0 };
-        size = ZSTD_flushStream((ZSTD_CStream *)(intptr_t) stream, &output);
+        ZSTD_inBuffer input = {NULL, 0, 0};
+        size = ZSTD_compressStream2((ZSTD_CStream *)(intptr_t) stream, &output, &input, ZSTD_e_flush);
         (*env)->ReleasePrimitiveArrayCritical(env, dst, dst_buff, 0);
         (*env)->SetLongField(env, obj, dst_pos_id, output.pos);
     }
