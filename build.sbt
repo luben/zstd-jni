@@ -6,7 +6,7 @@ version := {
   scala.io.Source.fromFile("version").getLines.next
 }
 
-scalaVersion := "2.12.6"
+scalaVersion := "2.12.8"
 
 enablePlugins(JniPlugin, SbtOsgi)
 
