@@ -467,6 +467,33 @@ public class Zstd {
 
     public static native boolean isError(long code);
     public static native String  getErrorName(long code);
+    public static native long    getErrorCode(long code);
+
+
+    /* Stable constants from the zstd_errors header */
+    public static native long errNoError();
+    public static native long errGeneric();
+    public static native long errPrefixUnknown();
+    public static native long errVersionUnsupported();
+    public static native long errFrameParameterUnsupported();
+    public static native long errFrameParameterWindowTooLarge();
+    public static native long errCorruptionDetected();
+    public static native long errChecksumWrong();
+    public static native long errDictionaryCorrupted();
+    public static native long errDictionaryWrong();
+    public static native long errDictionaryCreationFailed();
+    public static native long errParameterUnsupported();
+    public static native long errParameterOutOfBound();
+    public static native long errTableLogTooLarge();
+    public static native long errMaxSymbolValueTooLarge();
+    public static native long errMaxSymbolValueTooSmall();
+    public static native long errStageWrong();
+    public static native long errInitMissing();
+    public static native long errMemoryAllocation();
+    public static native long errWorkSpaceTooSmall();
+    public static native long errDstSizeTooSmall();
+    public static native long errSrcSizeWrong();
+    public static native long errDstBufferNull();
 
     /**
      * Creates a new dictionary to tune a kind of samples
