@@ -28,26 +28,26 @@ public class ZstdDictTrainer {
         return true;
     }
 
-    public ByteBuffer trainSamplesDirect() {
+    public ByteBuffer trainSamplesDirect() throws ZstdException {
         return trainSamplesDirect(false);
     }
 
-    public synchronized ByteBuffer trainSamplesDirect(boolean legacy) {
+    public synchronized ByteBuffer trainSamplesDirect(boolean legacy) throws ZstdException {
         ByteBuffer dictBuffer = ByteBuffer.allocateDirect(dictSize);
         long l = Zstd.trainFromBufferDirect(trainingSamples, copyToIntArray(sampleSizes), dictBuffer, legacy);
         if (Zstd.isError(l)) {
             dictBuffer.limit(0);
-            throw new RuntimeException(Zstd.getErrorName(l));
+            throw new ZstdException(l);
         }
         dictBuffer.limit(Long.valueOf(l).intValue());
         return dictBuffer;
     }
 
-    public byte[] trainSamples() {
+    public byte[] trainSamples() throws ZstdException {
         return trainSamples(false);
     }
 
-    public byte[] trainSamples(boolean legacy) {
+    public byte[] trainSamples(boolean legacy) throws ZstdException {
         ByteBuffer byteBuffer = trainSamplesDirect(legacy);
         byte[] bytes = new byte[byteBuffer.remaining()];
         byteBuffer.get(bytes);

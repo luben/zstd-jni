@@ -192,11 +192,11 @@ class ZstdSpec extends FlatSpec with Checkers {
       inputBuffer.put(input)
       inputBuffer.flip()
 
-      val e = intercept[RuntimeException] {
+      val e = intercept[ZstdException] {
         Zstd.compress(compressedBuffer, inputBuffer, 3)
       }
 
-      e.getMessage().contains("Destination buffer is too small")
+      e.getErrorCode() == Zstd.errDstSizeTooSmall() && e.getMessage().contains("Destination buffer is too small")
     }
   }
 
@@ -211,57 +211,11 @@ class ZstdSpec extends FlatSpec with Checkers {
         val compressedBuffer = Zstd.compress(inputBuffer, 1)
         val decompressedBuffer = ByteBuffer.allocateDirect(size - 1)
 
-        val e = intercept[RuntimeException] {
+        val e = intercept[ZstdException] {
           Zstd.decompress(decompressedBuffer, compressedBuffer)
         }
 
-        e.getMessage().contains("Destination buffer is too small")
-      }
-    }
-  }
-
-  it should "provide the correct error code when the compression destination buffer is too small" in {
-    check{ input: Array[Byte] =>
-      val size = input.length
-      val compressedSize = Zstd.compress(input, 3).length
-      val compressedBuffer = ByteBuffer.allocateDirect(compressedSize.toInt - 1)
-      val inputBuffer = ByteBuffer.allocateDirect(size)
-      inputBuffer.put(input)
-      inputBuffer.flip()
-
-      val code = Zstd.compressDirectByteBuffer(compressedBuffer,
-        compressedBuffer.position(),
-        compressedBuffer.limit() - compressedBuffer.position(),
-        inputBuffer,
-        inputBuffer.position(),
-        inputBuffer.limit() - inputBuffer.position(),
-        3)
-
-      assert(Zstd.isError(code))
-      Zstd.getErrorCode(code) == Zstd.errDstSizeTooSmall()
-    }
-  }
-
-  it should "provide the correct error code when the decompression destination buffer is too small" in {
-    check { input: Array[Byte] =>
-      (input.length > 0) ==> {
-        val size = input.length
-        val compressedSize = Zstd.compressBound(size.toLong)
-        val inputBuffer = ByteBuffer.allocateDirect(size)
-        inputBuffer.put(input)
-        inputBuffer.flip()
-        val compressedBuffer = Zstd.compress(inputBuffer, 1)
-        val decompressedBuffer = ByteBuffer.allocateDirect(size - 1)
-
-        val code = Zstd.decompressDirectByteBuffer(decompressedBuffer,
-          decompressedBuffer.position(),
-          decompressedBuffer.limit() - decompressedBuffer.position(),
-          compressedBuffer,
-          compressedBuffer.position(),
-          compressedBuffer.limit() - compressedBuffer.position())
-
-        assert(Zstd.isError(code))
-        Zstd.getErrorCode(code) == Zstd.errDstSizeTooSmall()
+        e.getErrorCode() == Zstd.errDstSizeTooSmall() && e.getMessage().contains("Destination buffer is too small")
       }
     }
   }
