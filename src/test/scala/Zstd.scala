@@ -192,11 +192,11 @@ class ZstdSpec extends FlatSpec with Checkers {
       inputBuffer.put(input)
       inputBuffer.flip()
 
-      val e = intercept[RuntimeException] {
+      val e = intercept[ZstdException] {
         Zstd.compress(compressedBuffer, inputBuffer, 3)
       }
 
-      e.getMessage().contains("Destination buffer is too small")
+      e.getErrorCode() == Zstd.errDstSizeTooSmall() && e.getMessage().contains("Destination buffer is too small")
     }
   }
 
@@ -211,11 +211,11 @@ class ZstdSpec extends FlatSpec with Checkers {
         val compressedBuffer = Zstd.compress(inputBuffer, 1)
         val decompressedBuffer = ByteBuffer.allocateDirect(size - 1)
 
-        val e = intercept[RuntimeException] {
+        val e = intercept[ZstdException] {
           Zstd.decompress(decompressedBuffer, compressedBuffer)
         }
 
-        e.getMessage().contains("Destination buffer is too small")
+        e.getErrorCode() == Zstd.errDstSizeTooSmall() && e.getMessage().contains("Destination buffer is too small")
       }
     }
   }

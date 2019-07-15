@@ -368,6 +368,16 @@ JNIEXPORT jstring JNICALL Java_com_github_luben_zstd_Zstd_getErrorName
 
 /*
  * Class:     com_github_luben_zstd_Zstd
+ * Method:    getErrorCode
+ * Signature: (J)J
+ */
+JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_getErrorCode
+  (JNIEnv *env, jclass obj, jlong code) {
+    return ZSTD_getErrorCode((size_t) code);
+}
+
+/*
+ * Class:     com_github_luben_zstd_Zstd
  * Method:    loadDictDecompress
  * Signature: (J[BI)I
  */
@@ -531,3 +541,34 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_maxCompressionLevel
   (JNIEnv *env, jclass obj) {
     return ZSTD_maxCLevel();
 }
+
+#define JNI_ZSTD_ERROR(err, name) \
+  JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_err##name \
+    (JNIEnv *env, jclass obj) { \
+      return ZSTD_error_##err; \
+  }
+
+
+JNI_ZSTD_ERROR(no_error,                      NoError)
+JNI_ZSTD_ERROR(GENERIC,                       Generic)
+JNI_ZSTD_ERROR(prefix_unknown,                PrefixUnknown)
+JNI_ZSTD_ERROR(version_unsupported,           VersionUnsupported)
+JNI_ZSTD_ERROR(frameParameter_unsupported,    FrameParameterUnsupported)
+JNI_ZSTD_ERROR(frameParameter_windowTooLarge, FrameParameterWindowTooLarge)
+JNI_ZSTD_ERROR(corruption_detected,           CorruptionDetected)
+JNI_ZSTD_ERROR(checksum_wrong,                ChecksumWrong)
+JNI_ZSTD_ERROR(dictionary_corrupted,          DictionaryCorrupted)
+JNI_ZSTD_ERROR(dictionary_wrong,              DictionaryWrong)
+JNI_ZSTD_ERROR(dictionaryCreation_failed,     DictionaryCreationFailed)
+JNI_ZSTD_ERROR(parameter_unsupported,         ParameterUnsupported)
+JNI_ZSTD_ERROR(parameter_outOfBound,          ParameterOutOfBound)
+JNI_ZSTD_ERROR(tableLog_tooLarge,             TableLogTooLarge)
+JNI_ZSTD_ERROR(maxSymbolValue_tooLarge,       MaxSymbolValueTooLarge)
+JNI_ZSTD_ERROR(maxSymbolValue_tooSmall,       MaxSymbolValueTooSmall)
+JNI_ZSTD_ERROR(stage_wrong,                   StageWrong)
+JNI_ZSTD_ERROR(init_missing,                  InitMissing)
+JNI_ZSTD_ERROR(memory_allocation,             MemoryAllocation)
+JNI_ZSTD_ERROR(workSpace_tooSmall,            WorkSpaceTooSmall)
+JNI_ZSTD_ERROR(dstSize_tooSmall,              DstSizeTooSmall)
+JNI_ZSTD_ERROR(srcSize_wrong,                 SrcSizeWrong)
+JNI_ZSTD_ERROR(dstBuffer_null,                DstBufferNull)
