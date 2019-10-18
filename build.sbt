@@ -32,6 +32,8 @@ jniLibraryName := "zstd-jni"
 
 jniNativeClasses := Seq(
   "com.github.luben.zstd.Zstd",
+  "com.github.luben.zstd.ZstdCompressCtx",
+  "com.github.luben.zstd.ZstdDecompressCtx",
   "com.github.luben.zstd.ZstdDictCompress",
   "com.github.luben.zstd.ZstdDictDecompress",
   "com.github.luben.zstd.ZstdOutputStream",
