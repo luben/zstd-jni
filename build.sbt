@@ -6,7 +6,7 @@ version := {
   scala.io.Source.fromFile("version").getLines.next
 }
 
-scalaVersion := "2.12.6"
+scalaVersion := "2.12.8"
 
 enablePlugins(JniPlugin, SbtOsgi)
 
@@ -32,6 +32,8 @@ jniLibraryName := "zstd-jni"
 
 jniNativeClasses := Seq(
   "com.github.luben.zstd.Zstd",
+  "com.github.luben.zstd.ZstdCompressCtx",
+  "com.github.luben.zstd.ZstdDecompressCtx",
   "com.github.luben.zstd.ZstdDictCompress",
   "com.github.luben.zstd.ZstdDictDecompress",
   "com.github.luben.zstd.ZstdOutputStream",
