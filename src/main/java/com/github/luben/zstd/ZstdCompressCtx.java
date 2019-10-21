@@ -37,27 +37,39 @@ public class ZstdCompressCtx extends AutoCloseBase {
     }
 
     /**
-     * Compresses buffer 'src' into buffer 'dst' with dictionary reusing this ZstdCompressCtx.
+     * Compresses buffer 'srcBuff' into buffer 'dstBuff' with dictionary reusing this ZstdCompressCtx.
      *
      * Destination buffer should be sized to handle worst cases situations (input
      * data not compressible). Worst case size evaluation is provided by function
      * ZSTD_compressBound().
      *
-     * @param dst the destination buffer
-     * @param dstOffset the start offset of 'dst'
-     * @param dstSize the size of 'dst'
-     * @param src the source buffer
-     * @param srcOffset the start offset of 'src'
-     * @param srcSize the length of 'src'
+     * @param dstBuff the destination buffer - must be direct
+     * @param dstOffset the start offset of 'dstBuff'
+     * @param dstSize the size of 'dstBuff'
+     * @param srcBuff the source buffer - must be direct
+     * @param srcOffset the start offset of 'srcBuff'
+     * @param srcSize the length of 'srcBuff'
      * @param dict the dictionary
-     * @return  the number of bytes written into buffer 'dst' or an error code if
-     *          it fails (which can be tested using ZSTD_isError())
+     * @return  the number of bytes written into buffer 'dstBuff'.
      */
-    public long compressDirectByteBufferFastDict(ByteBuffer dst, int dstOffset, int dstSize, ByteBuffer src, int srcOffset, int srcSize, ZstdDictCompress dict) {
+    public int compressDirectByteBufferFastDict(ByteBuffer dstBuff, int dstOffset, int dstSize, ByteBuffer srcBuff, int srcOffset, int srcSize, ZstdDictCompress dict) {
+        if (!srcBuff.isDirect()) {
+            throw new IllegalArgumentException("srcBuff must be a direct buffer");
+        }
+        if (!dstBuff.isDirect()) {
+            throw new IllegalArgumentException("dstBuff must be a direct buffer");
+        }
+
         dict.acquireSharedLock();
         acquireSharedLock();
+
         try {
-            return compressDirectByteBufferFastDict0(dst, dstOffset, dstSize, src, srcOffset, srcSize, dict);
+            long result = compressDirectByteBufferFastDict0(dstBuff, dstOffset, dstSize, srcBuff, srcOffset, srcSize, dict);
+            if (Zstd.isError(result)) {
+                throw new ZstdException(result);
+            }
+            return (int) result;
+
         } finally {
             releaseSharedLock();
             dict.releaseSharedLock();
@@ -65,5 +77,4 @@ public class ZstdCompressCtx extends AutoCloseBase {
     }
 
     public native long compressDirectByteBufferFastDict0(ByteBuffer dst, int dstOffset, int dstSize, ByteBuffer src, int srcOffset, int srcSize, ZstdDictCompress dict);
-
 }
