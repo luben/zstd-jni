@@ -25,10 +25,10 @@ abstract class AutoCloseBase implements Closeable {
         while (true) {
             int sharedLock = this.sharedLock;
             if (sharedLock < 0) {
-                throw new IllegalStateException("ZstdDictCompress is closed");
+                throw new IllegalStateException("Closed");
             }
             if (sharedLock == Integer.MAX_VALUE) {
-                throw new IllegalStateException("ZstdDictCompress shared lock overflow");
+                throw new IllegalStateException("Shared lock overflow");
             }
             if (SHARED_LOCK_UPDATER.compareAndSet(this, sharedLock, sharedLock + 1)) {
                 break;
@@ -40,10 +40,10 @@ abstract class AutoCloseBase implements Closeable {
         while (true) {
             int sharedLock = this.sharedLock;
             if (sharedLock < 0) {
-                throw new IllegalStateException("ZstdDictCompress is closed");
+                throw new IllegalStateException("Closed");
             }
             if (sharedLock == 0) {
-                throw new IllegalStateException("ZstdDictCompress shared lock underflow");
+                throw new IllegalStateException("Shared lock underflow");
             }
             if (SHARED_LOCK_UPDATER.compareAndSet(this, sharedLock, sharedLock - 1)) {
                 break;
@@ -63,7 +63,7 @@ abstract class AutoCloseBase implements Closeable {
                 return;
             }
             if (!SHARED_LOCK_UPDATER.compareAndSet(this, 0, SHARED_LOCK_CLOSED)) {
-                throw new IllegalStateException("Attempt to close ZstdDictCompress while it's in use");
+                throw new IllegalStateException("Attempt to close while in use");
             }
             doClose();
         }

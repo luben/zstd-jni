@@ -9,65 +9,6 @@ static jfieldID decompress_dict = 0;
 static jfieldID compress_ctx_nativePtr = 0;
 static jfieldID decompress_ctx_nativePtr = 0;
 
-/*
- * Class:     com_github_luben_zstd_ZstdDecompressCtx
- * Method:    init
- * Signature: ()V
- */
-JNIEXPORT void JNICALL Java_com_github_luben_zstd_ZstdDecompressCtx_init
-  (JNIEnv *env, jobject obj)
-{
-    if (decompress_ctx_nativePtr == 0) {
-        jclass clazz = (*env)->GetObjectClass(env, obj);
-        decompress_ctx_nativePtr = (*env)->GetFieldID(env, clazz, "nativePtr", "J");
-    }
-    ZSTD_DCtx* dctx = ZSTD_createDCtx();
-    (*env)->SetLongField(env, obj, decompress_ctx_nativePtr, (jlong)(intptr_t) dctx);
-}
-
-/*
- * Class:     com_github_luben_zstd_ZstdDecompressCtx
- * Method:    free
- * Signature: ()V
- */
-JNIEXPORT void JNICALL Java_com_github_luben_zstd_ZstdDecompressCtx_free
-  (JNIEnv *env, jobject obj)
-{
-    if (decompress_ctx_nativePtr == 0) return;
-    ZSTD_DCtx* dctx = (ZSTD_DCtx*)(intptr_t)(*env)->GetLongField(env, obj, decompress_ctx_nativePtr);
-    if (NULL == dctx) return;
-    ZSTD_freeDCtx(dctx);
-}
-
-/*
- * Class:     com_github_luben_zstd_ZstdCompressCtx
- * Method:    init
- * Signature: ()V
- */
-JNIEXPORT void JNICALL Java_com_github_luben_zstd_ZstdCompressCtx_init
-  (JNIEnv *env, jobject obj)
-{
-    if (compress_ctx_nativePtr == 0) {
-        jclass clazz = (*env)->GetObjectClass(env, obj);
-        compress_ctx_nativePtr = (*env)->GetFieldID(env, clazz, "nativePtr", "J");
-    }
-    ZSTD_CCtx* cctx = ZSTD_createCCtx();
-    (*env)->SetLongField(env, obj, compress_ctx_nativePtr, (jlong)(intptr_t) cctx);
-}
-
-/*
- * Class:     com_github_luben_zstd_ZstdCompressCtx
- * Method:    free
- * Signature: ()V
- */
-JNIEXPORT void JNICALL Java_com_github_luben_zstd_ZstdCompressCtx_free
-  (JNIEnv *env, jobject obj)
-{
-    if (compress_ctx_nativePtr == 0) return;
-    ZSTD_CCtx* cctx = (ZSTD_CCtx*)(intptr_t)(*env)->GetLongField(env, obj, compress_ctx_nativePtr);
-    if (NULL == cctx) return;
-    ZSTD_freeCCtx(cctx);
-}
 
 /*
  * Class:     com_github_luben_zstd_ZstdDictCompress
@@ -255,6 +196,37 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_decompressDirectByteBuff
     return size;
 }
 
+/* ================ ZstCompressCtx ============================ */
+
+/*
+ * Class:     com_github_luben_zstd_ZstdCompressCtx
+ * Method:    init
+ * Signature: ()V
+ */
+JNIEXPORT void JNICALL Java_com_github_luben_zstd_ZstdCompressCtx_init
+  (JNIEnv *env, jobject obj)
+{
+    if (compress_ctx_nativePtr == 0) {
+        jclass clazz = (*env)->GetObjectClass(env, obj);
+        compress_ctx_nativePtr = (*env)->GetFieldID(env, clazz, "nativePtr", "J");
+    }
+    ZSTD_CCtx* cctx = ZSTD_createCCtx();
+    (*env)->SetLongField(env, obj, compress_ctx_nativePtr, (jlong)(intptr_t) cctx);
+}
+
+/*
+ * Class:     com_github_luben_zstd_ZstdCompressCtx
+ * Method:    free
+ * Signature: ()V
+ */
+JNIEXPORT void JNICALL Java_com_github_luben_zstd_ZstdCompressCtx_free
+  (JNIEnv *env, jobject obj)
+{
+    if (compress_ctx_nativePtr == 0) return;
+    ZSTD_CCtx* cctx = (ZSTD_CCtx*)(intptr_t)(*env)->GetLongField(env, obj, compress_ctx_nativePtr);
+    if (NULL == cctx) return;
+    ZSTD_freeCCtx(cctx);
+}
 
 /*
  * Class:     com_github_luben_zstd_ZstdCompressCtx
@@ -288,6 +260,38 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdCompressCtx_compressDirec
       ZSTD_freeCCtx(cctx);
     }
     return size;
+}
+
+/* ================ ZstdDecompressCtx ============================ */
+
+/*
+ * Class:     com_github_luben_zstd_ZstdDecompressCtx
+ * Method:    init
+ * Signature: ()V
+ */
+JNIEXPORT void JNICALL Java_com_github_luben_zstd_ZstdDecompressCtx_init
+  (JNIEnv *env, jobject obj)
+{
+    if (decompress_ctx_nativePtr == 0) {
+        jclass clazz = (*env)->GetObjectClass(env, obj);
+        decompress_ctx_nativePtr = (*env)->GetFieldID(env, clazz, "nativePtr", "J");
+    }
+    ZSTD_DCtx* dctx = ZSTD_createDCtx();
+    (*env)->SetLongField(env, obj, decompress_ctx_nativePtr, (jlong)(intptr_t) dctx);
+}
+
+/*
+ * Class:     com_github_luben_zstd_ZstdDecompressCtx
+ * Method:    free
+ * Signature: ()V
+ */
+JNIEXPORT void JNICALL Java_com_github_luben_zstd_ZstdDecompressCtx_free
+  (JNIEnv *env, jobject obj)
+{
+    if (decompress_ctx_nativePtr == 0) return;
+    ZSTD_DCtx* dctx = (ZSTD_DCtx*)(intptr_t)(*env)->GetLongField(env, obj, decompress_ctx_nativePtr);
+    if (NULL == dctx) return;
+    ZSTD_freeDCtx(dctx);
 }
 
 /*

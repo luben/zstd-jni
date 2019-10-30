@@ -102,7 +102,22 @@ public class Zstd {
      * @return  the number of bytes written into buffer 'dst' or an error code if
      *          it fails (which can be tested using ZSTD_isError())
      */
-    public static native long compressDirectByteBuffer(ByteBuffer dst, int dstOffset, int dstSize, ByteBuffer src, int srcOffset, int srcSize, int level, boolean checksumFlag);
+    public static long compressDirectByteBuffer(ByteBuffer dst, int dstOffset, int dstSize, ByteBuffer src, int srcOffset, int srcSize, int level, boolean checksumFlag) {
+        if (!src.isDirect()) {
+            throw new IllegalArgumentException("src must be a direct buffer");
+        }
+        if (!dst.isDirect()) {
+            throw new IllegalArgumentException("dst must be a direct buffer");
+        }
+
+        long result = compressDirectByteBuffer0(dst, dstOffset, dstSize, src, srcOffset, srcSize, level, checksumFlag);
+        if (Zstd.isError(result)) {
+            throw new ZstdException(result);
+        }
+        return (int) result;
+    };
+
+    private static native long compressDirectByteBuffer0(ByteBuffer dst, int dstOffset, int dstSize, ByteBuffer src, int srcOffset, int srcSize, int level, boolean checksumFlag);
 
     /**
      * Compresses direct buffer 'src' into direct buffer 'dst'.
@@ -200,7 +215,22 @@ public class Zstd {
      * @return  the number of bytes written into buffer 'dst' or an error code if
      *          it fails (which can be tested using ZSTD_isError())
      */
-    public static native long compressDirectByteBufferUsingDict (ByteBuffer dst, int dstOffset, int dstSize, ByteBuffer src, int srcOffset, int srcSize, byte[] dict, int level);
+    public static long compressDirectByteBufferUsingDict(ByteBuffer dst, int dstOffset, int dstSize, ByteBuffer src, int srcOffset, int srcSize, byte[] dict, int level) {
+        if (!src.isDirect()) {
+            throw new IllegalArgumentException("src must be a direct buffer");
+        }
+        if (!dst.isDirect()) {
+            throw new IllegalArgumentException("dst must be a direct buffer");
+        }
+
+        long result = compressDirectByteBufferUsingDict0(dst, dstOffset, dstSize, src, srcOffset, srcSize, dict, level);
+        if (Zstd.isError(result)) {
+            throw new ZstdException(result);
+        }
+        return (int) result;
+    };
+
+    private static native long compressDirectByteBufferUsingDict0(ByteBuffer dst, int dstOffset, int dstSize, ByteBuffer src, int srcOffset, int srcSize, byte[] dict, int level);
 
     /**
      * Compresses buffer 'src' into buffer 'dst' with dictionary.
@@ -256,6 +286,13 @@ public class Zstd {
      *          it fails (which can be tested using ZSTD_isError())
      */
     public static long compressDirectByteBufferFastDict(ByteBuffer dst, int dstOffset, int dstSize, ByteBuffer src, int srcOffset, int srcSize, ZstdDictCompress dict) {
+        if (!src.isDirect()) {
+            throw new IllegalArgumentException("src must be a direct buffer");
+        }
+        if (!dst.isDirect()) {
+            throw new IllegalArgumentException("dst must be a direct buffer");
+        }
+
         dict.acquireSharedLock();
         try {
             return compressDirectByteBufferFastDict0(dst, dstOffset, dstSize, src, srcOffset, srcSize, dict);
@@ -364,8 +401,22 @@ public class Zstd {
      *          or an errorCode if it fails (which can be tested using ZSTD_isError())
      *
      */
-    public static native long decompressDirectByteBufferUsingDict(ByteBuffer dst, int dstOffset, int dstSize, ByteBuffer src, int srcOffset, int srcSize, byte[] dict);
+    public static long decompressDirectByteBufferUsingDict(ByteBuffer dst, int dstOffset, int dstSize, ByteBuffer src, int srcOffset, int srcSize, byte[] dict) {
+        if (!src.isDirect()) {
+            throw new IllegalArgumentException("src must be a direct buffer");
+        }
+        if (!dst.isDirect()) {
+            throw new IllegalArgumentException("dst must be a direct buffer");
+        }
 
+        long result = decompressDirectByteBufferUsingDict0(dst, dstOffset, dstSize, src, srcOffset, srcSize, dict);
+        if (Zstd.isError(result)) {
+            throw new ZstdException(result);
+        }
+        return (int) result;
+    };
+
+    private static native long decompressDirectByteBufferUsingDict0(ByteBuffer dst, int dstOffset, int dstSize, ByteBuffer src, int srcOffset, int srcSize, byte[] dict);
 
     /**
      * Decompresses buffer 'src' into buffer 'dst' with dictionary.
@@ -410,6 +461,12 @@ public class Zstd {
      *
      */
     public static long decompressDirectByteBufferFastDict(ByteBuffer dst, int dstOffset, int dstSize, ByteBuffer src, int srcOffset, int srcSize, ZstdDictDecompress dict) {
+        if (!src.isDirect()) {
+            throw new IllegalArgumentException("src must be a direct buffer");
+        }
+        if (!dst.isDirect()) {
+            throw new IllegalArgumentException("dst must be a direct buffer");
+        }
         dict.acquireSharedLock();
         try {
             return decompressDirectByteBufferFastDict0(dst, dstOffset, dstSize, src, srcOffset, srcSize, dict);

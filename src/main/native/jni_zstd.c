@@ -67,10 +67,10 @@ E1: return size;
 
 /*
  * Class:     com_github_luben_zstd_Zstd
- * Method:    compressDirectByteBuffer
+ * Method:    compressDirectByteBuffer0
  * Signature: (Ljava/nio/ByteBuffer;IILjava/nio/ByteBuffer;III)J
  */
-JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_compressDirectByteBuffer
+JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_compressDirectByteBuffer0
   (JNIEnv *env, jclass obj, jobject dst_buf, jint dst_offset, jint dst_size, jobject src_buf, jint src_offset, jint src_size, jint level, jboolean checksumFlag) {
     size_t size = (size_t)ERROR(memory_allocation);
     jsize dst_cap = (*env)->GetDirectBufferCapacity(env, dst_buf);
@@ -118,7 +118,7 @@ E2: (*env)->ReleasePrimitiveArrayCritical(env, dst, dst_buff, 0);
 E1: return size;
 }
 
-JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_compressDirectByteBufferUsingDict
+JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_compressDirectByteBufferUsingDict0
   (JNIEnv *env, jclass obj, jobject dst_buf, jint dst_offset, jint dst_size, jobject src_buf, jint src_offset, jint src_size, jbyteArray dict, jint level) {
     size_t size = (size_t)ERROR(memory_allocation);
     jsize dst_cap = (*env)->GetDirectBufferCapacity(env, dst_buf);
@@ -233,7 +233,7 @@ E2: (*env)->ReleasePrimitiveArrayCritical(env, dst, dst_buff, 0);
 E1: return size;
 }
 
-JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_decompressDirectByteBufferUsingDict
+JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_decompressDirectByteBufferUsingDict0
   (JNIEnv *env, jclass obj, jobject dst_buff, jint dst_offset, jint dst_size, jbyteArray src_buff, jint src_offset, jint src_size, jbyteArray dict) {
     size_t size = (size_t)(0-ZSTD_error_memory_allocation);
 
