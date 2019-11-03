@@ -1,6 +1,7 @@
 package com.github.luben.zstd;
 
 import com.github.luben.zstd.util.Native;
+import com.github.luben.zstd.ZstdDictDecompress;
 
 import java.nio.ByteBuffer;
 
@@ -11,6 +12,7 @@ public class ZstdDecompressCtx extends AutoCloseBase {
     }
 
     private long nativePtr = 0;
+    private ZstdDictDecompress decompression_dict = null;
 
     private native void init();
 
@@ -37,6 +39,97 @@ public class ZstdDecompressCtx extends AutoCloseBase {
     }
 
     /**
+     * Load decompression dictionary
+     *
+     * @param dict the dictionary or `null` to remove loaded dictionary
+     * @return 0 or error code
+     */
+    public long loadDict(ZstdDictDecompress dict) {
+        if (nativePtr == 0) {
+            throw new IllegalStateException("Decompression context is closed");
+        }
+        // keep a reference to the ditionary so it's not garbage collected
+        decompression_dict = dict;
+        acquireSharedLock();
+        dict.acquireSharedLock();
+        try {
+            long result = loadDDictFast0(dict);
+            if (Zstd.isError(result)) {
+                throw new ZstdException(result);
+            }
+            return result;
+        } finally {
+            dict.releaseSharedLock();
+            releaseSharedLock();
+        }
+    }
+    private native long loadDDictFast0(ZstdDictDecompress dict);
+
+    /**
+     * Load decompression dictionary.
+     *
+     * @param dict the dictionary or `null` to remove loaded dictionary
+     * @return 0 or error code
+     */
+    public long loadDict(byte[] dict) {
+        if (nativePtr == 0) {
+            throw new IllegalStateException("Compression context is closed");
+        }
+        acquireSharedLock();
+        try {
+            long result = loadDDict0(dict);
+            if (Zstd.isError(result)) {
+                throw new ZstdException(result);
+            }
+            decompression_dict = null;
+            return result;
+        } finally {
+            releaseSharedLock();
+        }
+    }
+    private native long loadDDict0(byte[] dict);
+
+    /**
+     * Decompresses buffer 'srcBuff' into buffer 'dstBuff' using this ZstdDecompressCtx.
+     *
+     * Destination buffer should be sized to be larger of equal to the originalSize
+     *
+     * @param dstBuff the destination buffer - must be direct
+     * @param dstOffset the start offset of 'dstBuff'
+     * @param dstSize the size of 'dstBuff'
+     * @param srcBuff the source buffer - must be direct
+     * @param srcOffset the start offset of 'srcBuff'
+     * @param srcSize the size of 'srcBuff'
+     * @return the number of bytes decompressed into destination buffer (originalSize)
+     */
+    public int decompressDirectByteBuffer(ByteBuffer dstBuff, int dstOffset, int dstSize, ByteBuffer srcBuff, int srcOffset, int srcSize) {
+        if (nativePtr == 0) {
+            throw new IllegalStateException("Decompression context is closed");
+        }
+        if (!srcBuff.isDirect()) {
+            throw new IllegalArgumentException("srcBuff must be a direct buffer");
+        }
+        if (!dstBuff.isDirect()) {
+            throw new IllegalArgumentException("dstBuff must be a direct buffer");
+        }
+
+        acquireSharedLock();
+
+        try {
+            long result = decompressDirectByteBuffer0(dstBuff, dstOffset, dstSize, srcBuff, srcOffset, srcSize);
+            if (Zstd.isError(result)) {
+                throw new ZstdException(result);
+            }
+            return (int) result;
+
+        } finally {
+            releaseSharedLock();
+        }
+    }
+
+    private native long decompressDirectByteBuffer0(ByteBuffer dst, int dstOffset, int dstSize, ByteBuffer src, int srcOffset, int srcSize);
+
+    /**
      * Decompresses buffer 'srcBuff' into buffer 'dstBuff' with dictionary using this ZstdDecompressCtx.
      *
      * Destination buffer should be sized to be larger of equal to the originalSize
@@ -51,6 +144,9 @@ public class ZstdDecompressCtx extends AutoCloseBase {
      * @return the number of bytes decompressed into destination buffer (originalSize)
      */
     public int decompressDirectByteBufferFastDict(ByteBuffer dstBuff, int dstOffset, int dstSize, ByteBuffer srcBuff, int srcOffset, int srcSize, ZstdDictDecompress dict) {
+        if (nativePtr == 0) {
+            throw new IllegalStateException("Decompression context is closed");
+        }
         if (!srcBuff.isDirect()) {
             throw new IllegalArgumentException("srcBuff must be a direct buffer");
         }

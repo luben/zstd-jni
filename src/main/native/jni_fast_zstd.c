@@ -230,6 +230,99 @@ JNIEXPORT void JNICALL Java_com_github_luben_zstd_ZstdCompressCtx_free
 
 /*
  * Class:     com_github_luben_zstd_ZstdCompressCtx
+ * Method:    setLevel0
+ * Signature: (I)V
+ */
+JNIEXPORT void JNICALL Java_com_github_luben_zstd_ZstdCompressCtx_setLevel0
+  (JNIEnv *env, jobject obj, jint level)
+{
+    if (compress_ctx_nativePtr == 0) return;
+    ZSTD_CCtx* cctx = (ZSTD_CCtx*)(intptr_t)(*env)->GetLongField(env, obj, compress_ctx_nativePtr);
+    ZSTD_CCtx_setParameter(cctx, ZSTD_c_compressionLevel, level);
+}
+
+/*
+ * Class:     com_github_luben_zstd_ZstdCompressCtx
+ * Method:    setChecksum0
+ * Signature: (I)V
+ */
+JNIEXPORT void JNICALL Java_com_github_luben_zstd_ZstdCompressCtx_setChecksum0
+  (JNIEnv *env, jobject obj, jboolean checksumFlag)
+{
+    if (compress_ctx_nativePtr == 0) return;
+    ZSTD_CCtx* cctx = (ZSTD_CCtx*)(intptr_t)(*env)->GetLongField(env, obj, compress_ctx_nativePtr);
+    ZSTD_CCtx_setParameter(cctx, ZSTD_c_checksumFlag, (checksumFlag == JNI_TRUE));
+}
+
+/*
+ * Class:     com_github_luben_zstd_ZstdCompressCtx
+ * Method:    loadCDictFast0
+ * Signature: (Lcom/github/luben/zstd/ZstdDictCompress)J
+ */
+JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdCompressCtx_loadCDictFast0
+  (JNIEnv *env, jobject obj, jobject dict)
+{
+    ZSTD_CCtx* cctx = (ZSTD_CCtx*)(intptr_t)(*env)->GetLongField(env, obj, compress_ctx_nativePtr);
+    if (dict == NULL) {
+        // remove dictionary
+        return ZSTD_CCtx_refCDict(cctx, NULL);
+    }
+    ZSTD_CDict* cdict = (ZSTD_CDict*)(intptr_t)(*env)->GetLongField(env, dict, compress_dict);
+    if (NULL == cdict) return ZSTD_error_dictionary_wrong;
+    return ZSTD_CCtx_refCDict(cctx, cdict);
+}
+
+/*
+ * Class:     com_github_luben_zstd_ZstdCompressCtx
+ * Method:    loadCDict0
+ * Signature: ([B)J
+ */
+JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdCompressCtx_loadCDict0
+  (JNIEnv *env, jobject obj, jbyteArray dict)
+{
+    ZSTD_CCtx* cctx = (ZSTD_CCtx*)(intptr_t)(*env)->GetLongField(env, obj, compress_ctx_nativePtr);
+    if (dict == NULL) {
+        // remove dictionary
+        return ZSTD_CCtx_loadDictionary(cctx, NULL, 0);
+    }
+    jsize dict_size = (*env)->GetArrayLength(env, dict);
+    void *dict_buff = (*env)->GetPrimitiveArrayCritical(env, dict, NULL);
+    if (dict_buff == NULL) return ERROR(memory_allocation);
+    size_t result = ZSTD_CCtx_loadDictionary(cctx, dict_buff, dict_size);
+    (*env)->ReleasePrimitiveArrayCritical(env, dict, dict_buff, JNI_ABORT);
+    return result;
+}
+
+/*
+ * Class:     com_github_luben_zstd_ZstdCompressCtx
+ * Method:    compressDirectByteBuffer0
+ * Signature: (Ljava/nio/ByteBuffer;IILjava/nio/ByteBuffer;II)J
+ */
+JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdCompressCtx_compressDirectByteBuffer0
+  (JNIEnv *env, jclass jctx, jobject dst, jint dst_offset, jint dst_size, jobject src, jint src_offset, jint src_size) {
+    if (NULL == dst) return ZSTD_error_dstSize_tooSmall;
+    if (NULL == src) return ZSTD_error_srcSize_wrong;
+    if (0 > dst_offset) return ZSTD_error_dstSize_tooSmall;
+    if (0 > src_offset) return ZSTD_error_srcSize_wrong;
+    if (0 > src_size) return ZSTD_error_srcSize_wrong;
+
+    jsize dst_cap = (*env)->GetDirectBufferCapacity(env, dst);
+    if (dst_offset + dst_size > dst_cap) return ERROR(dstSize_tooSmall);
+    jsize src_cap = (*env)->GetDirectBufferCapacity(env, src);
+    if (src_offset + src_size > src_cap) return ERROR(srcSize_wrong);
+
+    char *dst_buff = (char*)(*env)->GetDirectBufferAddress(env, dst);
+    if (dst_buff == NULL) return ERROR(memory_allocation);
+    char *src_buff = (char*)(*env)->GetDirectBufferAddress(env, src);
+    if (src_buff == NULL) return ERROR(memory_allocation);
+
+    ZSTD_CCtx* cctx = (ZSTD_CCtx*)(intptr_t)(*env)->GetLongField(env, jctx, compress_ctx_nativePtr);
+    ZSTD_CCtx_reset(cctx, ZSTD_reset_session_only);
+    return ZSTD_compress2(cctx, dst_buff + dst_offset, (size_t) dst_size, src_buff + src_offset, (size_t) src_size);
+}
+
+/*
+ * Class:     com_github_luben_zstd_ZstdCompressCtx
  * Method:    compressDirectByteBufferFastDict0
  * Signature: (Ljava/nio/ByteBuffer;IILjava/nio/ByteBuffer;IILcom/github/luben/zstd/ZstdDictCompress;)J
  */
@@ -243,24 +336,23 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdCompressCtx_compressDirec
     if (0 > dst_offset) return ZSTD_error_dstSize_tooSmall;
     if (0 > src_offset) return ZSTD_error_srcSize_wrong;
     if (0 > src_size) return ZSTD_error_srcSize_wrong;
-    size_t size = (size_t)(0-ZSTD_error_memory_allocation);
+
+    jsize dst_cap = (*env)->GetDirectBufferCapacity(env, dst);
+    if (dst_offset + dst_size > dst_cap) return ERROR(dstSize_tooSmall);
+    jsize src_cap = (*env)->GetDirectBufferCapacity(env, src);
+    if (src_offset + src_size > src_cap) return ERROR(srcSize_wrong);
+
     char *dst_buff = (char*)(*env)->GetDirectBufferAddress(env, dst);
+    if (dst_buff == NULL) return ERROR(memory_allocation);
     char *src_buff = (char*)(*env)->GetDirectBufferAddress(env, src);
-    ZSTD_CCtx* cctx;
-    int mustFree = 0;
-    cctx = (ZSTD_CCtx*)(intptr_t)(*env)->GetLongField(env, jctx, compress_ctx_nativePtr);
-    if (cctx == NULL) {
-      cctx = ZSTD_createCCtx();
-      mustFree = 1;
-    } else {
-      ZSTD_CCtx_reset(cctx, ZSTD_reset_session_only);
-    }
-    size = ZSTD_compress_usingCDict(cctx, dst_buff + dst_offset, (size_t) dst_size, src_buff + src_offset, (size_t) src_size, cdict);
-    if (mustFree) {
-      ZSTD_freeCCtx(cctx);
-    }
-    return size;
+    if (src_buff == NULL) return ERROR(memory_allocation);
+
+    ZSTD_CCtx* cctx = (ZSTD_CCtx*)(intptr_t)(*env)->GetLongField(env, jctx, compress_ctx_nativePtr);
+    ZSTD_CCtx_reset(cctx, ZSTD_reset_session_only);
+
+    return ZSTD_compress_usingCDict(cctx, dst_buff + dst_offset, (size_t) dst_size, src_buff + src_offset, (size_t) src_size, cdict);
 }
+
 
 /* ================ ZstdDecompressCtx ============================ */
 
@@ -296,6 +388,75 @@ JNIEXPORT void JNICALL Java_com_github_luben_zstd_ZstdDecompressCtx_free
 
 /*
  * Class:     com_github_luben_zstd_ZstdDecompressCtx
+ * Method:    loadDDictFast0
+ * Signature: (Lcom/github/luben/zstd/ZstdDictDecompress)J
+ */
+JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdDecompressCtx_loadDDictFast0
+  (JNIEnv *env, jobject obj, jobject dict)
+{
+    ZSTD_DCtx* dctx = (ZSTD_DCtx*)(intptr_t)(*env)->GetLongField(env, obj, decompress_ctx_nativePtr);
+    if (dict == NULL) {
+        // remove dictionary
+        return ZSTD_DCtx_refDDict(dctx, NULL);
+    }
+    ZSTD_DDict* ddict = (ZSTD_DDict*)(intptr_t)(*env)->GetLongField(env, dict, decompress_dict);
+    if (NULL == ddict) return ZSTD_error_dictionary_wrong;
+    return ZSTD_DCtx_refDDict(dctx, ddict);
+}
+
+/*
+ * Class:     com_github_luben_zstd_ZstdDecompressCtx
+ * Method:    loadDDict0
+ * Signature: ([B)J
+ */
+JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdDecompressCtx_loadDDict0
+  (JNIEnv *env, jobject obj, jbyteArray dict)
+{
+    ZSTD_DCtx* dctx = (ZSTD_DCtx*)(intptr_t)(*env)->GetLongField(env, obj, decompress_ctx_nativePtr);
+    if (dict == NULL) {
+        // remove dictionary
+        return ZSTD_DCtx_loadDictionary(dctx, NULL, 0);
+    }
+    jsize dict_size = (*env)->GetArrayLength(env, dict);
+    void *dict_buff = (*env)->GetPrimitiveArrayCritical(env, dict, NULL);
+    if (dict_buff == NULL) return ERROR(memory_allocation);
+    size_t result = ZSTD_DCtx_loadDictionary(dctx, dict_buff, dict_size);
+    (*env)->ReleasePrimitiveArrayCritical(env, dict, dict_buff, JNI_ABORT);
+    return result;
+}
+
+
+/*
+ * Class:     com_github_luben_zstd_ZstdDecompressCtx
+ * Method:    decompressDirectByteBuffe0
+ * Signature: (Ljava/nio/ByteBuffer;IILjava/nio/ByteBuffer;II)J
+ */
+JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdDecompressCtx_decompressDirectByteBuffer0
+(JNIEnv *env, jclass jctx, jobject dst, jint dst_offset, jint dst_size, jobject src, jint src_offset, jint src_size)
+{
+    if (NULL == dst) return ZSTD_error_dstSize_tooSmall;
+    if (NULL == src) return ZSTD_error_srcSize_wrong;
+    if (0 > dst_offset) return ZSTD_error_dstSize_tooSmall;
+    if (0 > src_offset) return ZSTD_error_srcSize_wrong;
+    if (0 > src_size) return ZSTD_error_srcSize_wrong;
+
+    jsize dst_cap = (*env)->GetDirectBufferCapacity(env, dst);
+    if (dst_offset + dst_size > dst_cap) return ERROR(dstSize_tooSmall);
+    jsize src_cap = (*env)->GetDirectBufferCapacity(env, src);
+    if (src_offset + src_size > src_cap) return ERROR(srcSize_wrong);
+
+    char *dst_buff = (char*)(*env)->GetDirectBufferAddress(env, dst);
+    if (dst_buff == NULL) return ERROR(memory_allocation);
+    char *src_buff = (char*)(*env)->GetDirectBufferAddress(env, src);
+    if (src_buff == NULL) return ERROR(memory_allocation);
+
+    ZSTD_DCtx* dctx = (ZSTD_DCtx*)(intptr_t)(*env)->GetLongField(env, jctx, decompress_ctx_nativePtr);
+    ZSTD_DCtx_reset(dctx, ZSTD_reset_session_only);
+    return ZSTD_decompressDCtx(dctx, dst_buff + dst_offset, (size_t) dst_size, src_buff + src_offset, (size_t) src_size);
+}
+
+/*
+ * Class:     com_github_luben_zstd_ZstdDecompressCtx
  * Method:    decompressDirectByteBufferFastDict0
  * Signature: (Ljava/nio/ByteBuffer;IILjava/nio/ByteBuffer;IILcom/github/luben/zstd/ZstdDictDecompress;)J
  */
@@ -311,21 +472,17 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdDecompressCtx_decompressD
     if (0 > src_offset) return ZSTD_error_srcSize_wrong;
     if (0 > src_size) return ZSTD_error_srcSize_wrong;
 
-    size_t size = (size_t)(0-ZSTD_error_memory_allocation);
+    jsize dst_cap = (*env)->GetDirectBufferCapacity(env, dst);
+    if (dst_offset + dst_size > dst_cap) return ERROR(dstSize_tooSmall);
+    jsize src_cap = (*env)->GetDirectBufferCapacity(env, src);
+    if (src_offset + src_size > src_cap) return ERROR(srcSize_wrong);
+
     char *dst_buff = (char*)(*env)->GetDirectBufferAddress(env, dst);
+    if (dst_buff == NULL) return ERROR(memory_allocation);
     char *src_buff = (char*)(*env)->GetDirectBufferAddress(env, src);
-    ZSTD_DCtx* dctx;
-    int mustFree = 0;
-    dctx = (ZSTD_DCtx*)(intptr_t)(*env)->GetLongField(env, jctx, decompress_ctx_nativePtr);
-    if (dctx == NULL) {
-      dctx = ZSTD_createDCtx();
-      mustFree = 1;
-    } else {
-      ZSTD_DCtx_reset(dctx, ZSTD_reset_session_only);
-    }
-    size = ZSTD_decompress_usingDDict(dctx, dst_buff + dst_offset, (size_t) dst_size, src_buff + src_offset, (size_t) src_size, ddict);
-    if (mustFree) {
-      ZSTD_freeDCtx(dctx);
-    }
-    return size;
+    if (src_buff == NULL) return ERROR(memory_allocation);
+
+    ZSTD_DCtx* dctx = (ZSTD_DCtx*)(intptr_t)(*env)->GetLongField(env, jctx, decompress_ctx_nativePtr);
+    ZSTD_DCtx_reset(dctx, ZSTD_reset_session_only);
+    return ZSTD_decompress_usingDDict(dctx, dst_buff + dst_offset, (size_t) dst_size, src_buff + src_offset, (size_t) src_size, ddict);
 }
