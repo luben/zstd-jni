@@ -256,6 +256,32 @@ JNIEXPORT void JNICALL Java_com_github_luben_zstd_ZstdCompressCtx_setChecksum0
 
 /*
  * Class:     com_github_luben_zstd_ZstdCompressCtx
+ * Method:    setContentSize0
+ * Signature: (I)V
+ */
+JNIEXPORT void JNICALL Java_com_github_luben_zstd_ZstdCompressCtx_setContentSize0
+  (JNIEnv *env, jobject obj, jboolean contentSizeFlag)
+{
+    if (compress_ctx_nativePtr == 0) return;
+    ZSTD_CCtx* cctx = (ZSTD_CCtx*)(intptr_t)(*env)->GetLongField(env, obj, compress_ctx_nativePtr);
+    ZSTD_CCtx_setParameter(cctx, ZSTD_c_contentSizeFlag, (contentSizeFlag == JNI_TRUE));
+}
+
+/*
+ * Class:     com_github_luben_zstd_ZstdCompressCtx
+ * Method:    setDictID0
+ * Signature: (I)V
+ */
+JNIEXPORT void JNICALL Java_com_github_luben_zstd_ZstdCompressCtx_setDictID0
+  (JNIEnv *env, jobject obj, jboolean dictIDFlag)
+{
+    if (compress_ctx_nativePtr == 0) return;
+    ZSTD_CCtx* cctx = (ZSTD_CCtx*)(intptr_t)(*env)->GetLongField(env, obj, compress_ctx_nativePtr);
+    ZSTD_CCtx_setParameter(cctx, ZSTD_c_dictIDFlag, (dictIDFlag == JNI_TRUE));
+}
+
+/*
+ * Class:     com_github_luben_zstd_ZstdCompressCtx
  * Method:    loadCDictFast0
  * Signature: (Lcom/github/luben/zstd/ZstdDictCompress)J
  */

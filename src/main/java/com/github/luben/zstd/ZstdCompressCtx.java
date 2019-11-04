@@ -40,6 +40,7 @@ public class ZstdCompressCtx extends AutoCloseBase {
 
     /**
      * Set compression level
+     * @param level compression level, default: 3
      */
     public void setLevel(int level) {
         if (nativePtr == 0) {
@@ -53,16 +54,45 @@ public class ZstdCompressCtx extends AutoCloseBase {
 
     /**
      * Enable or disable compression checksums
+     * @param checksumFlag A 32-bits checksum of content is written at end of frame, default: false
      */
-    public void setChecksum(boolean checksum) {
+    public void setChecksum(boolean checksumFlag) {
         if (nativePtr == 0) {
             throw new IllegalStateException("Compression context is closed");
         }
         acquireSharedLock();
-        setChecksum0(checksum);
+        setChecksum0(checksumFlag);
         releaseSharedLock();
     }
-    private native void setChecksum0(boolean checksum);
+    private native void setChecksum0(boolean checksumFlag);
+
+    /**
+     * Enable or disable content size
+     * @param contentSizeFlag Content size will be written into frame header _whenever known_, default: true
+     */
+    public void setContentSize(boolean contentSizeFlag) {
+        if (nativePtr == 0) {
+            throw new IllegalStateException("Compression context is closed");
+        }
+        acquireSharedLock();
+        setContentSize0(contentSizeFlag);
+        releaseSharedLock();
+    }
+    private native void setContentSize0(boolean contentSizeFlag);
+
+    /**
+     * Enable or disable dictID
+     * @param dictIDFlag When applicable, dictionary's ID is written into frame header, default: true
+     */
+    public void setDictID(boolean dictIDFlag) {
+        if (nativePtr == 0) {
+            throw new IllegalStateException("Compression context is closed");
+        }
+        acquireSharedLock();
+        setDictID0(dictIDFlag);
+        releaseSharedLock();
+    }
+    private native void setDictID0(boolean dictIDFlag);
 
     /**
      * Load compression dictionary to be used for subsequently compressed frames.
