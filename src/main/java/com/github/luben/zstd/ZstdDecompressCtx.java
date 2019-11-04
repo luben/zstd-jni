@@ -47,8 +47,6 @@ public class ZstdDecompressCtx extends AutoCloseBase {
         if (nativePtr == 0) {
             throw new IllegalStateException("Decompression context is closed");
         }
-        // keep a reference to the ditionary so it's not garbage collected
-        decompression_dict = dict;
         acquireSharedLock();
         dict.acquireSharedLock();
         try {
@@ -56,6 +54,8 @@ public class ZstdDecompressCtx extends AutoCloseBase {
             if (Zstd.isError(result)) {
                 throw new ZstdException(result);
             }
+            // keep a reference to the dictionary so it's not garbage collected
+            decompression_dict = dict;
         } finally {
             dict.releaseSharedLock();
             releaseSharedLock();

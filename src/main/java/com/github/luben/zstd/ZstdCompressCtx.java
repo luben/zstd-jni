@@ -103,8 +103,7 @@ public class ZstdCompressCtx extends AutoCloseBase {
         if (nativePtr == 0) {
             throw new IllegalStateException("Compression context is closed");
         }
-        // keep a reference to the ditionary so it's not garbage collected
-        compression_dict = dict;
+
         acquireSharedLock();
         dict.acquireSharedLock();
         try {
@@ -112,6 +111,8 @@ public class ZstdCompressCtx extends AutoCloseBase {
             if (Zstd.isError(result)) {
                 throw new ZstdException(result);
             }
+            // keep a reference to the dictionary so it's not garbage collected
+            compression_dict = dict;
         } finally {
             dict.releaseSharedLock();
             releaseSharedLock();
