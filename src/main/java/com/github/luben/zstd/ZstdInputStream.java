@@ -139,7 +139,9 @@ public class ZstdInputStream extends FilterInputStream {
         long lastDstPos = -1;
 
         while (dstPos < dstSize && lastDstPos < dstPos) {
-            if (needRead && srcSize - srcPos == 0 && (in.available() > 0 || dstPos == offset)) {
+            // we will read only if data from the upstream is available OR
+            // we have not yet produced any output
+            if (needRead && (in.available() > 0 || dstPos == offset)) {
                 srcSize = in.read(src, 0, srcBuffSize);
                 srcPos = 0;
                 if (srcSize < 0) {
@@ -165,8 +167,13 @@ public class ZstdInputStream extends FilterInputStream {
             // we have completed a frame
             if (size == 0) {
                 frameFinished = true;
+                // we need to read from the upstream only if we have not consumed
+                // fully the source buffer
+                needRead = srcPos == srcSize;
                 return (int)(dstPos - offset);
             } else {
+                // size > 0, so more input is required but there is data left in
+                // the decompressor buffers if we have not filled the dst buffer
                 needRead = dstPos < dstSize;
             }
         }
@@ -190,7 +197,7 @@ public class ZstdInputStream extends FilterInputStream {
         if (isClosed) {
             throw new IOException("Stream closed");
         }
-        if (!needRead || srcSize - srcPos > 0) {
+        if (!needRead) {
             return 1;
         } else {
             return in.available();
