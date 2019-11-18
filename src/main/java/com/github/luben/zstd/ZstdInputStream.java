@@ -26,6 +26,7 @@ public class ZstdInputStream extends FilterInputStream {
     private long dstPos = 0;
     private long srcPos = 0;
     private long srcSize = 0;
+    private boolean needRead = true;
     private byte[] src;
     private static final int srcBuffSize = (int) recommendedDInSize();
 
@@ -123,9 +124,10 @@ public class ZstdInputStream extends FilterInputStream {
         }
         int dstSize = offset + len;
         dstPos = offset;
+        long lastDstPos = -1;
 
-        while (dstPos < dstSize) {
-            if (srcSize - srcPos == 0) {
+        while (dstPos < dstSize && lastDstPos < dstPos) {
+            if (needRead && srcSize - srcPos == 0 && (in.available() > 0 || dstPos == offset)) {
                 srcSize = in.read(src, 0, srcBuffSize);
                 srcPos = 0;
                 if (srcSize < 0) {
@@ -141,6 +143,7 @@ public class ZstdInputStream extends FilterInputStream {
                 frameFinished = false;
             }
 
+            lastDstPos = dstPos;
             int size = decompressStream(stream, dst, dstSize, src, (int) srcSize);
 
             if (Zstd.isError(size)) {
@@ -151,9 +154,11 @@ public class ZstdInputStream extends FilterInputStream {
             if (size == 0) {
                 frameFinished = true;
                 return (int)(dstPos - offset);
+            } else {
+                needRead = dstPos < dstSize;
             }
         }
-        return len;
+        return (int)(dstPos - offset);
     }
 
     public synchronized int read() throws IOException {
@@ -173,8 +178,8 @@ public class ZstdInputStream extends FilterInputStream {
         if (isClosed) {
             throw new IOException("Stream closed");
         }
-        if (srcSize - srcPos > 0) {
-            return (int)(srcSize - srcPos);
+        if (!needRead || srcSize - srcPos > 0) {
+            return 1;
         } else {
             return in.available();
         }
