@@ -21,6 +21,7 @@ public class ZstdOutputStream extends FilterOutputStream {
     private long dstPos = 0;
     private final byte[] dst;
     private boolean isClosed = false;
+    private boolean finalize = true;
     private static final int dstSize = (int) recommendedCOutSize();
     private boolean closeFrameOnFlush;
     private boolean frameClosed = true;
@@ -135,6 +136,18 @@ public class ZstdOutputStream extends FilterOutputStream {
         return this;
     }
 
+    /**
+     * Enable or disable class finalizers
+     *
+     * If finalizers are disabled the responsibility fir calling the `close` method is on the consumer.
+     *
+     * @param finalize, default `true` - finalizers are enabled
+     */
+    public void setFinalize(boolean finalize) {
+        this.finalize = finalize;
+    }
+
+
     public synchronized void write(byte[] src, int offset, int len) throws IOException {
         if (isClosed) {
             throw new IOException("Stream closed");
@@ -222,6 +235,8 @@ public class ZstdOutputStream extends FilterOutputStream {
 
     @Override
     protected void finalize() throws Throwable {
-        close();
+        if (finalize) {
+            close();
+        }
     }
 }

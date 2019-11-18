@@ -27,6 +27,7 @@ public class ZstdInputStream extends FilterInputStream {
     private long srcPos = 0;
     private long srcSize = 0;
     private boolean needRead = true;
+    private boolean finalize = true;
     private byte[] src;
     private static final int srcBuffSize = (int) recommendedDInSize();
 
@@ -70,6 +71,17 @@ public class ZstdInputStream extends FilterInputStream {
 
     public synchronized boolean getContinuous() {
         return this.isContinuous;
+    }
+
+    /**
+     * Enable or disable class finalizers
+     *
+     * If finalizers are disabled the responsibility fir calling the `close` method is on the consumer.
+     *
+     * @param finalize, default `true` - finalizers are enabled
+     */
+    public void setFinalize(boolean finalize) {
+        this.finalize = finalize;
     }
 
     public synchronized ZstdInputStream setDict(byte[] dict) throws IOException {
@@ -222,6 +234,8 @@ public class ZstdInputStream extends FilterInputStream {
 
     @Override
     protected void finalize() throws Throwable {
-        close();
+        if (finalize) {
+            close();
+        }
     }
 }

@@ -43,6 +43,7 @@ public class ZstdDirectBufferCompressingStream implements Closeable, Flushable {
     private int produced = 0;
     private boolean closed = false;
     private boolean initialized = false;
+    private boolean finalize = true;
     private int level = 3;
     private byte[] dict = null;
     private ZstdDictCompress fastDict = null;
@@ -74,6 +75,17 @@ public class ZstdDirectBufferCompressingStream implements Closeable, Flushable {
         this.dict = null;
         this.fastDict = dict;
         return this;
+    }
+
+    /**
+     * Enable or disable class finalizers
+     *
+     * If finalizers are disabled the responsibility fir calling the `close` method is on the consumer.
+     *
+     * @param finalize, default `true` - finalizers are enabled
+     */
+    public void setFinalize(boolean finalize) {
+        this.finalize = finalize;
     }
 
     public synchronized void compress(ByteBuffer source) throws IOException {
@@ -181,6 +193,8 @@ public class ZstdDirectBufferCompressingStream implements Closeable, Flushable {
 
     @Override
     protected void finalize() throws Throwable {
-        close();
+        if (finalize) {
+            close();
+        }
     }
 }

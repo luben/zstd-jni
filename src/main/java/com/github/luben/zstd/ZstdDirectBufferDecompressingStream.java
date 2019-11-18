@@ -26,6 +26,7 @@ public class ZstdDirectBufferDecompressingStream implements Closeable {
     private boolean finishedFrame = false;
     private boolean closed = false;
     private boolean streamEnd = false;
+    private boolean finalize = true;
 
     private static native int recommendedDOutSize();
     private static native long createDStream();
@@ -42,6 +43,17 @@ public class ZstdDirectBufferDecompressingStream implements Closeable {
             stream = createDStream();
             initDStream(stream);
         }
+    }
+
+    /**
+     * Enable or disable class finalizers
+     *
+     * If finalizers are disabled the responsibility fir calling the `close` method is on the consumer.
+     *
+     * @param finalize, default `true` - finalizers are enabled
+     */
+    public void setFinalize(boolean finalize) {
+        this.finalize = finalize;
     }
 
     public synchronized boolean hasRemaining() {
@@ -126,6 +138,8 @@ public class ZstdDirectBufferDecompressingStream implements Closeable {
 
     @Override
     protected void finalize() throws Throwable {
-        close();
+        if (finalize) {
+            close();
+        }
     }
 }

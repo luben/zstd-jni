@@ -9,7 +9,20 @@ abstract class AutoCloseBase implements Closeable {
             AtomicIntegerFieldUpdater.newUpdater(AutoCloseBase.class, "sharedLock");
     private static final int SHARED_LOCK_CLOSED = -1;
 
+    private boolean finalize = true;
+
     private volatile int sharedLock;
+
+    /**
+     * Enable or disable class finalizers
+     *
+     * If finalizers are disabled the responsibility fir calling the `close` method is on the consumer.
+     *
+     * @param finalize, default `true` - finalizers are enabled
+     */
+    public void setFinalize(boolean finalize) {
+        this.finalize = finalize;
+    }
 
     void storeFence() {
         // volatile field write has a storeFence effect. Note: when updated to Java 9+, this method could be replaced
@@ -71,6 +84,8 @@ abstract class AutoCloseBase implements Closeable {
 
     @Override
     protected void finalize() {
-        close();
+        if (finalize) {
+            close();
+        }
     }
 }
