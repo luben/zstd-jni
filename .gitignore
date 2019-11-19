@@ -2,6 +2,9 @@ target/
 build/
 .externalNativeBuild/
 .idea/
+.bloop/
+.metals/
+tags
 local.properties
 zstd-jni.iml
 gradle*
