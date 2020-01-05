@@ -108,7 +108,13 @@ public enum Native {
                     System.loadLibrary(libnameShort);
                 } catch (UnsatisfiedLinkError e1) {
                     // display error in case problem with loading from temp folder
-                    throw linkError(e1);
+                    // and from system library path - concatenate both messages
+                    UnsatisfiedLinkError err = new UnsatisfiedLinkError(
+                            e.getMessage() + "\n" +
+                            e1.getMessage() + "\n"+
+                            errorMsg);
+                    err.setStackTrace(e1.getStackTrace());
+                    throw linkError(err);
                 }
             }
             loaded = true;
