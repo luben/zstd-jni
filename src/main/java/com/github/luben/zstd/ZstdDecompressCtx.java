@@ -124,4 +124,39 @@ public class ZstdDecompressCtx extends AutoCloseBase {
     }
 
     private native long decompressDirectByteBuffer0(ByteBuffer dst, int dstOffset, int dstSize, ByteBuffer src, int srcOffset, int srcSize);
+
+    /**
+     * Decompresses byte array 'srcBuff' into byte array 'dstBuff' using this ZstdDecompressCtx.
+     *
+     * Destination buffer should be sized to be larger of equal to the originalSize
+     *
+     * @param dstBuff the destination buffer
+     * @param dstOffset the start offset of 'dstBuff'
+     * @param dstSize the size of 'dstBuff'
+     * @param srcBuff the source buffer
+     * @param srcOffset the start offset of 'srcBuff'
+     * @param srcSize the size of 'srcBuff'
+     * @return the number of bytes decompressed into destination buffer (originalSize)
+     */
+    public int decompressByteArray(byte[] dstBuff, int dstOffset, int dstSize, byte[] srcBuff, int srcOffset, int srcSize) {
+        if (nativePtr == 0) {
+            throw new IllegalStateException("Decompression context is closed");
+        }
+
+        acquireSharedLock();
+
+        try {
+            long result = decompressByteArray0(dstBuff, dstOffset, dstSize, srcBuff, srcOffset, srcSize);
+            if (Zstd.isError(result)) {
+                throw new ZstdException(result);
+            }
+            return (int) result;
+
+        } finally {
+            releaseSharedLock();
+        }
+    }
+
+    private native long decompressByteArray0(byte[] dst, int dstOffset, int dstSize, byte[] src, int srcOffset, int srcSize);
+
 }

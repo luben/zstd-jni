@@ -148,7 +148,6 @@ public class ZstdCompressCtx extends AutoCloseBase {
      * Destination buffer should be sized to handle worst cases situations (input
      * data not compressible). Worst case size evaluation is provided by function
      * ZSTD_compressBound().
-     * Note: compression level and parameters are
      *
      * @param dstBuff the destination buffer - must be direct
      * @param dstOffset the start offset of 'dstBuff'
@@ -184,4 +183,40 @@ public class ZstdCompressCtx extends AutoCloseBase {
     }
 
     private native long compressDirectByteBuffer0(ByteBuffer dst, int dstOffset, int dstSize, ByteBuffer src, int srcOffset, int srcSize);
+
+    /**
+     * Compresses byte array 'srcBuff' into byte array 'dstBuff' reusing this ZstdCompressCtx.
+     *
+     * Destination buffer should be sized to handle worst cases situations (input
+     * data not compressible). Worst case size evaluation is provided by function
+     * ZSTD_compressBound().
+     *
+     * @param dstBuff the destination buffer (byte array)
+     * @param dstOffset the start offset of 'dstBuff'
+     * @param dstSize the size of 'dstBuff'
+     * @param srcBuff the source buffer (byte array)
+     * @param srcOffset the start offset of 'srcBuff'
+     * @param srcSize the length of 'srcBuff'
+     * @return  the number of bytes written into buffer 'dstBuff'.
+     */
+    public long compressByteArray(byte[] dstBuff, int dstOffset, int dstSize, byte[] srcBuff, int srcOffset, int srcSize) {
+        if (nativePtr == 0) {
+            throw new IllegalStateException("Compression context is closed");
+        }
+
+        acquireSharedLock();
+
+        try {
+            long result = compressByteArray0(dstBuff, dstOffset, dstSize, srcBuff, srcOffset, srcSize);
+            if (Zstd.isError(result)) {
+                throw new ZstdException(result);
+            }
+            return result;
+
+        } finally {
+            releaseSharedLock();
+        }
+    }
+
+    private native long compressByteArray0(byte[] dst, int dstOffset, int dstSize, byte[] src, int srcOffset, int srcSize);
 }
