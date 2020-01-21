@@ -166,7 +166,7 @@ public class ZstdCompressCtx extends AutoCloseBase {
      * @param srcSize the length of 'srcBuff'
      * @return  the number of bytes written into buffer 'dstBuff'.
      */
-    public long compressDirectByteBuffer(ByteBuffer dstBuff, int dstOffset, int dstSize, ByteBuffer srcBuff, int srcOffset, int srcSize) {
+    public int compressDirectByteBuffer(ByteBuffer dstBuff, int dstOffset, int dstSize, ByteBuffer srcBuff, int srcOffset, int srcSize) {
         if (nativePtr == 0) {
             throw new IllegalStateException("Compression context is closed");
         }
@@ -180,12 +180,14 @@ public class ZstdCompressCtx extends AutoCloseBase {
         acquireSharedLock();
 
         try {
-            long result = compressDirectByteBuffer0(dstBuff, dstOffset, dstSize, srcBuff, srcOffset, srcSize);
-            if (Zstd.isError(result)) {
-                throw new ZstdException(result);
+            long size = compressDirectByteBuffer0(dstBuff, dstOffset, dstSize, srcBuff, srcOffset, srcSize);
+            if (Zstd.isError(size)) {
+                throw new ZstdException(size);
             }
-            return result;
-
+            if (size > Integer.MAX_VALUE) {
+                throw new ZstdException(Zstd.errGeneric(), "Output size is greater than MAX_INT");
+            }
+            return (int) size;
         } finally {
             releaseSharedLock();
         }
@@ -208,7 +210,7 @@ public class ZstdCompressCtx extends AutoCloseBase {
      * @param srcSize the length of 'srcBuff'
      * @return  the number of bytes written into buffer 'dstBuff'.
      */
-    public long compressByteArray(byte[] dstBuff, int dstOffset, int dstSize, byte[] srcBuff, int srcOffset, int srcSize) {
+    public int compressByteArray(byte[] dstBuff, int dstOffset, int dstSize, byte[] srcBuff, int srcOffset, int srcSize) {
         if (nativePtr == 0) {
             throw new IllegalStateException("Compression context is closed");
         }
@@ -216,12 +218,14 @@ public class ZstdCompressCtx extends AutoCloseBase {
         acquireSharedLock();
 
         try {
-            long result = compressByteArray0(dstBuff, dstOffset, dstSize, srcBuff, srcOffset, srcSize);
-            if (Zstd.isError(result)) {
-                throw new ZstdException(result);
+            long size = compressByteArray0(dstBuff, dstOffset, dstSize, srcBuff, srcOffset, srcSize);
+            if (Zstd.isError(size)) {
+                throw new ZstdException(size);
             }
-            return result;
-
+            if (size > Integer.MAX_VALUE) {
+                throw new ZstdException(Zstd.errGeneric(), "Output size is greater than MAX_INT");
+            }
+            return (int) size;
         } finally {
             releaseSharedLock();
         }
@@ -248,24 +252,48 @@ public class ZstdCompressCtx extends AutoCloseBase {
      *               </p>
      * @return the size of the compressed data
      */
-    public long compress(ByteBuffer dstBuf, ByteBuffer srcBuf) {
+    public int compress(ByteBuffer dstBuf, ByteBuffer srcBuf) {
 
-        long size = compressDirectByteBuffer(dstBuf, // compress into dstBuf
+        int size = compressDirectByteBuffer(dstBuf, // compress into dstBuf
                 dstBuf.position(),                   // write compressed data starting at offset position()
                 dstBuf.limit() - dstBuf.position(),  // write no more than limit() - position() bytes
                 srcBuf,                              // read data to compress from srcBuf
                 srcBuf.position(),                   // start reading at position()
                 srcBuf.limit() - srcBuf.position()   // read limit() - position() bytes
             );
-        if (Zstd.isError(size)) {
-            throw new ZstdException(size);
-        }
         srcBuf.position(srcBuf.limit());
-        dstBuf.position(dstBuf.position() + (int) size);
-        return (int) size;
+        dstBuf.position(dstBuf.position() + size);
+        return size;
     }
 
-    public long compress(byte[] dst, byte[] src) {
+    /**
+     * Compresses the data in buffer 'srcBuf'
+     *
+     * @param srcBuf the source buffer - must be direct. It is assumed that the `position()` of the
+     *               buffer marks the beginning of the uncompressed data to be compressed, and that
+     *               the `limit()` of this buffer marks its end.
+     *               <p>
+     *               When this method returns successfully, its `position()` will be set to its initial `limit()`.
+     *               </p>
+     * @return A newly allocated direct ByteBuffer containing the compressed data.
+     */
+    public ByteBuffer compress(ByteBuffer srcBuf) throws ZstdException {
+        long maxDstSize = Zstd.compressBound((long)(srcBuf.limit() - srcBuf.position()));
+        if (maxDstSize > Integer.MAX_VALUE) {
+            throw new ZstdException(Zstd.errGeneric(), "Max output size is greater than MAX_INT");
+        }
+        ByteBuffer dstBuf = ByteBuffer.allocateDirect((int) maxDstSize);
+        int size = compress(dstBuf, srcBuf);
+        srcBuf.position(srcBuf.limit());
+
+        dstBuf.limit(size);
+        // Since we allocated the buffer ourselves, we know it cannot be used to hold any further compressed data,
+        // so leave the position at zero where the caller surely wants it, ready to read
+
+        return dstBuf;
+    }
+
+    public int compress(byte[] dst, byte[] src) {
         return compressByteArray(dst, 0, dst.length, src, 0, src.length);
     }
 
@@ -275,13 +303,7 @@ public class ZstdCompressCtx extends AutoCloseBase {
             throw new ZstdException(Zstd.errGeneric(), "Max output size is greater than MAX_INT");
         }
         byte[] dst = new byte[(int) maxDstSize];
-        long size = compressByteArray(dst, 0, dst.length, src, 0, src.length);
-        if (Zstd.isError(size)) {
-            throw new ZstdException(size);
-        }
-
-        return Arrays.copyOfRange(dst, 0, (int) size);
+        int size = compressByteArray(dst, 0, dst.length, src, 0, src.length);
+        return Arrays.copyOfRange(dst, 0, size);
     }
-
-
 }

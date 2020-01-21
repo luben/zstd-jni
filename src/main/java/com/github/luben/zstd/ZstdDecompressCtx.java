@@ -117,12 +117,14 @@ public class ZstdDecompressCtx extends AutoCloseBase {
         acquireSharedLock();
 
         try {
-            long result = decompressDirectByteBuffer0(dstBuff, dstOffset, dstSize, srcBuff, srcOffset, srcSize);
-            if (Zstd.isError(result)) {
-                throw new ZstdException(result);
+            long size = decompressDirectByteBuffer0(dstBuff, dstOffset, dstSize, srcBuff, srcOffset, srcSize);
+            if (Zstd.isError(size)) {
+                throw new ZstdException(size);
             }
-            return (int) result;
-
+            if (size > Integer.MAX_VALUE) {
+                throw new ZstdException(Zstd.errGeneric(), "Output size is greater than MAX_INT");
+            }
+            return (int) size;
         } finally {
             releaseSharedLock();
         }
@@ -151,12 +153,14 @@ public class ZstdDecompressCtx extends AutoCloseBase {
         acquireSharedLock();
 
         try {
-            long result = decompressByteArray0(dstBuff, dstOffset, dstSize, srcBuff, srcOffset, srcSize);
-            if (Zstd.isError(result)) {
-                throw new ZstdException(result);
+            long size = decompressByteArray0(dstBuff, dstOffset, dstSize, srcBuff, srcOffset, srcSize);
+            if (Zstd.isError(size)) {
+                throw new ZstdException(size);
             }
-            return (int) result;
-
+            if (size > Integer.MAX_VALUE) {
+                throw new ZstdException(Zstd.errGeneric(), "Output size is greater than MAX_INT");
+            }
+            return (int) size;
         } finally {
             releaseSharedLock();
         }
@@ -187,33 +191,26 @@ public class ZstdDecompressCtx extends AutoCloseBase {
      */
     public int decompress(ByteBuffer dstBuf, ByteBuffer srcBuf) throws ZstdException {
 
-        long size = decompressDirectByteBuffer(dstBuf,  // decompress into dstBuf
+        int size = decompressDirectByteBuffer(dstBuf,  // decompress into dstBuf
                 dstBuf.position(),                      // write decompressed data at offset position()
                 dstBuf.limit() - dstBuf.position(),     // write no more than limit() - position()
                 srcBuf,                                 // read compressed data from srcBuf
                 srcBuf.position(),                      // read starting at offset position()
                 srcBuf.limit() - srcBuf.position());    // read no more than limit() - position()
-        if (Zstd.isError(size)) {
-            throw new ZstdException(size);
-        }
-
         srcBuf.position(srcBuf.limit());
-        dstBuf.position(dstBuf.position() + (int) size);
-        return (int) size;
+        dstBuf.position(dstBuf.position() + size);
+        return size;
     }
 
-    public long decompress(byte[] dst, byte[] src) {
+    public int decompress(byte[] dst, byte[] src) {
         return decompressByteArray(dst, 0, dst.length, src, 0, src.length);
     }
 
     public byte[] decompress(byte[] src, int originalSize) throws ZstdException {
         byte[] dst = new byte[originalSize];
-        long size = decompress(dst, src);
-        if (Zstd.isError(size)) {
-            throw new ZstdException(size);
-        }
+        int size = decompress(dst, src);
         if (size != originalSize) {
-            return Arrays.copyOfRange(dst, 0, (int) size);
+            return Arrays.copyOfRange(dst, 0, size);
         } else {
             return dst;
         }
