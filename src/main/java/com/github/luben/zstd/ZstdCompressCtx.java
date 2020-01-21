@@ -4,6 +4,7 @@ import com.github.luben.zstd.util.Native;
 import com.github.luben.zstd.ZstdDictCompress;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 public class ZstdCompressCtx extends AutoCloseBase {
 
@@ -42,27 +43,30 @@ public class ZstdCompressCtx extends AutoCloseBase {
      * Set compression level
      * @param level compression level, default: 3
      */
-    public void setLevel(int level) {
+    public ZstdCompressCtx setLevel(int level) {
         if (nativePtr == 0) {
             throw new IllegalStateException("Compression context is closed");
         }
         acquireSharedLock();
         setLevel0(level);
         releaseSharedLock();
+        return this;
     }
+
     private native void setLevel0(int level);
 
     /**
      * Enable or disable compression checksums
      * @param checksumFlag A 32-bits checksum of content is written at end of frame, default: false
      */
-    public void setChecksum(boolean checksumFlag) {
+    public ZstdCompressCtx setChecksum(boolean checksumFlag) {
         if (nativePtr == 0) {
             throw new IllegalStateException("Compression context is closed");
         }
         acquireSharedLock();
         setChecksum0(checksumFlag);
         releaseSharedLock();
+        return this;
     }
     private native void setChecksum0(boolean checksumFlag);
 
@@ -70,13 +74,14 @@ public class ZstdCompressCtx extends AutoCloseBase {
      * Enable or disable content size
      * @param contentSizeFlag Content size will be written into frame header _whenever known_, default: true
      */
-    public void setContentSize(boolean contentSizeFlag) {
+    public ZstdCompressCtx setContentSize(boolean contentSizeFlag) {
         if (nativePtr == 0) {
             throw new IllegalStateException("Compression context is closed");
         }
         acquireSharedLock();
         setContentSize0(contentSizeFlag);
         releaseSharedLock();
+        return this;
     }
     private native void setContentSize0(boolean contentSizeFlag);
 
@@ -84,13 +89,14 @@ public class ZstdCompressCtx extends AutoCloseBase {
      * Enable or disable dictID
      * @param dictIDFlag When applicable, dictionary's ID is written into frame header, default: true
      */
-    public void setDictID(boolean dictIDFlag) {
+    public ZstdCompressCtx setDictID(boolean dictIDFlag) {
         if (nativePtr == 0) {
             throw new IllegalStateException("Compression context is closed");
         }
         acquireSharedLock();
         setDictID0(dictIDFlag);
         releaseSharedLock();
+        return this;
     }
     private native void setDictID0(boolean dictIDFlag);
 
@@ -99,7 +105,7 @@ public class ZstdCompressCtx extends AutoCloseBase {
      *
      * @param dict the dictionary or `null` to remove loaded dictionary
      */
-    public void loadDict(ZstdDictCompress dict) {
+    public ZstdCompressCtx loadDict(ZstdDictCompress dict) {
         if (nativePtr == 0) {
             throw new IllegalStateException("Compression context is closed");
         }
@@ -117,6 +123,7 @@ public class ZstdCompressCtx extends AutoCloseBase {
             dict.releaseSharedLock();
             releaseSharedLock();
         }
+        return this;
     }
     private native long loadCDictFast0(ZstdDictCompress dict);
 
@@ -125,7 +132,7 @@ public class ZstdCompressCtx extends AutoCloseBase {
      *
      * @param dict the dictionary or `null` to remove loaded dictionary
      */
-    public void loadDict(byte[] dict) {
+    public ZstdCompressCtx loadDict(byte[] dict) {
         if (nativePtr == 0) {
             throw new IllegalStateException("Compression context is closed");
         }
@@ -139,6 +146,7 @@ public class ZstdCompressCtx extends AutoCloseBase {
         } finally {
             releaseSharedLock();
         }
+        return this;
     }
     private native long loadCDict0(byte[] dict);
 
@@ -147,7 +155,8 @@ public class ZstdCompressCtx extends AutoCloseBase {
      *
      * Destination buffer should be sized to handle worst cases situations (input
      * data not compressible). Worst case size evaluation is provided by function
-     * ZSTD_compressBound().
+     * ZSTD_compressBound(). This is a low-level function that does not take into
+     * account or affect the `limit` or `position` of source or destination buffers.
      *
      * @param dstBuff the destination buffer - must be direct
      * @param dstOffset the start offset of 'dstBuff'
@@ -219,4 +228,60 @@ public class ZstdCompressCtx extends AutoCloseBase {
     }
 
     private native long compressByteArray0(byte[] dst, int dstOffset, int dstSize, byte[] src, int srcOffset, int srcSize);
+
+    /** Convenience methods */
+
+    /**
+     * Compresses the data in buffer 'srcBuf'
+     *
+     * @param dstBuf the destination buffer - must be direct. It is assumed that the `position()` of this buffer marks the offset
+     *               at which the compressed data are to be written, and that the `limit()` of this buffer is the maximum
+     *               compressed data size to allow.
+     *               <p>
+     *               When this method returns successfully, its `position()` will be set to its current `position()` plus the
+     *               compressed size of the data.
+     *               </p>
+     * @param srcBuf the source buffer - must be direct. It is assumed that the `position()` of this buffer marks the beginning of the
+     *               uncompressed data to be compressed, and that the `limit()` of this buffer marks its end.
+     *               <p>
+     *               When this method returns successfully, its `position()` will be set to the initial `limit()`.
+     *               </p>
+     * @return the size of the compressed data
+     */
+    public long compress(ByteBuffer dstBuf, ByteBuffer srcBuf) {
+
+        long size = compressDirectByteBuffer(dstBuf, // compress into dstBuf
+                dstBuf.position(),                   // write compressed data starting at offset position()
+                dstBuf.limit() - dstBuf.position(),  // write no more than limit() - position() bytes
+                srcBuf,                              // read data to compress from srcBuf
+                srcBuf.position(),                   // start reading at position()
+                srcBuf.limit() - srcBuf.position()   // read limit() - position() bytes
+            );
+        if (Zstd.isError(size)) {
+            throw new ZstdException(size);
+        }
+        srcBuf.position(srcBuf.limit());
+        dstBuf.position(dstBuf.position() + (int) size);
+        return (int) size;
+    }
+
+    public long compress(byte[] dst, byte[] src) {
+        return compressByteArray(dst, 0, dst.length, src, 0, src.length);
+    }
+
+    public byte[] compress(byte[] src) {
+        long maxDstSize = Zstd.compressBound(src.length);
+        if (maxDstSize > Integer.MAX_VALUE) {
+            throw new ZstdException(Zstd.errGeneric(), "Max output size is greater than MAX_INT");
+        }
+        byte[] dst = new byte[(int) maxDstSize];
+        long size = compressByteArray(dst, 0, dst.length, src, 0, src.length);
+        if (Zstd.isError(size)) {
+            throw new ZstdException(size);
+        }
+
+        return Arrays.copyOfRange(dst, 0, (int) size);
+    }
+
+
 }
