@@ -478,11 +478,11 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdDecompressCtx_decompressD
 }
 
 /*
- * Class:     com_github_luben_zstd_ZstdCompressCtx
+ * Class:     com_github_luben_zstd_ZstdDecompressCtx
  * Method:    decompressByteArray0
  * Signature: (B[IIB[II)J
  */
-JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdCompressCtx_decompressByteArray0
+JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdDecompressCtx_decompressByteArray0
   (JNIEnv *env, jclass jctx, jbyteArray dst, jint dst_offset, jint dst_size, jbyteArray src, jint src_offset, jint src_size) {
     size_t size = (size_t)(0-ZSTD_error_memory_allocation);
 

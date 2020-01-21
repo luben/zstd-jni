@@ -283,7 +283,13 @@ public class ZstdCompressCtx extends AutoCloseBase {
             throw new ZstdException(Zstd.errGeneric(), "Max output size is greater than MAX_INT");
         }
         ByteBuffer dstBuf = ByteBuffer.allocateDirect((int) maxDstSize);
-        int size = compress(dstBuf, srcBuf);
+        int size = compressDirectByteBuffer(dstBuf,    // compress into dstBuf
+                  0,                                   // starting at offset 0
+                  (int) maxDstSize,                    // writing no more than maxDstSize
+                  srcBuf,                              // read data to be compressed from srcBuf
+                  srcBuf.position(),                   // start reading at offset position()
+                  srcBuf.limit() - srcBuf.position()   // read limit() - position() bytes
+            );
         srcBuf.position(srcBuf.limit());
 
         dstBuf.limit(size);

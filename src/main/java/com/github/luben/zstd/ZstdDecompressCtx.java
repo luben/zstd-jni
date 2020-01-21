@@ -31,7 +31,6 @@ public class ZstdDecompressCtx extends AutoCloseBase {
         storeFence();
     }
 
-
     void doClose() {
         if (nativePtr != 0) {
             free();
@@ -200,6 +199,15 @@ public class ZstdDecompressCtx extends AutoCloseBase {
         srcBuf.position(srcBuf.limit());
         dstBuf.position(dstBuf.position() + size);
         return size;
+    }
+
+    public ByteBuffer decompress(ByteBuffer srcBuf, int originalSize) throws ZstdException {
+        ByteBuffer dstBuf = ByteBuffer.allocateDirect(originalSize);
+        int size = decompressDirectByteBuffer(dstBuf, 0, originalSize, srcBuf, srcBuf.position(), srcBuf.limit());
+        srcBuf.position(srcBuf.limit());
+        // Since we allocated the buffer ourselves, we know it cannot be used to hold any further decompressed data,
+        // so leave the position at zero where the caller surely wants it, ready to read
+        return dstBuf;
     }
 
     public int decompress(byte[] dst, byte[] src) {
