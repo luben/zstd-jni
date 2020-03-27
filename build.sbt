@@ -161,7 +161,7 @@ osgiSettings
 OsgiKeys.bundleSymbolicName := "com.github.luben.zstd-jni"
 OsgiKeys.exportPackage  := Seq(s"""com.github.luben.zstd;version="${version.value}"""")
 OsgiKeys.privatePackage := Seq("com.github.luben.zstd.util", "include",
-  "linux.amd64", "linux.i386", "linux.aarch64", "linux.armhf", "linux.ppc64",
+  "linux.amd64", "linux.i386", "linux.aarch64", "linux.arm", "linux.ppc64",
   "linux.ppc64le", "linux.mips64", "aix.ppc64", "darwin.x86_64", "win.amd64", "win.x86"
 )
 
@@ -214,14 +214,14 @@ packageOptions in (Linux_aarch64, packageBin) +=
   Package.ManifestAttributes(new java.util.jar.Attributes.Name("Automatic-Module-Name") -> "com.github.luben.zstd_jni")
 addArtifact(Artifact(nameValue, "linux_aarch64"), packageBin in Linux_aarch64)
 
-lazy val Linux_armhf = config("linux_armhf").extend(Compile)
-inConfig(Linux_armhf)(Defaults.compileSettings)
-mappings in (Linux_armhf, packageBin) := {
-  (file("target/classes/linux/armhf/libzstd-jni.so"), "linux/armhf/libzstd-jni.so") :: classes
+lazy val Linux_arm = config("linux_arm").extend(Compile)
+inConfig(Linux_arm)(Defaults.compileSettings)
+mappings in (Linux_arm, packageBin) := {
+  (file("target/classes/linux/arm/libzstd-jni.so"), "linux/arm/libzstd-jni.so") :: classes
 }
-packageOptions in (Linux_armhf, packageBin) +=
+packageOptions in (Linux_arm, packageBin) +=
   Package.ManifestAttributes(new java.util.jar.Attributes.Name("Automatic-Module-Name") -> "com.github.luben.zstd_jni")
-addArtifact(Artifact(nameValue, "linux_armhf"), packageBin in Linux_armhf)
+addArtifact(Artifact(nameValue, "linux_arm"), packageBin in Linux_arm)
 
 lazy val Linux_ppc64le = config("linux_ppc64le").extend(Compile)
 inConfig(Linux_ppc64le)(Defaults.compileSettings)
