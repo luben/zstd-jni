@@ -234,9 +234,9 @@ public class ZstdInputStream extends FilterInputStream {
         if (isClosed) {
             return;
         }
+        isClosed = true;
         freeDStream(stream);
         in.close();
-        isClosed = true;
     }
 
     @Override
