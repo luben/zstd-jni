@@ -16,7 +16,7 @@ install:
 build_script:
   - sbt clean compile
 test_script:
-    sbt jacoco
+  - sbt jacoco
 artifacts:
   - path: target\classes\win\**\*.dll
 deploy:
