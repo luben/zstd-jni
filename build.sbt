@@ -27,6 +27,10 @@ javacOptions ++= Seq("-source", "1.6", "-target", "1.6")
 
 javacOptions in doc := Seq("-source", "1.6")
 
+// Check at runtime for JNI errors when running tests
+// fork := true
+// javaOptions in Test ++= Seq("-Xcheck:jni")
+
 // sbt-jni configuration
 jniLibraryName := "zstd-jni"
 
