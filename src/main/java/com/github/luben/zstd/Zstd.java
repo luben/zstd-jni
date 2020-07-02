@@ -214,7 +214,7 @@ public class Zstd {
         try {
             ctx.setLevel(level);
             ctx.loadDict(dict);
-            return (long) ctx.compress(dst, src);
+            return (long) ctx.compressByteArray(dst, dstOffset - dstOffset, dst.length, src, srcOffset, length);
         } finally {
             ctx.close();
         }

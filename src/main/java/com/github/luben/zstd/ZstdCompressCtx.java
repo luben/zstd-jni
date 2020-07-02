@@ -160,10 +160,10 @@ public class ZstdCompressCtx extends AutoCloseBase {
      *
      * @param dstBuff the destination buffer - must be direct
      * @param dstOffset the start offset of 'dstBuff'
-     * @param dstSize the size of 'dstBuff'
+     * @param dstSize the size of 'dstBuff' (after 'dstOffset')
      * @param srcBuff the source buffer - must be direct
      * @param srcOffset the start offset of 'srcBuff'
-     * @param srcSize the length of 'srcBuff'
+     * @param srcSize the length of 'srcBuff' (after 'srcOffset')
      * @return  the number of bytes written into buffer 'dstBuff'.
      */
     public int compressDirectByteBuffer(ByteBuffer dstBuff, int dstOffset, int dstSize, ByteBuffer srcBuff, int srcOffset, int srcSize) {
@@ -204,10 +204,10 @@ public class ZstdCompressCtx extends AutoCloseBase {
      *
      * @param dstBuff the destination buffer (byte array)
      * @param dstOffset the start offset of 'dstBuff'
-     * @param dstSize the size of 'dstBuff'
+     * @param dstSize the size of 'dstBuff' (after 'dstOffset')
      * @param srcBuff the source buffer (byte array)
      * @param srcOffset the start offset of 'srcBuff'
-     * @param srcSize the length of 'srcBuff'
+     * @param srcSize the length of 'srcBuff' (after 'srcOffset')
      * @return  the number of bytes written into buffer 'dstBuff'.
      */
     public int compressByteArray(byte[] dstBuff, int dstOffset, int dstSize, byte[] srcBuff, int srcOffset, int srcSize) {
