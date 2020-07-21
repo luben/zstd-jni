@@ -203,7 +203,7 @@ public class Zstd {
      * @param dstOffset the start offset of 'dst'
      * @param src the source buffer
      * @param srcOffset the start offset of 'src'
-     * @param length the length of 'src'
+     * @param length the length of available data in 'src' after `srcOffset'
      * @param dict the dictionary buffer
      * @param level compression level
      * @return  the number of bytes written into buffer 'dst' or an error code if
@@ -214,7 +214,34 @@ public class Zstd {
         try {
             ctx.setLevel(level);
             ctx.loadDict(dict);
-            return (long) ctx.compressByteArray(dst, dstOffset - dstOffset, dst.length, src, srcOffset, length);
+            return (long) ctx.compressByteArray(dst, dstOffset, dst.length - dstOffset, src, srcOffset, length);
+        } finally {
+            ctx.close();
+        }
+    }
+
+   /**
+     * Compresses buffer 'src' into buffer 'dst' with dictionary.
+     *
+     * Destination buffer should be sized to handle worst cases situations (input
+     * data not compressible). Worst case size evaluation is provided by function
+     * ZSTD_compressBound().
+     *
+     * @param dst the destination buffer
+     * @param dstOffset the start offset of 'dst'
+     * @param src the source buffer
+     * @param srcOffset the start offset of 'src'
+     * @param dict the dictionary buffer
+     * @param level compression level
+     * @return  the number of bytes written into buffer 'dst' or an error code if
+     *          it fails (which can be tested using ZSTD_isError())
+     */
+    public static long compressUsingDict (byte[] dst, int dstOffset, byte[] src, int srcOffset, byte[] dict, int level) {
+        ZstdCompressCtx ctx = new ZstdCompressCtx();
+        try {
+            ctx.setLevel(level);
+            ctx.loadDict(dict);
+            return (long) ctx.compressByteArray(dst, dstOffset, dst.length - dstOffset, src, srcOffset, src.length - srcOffset);
         } finally {
             ctx.close();
         }
@@ -260,7 +287,7 @@ public class Zstd {
      * @param dstOffset the start offset of 'dst'
      * @param src the source buffer
      * @param srcOffset the start offset of 'src'
-     * @param length the length of 'src'
+     * @param length the length of available data in 'src' after `srcOffset'
      * @param dict the dictionary
      * @return  the number of bytes written into buffer 'dst' or an error code if
      *          it fails (which can be tested using ZSTD_isError())
@@ -271,6 +298,32 @@ public class Zstd {
             ctx.loadDict(dict);
             ctx.setLevel(dict.level());
             return (long) ctx.compressByteArray(dst, dstOffset, dst.length - dstOffset, src, srcOffset, length);
+        } finally {
+            ctx.close();
+        }
+    }
+
+    /**
+     * Compresses buffer 'src' into buffer 'dst' with dictionary.
+     *
+     * Destination buffer should be sized to handle worst cases situations (input
+     * data not compressible). Worst case size evaluation is provided by function
+     * ZSTD_compressBound().
+     *
+     * @param dst the destination buffer
+     * @param dstOffset the start offset of 'dst'
+     * @param src the source buffer
+     * @param srcOffset the start offset of 'src'
+     * @param dict the dictionary
+     * @return  the number of bytes written into buffer 'dst' or an error code if
+     *          it fails (which can be tested using ZSTD_isError())
+     */
+    public static long compressFastDict(byte[] dst, int dstOffset, byte[] src, int srcOffset, ZstdDictCompress dict) {
+        ZstdCompressCtx ctx = new ZstdCompressCtx();
+        try {
+            ctx.loadDict(dict);
+            ctx.setLevel(dict.level());
+            return (long) ctx.compressByteArray(dst, dstOffset, dst.length - dstOffset, src, srcOffset, src.length - srcOffset);
         } finally {
             ctx.close();
         }
