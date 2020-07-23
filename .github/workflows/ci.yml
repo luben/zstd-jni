@@ -6,8 +6,8 @@
       strategy:
           fail-fast: false
       steps:
-      - uses: actions/checkout
-      - uses: olafurpg/setup-scala
+      - uses: actions/checkout@v2
+      - uses: olafurpg/setup-scala@v7
       - name: Compile
         run: sbt compile
       - name: Test
