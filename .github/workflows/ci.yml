@@ -23,7 +23,7 @@ jobs:
           env:
             AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
             AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          run: aws s3 --recursive ./target/classes/${{ matrix.target }} s3://zstd-jni/github
+          run: aws s3 cp --recursive ./target/classes/${{ matrix.target }} s3://zstd-jni/github
     ci-win:
         strategy:
             fail-fast: false
@@ -59,4 +59,4 @@ jobs:
           env:
             AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
             AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          run: aws s3 --recursive ./target/classes/${{ matrix.target }} s3://zstd-jni/github
+          run: aws s3 cp --recursive ./target/classes/${{ matrix.target }} s3://zstd-jni/github
