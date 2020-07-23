@@ -1,8 +1,6 @@
 Zstd-jni
 ========
 
-[![Build Status](https://api.travis-ci.org/luben/zstd-jni.svg)](https://travis-ci.org/luben/zstd-jni)
-[![Windows Build](https://ci.appveyor.com/api/projects/status/qs6j4n9t3bsi5p4w/branch/master?svg=true)](https://ci.appveyor.com/project/luben/zstd-jni)
 [![CI](https://github.com/luben/zstd-jni/workflows/CI/badge.svg)](https://github.com/luben/zstd-jni/actions)
 [![codecov.io](http://codecov.io/github/luben/zstd-jni/coverage.svg?branch=master)](http://codecov.io/github/luben/zstd-jni?branch=master)
 [![Code Quality: C](https://img.shields.io/lgtm/grade/cpp/g/luben/zstd-jni.svg?logo=lgtm&logoWidth=18&label=C)](https://lgtm.com/projects/g/luben/zstd-jni/context:cpp)
