@@ -1,7 +1,22 @@
-name: CI Windows
+name: CI
 on: [push, pull_request]
 jobs:
-    build:
+    ci-nix:
+        strategy:
+            fail-fast: false
+            matrix:
+                os: [ubuntu-latest, macos-latest]
+        runs-on: ${{ matrix.os }}
+        steps:
+        - uses: actions/checkout@v2
+        - uses: actions/setup-java@v1
+          with:
+            java-version: 8
+        - name: Compile
+          run: ./sbt compile
+        - name: Test
+          run: ./sbt jacoco
+    ci-win:
         runs-on: windows-latest
         strategy:
             fail-fast: false
@@ -21,7 +36,7 @@ jobs:
             install: git base-devel mingw-w64-${{ matrix.arch }}-toolchain
             path-type: inherit
             update: true
-        - uses: actions/setup-java@v1
+        - uses: emgre/setup-java@master
           with:
             java-version: 8
             architecture: ${{ matrix.java_arch }}
