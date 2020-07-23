@@ -5,7 +5,10 @@ jobs:
         strategy:
             fail-fast: false
             matrix:
-                os: [ubuntu-latest, macos-latest]
+                include: [
+                    { os: ubuntu-latest, target: "linux/amd64" },
+                    { os: macos-latest,  target: "darwin/x86_64" }
+                ]
         runs-on: ${{ matrix.os }}
         steps:
         - uses: actions/checkout@v2
@@ -16,15 +19,20 @@ jobs:
           run: ./sbt compile
         - name: Test
           run: ./sbt jacoco
+        - name: Deploy
+          env:
+            AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+            AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          run: aws s3 --recursive ./target/classes/${{ matrix.target }} s3://zstd-jni/github
     ci-win:
-        runs-on: windows-latest
         strategy:
             fail-fast: false
             matrix:
                 include: [
-                    { msystem: MINGW64, arch: x86_64, java_arch: x64 },
-                    { msystem: MINGW32, arch: i686,   java_arch: x86 }
+                    { msystem: MINGW64, arch: x86_64, java_arch: x64, target: "win/amd64" },
+                    { msystem: MINGW32, arch: i686,   java_arch: x86, target: "win/x86" }
                 ]
+        runs-on: windows-latest
         defaults:
             run:
                 shell: msys2 {0}
@@ -36,6 +44,7 @@ jobs:
             install: git base-devel mingw-w64-${{ matrix.arch }}-toolchain
             path-type: inherit
             update: true
+        # the official actions/setup-java has a bug: https://github.com/actions/setup-java/issues/55
         - uses: emgre/setup-java@master
           with:
             java-version: 8
@@ -46,3 +55,8 @@ jobs:
           run: ./sbt compile
         - name: Test
           run: ./sbt jacoco
+        - name: Deploy
+          env:
+            AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+            AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          run: aws s3 --recursive ./target/classes/${{ matrix.target }} s3://zstd-jni/github
