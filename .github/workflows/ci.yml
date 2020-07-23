@@ -6,8 +6,8 @@ jobs:
             fail-fast: false
             matrix:
                 include: [
-                    { os: ubuntu-latest, target: "linux/amd64" },
-                    { os: macos-latest,  target: "darwin/x86_64" }
+                    { os: ubuntu-latest, target: linux/amd64 },
+                    { os: macos-latest,  target: darwin/x86_64 }
                 ]
         runs-on: ${{ matrix.os }}
         steps:
@@ -19,18 +19,21 @@ jobs:
           run: ./sbt compile
         - name: Test
           run: ./sbt jacoco
+        - name: Upload coverage
+          uses: codecov/codecov-action@v1
         - name: Deploy
           env:
             AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
             AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          run: aws s3 cp --recursive ./target/classes/${{ matrix.target }} s3://zstd-jni/github
+            AWS_DEFAULT_REGION: "us-east-1"
+          run: aws s3 cp --recursive target/classes/${{ matrix.target }} s3://zstd-jni/github/${{ matrix.target }}
     ci-win:
         strategy:
             fail-fast: false
             matrix:
                 include: [
-                    { msystem: MINGW64, arch: x86_64, java_arch: x64, target: "win/amd64" },
-                    { msystem: MINGW32, arch: i686,   java_arch: x86, target: "win/x86" }
+                    { msystem: MINGW64, arch: x86_64, java_arch: x64, target: 'win\amd64', s3_path: win/amd64 },
+                    { msystem: MINGW32, arch: i686,   java_arch: x86, target: 'win\x86',   s3_path: win/x86 }
                 ]
         runs-on: windows-latest
         defaults:
@@ -44,7 +47,7 @@ jobs:
             install: git base-devel mingw-w64-${{ matrix.arch }}-toolchain
             path-type: inherit
             update: true
-        # the official actions/setup-java has a bug: https://github.com/actions/setup-java/issues/55
+        # the official action has a bug: https://github.com/actions/setup-java/issues/55
         - uses: emgre/setup-java@master
           with:
             java-version: 8
@@ -55,8 +58,12 @@ jobs:
           run: ./sbt compile
         - name: Test
           run: ./sbt jacoco
+        - name: Upload coverage
+          uses: codecov/codecov-action@v1
         - name: Deploy
+          shell: cmd
           env:
             AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
             AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          run: aws s3 cp --recursive ./target/classes/${{ matrix.target }} s3://zstd-jni/github
+            AWS_DEFAULT_REGION: "us-east-1"
+          run: 'aws s3 cp --recursive target\classes\${{ matrix.target }} s3://zstd-jni/github/${{ matrix.s3_path }}'
