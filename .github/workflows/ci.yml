@@ -1,0 +1,14 @@
+  name: CI
+  on: [push, pull_request]
+  jobs:
+    build:
+      runs-on: [ubuntu-latest, macos-latest]
+      strategy:
+          fail-fast: false
+      steps:
+      - uses: actions/checkout
+      - uses: olafurpg/setup-scala
+      - name: Compile
+        run: sbt compile
+      - name: Test
+        run: sbt test
