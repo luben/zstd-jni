@@ -138,8 +138,10 @@ licenses := Seq("BSD 2-Clause License" -> url("https://opensource.org/licenses/B
 description := "JNI bindings for Zstd native library that provides fast and high " +
                 "compression lossless algorithm for Java and all JVM languages."
 
-packageOptions in (Compile, packageBin) +=
-  Package.ManifestAttributes(new java.util.jar.Attributes.Name("Automatic-Module-Name") -> "com.github.luben.zstd_jni")
+packageOptions in (Compile, packageBin) ++= Seq(
+  Package.ManifestAttributes(new java.util.jar.Attributes.Name("Automatic-Module-Name") -> "com.github.luben.zstd_jni"),
+  Package.ManifestAttributes(new java.util.jar.Attributes.Name("Eclipse-BundleShape") -> "dir"),
+)
 
 pomExtra := (
   <url>https://github.com/luben/zstd-jni</url>
@@ -163,11 +165,11 @@ pomExtra := (
 osgiSettings
 
 OsgiKeys.bundleSymbolicName := "com.github.luben.zstd-jni"
-OsgiKeys.exportPackage  := Seq(s"""com.github.luben.zstd;version="${version.value}"""")
-OsgiKeys.privatePackage := Seq("com.github.luben.zstd.util", "include",
-  "linux.amd64", "linux.i386", "linux.aarch64", "linux.arm", "linux.ppc64",
-  "linux.ppc64le", "linux.mips64", "aix.ppc64", "darwin.x86_64", "win.amd64", "win.x86",
-  "freebsd.amd64", "freebsd.i386"
+OsgiKeys.exportPackage  := Seq(s"com.github.luben.zstd", "com.github.luben.zstd.util")
+OsgiKeys.privatePackage := Seq("include",
+    "linux.amd64", "linux.i386", "linux.aarch64", "linux.arm", "linux.ppc64",
+    "linux.ppc64le", "linux.mips64", "aix.ppc64", "darwin.x86_64", "win.amd64", "win.x86",
+    "freebsd.amd64", "freebsd.i386"
 )
 
 // Jacoco coverage setting
