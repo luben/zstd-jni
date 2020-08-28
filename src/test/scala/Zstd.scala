@@ -19,6 +19,7 @@ class ZstdSpec extends FlatSpec with Checkers {
     PropertyCheckConfiguration(minSize = 0, sizeRange = 130 * 1024)
 
   val levels = List(1, 3, 6, 9)
+  val bufferSizes = List(1024, 2048, ZstdInputStream.srcBuffSize)
 
   for (level <- levels) {
     "Zstd" should s"should round-trip compression/decompression at level $level" in {
@@ -221,38 +222,40 @@ class ZstdSpec extends FlatSpec with Checkers {
   }
 
   for (level <- levels) {
-    "ZstdInputStream" should s"should round-trip compression/decompression at level $level" in {
-      check { input: Array[Byte] =>
-        val size  = input.length
-        val os    = new ByteArrayOutputStream(Zstd.compressBound(size.toLong).toInt)
-        val zos   = new ZstdOutputStream(os, level)
-        val block = 128 * 1024
-        var ptr   = 0
-        while (ptr < size) {
-          val chunk = if (size - ptr > block) block else size - ptr
-          zos.write(input, ptr, chunk)
-          ptr += chunk
-        }
-        zos.close
-        val compressed = os.toByteArray
-        // now decompress
-        val is    = new ByteArrayInputStream(compressed)
-        val zis   = new ZstdInputStream(is)
-        val output= Array.fill[Byte](size)(0)
-        ptr       = 0
+    for (bufferSize <- bufferSizes) {
+      "ZstdInputStream" should s"should round-trip compression/decompression at level $level and buffersize $bufferSize" in {
+        check { input: Array[Byte] =>
+          val size  = input.length
+          val os    = new ByteArrayOutputStream(Zstd.compressBound(size.toLong).toInt)
+          val zos   = new ZstdOutputStream(os, level)
+          val block = 128 * 1024
+          var ptr   = 0
+          while (ptr < size) {
+            val chunk = if (size - ptr > block) block else size - ptr
+            zos.write(input, ptr, chunk)
+            ptr += chunk
+          }
+          zos.close
+          val compressed = os.toByteArray
+          // now decompress
+          val is    = new ByteArrayInputStream(compressed)
+          val zis   = new ZstdInputStream(is, new Array[Byte](bufferSize))
+          val output= Array.fill[Byte](size)(0)
+          ptr       = 0
 
-        while (ptr < size) {
-          val chunk = if (size - ptr > block) block else size - ptr
-          zis.read(output, ptr, chunk)
-          ptr += chunk
+          while (ptr < size) {
+            val chunk = if (size - ptr > block) block else size - ptr
+            zis.read(output, ptr, chunk)
+            ptr += chunk
+          }
+          zis.close
+          if (input.toSeq != output.toSeq) {
+            println(s"AT SIZE $size")
+            println(input.toSeq + "!=" + output.toSeq)
+            println("COMPRESSED: " + compressed.toSeq)
+          }
+          input.toSeq == output.toSeq
         }
-        zis.close
-        if (input.toSeq != output.toSeq) {
-          println(s"AT SIZE $size")
-          println(input.toSeq + "!=" + output.toSeq)
-          println("COMPRESSED: " + compressed.toSeq)
-        }
-        input.toSeq == output.toSeq
       }
     }
   }
