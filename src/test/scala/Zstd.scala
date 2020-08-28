@@ -110,6 +110,36 @@ class ZstdSpec extends FlatSpec with Checkers {
     }
   }
 
+  it should "support calculating decompressedSize on ByteBuffers which wrap byte[]" in {
+    check { input: Array[Byte] =>
+      val size = input.length
+      val compressed = Zstd.compress(input)
+      val compressedBuffer = ByteBuffer.wrap(compressed)
+      Zstd.decompressedSize(compressedBuffer) == size
+    }
+  }
+
+  it should "support calculating decompressedSize on byte[] via offset" in {
+//    check { input: Array[Byte] =>
+//      val size = input.length
+//      val compressed = Zstd.compress(input)
+//      Zstd.decompressedSize(compressed, 0, compressed.length) == size
+//    }
+    pending
+  }
+
+  it should "support calculating decompressedSize on direct ByteBuffers via an offset" in {
+    check { (before: Array[Byte], input: Array[Byte], after: Array[Byte]) =>
+      val size = input.length
+      val compressed = Zstd.compress(input)
+      val paddedCompressed = before ++ compressed ++ after
+      val paddedCompressedBuffer = ByteBuffer.allocateDirect(paddedCompressed.length)
+      paddedCompressedBuffer.put(paddedCompressed)
+      paddedCompressedBuffer.flip()
+      Zstd.decompressedDirectByteBufferSize(paddedCompressedBuffer, before.length, compressed.length) == size
+    }
+  }
+
   it should s"honor non-zero position and limit values in ByteBuffers" in {
     check { input: Array[Byte] =>
       val size = input.length
