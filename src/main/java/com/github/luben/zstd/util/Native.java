@@ -4,7 +4,6 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URL;
 import java.lang.UnsatisfiedLinkError;
 
 public enum Native {
@@ -63,12 +62,10 @@ public enum Native {
 
         // try to load the shared library directly from the JAR
         try {
-            URL url = Native.class.getResource(resourceName);
-            if ("file".equals(url.getProtocol())) {
-                System.load(new File(url.toURI()).getAbsolutePath());
-                loaded = true;
-                return;
-            }
+            Class.forName("org.osgi.framework.BundleEvent"); // Simple OSGI env. check
+            System.loadLibrary(libname);
+            loaded = true;
+            return;
         } catch (Exception e) {
             // ignore and try other methods
         }
