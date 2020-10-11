@@ -28,8 +28,8 @@ public class ZstdInputStream extends FilterInputStream {
     private long srcSize = 0;
     private boolean needRead = true;
     private boolean finalize = true;
-    private byte[] src;
-    public static final int srcBuffSize = (int) recommendedDInSize();
+    private final byte[] src;
+    private static final int srcBuffSize = (int) recommendedDInSize();
 
     private boolean isContinuous = false;
     private boolean frameFinished = true;
@@ -43,25 +43,11 @@ public class ZstdInputStream extends FilterInputStream {
     private native int  initDStream(long stream);
     private native int  decompressStream(long stream, byte[] dst, int dst_size, byte[] src, int src_size);
 
-    // The main constuctor / legacy version dispatcher
-    public ZstdInputStream(InputStream inStream) throws IOException {
-        this(inStream,
-            // allocate input buffer with max frame header size
-            // no need to synchronize as these a finals
-            new byte[srcBuffSize]);
-    }
-
-    /**
-     * construct a ZstdInputStream with specify buffer. This constructor enables you to reuse the byte buffer after
-     * closing this stream
-     * @param inStream base stream
-     * @param src byte buffer
-     */
-    public ZstdInputStream(InputStream inStream, byte[] src) {
+    // The main constructor / legacy version dispatcher
+    public ZstdInputStream(InputStream inStream) {
         // FilterInputStream constructor
         super(inStream);
-        if (src == null || src.length <= 0) throw new NullPointerException("the src buffer can't be either null or empty");
-        this.src = src;
+        this.src = BufferPool.checkOut(srcBuffSize);
         // memory barrier
         synchronized(this) {
             this.stream = createDStream();
@@ -250,6 +236,7 @@ public class ZstdInputStream extends FilterInputStream {
             return;
         }
         isClosed = true;
+        BufferPool.checkIn(src);
         freeDStream(stream);
         in.close();
     }
