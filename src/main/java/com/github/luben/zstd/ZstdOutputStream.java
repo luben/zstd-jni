@@ -57,20 +57,20 @@ public class ZstdOutputStream extends FilterOutputStream {
         Zstd.setCompressionLevel(this.stream, level);
     }
 
-    /* The constuctor */
+    /* The constructor */
     public ZstdOutputStream(OutputStream outStream, int level) throws IOException {
         this(outStream);
         this.closeFrameOnFlush = false;
         Zstd.setCompressionLevel(this.stream, level);
     }
 
-    /* The constuctor */
+    /* The constructor */
     public ZstdOutputStream(OutputStream outStream) throws IOException {
         super(outStream);
         // create compression context
         this.stream = createCStream();
         this.closeFrameOnFlush = false;
-        this.dst = new byte[(int) dstSize];
+        this.dst = BufferPool.checkOut(dstSize);
     }
 
     public synchronized ZstdOutputStream setChecksum(boolean useChecksums) throws IOException {
@@ -232,6 +232,7 @@ public class ZstdOutputStream extends FilterOutputStream {
         } finally {
             // release the resources even if underlying stream throw an exception
             isClosed = true;
+            BufferPool.checkIn(dst);
             freeCStream(stream);
         }
     }

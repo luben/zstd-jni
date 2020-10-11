@@ -19,7 +19,6 @@ class ZstdSpec extends FlatSpec with Checkers {
     PropertyCheckConfiguration(minSize = 0, sizeRange = 130 * 1024)
 
   val levels = List(1, 3, 6, 9)
-  val bufferSizes = List(1024, 2048, ZstdInputStream.srcBuffSize)
 
   for (level <- levels) {
     "Zstd" should s"should round-trip compression/decompression at level $level" in {
@@ -222,40 +221,38 @@ class ZstdSpec extends FlatSpec with Checkers {
   }
 
   for (level <- levels) {
-    for (bufferSize <- bufferSizes) {
-      "ZstdInputStream" should s"should round-trip compression/decompression at level $level and buffersize $bufferSize" in {
-        check { input: Array[Byte] =>
-          val size  = input.length
-          val os    = new ByteArrayOutputStream(Zstd.compressBound(size.toLong).toInt)
-          val zos   = new ZstdOutputStream(os, level)
-          val block = 128 * 1024
-          var ptr   = 0
-          while (ptr < size) {
-            val chunk = if (size - ptr > block) block else size - ptr
-            zos.write(input, ptr, chunk)
-            ptr += chunk
-          }
-          zos.close
-          val compressed = os.toByteArray
-          // now decompress
-          val is    = new ByteArrayInputStream(compressed)
-          val zis   = new ZstdInputStream(is, new Array[Byte](bufferSize))
-          val output= Array.fill[Byte](size)(0)
-          ptr       = 0
-
-          while (ptr < size) {
-            val chunk = if (size - ptr > block) block else size - ptr
-            zis.read(output, ptr, chunk)
-            ptr += chunk
-          }
-          zis.close
-          if (input.toSeq != output.toSeq) {
-            println(s"AT SIZE $size")
-            println(input.toSeq + "!=" + output.toSeq)
-            println("COMPRESSED: " + compressed.toSeq)
-          }
-          input.toSeq == output.toSeq
+    "ZstdInputStream" should s"should round-trip compression/decompression at level $level" in {
+      check { input: Array[Byte] =>
+        val size  = input.length
+        val os    = new ByteArrayOutputStream(Zstd.compressBound(size.toLong).toInt)
+        val zos   = new ZstdOutputStream(os, level)
+        val block = 128 * 1024
+        var ptr   = 0
+        while (ptr < size) {
+          val chunk = if (size - ptr > block) block else size - ptr
+          zos.write(input, ptr, chunk)
+          ptr += chunk
         }
+        zos.close
+        val compressed = os.toByteArray
+        // now decompress
+        val is    = new ByteArrayInputStream(compressed)
+        val zis   = new ZstdInputStream(is)
+        val output= Array.fill[Byte](size)(0)
+        ptr       = 0
+
+        while (ptr < size) {
+          val chunk = if (size - ptr > block) block else size - ptr
+          zis.read(output, ptr, chunk)
+          ptr += chunk
+        }
+        zis.close
+        if (input.toSeq != output.toSeq) {
+          println(s"AT SIZE $size")
+          println(input.toSeq + "!=" + output.toSeq)
+          println("COMPRESSED: " + compressed.toSeq)
+        }
+        input.toSeq == output.toSeq
       }
     }
   }
@@ -843,5 +840,26 @@ class ZstdSpec extends FlatSpec with Checkers {
     val zis = new ZstdInputStream(new ByteArrayInputStream(compressed))
     val buf = new Array[Byte](100)
     assert(zis.read(buf, 0, 1) == -1)
+  }
+
+  "BufferPool" should "recycle buffers" in {
+    val largeBuf1 = BufferPool.checkOut(10)
+    val largeBuf2 = BufferPool.checkOut(10)
+    val largeBuf3 = BufferPool.checkOut(10)
+    BufferPool.checkIn(largeBuf1)
+    BufferPool.checkIn(largeBuf2)
+    val largeBuf4 = BufferPool.checkOut(10)
+    val largeBuf5 = BufferPool.checkOut(10)
+    val largeBuf6 = BufferPool.checkOut(10)
+    assert(largeBuf1 != largeBuf2)
+    assert(largeBuf1 != largeBuf3)
+    assert(largeBuf2 != largeBuf3)
+    assert(largeBuf4 == largeBuf1)
+    assert(largeBuf5 == largeBuf2)
+    assert(largeBuf6 != largeBuf1)
+    assert(largeBuf6 != largeBuf2)
+    assert(largeBuf6 != largeBuf3)
+    assert(largeBuf6 != largeBuf4)
+    assert(largeBuf6 != largeBuf5)
   }
 }
