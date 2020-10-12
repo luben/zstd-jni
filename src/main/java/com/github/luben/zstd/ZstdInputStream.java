@@ -28,6 +28,7 @@ public class ZstdInputStream extends FilterInputStream {
     private long srcSize = 0;
     private boolean needRead = true;
     private boolean finalize = true;
+    private BufferPool srcPool;
     private final byte[] src;
     private static final int srcBuffSize = (int) recommendedDInSize();
 
@@ -47,7 +48,8 @@ public class ZstdInputStream extends FilterInputStream {
     public ZstdInputStream(InputStream inStream) {
         // FilterInputStream constructor
         super(inStream);
-        this.src = BufferPool.checkOut(srcBuffSize);
+        this.srcPool = BufferPool.get(srcBuffSize);
+        this.src = srcPool.checkOut();
         // memory barrier
         synchronized(this) {
             this.stream = createDStream();
@@ -236,7 +238,8 @@ public class ZstdInputStream extends FilterInputStream {
             return;
         }
         isClosed = true;
-        BufferPool.checkIn(src);
+        srcPool.checkIn(src);
+        srcPool = null;
         freeDStream(stream);
         in.close();
     }

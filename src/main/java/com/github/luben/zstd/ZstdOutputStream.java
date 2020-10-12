@@ -19,6 +19,7 @@ public class ZstdOutputStream extends FilterOutputStream {
     private final long stream;
     private long srcPos = 0;
     private long dstPos = 0;
+    private BufferPool dstPool;
     private final byte[] dst;
     private boolean isClosed = false;
     private boolean finalize = true;
@@ -70,7 +71,8 @@ public class ZstdOutputStream extends FilterOutputStream {
         // create compression context
         this.stream = createCStream();
         this.closeFrameOnFlush = false;
-        this.dst = BufferPool.checkOut(dstSize);
+        this.dstPool = BufferPool.get(dstSize);
+        this.dst = dstPool.checkOut();
     }
 
     public synchronized ZstdOutputStream setChecksum(boolean useChecksums) throws IOException {
@@ -232,7 +234,8 @@ public class ZstdOutputStream extends FilterOutputStream {
         } finally {
             // release the resources even if underlying stream throw an exception
             isClosed = true;
-            BufferPool.checkIn(dst);
+            dstPool.checkIn(dst);
+            dstPool = null;
             freeCStream(stream);
         }
     }
