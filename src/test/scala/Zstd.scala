@@ -843,14 +843,15 @@ class ZstdSpec extends FlatSpec with Checkers {
   }
 
   "BufferPool" should "recycle buffers" in {
-    val largeBuf1 = BufferPool.checkOut(10)
-    val largeBuf2 = BufferPool.checkOut(10)
-    val largeBuf3 = BufferPool.checkOut(10)
-    BufferPool.checkIn(largeBuf1)
-    BufferPool.checkIn(largeBuf2)
-    val largeBuf4 = BufferPool.checkOut(10)
-    val largeBuf5 = BufferPool.checkOut(10)
-    val largeBuf6 = BufferPool.checkOut(10)
+    val pool = BufferPool.get(10)
+    val largeBuf1 = pool.checkOut()
+    val largeBuf2 = pool.checkOut()
+    val largeBuf3 = pool.checkOut()
+    pool.checkIn(largeBuf1)
+    pool.checkIn(largeBuf2)
+    val largeBuf4 = pool.checkOut()
+    val largeBuf5 = pool.checkOut()
+    val largeBuf6 = pool.checkOut()
     assert(largeBuf1 != largeBuf2)
     assert(largeBuf1 != largeBuf3)
     assert(largeBuf2 != largeBuf3)
