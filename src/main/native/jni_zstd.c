@@ -45,15 +45,15 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_decompressUnsafe
 /*
  * Class:     com_github_luben_zstd_Zstd
  * Method:    decompressedSize
- * Signature: ([B)J
+ * Signature: ([B)JI
  */
 JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_decompressedSize
-  (JNIEnv *env, jclass obj, jbyteArray src) {
+  (JNIEnv *env, jclass obj, jbyteArray src, jint offset) {
     size_t size = (size_t)(0-ZSTD_error_memory_allocation);
     jsize src_size = (*env)->GetArrayLength(env, src);
     void *src_buff = (*env)->GetPrimitiveArrayCritical(env, src, NULL);
     if (src_buff == NULL) goto E1;
-    size = ZSTD_getDecompressedSize(src_buff, (size_t) src_size);
+    size = ZSTD_getDecompressedSize(((char *) src_buff) + offset, (size_t) src_size - offset);
     (*env)->ReleasePrimitiveArrayCritical(env, src, src_buff, JNI_ABORT);
 E1: return size;
 }

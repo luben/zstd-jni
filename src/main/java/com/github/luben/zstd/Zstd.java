@@ -570,17 +570,31 @@ public class Zstd {
      * Return the original size of a compressed buffer (if known)
      *
      * @param src the compressed buffer
+     * @param srcPosition offset of the compressed data inside the src buffer
      * @return the number of bytes of the original buffer
-     *         0 if the original size is now known
+     *         0 if the original size is not known
      */
-    public static native long decompressedSize(byte[] src);
+    public static native long decompressedSize(byte[] src, int srcPosition);
 
     /**
      * Return the original size of a compressed buffer (if known)
      *
      * @param src the compressed buffer
      * @return the number of bytes of the original buffer
-     *         0 if the original size is now known
+     *         0 if the original size is not known
+     */
+    public static long decompressedSize(byte[] src) {
+        return decompressedSize(src, 0);
+    };
+
+    /**
+     * Return the original size of a compressed buffer (if known)
+     *
+     * @param src the compressed buffer
+     * @param srcPosition offset of the compressed data inside the src buffer
+     * @param srcSize length of the compressed data inside the src buffe
+     * @return the number of bytes of the original buffer
+     *         0 if the original size is not known
      */
     public static native long decompressedDirectByteBufferSize(ByteBuffer src, int srcPosition, int srcSize);
 
