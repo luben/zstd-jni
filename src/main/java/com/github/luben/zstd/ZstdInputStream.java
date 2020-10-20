@@ -30,7 +30,7 @@ public class ZstdInputStream extends FilterInputStream {
     private boolean finalize = true;
     private BufferPool srcPool;
     private final byte[] src;
-    private static final int srcBuffSize = (int) recommendedDInSize();
+    public static final int srcBuffSize = (int) recommendedDInSize();
 
     private boolean isContinuous = false;
     private boolean frameFinished = true;
@@ -46,10 +46,24 @@ public class ZstdInputStream extends FilterInputStream {
 
     // The main constructor / legacy version dispatcher
     public ZstdInputStream(InputStream inStream) {
+        this(inStream, BufferPool.get(srcBuffSize), null);
+    }
+
+    /**
+     * construct a ZstdInputStream with custom byte array. This construction is useful when you prefer to be able to
+     * manage the buffers. You can call {@link ZstdInputStream#srcBuffSize} to get the recommended size.
+     * @param inStream input stream
+     * @param src byte array
+     */
+    public ZstdInputStream(InputStream inStream, byte[] src) {
+        this(inStream, null, src);
+    }
+
+    private ZstdInputStream(InputStream inStream, BufferPool pool, byte[] src) {
         // FilterInputStream constructor
         super(inStream);
-        this.srcPool = BufferPool.get(srcBuffSize);
-        this.src = srcPool.checkOut();
+        this.srcPool = pool;
+        this.src = srcPool == null ? src : srcPool.checkOut();
         // memory barrier
         synchronized(this) {
             this.stream = createDStream();
@@ -238,8 +252,10 @@ public class ZstdInputStream extends FilterInputStream {
             return;
         }
         isClosed = true;
-        srcPool.checkIn(src);
-        srcPool = null;
+        if (srcPool != null) {
+            srcPool.checkIn(src);
+            srcPool = null;
+        }
         freeDStream(stream);
         in.close();
     }
