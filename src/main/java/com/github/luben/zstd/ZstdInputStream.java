@@ -4,6 +4,7 @@ import java.io.InputStream;
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.lang.IndexOutOfBoundsException;
+import java.nio.ByteBuffer;
 
 import com.github.luben.zstd.util.Native;
 
@@ -28,7 +29,8 @@ public class ZstdInputStream extends FilterInputStream {
     private long srcSize = 0;
     private boolean needRead = true;
     private boolean finalize = true;
-    private BufferPool srcPool;
+    private final BufferPool bufferPool;
+    private final ByteBuffer srcByteBuffer;
     private final byte[] src;
     private static final int srcBuffSize = (int) recommendedDInSize();
 
@@ -44,12 +46,25 @@ public class ZstdInputStream extends FilterInputStream {
     private native int  initDStream(long stream);
     private native int  decompressStream(long stream, byte[] dst, int dst_size, byte[] src, int src_size);
 
-    // The main constructor / legacy version dispatcher
+    /**
+     * create a new decompressing InputStream
+     * @param inStream the stream to wrap
+     */
     public ZstdInputStream(InputStream inStream) {
+        this(inStream, RecyclingBufferPool.INSTANCE);
+    }
+
+    /**
+     * create a new decompressing InputStream
+     * @param inStream the stream to wrap
+     * @param bufferPool the pool to fetch and return buffers
+     */
+    public ZstdInputStream(InputStream inStream, BufferPool bufferPool) {
         // FilterInputStream constructor
         super(inStream);
-        this.srcPool = BufferPool.get(srcBuffSize);
-        this.src = srcPool.checkOut();
+        this.bufferPool = bufferPool;
+        this.srcByteBuffer = bufferPool.get(srcBuffSize);
+        this.src = Zstd.extractArray(srcByteBuffer);
         // memory barrier
         synchronized(this) {
             this.stream = createDStream();
@@ -238,8 +253,7 @@ public class ZstdInputStream extends FilterInputStream {
             return;
         }
         isClosed = true;
-        srcPool.checkIn(src);
-        srcPool = null;
+        bufferPool.release(srcByteBuffer);
         freeDStream(stream);
         in.close();
     }

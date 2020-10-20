@@ -1272,4 +1272,11 @@ public class Zstd {
             ctx.close();
         }
     }
+
+    static final byte[] extractArray(ByteBuffer buffer) {
+        if (!buffer.hasArray() || buffer.arrayOffset() != 0) {
+            throw new IllegalArgumentException("provided ByteBuffer lacks array or has non-zero arrayOffset");
+        }
+        return buffer.array();
+    }
 }
