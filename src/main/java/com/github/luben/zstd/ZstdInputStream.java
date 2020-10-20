@@ -28,8 +28,8 @@ public class ZstdInputStream extends FilterInputStream {
     private long srcSize = 0;
     private boolean needRead = true;
     private boolean finalize = true;
-    private BufferPool srcPool;
-    private final byte[] src;
+    private BufferPool bufferPool;
+    private final byte[] buffer;
     public static final int srcBuffSize = (int) recommendedDInSize();
 
     private boolean isContinuous = false;
@@ -53,17 +53,17 @@ public class ZstdInputStream extends FilterInputStream {
      * construct a ZstdInputStream with custom byte array. This construction is useful when you prefer to be able to
      * manage the buffers. You can call {@link ZstdInputStream#srcBuffSize} to get the recommended size.
      * @param inStream input stream
-     * @param src byte array
+     * @param buffer byte array
      */
-    public ZstdInputStream(InputStream inStream, byte[] src) {
-        this(inStream, null, src);
+    public ZstdInputStream(InputStream inStream, byte[] buffer) {
+        this(inStream, null, buffer);
     }
 
-    private ZstdInputStream(InputStream inStream, BufferPool pool, byte[] src) {
+    private ZstdInputStream(InputStream inStream, BufferPool bufferPool, byte[] buffer) {
         // FilterInputStream constructor
         super(inStream);
-        this.srcPool = pool;
-        this.src = srcPool == null ? src : srcPool.checkOut();
+        this.bufferPool = bufferPool;
+        this.buffer = bufferPool == null ? buffer : bufferPool.checkOut();
         // memory barrier
         synchronized(this) {
             this.stream = createDStream();
@@ -155,7 +155,7 @@ public class ZstdInputStream extends FilterInputStream {
             // we will read only if data from the upstream is available OR
             // we have not yet produced any output
             if (needRead && (in.available() > 0 || dstPos == offset)) {
-                srcSize = in.read(src, 0, src.length);
+                srcSize = in.read(buffer, 0, buffer.length);
                 srcPos = 0;
                 if (srcSize < 0) {
                     srcSize = 0;
@@ -175,7 +175,7 @@ public class ZstdInputStream extends FilterInputStream {
             }
 
             lastDstPos = dstPos;
-            int size = decompressStream(stream, dst, dstSize, src, (int) srcSize);
+            int size = decompressStream(stream, dst, dstSize, buffer, (int) srcSize);
 
             if (Zstd.isError(size)) {
                 throw new IOException("Decompression error: " + Zstd.getErrorName(size));
@@ -252,9 +252,9 @@ public class ZstdInputStream extends FilterInputStream {
             return;
         }
         isClosed = true;
-        if (srcPool != null) {
-            srcPool.checkIn(src);
-            srcPool = null;
+        if (bufferPool != null) {
+            bufferPool.checkIn(buffer);
+            bufferPool = null;
         }
         freeDStream(stream);
         in.close();
