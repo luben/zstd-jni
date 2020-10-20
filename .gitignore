@@ -7,7 +7,7 @@ build/
 tags
 local.properties
 zstd-jni.iml
-gradle*
+gradlew*
 .gradle
 *.swp
 *.o
