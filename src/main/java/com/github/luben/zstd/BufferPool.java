@@ -1,50 +1,23 @@
 package com.github.luben.zstd;
 
-import java.lang.ref.SoftReference;
-import java.util.Map;
-import java.util.HashMap;
-import java.util.Deque;
-import java.util.ArrayDeque;
+import java.nio.ByteBuffer;
 
 /**
- * An pool of buffers which uses a simple reference queue to recycle old buffers.
+ * An an interface that allows users to customize how buffers are recycled.
  */
-class BufferPool {
-    private static final Map<Integer, SoftReference<BufferPool>> pools = new HashMap<Integer, SoftReference<BufferPool>>();
+public interface BufferPool {
 
-    static BufferPool get(int length) {
-        synchronized (pools) {
-            SoftReference<BufferPool> poolReference = pools.get(length);
-            BufferPool pool;
-            if (poolReference == null || (pool = poolReference.get()) == null) {
-                pool = new BufferPool(length);
-                poolReference = new SoftReference<BufferPool>(pool);
-                pools.put(length, poolReference);
-            }
-            return pool;
-        }
-    }
+    /**
+     * Fetch a buffer from the pool.
+     * @param capacity the desired size of the buffer
+     * @return a heap buffer with arrayOffset of 0
+     */
+    ByteBuffer get(int capacity);
 
-    private final int length;
-    private final Deque<byte[]> queue;
+    /**
+     * Return a buffer to the pool.
+     * @param buffer the buffer to return
+     */
+    void release(ByteBuffer buffer);
 
-    BufferPool(int length) {
-        this.length = length;
-        this.queue = new ArrayDeque<byte[]>();
-    }
-
-    synchronized byte[] checkOut() {
-        byte[] buffer = queue.pollFirst();
-        if (buffer == null) {
-            buffer = new byte[length];
-        }
-        return buffer;
-    }
-
-    synchronized void checkIn(byte[] buffer) {
-        if (length != buffer.length) {
-            throw new IllegalStateException("buffer size mismatch");
-        }
-        queue.addLast(buffer);
-    }
 }

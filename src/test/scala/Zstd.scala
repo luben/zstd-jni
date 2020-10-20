@@ -842,25 +842,40 @@ class ZstdSpec extends FlatSpec with Checkers {
     assert(zis.read(buf, 0, 1) == -1)
   }
 
-  "BufferPool" should "recycle buffers" in {
-    val pool = BufferPool.get(10)
-    val largeBuf1 = pool.checkOut()
-    val largeBuf2 = pool.checkOut()
-    val largeBuf3 = pool.checkOut()
-    pool.checkIn(largeBuf1)
-    pool.checkIn(largeBuf2)
-    val largeBuf4 = pool.checkOut()
-    val largeBuf5 = pool.checkOut()
-    val largeBuf6 = pool.checkOut()
-    assert(largeBuf1 != largeBuf2)
-    assert(largeBuf1 != largeBuf3)
-    assert(largeBuf2 != largeBuf3)
-    assert(largeBuf4 == largeBuf1)
-    assert(largeBuf5 == largeBuf2)
-    assert(largeBuf6 != largeBuf1)
-    assert(largeBuf6 != largeBuf2)
-    assert(largeBuf6 != largeBuf3)
-    assert(largeBuf6 != largeBuf4)
-    assert(largeBuf6 != largeBuf5)
+  "RecyclingBufferPool" should "recycle buffers" in {
+    val pool = RecyclingBufferPool.INSTANCE
+    val largeBuf1 = pool.get(10)
+    val largeBuf2 = pool.get(10)
+    val largeBuf3 = pool.get(10)
+    pool.release(largeBuf1)
+    pool.release(largeBuf2)
+    val largeBuf4 = pool.get(10)
+    val largeBuf5 = pool.get(10)
+    val largeBuf6 = pool.get(10)
+    assert(!largeBuf1.eq(largeBuf2))
+    assert(!largeBuf1.eq(largeBuf3))
+    assert(!largeBuf2.eq(largeBuf3))
+    assert(largeBuf4.eq(largeBuf1))
+    assert(largeBuf5.eq(largeBuf2))
+    assert(!largeBuf6.eq(largeBuf1))
+    assert(!largeBuf6.eq(largeBuf2))
+    assert(!largeBuf6.eq(largeBuf3))
+    assert(!largeBuf6.eq(largeBuf4))
+    assert(!largeBuf6.eq(largeBuf5))
+    assert(largeBuf6.hasArray)
+    assert(largeBuf6.arrayOffset == 0)
+    assert(largeBuf6.capacity == 10)
+    assert(largeBuf6.array.length == 10)
+  }
+  
+  "Zstd" should "validate when extracting backing arrays from ByteBuffers" in {
+    assertThrows[IllegalArgumentException] {
+      Zstd.extractArray(ByteBuffer.allocateDirect(10))
+    }
+    assertThrows[IllegalArgumentException] {
+      val buf = ByteBuffer.allocate(10);
+      buf.putInt(1);
+      Zstd.extractArray(buf.slice)
+    }
   }
 }

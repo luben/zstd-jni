@@ -3,6 +3,7 @@ package com.github.luben.zstd;
 import java.io.OutputStream;
 import java.io.FilterOutputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 import com.github.luben.zstd.util.Native;
 
@@ -19,7 +20,8 @@ public class ZstdOutputStream extends FilterOutputStream {
     private final long stream;
     private long srcPos = 0;
     private long dstPos = 0;
-    private BufferPool dstPool;
+    private final BufferPool bufferPool;
+    private final ByteBuffer dstByteBuffer;
     private final byte[] dst;
     private boolean isClosed = false;
     private boolean finalize = true;
@@ -64,15 +66,28 @@ public class ZstdOutputStream extends FilterOutputStream {
         this.closeFrameOnFlush = false;
         Zstd.setCompressionLevel(this.stream, level);
     }
-
-    /* The constructor */
+    
+    /**
+     * create a new compressing OutputStream
+     * @param outStream the stream to wrap
+     */
     public ZstdOutputStream(OutputStream outStream) throws IOException {
+        this(outStream, RecyclingBufferPool.INSTANCE);
+    }
+
+    /**
+     * create a new compressing OutputStream
+     * @param outStream the stream to wrap
+     * @param bufferPool the pool to fetch and return buffers
+     */
+    public ZstdOutputStream(OutputStream outStream, BufferPool bufferPool) throws IOException {
         super(outStream);
         // create compression context
         this.stream = createCStream();
         this.closeFrameOnFlush = false;
-        this.dstPool = BufferPool.get(dstSize);
-        this.dst = dstPool.checkOut();
+        this.bufferPool = bufferPool;
+        this.dstByteBuffer = bufferPool.get(dstSize);
+        this.dst = Zstd.extractArray(dstByteBuffer);
     }
 
     public synchronized ZstdOutputStream setChecksum(boolean useChecksums) throws IOException {
@@ -164,7 +179,7 @@ public class ZstdOutputStream extends FilterOutputStream {
         int srcSize = offset + len;
         srcPos = offset;
         while (srcPos < srcSize) {
-            int size = compressStream(stream, dst, dstSize, src, srcSize);
+            int size = compressStream(stream, dst, dst.length, src, srcSize);
             if (Zstd.isError(size)) {
                 throw new IOException("Compression error: " + Zstd.getErrorName(size));
             }
@@ -192,7 +207,7 @@ public class ZstdOutputStream extends FilterOutputStream {
                 // compress the remaining output and close the frame
                 int size;
                 do {
-                    size = endStream(stream, dst, dstSize);
+                    size = endStream(stream, dst, dst.length);
                     if (Zstd.isError(size)) {
                         throw new IOException("Compression error: " + Zstd.getErrorName(size));
                     }
@@ -203,7 +218,7 @@ public class ZstdOutputStream extends FilterOutputStream {
                 // compress the remaining input
                 int size;
                 do {
-                    size = flushStream(stream, dst, dstSize);
+                    size = flushStream(stream, dst, dst.length);
                     if (Zstd.isError(size)) {
                         throw new IOException("Compression error: " + Zstd.getErrorName(size));
                     }
@@ -223,7 +238,7 @@ public class ZstdOutputStream extends FilterOutputStream {
                 // compress the remaining input and close the frame
                 int size;
                 do {
-                    size = endStream(stream, dst, dstSize);
+                    size = endStream(stream, dst, dst.length);
                     if (Zstd.isError(size)) {
                         throw new IOException("Compression error: " + Zstd.getErrorName(size));
                     }
@@ -234,8 +249,7 @@ public class ZstdOutputStream extends FilterOutputStream {
         } finally {
             // release the resources even if underlying stream throw an exception
             isClosed = true;
-            dstPool.checkIn(dst);
-            dstPool = null;
+            bufferPool.release(dstByteBuffer);
             freeCStream(stream);
         }
     }
