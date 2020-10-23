@@ -66,7 +66,7 @@ public class ZstdOutputStream extends FilterOutputStream {
         this.closeFrameOnFlush = false;
         Zstd.setCompressionLevel(this.stream, level);
     }
-    
+
     /**
      * create a new compressing OutputStream
      * @param outStream the stream to wrap
@@ -158,7 +158,7 @@ public class ZstdOutputStream extends FilterOutputStream {
      *
      * If finalizers are disabled the responsibility fir calling the `close` method is on the consumer.
      *
-     * @param finalize, default `true` - finalizers are enabled
+     * @param finalize default `true` - finalizers are enabled
      */
     public void setFinalize(boolean finalize) {
         this.finalize = finalize;
