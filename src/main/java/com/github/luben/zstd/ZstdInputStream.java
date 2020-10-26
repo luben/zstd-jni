@@ -50,7 +50,7 @@ public class ZstdInputStream extends FilterInputStream {
      * create a new decompressing InputStream
      * @param inStream the stream to wrap
      */
-    public ZstdInputStream(InputStream inStream) {
+    public ZstdInputStream(InputStream inStream) throws IOException {
         this(inStream, RecyclingBufferPool.INSTANCE);
     }
 
@@ -59,11 +59,14 @@ public class ZstdInputStream extends FilterInputStream {
      * @param inStream the stream to wrap
      * @param bufferPool the pool to fetch and return buffers
      */
-    public ZstdInputStream(InputStream inStream, BufferPool bufferPool) {
+    public ZstdInputStream(InputStream inStream, BufferPool bufferPool) throws IOException {
         // FilterInputStream constructor
         super(inStream);
         this.bufferPool = bufferPool;
         this.srcByteBuffer = bufferPool.get(srcBuffSize);
+        if (this.srcByteBuffer == null) {
+            throw new IOException("Cannot get ByteBuffer of size " + srcBuffSize + " from the BufferPool");
+        }
         this.src = Zstd.extractArray(srcByteBuffer);
         // memory barrier
         synchronized(this) {

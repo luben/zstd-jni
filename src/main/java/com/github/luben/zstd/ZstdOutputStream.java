@@ -87,6 +87,9 @@ public class ZstdOutputStream extends FilterOutputStream {
         this.closeFrameOnFlush = false;
         this.bufferPool = bufferPool;
         this.dstByteBuffer = bufferPool.get(dstSize);
+        if (this.dstByteBuffer == null) {
+            throw new IOException("Cannot get ByteBuffer of size " + dstSize + " from the BufferPool");
+        }
         this.dst = Zstd.extractArray(dstByteBuffer);
     }
 
