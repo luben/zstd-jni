@@ -152,7 +152,7 @@ packageOptions in (Compile, packageBin) ++= Seq(
     |linux/mips64/libzstd-jni.so;osname=Linux;processor=mips64,
     |linux/ppc64/libzstd-jni.so;osname=Linux;processor=ppc64,
     |linux/ppc64le/libzstd-jni.so;osname=Linux;processor=ppc64le,
-    |linux/s390/libzstd-jni.so;osname=Linux;processor=s390,
+    |linux/s390x/libzstd-jni.so;osname=Linux;processor=s390x,
     |win/amd64/libzstd-jni.dll;osname=Win32;processor=amd64,
     |win/x86/libzstd-jni.dll;osname=Win32;processor=x86""".stripMargin),
 )
@@ -183,7 +183,7 @@ OsgiKeys.exportPackage  := Seq(s"com.github.luben.zstd", "com.github.luben.zstd.
 OsgiKeys.importPackage := Seq("org.osgi.framework;resolution:=optional")
 OsgiKeys.privatePackage := Seq("include",
     "linux.amd64", "linux.i386", "linux.aarch64", "linux.arm", "linux.ppc64",
-    "linux.ppc64le", "linux.mips64", "linux.s390", "aix.ppc64", "darwin.x86_64",
+    "linux.ppc64le", "linux.mips64", "linux.s390x", "aix.ppc64", "darwin.x86_64",
     "win.amd64", "win.x86", "freebsd.amd64", "freebsd.i386"
 )
 
@@ -279,15 +279,15 @@ packageOptions in (Linux_mips64, packageBin) ++= Seq(
 )
 addArtifact(Artifact(nameValue, "linux_mips64"), packageBin in Linux_mips64)
 
-lazy val Linux_s390 = config("linux_s390").extend(Compile)
-inConfig(Linux_s390)(Defaults.compileSettings)
-mappings in (Linux_s390, packageBin) := {
-  (file("target/classes/linux/s390/libzstd-jni.so"), "linux/s390/libzstd-jni.so") :: classes
+lazy val Linux_s390x = config("linux_s390x").extend(Compile)
+inConfig(Linux_s390x)(Defaults.compileSettings)
+mappings in (Linux_s390x, packageBin) := {
+  (file("target/classes/linux/s390x/libzstd-jni.so"), "linux/s390x/libzstd-jni.so") :: classes
 }
-packageOptions in (Linux_s390, packageBin) ++= Seq(
+packageOptions in (Linux_s390x, packageBin) ++= Seq(
   Package.ManifestAttributes(new java.util.jar.Attributes.Name("Automatic-Module-Name") -> "com.github.luben.zstd_jni"),
 )
-addArtifact(Artifact(nameValue, "linux_s390"), packageBin in Linux_s390)
+addArtifact(Artifact(nameValue, "linux_s390x"), packageBin in Linux_s390x)
 
 lazy val Aix_ppc64 = config("aix_ppc64").extend(Compile)
 inConfig(Aix_ppc64)(Defaults.compileSettings)
