@@ -66,8 +66,8 @@ public enum Native {
             System.loadLibrary(libname);
             loaded = true;
             return;
-        } catch (Exception e) {
-            // ignore and try other methods
+        } catch (Throwable e) {
+            // ignore both ClassNotFound and UnsatisfiedLinkError, and try other methods
         }
 
         InputStream is = Native.class.getResourceAsStream(resourceName);
