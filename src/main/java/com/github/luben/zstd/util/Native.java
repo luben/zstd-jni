@@ -9,6 +9,7 @@ import java.lang.UnsatisfiedLinkError;
 public enum Native {
     ;
 
+    private static final String nativePathOverride = "ZstdNativePath";
     private static final String libnameShort = "zstd-jni";
     private static final String libname = "lib" + libnameShort;
     private static final String errorMsg = "Unsupported OS/arch, cannot find " +
@@ -59,6 +60,12 @@ public enum Native {
             return;
         }
         String resourceName = resourceName();
+
+        String overridePath = System.getProperty(nativePathOverride);
+        if (overridePath != null) {
+            // Do not fall-back to auto-discovery - consumers know better
+            System.load(overridePath);
+        }
 
         // try to load the shared library directly from the JAR
         try {
