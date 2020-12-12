@@ -4,10 +4,6 @@ import com.github.luben.zstd.util.Native;
 
 public class ZstdDictCompress extends SharedDictBase {
 
-    static {
-        Native.load();
-    }
-
     private long nativePtr = 0;
     private int level = 3;
 
@@ -34,6 +30,7 @@ public class ZstdDictCompress extends SharedDictBase {
      * @param level  compression level
      */
     public ZstdDictCompress(byte[] dict, int offset, int length, int level) {
+        Native.load();
         this.level = level;
         if (dict.length - offset < 0) {
             throw new IllegalArgumentException("Dictionary buffer is to short");

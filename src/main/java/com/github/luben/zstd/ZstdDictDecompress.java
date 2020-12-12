@@ -4,9 +4,6 @@ import com.github.luben.zstd.util.Native;
 
 public class ZstdDictDecompress extends SharedDictBase {
 
-    static {
-        Native.load();
-    }
 
     private long nativePtr = 0L;
 
@@ -31,7 +28,7 @@ public class ZstdDictDecompress extends SharedDictBase {
      * @param length number of bytes to use from the buffer
      */
     public ZstdDictDecompress(byte[] dict, int offset, int length) {
-
+        Native.load();
         init(dict, offset, length);
 
         if (nativePtr == 0L) {
