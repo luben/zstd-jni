@@ -48,8 +48,7 @@ jobs:
             install: git base-devel mingw-w64-${{ matrix.arch }}-toolchain
             path-type: inherit
             update: true
-        # the official action has a bug: https://github.com/actions/setup-java/issues/55
-        - uses: emgre/setup-java@master
+        - uses: actions/setup-java@v1
           with:
             java-version: 8
             architecture: ${{ matrix.java_arch }}
