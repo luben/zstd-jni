@@ -575,7 +575,17 @@ public class Zstd {
      * @return the number of bytes of the original buffer
      *         0 if the original size is not known
      */
-    public static native long decompressedSize(byte[] src, int srcPosition, int srcSize);
+    public static long decompressedSize(byte[] src, int srcPosition, int srcSize) {
+        if (srcPosition >= src.length) {
+            throw new ArrayIndexOutOfBoundsException(srcPosition);
+        }
+        if (srcPosition + srcSize >= src.length) {
+            throw new ArrayIndexOutOfBoundsException(srcPosition + srcSize);
+        }
+        return decompressedSize0(src, srcPosition, srcSize);
+    }
+
+    private static native long decompressedSize0(byte[] src, int srcPosition, int srcSize);
 
     /**
      * Return the original size of a compressed buffer (if known)
