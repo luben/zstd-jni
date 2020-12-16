@@ -27,9 +27,9 @@ javacOptions ++= Seq("-source", "1.6", "-target", "1.6")
 
 javacOptions in doc := Seq("-source", "1.6")
 
-// Check at runtime for JNI errors when running tests
 // fork := true
-// javaOptions in Test ++= Seq("-Xcheck:jni")
+// Check at runtime for JNI errors when running tests
+javaOptions in Test ++= Seq("-Xcheck:jni")
 
 // sbt-jni configuration
 jniLibraryName := "zstd-jni"
@@ -53,7 +53,7 @@ jniLibSuffix := (System.getProperty("os.name").toLowerCase match {
   case _                            => "so"
 })
 
-jniNativeCompiler := "gcc"
+jniNativeCompiler := Option(System.getenv("CC")).getOrElse("gcc")
 
 jniUseCpp11 := false
 
