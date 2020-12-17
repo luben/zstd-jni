@@ -70,7 +70,7 @@ public class ZstdOutputStream extends FilterOutputStream {
      * @param outStream the stream to wrap
      */
     public ZstdOutputStream(OutputStream outStream) throws IOException {
-        this(outStream, RecyclingBufferPool.INSTANCE);
+        this(outStream, NoPool.INSTANCE);
     }
 
     /**

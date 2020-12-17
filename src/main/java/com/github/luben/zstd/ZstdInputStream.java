@@ -48,7 +48,7 @@ public class ZstdInputStream extends FilterInputStream {
      * @param inStream the stream to wrap
      */
     public ZstdInputStream(InputStream inStream) throws IOException {
-        this(inStream, RecyclingBufferPool.INSTANCE);
+        this(inStream, NoPool.INSTANCE);
     }
 
     /**
