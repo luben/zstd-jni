@@ -29,7 +29,7 @@ class ZstdDictSpec extends FlatSpec {
   }
 
   "Zstd" should "report error when failing to make a dict" in {
-    val src = source.sliding(28, 28).take(8).map(_.toArray)
+    val src = source.sliding(28, 28).take(4).map(_.toArray)
     val trainer = new ZstdDictTrainer(1024 * 1024, 32 * 1024)
     for (sample <- src) {
       trainer.addSample(sample)
