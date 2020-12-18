@@ -143,6 +143,7 @@ packageOptions in (Compile, packageBin) ++= Seq(
   Package.ManifestAttributes(new java.util.jar.Attributes.Name("Bundle-NativeCode") ->
   """aix/ppc64/libzstd-jni.so;osname=AIX;processor=ppc64,
     |darwin/x86_64/libzstd-jni.dylib;osname=MacOS;osname=MacOSX;processor=x86_64,
+    |darwin/aarch64/libzstd-jni.dylib;osname=MacOS;osname=MacOSX;processor=aarch64,
     |freebsd/amd64/libzstd-jni.so;osname=FreeBSD;processor=amd64,
     |freebsd/i386/libzstd-jni.so;osname=FreeBSD;processor=i386,
     |linux/aarch64/libzstd-jni.so;osname=Linux;processor=aarch64,
@@ -184,7 +185,7 @@ OsgiKeys.importPackage := Seq("org.osgi.framework;resolution:=optional")
 OsgiKeys.privatePackage := Seq("include",
     "linux.amd64", "linux.i386", "linux.aarch64", "linux.arm", "linux.ppc64",
     "linux.ppc64le", "linux.mips64", "linux.s390x", "aix.ppc64", "darwin.x86_64",
-    "win.amd64", "win.x86", "freebsd.amd64", "freebsd.i386"
+    "darwin.aarch64", "win.amd64", "win.x86", "freebsd.amd64", "freebsd.i386"
 )
 
 // Jacoco coverage setting
@@ -308,6 +309,16 @@ packageOptions in (Darwin_x86_64, packageBin) ++= Seq(
   Package.ManifestAttributes(new java.util.jar.Attributes.Name("Automatic-Module-Name") -> "com.github.luben.zstd_jni"),
 )
 addArtifact(Artifact(nameValue, "darwin_x86_64"), packageBin in Darwin_x86_64)
+
+lazy val Darwin_aarch64 = config("darwin_aarch64").extend(Compile)
+inConfig(Darwin_aarch64)(Defaults.compileSettings)
+mappings in (Darwin_aarch64, packageBin) := {
+  (file("target/classes/darwin/aarch64/libzstd-jni.dylib"), "darwin/aarch64/libzstd-jni.dylib") :: classes
+}
+packageOptions in (Darwin_aarch64, packageBin) ++= Seq(
+  Package.ManifestAttributes(new java.util.jar.Attributes.Name("Automatic-Module-Name") -> "com.github.luben.zstd_jni"),
+)
+addArtifact(Artifact(nameValue, "darwin_aarch64"), packageBin in Darwin_aarch64)
 
 lazy val FreeBSD_amd64 = config("freebsd_amd64").extend(Compile)
 inConfig(FreeBSD_amd64)(Defaults.compileSettings)
