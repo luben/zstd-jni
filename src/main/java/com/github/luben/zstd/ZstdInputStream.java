@@ -18,6 +18,9 @@ import com.github.luben.zstd.util.Native;
 
 public class ZstdInputStream extends FilterInputStream {
 
+    static {
+        Native.load();
+    }
 
     // Opaque pointer to Zstd context object
     private final long stream;
@@ -59,7 +62,6 @@ public class ZstdInputStream extends FilterInputStream {
     public ZstdInputStream(InputStream inStream, BufferPool bufferPool) throws IOException {
         // FilterInputStream constructor
         super(inStream);
-        Native.load();
         this.bufferPool = bufferPool;
         this.srcByteBuffer = bufferPool.get(srcBuffSize);
         if (this.srcByteBuffer == null) {

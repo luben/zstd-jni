@@ -8,6 +8,9 @@ import java.nio.ByteBuffer;
 
 public class ZstdDirectBufferDecompressingStream implements Closeable {
 
+    static {
+        Native.load();
+    }
 
     /**
      * Override this method in case the byte buffer passed to the constructor might not contain the full compressed stream
@@ -32,7 +35,6 @@ public class ZstdDirectBufferDecompressingStream implements Closeable {
     private native long decompressStream(long stream, ByteBuffer dst, int dstOffset, int dstSize, ByteBuffer src, int srcOffset, int srcSize);
 
     public ZstdDirectBufferDecompressingStream(ByteBuffer source) {
-        Native.load();
         if (!source.isDirect()) {
             throw new IllegalArgumentException("Source buffer should be a direct buffer");
         }

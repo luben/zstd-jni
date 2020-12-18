@@ -9,6 +9,10 @@ import java.nio.ByteBuffer;
 
 public class ZstdDirectBufferCompressingStream implements Closeable, Flushable {
 
+    static {
+        Native.load();
+    }
+
     private ByteBuffer target;
     private final long stream;
 
@@ -23,7 +27,6 @@ public class ZstdDirectBufferCompressingStream implements Closeable, Flushable {
     }
 
     public ZstdDirectBufferCompressingStream(ByteBuffer target, int level) throws IOException {
-        Native.load();
         if (!target.isDirect()) {
             throw new IllegalArgumentException("Target buffer should be a direct buffer");
         }

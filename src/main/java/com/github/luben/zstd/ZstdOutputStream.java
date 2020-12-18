@@ -12,6 +12,9 @@ import com.github.luben.zstd.util.Native;
  */
 public class ZstdOutputStream extends FilterOutputStream {
 
+    static {
+        Native.load();
+    }
 
     /* Opaque pointer to Zstd context object */
     private final long stream;
@@ -42,7 +45,6 @@ public class ZstdOutputStream extends FilterOutputStream {
      **/
     public ZstdOutputStream(OutputStream outStream, int level, boolean closeFrameOnFlush, boolean useChecksums) throws IOException {
         this(outStream);
-        Native.load();
         this.closeFrameOnFlush = closeFrameOnFlush;
         Zstd.setCompressionLevel(this.stream, level);
         Zstd.setCompressionChecksums(this.stream, useChecksums);

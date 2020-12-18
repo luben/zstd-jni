@@ -8,6 +8,9 @@ import java.util.Arrays;
 
 public class ZstdCompressCtx extends AutoCloseBase {
 
+    static {
+        Native.load();
+    }
 
     private long nativePtr = 0;
 
@@ -22,7 +25,6 @@ public class ZstdCompressCtx extends AutoCloseBase {
      * One such context is required for each thread - put this in a ThreadLocal.
      */
     public ZstdCompressCtx() {
-        Native.load();
         init();
         if (0 == nativePtr) {
             throw new IllegalStateException("ZSTD_createCompressCtx failed");

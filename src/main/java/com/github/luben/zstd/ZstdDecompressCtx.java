@@ -8,6 +8,9 @@ import java.util.Arrays;
 
 public class ZstdDecompressCtx extends AutoCloseBase {
 
+    static {
+        Native.load();
+    }
 
     private long nativePtr = 0;
     private ZstdDictDecompress decompression_dict = null;
@@ -21,7 +24,6 @@ public class ZstdDecompressCtx extends AutoCloseBase {
      * One such context is required for each thread - put this in a ThreadLocal.
      */
     public ZstdDecompressCtx() {
-        Native.load();
         init();
         if (0 == nativePtr) {
             throw new IllegalStateException("ZSTD_createDeCompressCtx failed");
