@@ -579,7 +579,7 @@ public class Zstd {
         if (srcPosition >= src.length) {
             throw new ArrayIndexOutOfBoundsException(srcPosition);
         }
-        if (srcPosition + srcSize >= src.length) {
+        if (srcPosition + srcSize > src.length) {
             throw new ArrayIndexOutOfBoundsException(srcPosition + srcSize);
         }
         return decompressedSize0(src, srcPosition, srcSize);

@@ -27,7 +27,7 @@ class ZstdSpec extends FlatSpec with Checkers {
           val size        = input.length
           val compressed  = if (level != 3) Zstd.compress(input, level) else Zstd.compress(input)
           val decompressed= Zstd.decompress(compressed, size)
-          input.toSeq == decompressed.toSeq
+          input.toSeq == decompressed.toSeq && size == Zstd.decompressedSize(compressed)
         }
       }
     }
@@ -44,7 +44,7 @@ class ZstdSpec extends FlatSpec with Checkers {
           if (Zstd.isError(csize)) sys.error(Zstd.getErrorName(csize))
           val dsize       = Zstd.decompressByteArray(decompressed, 0, size, compressed, 0, csize.toInt)
           if (Zstd.isError(dsize)) sys.error(Zstd.getErrorName(dsize))
-          size == dsize && input.toSeq == decompressed.toSeq
+          size == dsize && input.toSeq == decompressed.toSeq && size == Zstd.decompressedSize(compressed)
         }
       }
     }
@@ -867,7 +867,7 @@ class ZstdSpec extends FlatSpec with Checkers {
     assert(largeBuf6.capacity == 10)
     assert(largeBuf6.array.length == 10)
   }
-  
+
   "Zstd" should "validate when extracting backing arrays from ByteBuffers" in {
     assertThrows[IllegalArgumentException] {
       Zstd.extractArray(ByteBuffer.allocateDirect(10))
