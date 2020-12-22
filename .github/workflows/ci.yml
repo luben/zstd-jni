@@ -16,6 +16,8 @@ jobs:
             java-version: 8
         - name: Compile
           run: ./sbt compile
+        - name: Inspect
+          run: ldd target/classes/${{ matrix.target }}/libzstd-jni.so
         - name: Test
           run: ./sbt jacoco
         - name: Upload coverage
@@ -49,6 +51,9 @@ jobs:
           env:
               CC: cc -target ${{ matrix.macos_target }}
           run: ./sbt compile
+        - name: Inspect
+          if: matrix.target_arch == 'x86_64'
+          run: otool -L target/classes/darwin/${{ matrix.target_arch }}/libzstd-jni.dylib
         - name: Test
           if: matrix.target_arch == 'x86_64'
           run: ./sbt jacoco
