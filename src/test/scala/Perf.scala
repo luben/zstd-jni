@@ -163,19 +163,18 @@ class ZstdPerfSpec extends FlatSpec  {
   def benchStream(name: String, input: Array[Byte], level: Int = 1): Unit = {
     val cycles = 50
     val size  = input.length
-    var compressed: Array[Byte] = null
 
+    val os = new ByteArrayOutputStream(Zstd.compressBound(size.toLong).toInt)
     val nsc = new AllocTracker
     nsc.timeAndAlloc {
       for (i <- 1 to cycles) {
-        val os = new ByteArrayOutputStream(Zstd.compressBound(size.toLong).toInt)
+        os.reset()
         val zos = new ZstdOutputStream(os, level)
         zos.write(input)
         zos.close
-        if (compressed == null)
-          compressed = os.toByteArray
       }
     }
+    val compressed = os.toByteArray()
 
     val output= Array.fill[Byte](size)(0)
     val nsd = new AllocTracker
@@ -198,23 +197,61 @@ class ZstdPerfSpec extends FlatSpec  {
     assert(input.toSeq == output.toSeq)
   }
 
-  def benchStreamMT(name: String, input: Array[Byte], level: Int = 1): Unit = {
+  def benchStreamWithBufferPool(name: String, input: Array[Byte], level: Int = 1): Unit = {
     val cycles = 50
     val size  = input.length
-    var compressed: Array[Byte] = null
 
+    val os = new ByteArrayOutputStream(Zstd.compressBound(size.toLong).toInt)
     val nsc = new AllocTracker
     nsc.timeAndAlloc {
       for (i <- 1 to cycles) {
-        val os = new ByteArrayOutputStream(Zstd.compressBound(size.toLong).toInt)
+        os.reset()
+        var zos = new ZstdOutputStream(os, RecyclingBufferPool.INSTANCE)
+        zos.setLevel(level)
+        zos.write(input)
+        zos.close
+      }
+    }
+    val compressed = os.toByteArray()
+
+    val output= Array.fill[Byte](size)(0)
+    val nsd = new AllocTracker
+    nsd.timeAndAlloc {
+      for (i <- 1 to cycles) {
+
+        // now decompress
+        val is = new ByteArrayInputStream(compressed)
+        val zis = new ZstdInputStream(is, RecyclingBufferPool.INSTANCE)
+        var ptr = 0
+
+        while (ptr < size) {
+          ptr += zis.read(output, ptr, size - ptr)
+        }
+        zis.close
+
+      }
+    }
+    report(name, compressed.size, size, cycles, nsc, nsd)
+    assert(input.toSeq == output.toSeq)
+  }
+
+
+  def benchStreamMT(name: String, input: Array[Byte], level: Int = 1): Unit = {
+    val cycles = 50
+    val size  = input.length
+
+    val os = new ByteArrayOutputStream(Zstd.compressBound(size.toLong).toInt)
+    val nsc = new AllocTracker
+    nsc.timeAndAlloc {
+      for (i <- 1 to cycles) {
+        os.reset()
         val zos = new ZstdOutputStream(os, level)
         zos.setWorkers(2)
         zos.write(input)
         zos.close()
-        if (compressed == null)
-          compressed = os.toByteArray
       }
     }
+    val compressed = os.toByteArray();
 
     val output= Array.fill[Byte](size)(0)
     val nsd = new AllocTracker
@@ -299,6 +336,7 @@ class ZstdPerfSpec extends FlatSpec  {
   for (level <- levels) {
     it should s"be fast with streaming at level $level" in {
         benchStream(s"Streaming at $level", buff1, level)
+        benchStreamWithBufferPool(s"Streaming with BufferPool at $level", buff1, level)
         benchStreamMT(s"Streaming (multi-threaded) at $level", buff1, level)
         benchDirectBufferStream(s"Streaming at $level to direct ByteBuffers", buff1, level)
     }
