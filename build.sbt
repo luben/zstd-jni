@@ -60,7 +60,7 @@ jniUseCpp11 := false
 jniCppExtensions := Seq("c")
 
 jniGccFlags ++= Seq(
-  "-std=c99", "-Wundef", "-Wshadow", "-Wcast-align", "-Wstrict-prototypes", "-Wno-unused-variable",
+  "-static-libgcc", "-std=c99", "-Wundef", "-Wshadow", "-Wcast-align", "-Wstrict-prototypes", "-Wno-unused-variable",
   "-Wpointer-arith", "-DZSTD_LEGACY_SUPPORT=4", "-DZSTD_MULTITHREAD=1", "-lpthread", "-flto"
 )
 
@@ -70,7 +70,7 @@ jniGccFlags ++= Seq(
 jniGccFlags := (
   if (System.getProperty("os.name").toLowerCase startsWith "win")
     jniGccFlags.value.filterNot(_ == "-fPIC") ++
-      Seq("-D_JNI_IMPLEMENTATION_", "-Wl,--kill-at", "-static-libgcc", "-static-libstdc++")
+      Seq("-D_JNI_IMPLEMENTATION_", "-Wl,--kill-at")
   else
     jniGccFlags.value
   )
