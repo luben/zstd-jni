@@ -71,11 +71,11 @@ jniGccFlags := (
   if (System.getProperty("os.name").toLowerCase startsWith "win")
     jniGccFlags.value.filterNot(_ == "-fPIC") ++
       Seq("-D_JNI_IMPLEMENTATION_", "-Wl,--kill-at", "-static-libgcc")
-  if (System.getProperty("os.name").toLowerCase startsWith "mac")
+  else if (System.getProperty("os.name").toLowerCase startsWith "mac")
     // MacOS uses clang that does not support the "-static-libgcc" option
     jniGccFlags.value
   else
-    jniGccFlags.value ++ "-static-libgcc"
+    jniGccFlags.value ++ Seq("-static-libgcc")
   )
 
 // Special case the jni platform header on windows (use the one from the repo)
