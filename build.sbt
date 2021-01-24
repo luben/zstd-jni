@@ -60,7 +60,7 @@ jniUseCpp11 := false
 jniCppExtensions := Seq("c")
 
 jniGccFlags ++= Seq(
-  "-static-libgcc", "-std=c99", "-Wundef", "-Wshadow", "-Wcast-align", "-Wstrict-prototypes", "-Wno-unused-variable",
+  "-std=c99", "-Wundef", "-Wshadow", "-Wcast-align", "-Wstrict-prototypes", "-Wno-unused-variable",
   "-Wpointer-arith", "-DZSTD_LEGACY_SUPPORT=4", "-DZSTD_MULTITHREAD=1", "-lpthread", "-flto"
 )
 
@@ -70,9 +70,12 @@ jniGccFlags ++= Seq(
 jniGccFlags := (
   if (System.getProperty("os.name").toLowerCase startsWith "win")
     jniGccFlags.value.filterNot(_ == "-fPIC") ++
-      Seq("-D_JNI_IMPLEMENTATION_", "-Wl,--kill-at")
-  else
+      Seq("-D_JNI_IMPLEMENTATION_", "-Wl,--kill-at", "-static-libgcc")
+  if (System.getProperty("os.name").toLowerCase startsWith "mac")
+    // MacOS uses clang that does not support the "-static-libgcc" option
     jniGccFlags.value
+  else
+    jniGccFlags.value ++ "-static-libgcc"
   )
 
 // Special case the jni platform header on windows (use the one from the repo)
