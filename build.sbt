@@ -6,7 +6,7 @@ version := {
   scala.io.Source.fromFile("version").getLines.next
 }
 
-scalaVersion := "2.12.10"
+scalaVersion := "2.12.13"
 
 enablePlugins(JniPlugin, SbtOsgi)
 
@@ -19,8 +19,8 @@ logBuffered in Test := false
 parallelExecution in Test := false
 
 libraryDependencies ++= Seq(
-  "org.scalatest"  %% "scalatest"  % "3.0.5"  % "test",
-  "org.scalacheck" %% "scalacheck" % "1.13.4" % "test"
+  "org.scalatest"  %% "scalatest"  % "3.0.4"  % "test",
+  "org.scalacheck" %% "scalacheck" % "1.14.1" % "test"
 )
 
 javacOptions ++= Seq("-source", "1.6", "-target", "1.6")
@@ -115,8 +115,9 @@ jniBinPath := {
   (target in Compile).value / "classes" / os / arch
 }
 
-// Where to put the generated headers for the JNI lib
-jniHeadersPath := (target in Compile).value / "classes" / "include"
+// Do no generate C header files - we don't have use of them.
+// There is also a compatibility problem - newer JDKs don't have `javah`
+jniGenerateHeaders := false
 
 // Sonatype
 
