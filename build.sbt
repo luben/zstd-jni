@@ -19,7 +19,7 @@ logBuffered in Test := false
 parallelExecution in Test := false
 
 libraryDependencies ++= Seq(
-  "org.scalatest"  %% "scalatest"  % "3.0.4"  % "test",
+  "org.scalatest"  %% "scalatest"  % "3.0.5"  % "test",
   "org.scalacheck" %% "scalacheck" % "1.14.1" % "test"
 )
 
