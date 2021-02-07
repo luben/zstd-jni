@@ -40,8 +40,8 @@ jniNativeClasses := Seq(
   "com.github.luben.zstd.ZstdDecompressCtx",
   "com.github.luben.zstd.ZstdDictCompress",
   "com.github.luben.zstd.ZstdDictDecompress",
-  "com.github.luben.zstd.ZstdOutputStream",
-  "com.github.luben.zstd.ZstdInputStream",
+  "com.github.luben.zstd.ZstdOutputStreamNoFinalizer",
+  "com.github.luben.zstd.ZstdInputStreamNoFinalizer",
   "com.github.luben.zstd.ZstdDirectBufferDecompressingStream",
   "com.github.luben.zstd.ZstdDirectBufferCompressingStream"
 )
