@@ -2,45 +2,53 @@ package com.github.luben.zstd;
 
 import java.lang.ref.SoftReference;
 import java.nio.ByteBuffer;
-import java.util.Map;
-import java.util.HashMap;
-import java.util.Deque;
 import java.util.ArrayDeque;
 
 /**
- * An pool of buffers which uses a simple reference queue to recycle old buffers.
+ * An pool of buffers which uses a simple reference queue to recycle buffers.
+ *
+ * Do not use it as generic buffer pool - it is optimized and supports only
+ * buffer sizes used by the Zstd classes.
  */
 public class RecyclingBufferPool implements BufferPool {
     public static final BufferPool INSTANCE = new RecyclingBufferPool();
 
-    private final Map<Integer, SoftReference<Deque<ByteBuffer>>> pools;
-    
-    private RecyclingBufferPool() {
-        this.pools = new HashMap<Integer, SoftReference<Deque<ByteBuffer>>>();
-    }
+    private static final int buffSize = Math.max(
+            (int) ZstdOutputStreamNoFinalizer.recommendedCOutSize(),
+            (int) ZstdInputStreamNoFinalizer.recommendedDInSize()
+        );
 
-    private Deque<ByteBuffer> getDeque(int capacity) {
-        SoftReference<Deque<ByteBuffer>> dequeReference = pools.get(capacity);
-        Deque<ByteBuffer> deque;
-        if (dequeReference == null || (deque = dequeReference.get()) == null) {
-            deque = new ArrayDeque<ByteBuffer>();
-            dequeReference = new SoftReference<Deque<ByteBuffer>>(deque);
-            pools.put(capacity, dequeReference);
-        }
-        return deque;
+    private final ArrayDeque<SoftReference<ByteBuffer>> pool;
+
+    private RecyclingBufferPool() {
+        this.pool = new ArrayDeque<SoftReference<ByteBuffer>>();
     }
 
     @Override
     public synchronized ByteBuffer get(int capacity) {
-        ByteBuffer buffer = getDeque(capacity).pollFirst();
-        if (buffer == null) {
-            buffer = ByteBuffer.allocate(capacity);
+        if (capacity > buffSize) {
+            throw new RuntimeException(
+                    "Unsupported buffer size: " + capacity +
+                    ". Supported buffer sizes: " + buffSize + " or smaller."
+                );
         }
-        return buffer;
+        while(true) {
+            SoftReference<ByteBuffer> sbuf = pool.pollFirst();
+            if (sbuf == null) {
+                return ByteBuffer.allocate(buffSize);
+            }
+            ByteBuffer buf = sbuf.get();
+            if (buf != null) {
+                return buf;
+            }
+        }
     }
 
     @Override
     public synchronized void release(ByteBuffer buffer) {
-        getDeque(buffer.capacity()).addLast(buffer);
+        if (buffer.capacity() >= buffSize) {
+            buffer.clear();
+            pool.addFirst(new SoftReference<ByteBuffer>(buffer));
+        }
     }
 }

@@ -855,8 +855,8 @@ class ZstdSpec extends FlatSpec with Checkers {
     assert(!largeBuf1.eq(largeBuf2))
     assert(!largeBuf1.eq(largeBuf3))
     assert(!largeBuf2.eq(largeBuf3))
-    assert(largeBuf4.eq(largeBuf1))
-    assert(largeBuf5.eq(largeBuf2))
+    assert(largeBuf4.eq(largeBuf2))
+    assert(largeBuf5.eq(largeBuf1))
     assert(!largeBuf6.eq(largeBuf1))
     assert(!largeBuf6.eq(largeBuf2))
     assert(!largeBuf6.eq(largeBuf3))
@@ -864,8 +864,8 @@ class ZstdSpec extends FlatSpec with Checkers {
     assert(!largeBuf6.eq(largeBuf5))
     assert(largeBuf6.hasArray)
     assert(largeBuf6.arrayOffset == 0)
-    assert(largeBuf6.capacity == 10)
-    assert(largeBuf6.array.length == 10)
+    assert(largeBuf6.capacity >= 10)
+    assert(largeBuf6.array.length >= 10)
   }
 
   "Zstd" should "validate when extracting backing arrays from ByteBuffers" in {
