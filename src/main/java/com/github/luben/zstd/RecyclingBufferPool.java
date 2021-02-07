@@ -13,10 +13,10 @@ import java.util.ArrayDeque;
 public class RecyclingBufferPool implements BufferPool {
     public static final BufferPool INSTANCE = new RecyclingBufferPool();
 
-    private static final int buffSize = Math.max(
+    private static final int buffSize = Math.max(Math.max(
             (int) ZstdOutputStreamNoFinalizer.recommendedCOutSize(),
-            (int) ZstdInputStreamNoFinalizer.recommendedDInSize()
-        );
+            (int) ZstdInputStreamNoFinalizer.recommendedDInSize()),
+            (int) ZstdInputStreamNoFinalizer.recommendedDOutSize());
 
     private final ArrayDeque<SoftReference<ByteBuffer>> pool;
 
