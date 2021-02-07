@@ -10,7 +10,7 @@ public interface BufferPool {
     /**
      * Fetch a buffer from the pool.
      * @param capacity the desired size of the buffer
-     * @return a heap buffer with arrayOffset of 0
+     * @return a heap buffer with size at least the `capacity` and arrayOffset of 0
      */
     ByteBuffer get(int capacity);
 
