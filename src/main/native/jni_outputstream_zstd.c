@@ -11,11 +11,11 @@ static jfieldID dst_pos_id;
 /*
  * Class:     com_github_luben_zstd_ZstdOutputStreamNoFinalizer
  * Method:    recommendedCOutSize
- * Signature: ()I
+ * Signature: ()J
  */
-JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdOutputStreamNoFinalizer_recommendedCOutSize
+JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdOutputStreamNoFinalizer_recommendedCOutSize
   (JNIEnv *env, jclass obj) {
-    return (jint) ZSTD_CStreamOutSize();
+    return (jlong) ZSTD_CStreamOutSize();
 }
 
 /*

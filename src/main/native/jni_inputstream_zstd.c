@@ -11,21 +11,21 @@ static jfieldID dst_pos_id;
 /*
  * Class:     com_github_luben_zstd_ZstdInputStreamNoFinalizer
  * Method:    recommendedDInSize
- * Signature: ()I
+ * Signature: ()J
  */
-JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdInputStreamNoFinalizer_recommendedDInSize
+JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdInputStreamNoFinalizer_recommendedDInSize
   (JNIEnv *env, jclass obj) {
-    return (jint) ZSTD_DStreamInSize();
+    return (jlong) ZSTD_DStreamInSize();
 }
 
 /*
  * Class:     com_github_luben_zstd_ZstdInputStreamNoFinalizer
  * Method:    recommendedDOutSize
- * Signature: ()I
+ * Signature: ()J
  */
-JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdInputStreamNoFinalizer_recommendedDOutSize
+JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdInputStreamNoFinalizer_recommendedDOutSize
   (JNIEnv *env, jclass obj) {
-    return (jint) ZSTD_DStreamOutSize();
+    return (jlong) ZSTD_DStreamOutSize();
 }
 
 /*
