@@ -13,7 +13,7 @@ import com.github.luben.zstd.util.Native;
  * If you rely in finalizers for releasing the native memory and the buffers,
  * use `ZstdOutputStream` instead.
  */
-public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
+public class ZstdOutputStreamNoFinalizer<T extends ZstdOutputStreamNoFinalizer<T>> extends FilterOutputStream {
 
     static {
         Native.load();
@@ -82,7 +82,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
      *
      * Default: false
      */
-    public synchronized ZstdOutputStreamNoFinalizer setChecksum(boolean useChecksums) throws IOException {
+    public synchronized T setChecksum(boolean useChecksums) throws IOException {
         if (!frameClosed) {
             throw new IOException("Change of parameter on initialized stream");
         }
@@ -90,7 +90,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
         if (Zstd.isError(size)) {
             throw new IOException("Compression param: " + Zstd.getErrorName(size));
         }
-        return this;
+        return (T) this;
     }
 
     /**
@@ -98,7 +98,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
      *
      * Default: 3
      */
-    public synchronized ZstdOutputStreamNoFinalizer setLevel(int level) throws IOException {
+    public synchronized T setLevel(int level) throws IOException {
         if (!frameClosed) {
             throw new IOException("Change of parameter on initialized stream");
         }
@@ -106,7 +106,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
         if (Zstd.isError(size)) {
             throw new IOException("Compression param: " + Zstd.getErrorName(size));
         }
-        return this;
+        return (T) this;
     }
 
     /**
@@ -114,7 +114,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
      *
      * Default: no worker threads.
      */
-    public synchronized ZstdOutputStreamNoFinalizer setWorkers(int n) throws IOException {
+    public synchronized T setWorkers(int n) throws IOException {
         if (!frameClosed) {
             throw new IOException("Change of parameter on initialized stream");
         }
@@ -122,7 +122,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
         if (Zstd.isError(size)) {
             throw new IOException("Compression param: " + Zstd.getErrorName(size));
         }
-        return this;
+        return (T) this;
     }
 
     /**
@@ -134,15 +134,15 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
      *
      * Default: false.
      */
-    public synchronized ZstdOutputStreamNoFinalizer setCloseFrameOnFlush(boolean closeOnFlush) throws IOException {
+    public synchronized T setCloseFrameOnFlush(boolean closeOnFlush) throws IOException {
         if (!frameClosed) {
             throw new IOException("Change of parameter on initialized stream");
         }
         this.closeFrameOnFlush = closeOnFlush;
-        return this;
+        return (T) this;
     }
 
-    public synchronized ZstdOutputStreamNoFinalizer setDict(byte[] dict) throws IOException {
+    public synchronized T setDict(byte[] dict) throws IOException {
         if (!frameClosed) {
             throw new IOException("Change of parameter on initialized stream");
         }
@@ -150,10 +150,10 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
         if (Zstd.isError(size)) {
             throw new IOException("Compression param: " + Zstd.getErrorName(size));
         }
-        return this;
+        return (T) this;
     }
 
-    public synchronized ZstdOutputStreamNoFinalizer setDict(ZstdDictCompress dict) throws IOException {
+    public synchronized T setDict(ZstdDictCompress dict) throws IOException {
         if (!frameClosed) {
             throw new IOException("Change of parameter on initialized stream");
         }
@@ -161,7 +161,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
         if (Zstd.isError(size)) {
             throw new IOException("Compression param: " + Zstd.getErrorName(size));
         }
-        return this;
+        return (T) this;
     }
 
     public synchronized void write(byte[] src, int offset, int len) throws IOException {

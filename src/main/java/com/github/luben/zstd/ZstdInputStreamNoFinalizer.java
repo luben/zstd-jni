@@ -17,7 +17,7 @@ import com.github.luben.zstd.util.Native;
  * buffers use `ZstdInputStream` instead.
  */
 
-public class ZstdInputStreamNoFinalizer extends FilterInputStream {
+public class ZstdInputStreamNoFinalizer<T extends ZstdInputStreamNoFinalizer<T>> extends FilterInputStream {
 
     static {
         Native.load();
@@ -79,24 +79,24 @@ public class ZstdInputStreamNoFinalizer extends FilterInputStream {
      *
      * Use case: decompressing files that are not yet finished writing and compressing
      */
-    public synchronized ZstdInputStreamNoFinalizer setContinuous(boolean b) {
+    public synchronized T setContinuous(boolean b) {
         isContinuous = b;
-        return this;
+        return (T) this;
     }
 
     public synchronized boolean getContinuous() {
         return this.isContinuous;
     }
 
-    public synchronized ZstdInputStreamNoFinalizer setDict(byte[] dict) throws IOException {
+    public synchronized T setDict(byte[] dict) throws IOException {
         int size = Zstd.loadDictDecompress(stream, dict, dict.length);
         if (Zstd.isError(size)) {
             throw new IOException("Decompression error: " + Zstd.getErrorName(size));
         }
-        return this;
+        return (T) this;
     }
 
-    public synchronized ZstdInputStreamNoFinalizer setDict(ZstdDictDecompress dict) throws IOException {
+    public synchronized T setDict(ZstdDictDecompress dict) throws IOException {
 
         dict.acquireSharedLock();
         try {
@@ -107,7 +107,7 @@ public class ZstdInputStreamNoFinalizer extends FilterInputStream {
         } finally {
             dict.releaseSharedLock();
         }
-        return this;
+        return (T) this;
     }
 
     public synchronized int read(byte[] dst, int offset, int len) throws IOException {
