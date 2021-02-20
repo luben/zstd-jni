@@ -10,7 +10,7 @@ import java.io.IOException;
  * It does not support mark/reset methods
  */
 
-public class ZstdInputStream extends ZstdInputStreamNoFinalizer {
+public class ZstdInputStream extends ZstdInputStreamBase<ZstdInputStream> {
 
     /**
      * create a new decompressing InputStream

@@ -10,7 +10,7 @@ import com.github.luben.zstd.util.Native;
 /**
  * OutputStream filter that compresses the data using Zstd compression
  */
-public class ZstdOutputStream extends ZstdOutputStreamNoFinalizer {
+public class ZstdOutputStream extends ZstdOutputStreamBase<ZstdOutputStream> {
 
     /**
      *  @deprecated
@@ -49,6 +49,16 @@ public class ZstdOutputStream extends ZstdOutputStreamNoFinalizer {
     public ZstdOutputStream(OutputStream outStream) throws IOException {
         super(outStream, NoPool.INSTANCE);
     }
+
+    /**
+     * create a new compressing OutputStream
+     * @param outStream the stream to wrap
+     * @param bufferPool the pool to fetch and return buffers
+     */
+    public ZstdOutputStream(OutputStream outStream, BufferPool bufferPool, int level) throws IOException {
+        super(outStream, bufferPool, level);
+    }
+
 
     /**
      * create a new compressing OutputStream

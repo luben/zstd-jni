@@ -9,41 +9,41 @@ static jfieldID src_pos_id;
 static jfieldID dst_pos_id;
 
 /*
- * Class:     com_github_luben_zstd_ZstdOutputStreamNoFinalizer
+ * Class:     com_github_luben_zstd_ZstdOutputStreamBase
  * Method:    recommendedCOutSize
  * Signature: ()J
  */
-JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdOutputStreamNoFinalizer_recommendedCOutSize
+JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdOutputStreamBase_recommendedCOutSize
   (JNIEnv *env, jclass obj) {
     return (jlong) ZSTD_CStreamOutSize();
 }
 
 /*
- * Class:     com_github_luben_zstd_ZstdOutputStreamNoFinalizer
+ * Class:     com_github_luben_zstd_ZstdOutputStreamBase
  * Method:    createCStream
  * Signature: ()J
  */
-JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdOutputStreamNoFinalizer_createCStream
+JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdOutputStreamBase_createCStream
   (JNIEnv *env, jclass obj) {
     return (jlong)(intptr_t) ZSTD_createCStream();
 }
 
 /*
- * Class:     com_github_luben_zstd_ZstdOutputStreamNoFinalizer
+ * Class:     com_github_luben_zstd_ZstdOutputStreamBase
  * Method:    freeCStream
  * Signature: (J)I
  */
-JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdOutputStreamNoFinalizer_freeCStream
+JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdOutputStreamBase_freeCStream
   (JNIEnv *env, jclass obj, jlong stream) {
     return ZSTD_freeCStream((ZSTD_CStream *)(intptr_t) stream);
 }
 
 /*
- * Class:     com_github_luben_zstd_ZstdOutputStreamNoFinalizer
+ * Class:     com_github_luben_zstd_ZstdOutputStreamBase
  * Method:    resetCStream
  * Signature: (JII)I
  */
-JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdOutputStreamNoFinalizer_resetCStream
+JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdOutputStreamBase_resetCStream
   (JNIEnv *env, jclass obj, jlong stream) {
     jclass clazz = (*env)->GetObjectClass(env, obj);
     src_pos_id = (*env)->GetFieldID(env, clazz, "srcPos", "J");
@@ -52,11 +52,11 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdOutputStreamNoFinalizer_re
 }
 
 /*
- * Class:     com_github_luben_zstd_ZstdOutputStreamNoFinalizer
+ * Class:     com_github_luben_zstd_ZstdOutputStreamBase
  * Method:    compressStream
  * Signature: (J[BI[BI)I
  */
-JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdOutputStreamNoFinalizer_compressStream
+JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdOutputStreamBase_compressStream
   (JNIEnv *env, jclass obj, jlong stream, jbyteArray dst, jint dst_size, jbyteArray src, jint src_size) {
 
     size_t size = (size_t)(0-ZSTD_error_memory_allocation);
@@ -80,11 +80,11 @@ E1: return (jint) size;
 }
 
 /*
- * Class:     com_github_luben_zstd_ZstdOutputStreamNoFinalizer
+ * Class:     com_github_luben_zstd_ZstdOutputStreamBase
  * Method:    endStream
  * Signature: (J[BI)I
  */
-JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdOutputStreamNoFinalizer_endStream
+JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdOutputStreamBase_endStream
   (JNIEnv *env, jclass obj, jlong stream, jbyteArray dst, jint dst_size) {
 
     size_t size = (size_t)(0-ZSTD_error_memory_allocation);
@@ -100,11 +100,11 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdOutputStreamNoFinalizer_en
 }
 
 /*
- * Class:     com_github_luben_zstd_ZstdOutputStreamNoFinalizer
+ * Class:     com_github_luben_zstd_ZstdOutputStreamBase
  * Method:    flushStream
  * Signature: (J[BI)I
  */
-JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdOutputStreamNoFinalizer_flushStream
+JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdOutputStreamBase_flushStream
   (JNIEnv *env, jclass obj, jlong stream, jbyteArray dst, jint dst_size) {
 
     size_t size = (size_t)(0-ZSTD_error_memory_allocation);

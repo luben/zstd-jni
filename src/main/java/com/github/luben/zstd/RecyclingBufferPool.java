@@ -14,9 +14,9 @@ public class RecyclingBufferPool implements BufferPool {
     public static final BufferPool INSTANCE = new RecyclingBufferPool();
 
     private static final int buffSize = Math.max(Math.max(
-            (int) ZstdOutputStreamNoFinalizer.recommendedCOutSize(),
-            (int) ZstdInputStreamNoFinalizer.recommendedDInSize()),
-            (int) ZstdInputStreamNoFinalizer.recommendedDOutSize());
+            (int) ZstdOutputStreamBase.recommendedCOutSize(),
+            (int) ZstdInputStreamBase.recommendedDInSize()),
+            (int) ZstdInputStreamBase.recommendedDOutSize());
 
     private final ArrayDeque<SoftReference<ByteBuffer>> pool;
 

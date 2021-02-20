@@ -23,7 +23,7 @@ libraryDependencies ++= Seq(
   "org.scalacheck" %% "scalacheck" % "1.14.1" % "test"
 )
 
-javacOptions ++= Seq("-source", "1.6", "-target", "1.6")
+javacOptions ++= Seq("-source", "1.6", "-target", "1.6", "-Xlint:unchecked")
 
 javacOptions in doc := Seq("-source", "1.6")
 
