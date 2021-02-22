@@ -44,7 +44,7 @@ class ZstdDictSpec extends FlatSpec {
   val levels = List(1)
   for {
        legacy <- legacyS
-       val dict = train(legacy)
+       dict = train(legacy)
        level <- levels
   } {
 
