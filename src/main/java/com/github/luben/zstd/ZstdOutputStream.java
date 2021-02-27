@@ -10,17 +10,19 @@ import com.github.luben.zstd.util.Native;
 /**
  * OutputStream filter that compresses the data using Zstd compression
  */
-public class ZstdOutputStream extends ZstdOutputStreamBase<ZstdOutputStream> {
+public class ZstdOutputStream extends FilterOutputStream{
+
+    private ZstdOutputStreamNoFinalizer inner;
 
     /**
      *  @deprecated
      *  Use ZstdOutputStream() or ZstdOutputStream(level) and set the other params with the setters
      **/
     public ZstdOutputStream(OutputStream outStream, int level, boolean closeFrameOnFlush, boolean useChecksums) throws IOException {
-        this(outStream);
-        super.setCloseFrameOnFlush(closeFrameOnFlush);
-        super.setLevel(level);
-        super.setChecksum(useChecksums);
+        super(outStream);
+        inner = new ZstdOutputStreamNoFinalizer(outStream, level);
+        inner.setCloseFrameOnFlush(closeFrameOnFlush);
+        inner.setChecksum(useChecksums);
     }
 
     /**
@@ -28,9 +30,9 @@ public class ZstdOutputStream extends ZstdOutputStreamBase<ZstdOutputStream> {
      *  Use ZstdOutputStream() or ZstdOutputStream(level) and set the other params with the setters
      **/
     public ZstdOutputStream(OutputStream outStream, int level, boolean closeFrameOnFlush) throws IOException {
-        this(outStream);
-        super.setCloseFrameOnFlush(closeFrameOnFlush);
-        super.setLevel(level);
+        super(outStream);
+        inner = new ZstdOutputStreamNoFinalizer(outStream, level);
+        inner.setCloseFrameOnFlush(closeFrameOnFlush);
     }
 
     /**
@@ -39,7 +41,8 @@ public class ZstdOutputStream extends ZstdOutputStreamBase<ZstdOutputStream> {
      * @param level the compression level
      */
     public ZstdOutputStream(OutputStream outStream, int level) throws IOException {
-        super(outStream, level);
+        this(outStream, NoPool.INSTANCE);
+        inner.setLevel(level);
     }
 
     /**
@@ -47,7 +50,7 @@ public class ZstdOutputStream extends ZstdOutputStreamBase<ZstdOutputStream> {
      * @param outStream the stream to wrap
      */
     public ZstdOutputStream(OutputStream outStream) throws IOException {
-        super(outStream, NoPool.INSTANCE);
+        this(outStream, NoPool.INSTANCE);
     }
 
     /**
@@ -56,9 +59,9 @@ public class ZstdOutputStream extends ZstdOutputStreamBase<ZstdOutputStream> {
      * @param bufferPool the pool to fetch and return buffers
      */
     public ZstdOutputStream(OutputStream outStream, BufferPool bufferPool, int level) throws IOException {
-        super(outStream, bufferPool, level);
+        this(outStream, bufferPool);
+        inner.setLevel(level);
     }
-
 
     /**
      * create a new compressing OutputStream
@@ -66,7 +69,8 @@ public class ZstdOutputStream extends ZstdOutputStreamBase<ZstdOutputStream> {
      * @param bufferPool the pool to fetch and return buffers
      */
     public ZstdOutputStream(OutputStream outStream, BufferPool bufferPool) throws IOException {
-        super(outStream, bufferPool);
+        super(outStream);
+        inner = new ZstdOutputStreamNoFinalizer(outStream, bufferPool);
     }
 
     /**
@@ -86,4 +90,82 @@ public class ZstdOutputStream extends ZstdOutputStreamBase<ZstdOutputStream> {
     protected void finalize() throws Throwable {
         close();
     }
+
+    public static long recommendedCOutSize() {
+        return ZstdOutputStreamNoFinalizer.recommendedCOutSize();
+    }
+
+    /**
+     * Enable checksums for the compressed stream.
+     *
+     * Default: false
+     */
+    public ZstdOutputStream setChecksum(boolean useChecksums) throws IOException {
+        inner.setChecksum(useChecksums);
+        return this;
+    }
+
+    /**
+     * Set the compression level.
+     *
+     * Default: 3
+     */
+    public ZstdOutputStream setLevel(int level) throws IOException {
+        inner.setLevel(level);
+        return this;
+    }
+
+    /**
+     * Enable use of worker threads for parallel compression.
+     *
+     * Default: no worker threads.
+     */
+    public ZstdOutputStream setWorkers(int n) throws IOException {
+        inner.setWorkers(n);
+        return this;
+    }
+
+    /**
+     * Enable closing the frame on flush.
+     *
+     * This will guarantee that it can be ready fully if the process crashes
+     * before closing the stream. On the downside it will negatively affect
+     * the compression ratio.
+     *
+     * Default: false.
+     */
+    public ZstdOutputStream setCloseFrameOnFlush(boolean closeOnFlush) throws IOException {
+        inner.setCloseFrameOnFlush(closeOnFlush);
+        return this;
+    }
+
+    public ZstdOutputStream setDict(byte[] dict) throws IOException {
+        inner.setDict(dict);
+        return this;
+    }
+
+    public ZstdOutputStream setDict(ZstdDictCompress dict) throws IOException {
+        inner.setDict(dict);
+        return this;
+    }
+
+    public void write(byte[] src, int offset, int len) throws IOException {
+        inner.write(src, offset, len);
+    }
+
+    public void write(int i) throws IOException {
+        inner.write(i);
+    }
+
+    /**
+     * Flushes the output
+     */
+    public void flush() throws IOException {
+        inner.flush();
+    }
+
+    public void close() throws IOException {
+        inner.close();
+    }
+
 }

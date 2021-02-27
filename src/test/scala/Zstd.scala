@@ -225,7 +225,7 @@ class ZstdSpec extends FlatSpec with Checkers {
       check { input: Array[Byte] =>
         val size  = input.length
         val os    = new ByteArrayOutputStream(Zstd.compressBound(size.toLong).toInt)
-        val zos   = new ZstdOutputStream(os, level)
+        val zos   = new ZstdOutputStream(os).setLevel(level).setCloseFrameOnFlush(false)
         val block = 128 * 1024
         var ptr   = 0
         while (ptr < size) {

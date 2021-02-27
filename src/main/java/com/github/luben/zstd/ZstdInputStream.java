@@ -1,6 +1,7 @@
 package com.github.luben.zstd;
 
 import java.io.InputStream;
+import java.io.FilterInputStream;
 import java.io.IOException;
 
 /**
@@ -10,7 +11,9 @@ import java.io.IOException;
  * It does not support mark/reset methods
  */
 
-public class ZstdInputStream extends ZstdInputStreamBase<ZstdInputStream> {
+public class ZstdInputStream extends FilterInputStream {
+
+    private ZstdInputStreamNoFinalizer inner;
 
     /**
      * create a new decompressing InputStream
@@ -18,6 +21,7 @@ public class ZstdInputStream extends ZstdInputStreamBase<ZstdInputStream> {
      */
     public ZstdInputStream(InputStream inStream) throws IOException {
         super(inStream);
+        inner = new ZstdInputStreamNoFinalizer(inStream);
     }
 
     /**
@@ -26,7 +30,8 @@ public class ZstdInputStream extends ZstdInputStreamBase<ZstdInputStream> {
      * @param bufferPool the pool to fetch and return buffers
      */
     public ZstdInputStream(InputStream inStream, BufferPool bufferPool) throws IOException {
-        super(inStream, bufferPool);
+        super(inStream);
+        inner = new ZstdInputStreamNoFinalizer(inStream, bufferPool);
     }
 
     /**
@@ -44,5 +49,64 @@ public class ZstdInputStream extends ZstdInputStreamBase<ZstdInputStream> {
     @Override
     protected void finalize() throws Throwable {
         close();
+    }
+
+    public static long recommendedDInSize() {
+        return ZstdInputStreamNoFinalizer.recommendedDInSize();
+    }
+
+    public static long recommendedDOutSize() {
+        return ZstdInputStreamNoFinalizer.recommendedDOutSize();
+    }
+
+    /**
+     * Don't break on unfinished frames
+     *
+     * Use case: decompressing files that are not yet finished writing and compressing
+     */
+    public ZstdInputStream setContinuous(boolean b) {
+        inner.setContinuous(b);
+        return this;
+    }
+
+    public boolean getContinuous() {
+        return inner.getContinuous();
+    }
+
+    public ZstdInputStream setDict(byte[] dict) throws IOException {
+        inner.setDict(dict);
+        return this;
+    }
+    public ZstdInputStream setDict(ZstdDictDecompress dict) throws IOException {
+        inner.setDict(dict);
+        return this;
+    }
+
+
+    public int read(byte[] dst, int offset, int len) throws IOException {
+        return inner.read(dst, offset, len);
+    }
+
+
+    public int read() throws IOException {
+        return inner.read();
+    }
+
+    public int available() throws IOException {
+        return inner.available();
+    }
+
+
+    public long skip(long numBytes) throws IOException {
+        return inner.skip(numBytes);
+    }
+
+    public boolean markSupported() {
+        return inner.markSupported();
+    }
+
+
+    public void close() throws IOException {
+        inner.close();
     }
 }
