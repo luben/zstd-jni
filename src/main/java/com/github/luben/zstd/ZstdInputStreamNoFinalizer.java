@@ -17,7 +17,7 @@ import com.github.luben.zstd.util.Native;
  * buffers use `ZstdInputStream` instead.
  */
 
-class ZstdInputStreamNoFinalizer extends FilterInputStream {
+public class ZstdInputStreamNoFinalizer extends FilterInputStream {
 
     static {
         Native.load();

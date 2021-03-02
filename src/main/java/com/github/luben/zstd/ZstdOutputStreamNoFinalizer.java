@@ -12,7 +12,7 @@ import com.github.luben.zstd.util.Native;
  *
  */
 
-class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
+public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
 
     static {
         Native.load();
