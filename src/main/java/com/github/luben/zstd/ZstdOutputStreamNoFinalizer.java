@@ -119,6 +119,23 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
     }
 
     /**
+     * Enable Long Distance Matching and set the Window size Log.
+     *
+     * Setting windowLog greater than 27 will result in a stream that is not decompressable
+     * by all decoders as it requires more memory.
+     */
+    public synchronized ZstdOutputStreamNoFinalizer setLong(int windowLog) throws IOException {
+        if (!frameClosed) {
+            throw new IOException("Change of parameter on initialized stream");
+        }
+        int size = Zstd.setCompressionLong(stream, windowLog);
+        if (Zstd.isError(size)) {
+            throw new IOException("Compression param: " + Zstd.getErrorName(size));
+        }
+        return this;
+    }
+
+    /**
      * Enable use of worker threads for parallel compression.
      *
      * Default: no worker threads.

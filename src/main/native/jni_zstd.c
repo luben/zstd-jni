@@ -254,6 +254,26 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_setCompressionLevel
 
 /*
  * Class:     com_github_luben_zstd_Zstd
+ * Method:    setCompressionLong
+ * Signature: (J)V
+ */
+JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_setCompressionLong
+  (JNIEnv *env, jclass obj, jlong stream, jint windowLog) {
+    jclass clazz = (*env)->GetObjectClass(env, obj);
+    ZSTD_CCtx* cctx = (ZSTD_CCtx*)(intptr_t) stream;
+    if (windowLog < ZSTD_WINDOWLOG_MIN || windowLog > ZSTD_WINDOWLOG_MAX) {
+      // disable long matching and reset to default windowLog size
+      ZSTD_CCtx_setParameter(cctx, ZSTD_c_enableLongDistanceMatching, 0);
+      ZSTD_CCtx_setParameter(cctx, ZSTD_c_windowLog, 0);
+    } else {
+      ZSTD_CCtx_setParameter(cctx, ZSTD_c_enableLongDistanceMatching, 1);
+      ZSTD_CCtx_setParameter(cctx, ZSTD_c_windowLog, windowLog);
+    }
+    return 0;
+}
+
+/*
+ * Class:     com_github_luben_zstd_Zstd
  * Method:    setCompressionWorkers
  * Signature: (J)I
  */

@@ -562,6 +562,7 @@ public class Zstd {
     public static native int loadFastDictCompress(long stream, ZstdDictCompress dict);
     public static native int setCompressionChecksums(long stream, boolean useChecksums);
     public static native int setCompressionLevel(long stream, int level);
+    public static native int setCompressionLong(long stream, int windowLog);
     public static native int setCompressionWorkers(long stream, int workers);
 
     /* Utility methods */

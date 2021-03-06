@@ -290,7 +290,7 @@ JNIEXPORT void JNICALL Java_com_github_luben_zstd_ZstdCompressCtx_setLong0
 {
     if (compress_ctx_nativePtr == 0) return;
     ZSTD_CCtx* cctx = (ZSTD_CCtx*)(intptr_t)(*env)->GetLongField(env, obj, compress_ctx_nativePtr);
-    if (windowLog < ZSTD_WINDOWLOG_MIN || windowLog > ZSTD_WINDOWLOG_LIMIT_DEFAULT) {
+    if (windowLog < ZSTD_WINDOWLOG_MIN || windowLog > ZSTD_WINDOWLOG_MAX) {
         // disable long matching and reset to default windowLog size
         ZSTD_CCtx_setParameter(cctx, ZSTD_c_enableLongDistanceMatching, 0);
         ZSTD_CCtx_setParameter(cctx, ZSTD_c_windowLog, 0);
