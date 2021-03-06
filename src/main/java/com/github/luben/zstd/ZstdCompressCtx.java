@@ -101,6 +101,24 @@ public class ZstdCompressCtx extends AutoCloseBase {
     private native void setDictID0(boolean dictIDFlag);
 
     /**
+     * Enable or disable LongDistanceMatching and set the window size
+     * @param windowLog Maximum allowed back-reference distance, expressed as power of 2.
+     *                  This will set a memory budget for streaming decompression,
+     *                  with larger values requiring more memory and typically compressing more.
+     *                  Must be clamped between 10 and 27 and 0 disables LDM.
+     */
+    public ZstdCompressCtx setLong(int windowLog) {
+        if (nativePtr == 0) {
+            throw new IllegalStateException("Compression context is closed");
+        }
+        acquireSharedLock();
+        setLong0(windowLog);
+        releaseSharedLock();
+        return this;
+    }
+    private native void setLong0(int windowLog);
+
+    /**
      * Load compression dictionary to be used for subsequently compressed frames.
      *
      * @param dict the dictionary or `null` to remove loaded dictionary
