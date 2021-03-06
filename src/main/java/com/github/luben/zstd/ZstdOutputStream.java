@@ -118,8 +118,7 @@ public class ZstdOutputStream extends FilterOutputStream{
     /**
      * Set the Long Distance Matching.
      *
-     * Setting windowLog greater than 27 will result in a stream that is not decompressable
-     * by all decoders as it requires more memory.
+     * Values for windowLog outside the range 10-27 will disable and reset LDM
      */
     public ZstdOutputStream setLong(int windowLog) throws IOException {
         inner.setLong(windowLog);

@@ -121,8 +121,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
     /**
      * Enable Long Distance Matching and set the Window size Log.
      *
-     * Setting windowLog greater than 27 will result in a stream that is not decompressable
-     * by all decoders as it requires more memory.
+     * Values for windowLog outside the range 10-27 will disable and reset LDM
      */
     public synchronized ZstdOutputStreamNoFinalizer setLong(int windowLog) throws IOException {
         if (!frameClosed) {

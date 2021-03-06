@@ -105,7 +105,7 @@ public class ZstdCompressCtx extends AutoCloseBase {
      * @param windowLog Maximum allowed back-reference distance, expressed as power of 2.
      *                  This will set a memory budget for streaming decompression,
      *                  with larger values requiring more memory and typically compressing more.
-     *                  Must be clamped between 10 and 32 but values greater then 27 may not
+     *                  Must be clamped between 10 and 32/64 but values greater then 27 may not
      *                  be decompressable in all context as they require more memory.
      *                  0 disables LDM.
      */
