@@ -61,7 +61,7 @@ jniCppExtensions := Seq("c")
 
 jniGccFlags ++= Seq(
   "-std=c99", "-Wundef", "-Wshadow", "-Wcast-align", "-Wstrict-prototypes", "-Wno-unused-variable",
-  "-Wpointer-arith", "-DZSTD_LEGACY_SUPPORT=4", "-DZSTD_MULTITHREAD=1", "-lpthread", "-flto"
+  "-Wpointer-arith", "-DZSTD_LEGACY_SUPPORT=4", "-DZSTD_MULTITHREAD=1", "-lpthread", "-flto", "-static-libgcc"
 )
 
 // compilation on Windows with MSYS/gcc needs extra flags in order
@@ -70,12 +70,13 @@ jniGccFlags ++= Seq(
 jniGccFlags := (
   if (System.getProperty("os.name").toLowerCase startsWith "win")
     jniGccFlags.value.filterNot(_ == "-fPIC") ++
-      Seq("-D_JNI_IMPLEMENTATION_", "-Wl,--kill-at", "-static-libgcc")
+      Seq("-D_JNI_IMPLEMENTATION_", "-Wl,--kill-at")
   else if (System.getProperty("os.name").toLowerCase startsWith "mac")
     // MacOS uses clang that does not support the "-static-libgcc" option
-    jniGccFlags.value
+    jniGccFlags.value.filterNot(_ == "-static-libgcc")
   else
-    jniGccFlags.value ++ Seq("-static-libgcc")
+    // the default is compilation with GCC
+    jniGccFlags.value
   )
 
 // Special case the jni platform header on windows (use the one from the repo)
@@ -99,6 +100,7 @@ jniJreIncludes := {
   }
 }
 
+// Add the header files of Zstd to the include list
 jniIncludes ++= Seq("-I" + jniNativeSources.value.toString,
                     "-I" + jniNativeSources.value.toString + "/common",
                     "-I" + jniNativeSources.value.toString + "/legacy"
