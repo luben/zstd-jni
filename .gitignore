@@ -1,5 +1,6 @@
 target/
 build/
+project/
 .externalNativeBuild/
 .idea/
 .bloop/
