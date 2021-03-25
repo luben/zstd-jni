@@ -65,6 +65,8 @@ public enum Native {
         if (overridePath != null) {
             // Do not fall-back to auto-discovery - consumers know better
             System.load(overridePath);
+            loaded = true;
+            return;
         }
 
         // try to load the shared library directly from the JAR
@@ -138,8 +140,7 @@ public enum Native {
                     "Cannot unpack " + libname + ": " + e.getMessage());
             err.setStackTrace(e.getStackTrace());
             throw err;
-        }
-        finally {
+        } finally {
             try {
                 is.close();
                 if (out != null) {
