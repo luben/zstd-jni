@@ -112,7 +112,7 @@ public class ZstdInputStreamNoFinalizer extends FilterInputStream {
     public synchronized int read(byte[] dst, int offset, int len) throws IOException {
         // guard agains buffer overflows
         if (offset < 0 || len > dst.length - offset) {
-            throw new IndexOutOfBoundsException("Requested lenght " + len
+            throw new IndexOutOfBoundsException("Requested length " + len
                     + " from offset " + offset + " in buffer of size " + dst.length);
         }
         if (len == 0) {
@@ -134,7 +134,7 @@ public class ZstdInputStreamNoFinalizer extends FilterInputStream {
 
         // guard agains buffer overflows
         if (offset < 0 || len > dst.length - offset) {
-            throw new IndexOutOfBoundsException("Requested lenght " + len
+            throw new IndexOutOfBoundsException("Requested length " + len
                     + " from offset " + offset + " in buffer of size " + dst.length);
         }
         int dstSize = offset + len;
