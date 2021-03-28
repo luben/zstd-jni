@@ -6,6 +6,10 @@ version := {
   scala.io.Source.fromFile("version").getLines.next
 }
 
+val nativeJniVersion = {
+  scala.io.Source.fromFile("version").getLines.next
+}
+
 scalaVersion := "2.12.13"
 
 enablePlugins(JniPlugin, SbtOsgi)
@@ -32,7 +36,7 @@ javacOptions in doc := Seq("-source", "1.6")
 javaOptions in Test ++= Seq("-Xcheck:jni")
 
 // sbt-jni configuration
-jniLibraryName := "zstd-jni"
+jniLibraryName := "zstd-jni" + "-" + nativeJniVersion
 
 jniNativeClasses := Seq(
   "com.github.luben.zstd.Zstd",
@@ -120,6 +124,12 @@ jniBinPath := {
 // Do no generate C header files - we don't have use of them.
 // There is also a compatibility problem - newer JDKs don't have `javah`
 jniGenerateHeaders := false
+
+Compile / sourceGenerators += Def.task {
+  val file = (Compile / sourceManaged).value / "com" / "github" / "luben" / "zstd" / "util" / "ZstdVersion.java"
+  IO.write(file, "package com.github.luben.zstd.util;\n\npublic class ZstdVersion {\n\tpublic static final String NATIVE_JNI_VERSION = \"" + nativeJniVersion + "\";\n}\n" )
+  Seq(file)
+}
 
 // Sonatype
 

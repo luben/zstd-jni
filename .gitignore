@@ -12,3 +12,7 @@ gradlew*
 .gradle
 *.swp
 *.o
+/Makefile
+/CMakeFiles
+/CMakeCache.txt
+/cmake_install.cmake

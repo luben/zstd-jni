@@ -2,6 +2,10 @@ apply plugin: 'com.android.library'
 
 version = rootProject.file('version').text.trim()
 
+def nativeJniVersion = version
+
+def generatedSrcDir = new File(buildDir, "generated/main/java/");
+
 buildscript {
     repositories {
         google()
@@ -36,6 +40,18 @@ android {
             path "CMakeLists.txt"
         }
     }
+
+    task generateZstdVersion {
+        doLast {
+            ZstdVersionGenerator.generate(generatedSrcDir, nativeJniVersion)
+        }
+    }
+
+    preBuild.dependsOn generateZstdVersion
+
+    sourceSets {
+        main.java.srcDirs += generatedSrcDir
+    }
 }
 
 repositories {
@@ -47,4 +63,20 @@ repositories {
 dependencies {
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'com.android.support.test:runner:1.0.2'
+}
+
+public class ZstdVersionGenerator {
+	public static void generate(File outputDir, String nativeJniVersion) throws Exception {
+		String packageName = "com.github.luben.zstd.util";
+		File packageDir = new File(outputDir, packageName.replace(".", "/"));
+		packageDir.mkdirs();
+		OutputStream outputStream = new FileOutputStream(new File(packageDir, "ZstdVersion.java"));
+		try {
+			def output = "package " + packageName + ";\n\npublic class ZstdVersion\n{\n\tpublic static final String NATIVE_JNI_VERSION = \"" + nativeJniVersion + "\";\n}\n";
+			outputStream.write(output.getBytes("UTF-8"));
+		}
+		finally {
+			outputStream.close();
+		}
+	}
 }
