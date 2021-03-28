@@ -6,6 +6,10 @@ version := {
   scala.io.Source.fromFile("version").getLines.next
 }
 
+val nativeVersion = {
+  scala.io.Source.fromFile("src/main/native/NativeVersion").getLines.next
+}
+
 scalaVersion := "2.12.13"
 
 enablePlugins(JniPlugin, SbtOsgi)
@@ -23,16 +27,16 @@ libraryDependencies ++= Seq(
   "org.scalacheck" %% "scalacheck" % "1.14.1" % "test"
 )
 
-javacOptions ++= Seq("-source", "1.6", "-target", "1.6", "-Xlint:unchecked")
+javacOptions ++= Seq("-source", "8", "-target", "8", "-Xlint:unchecked")
 
-javacOptions in doc := Seq("-source", "1.6")
+javacOptions in doc := Seq("-source", "8")
 
 // fork := true
 // Check at runtime for JNI errors when running tests
 javaOptions in Test ++= Seq("-Xcheck:jni")
 
 // sbt-jni configuration
-jniLibraryName := "zstd-jni"
+jniLibraryName := "zstd-jni" + "-" + nativeVersion
 
 jniNativeClasses := Seq(
   "com.github.luben.zstd.Zstd",
@@ -60,6 +64,7 @@ jniUseCpp11 := false
 jniCppExtensions := Seq("c")
 
 jniGccFlags ++= Seq(
+"-I/Users/vyskovsk/src/compress/zstd-jni/jni",
   "-std=c99", "-Wundef", "-Wshadow", "-Wcast-align", "-Wstrict-prototypes", "-Wno-unused-variable",
   "-Wpointer-arith", "-DZSTD_LEGACY_SUPPORT=4", "-DZSTD_MULTITHREAD=1", "-lpthread", "-flto", "-static-libgcc"
 )
@@ -120,6 +125,12 @@ jniBinPath := {
 // Do no generate C header files - we don't have use of them.
 // There is also a compatibility problem - newer JDKs don't have `javah`
 jniGenerateHeaders := false
+
+Compile / sourceGenerators += Def.task {
+  val file = (Compile / sourceManaged).value / "com" / "github" / "luben" / "zstd" / "util" / "ZstdNativeVersion.java"
+  IO.write(file, "package com.github.luben.zstd.util;\n\npublic class ZstdNativeVersion {\n\tpublic static final String VERSION = \"" + nativeVersion + "\";\n}\n" )
+  Seq(file)
+}
 
 // Sonatype
 
