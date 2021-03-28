@@ -71,6 +71,14 @@ If you want to publish it to you local ivy2 repository:
  $ sbt publish-local
 ```
 
+In case the native library is modified in an incompatible way, the version in
+src/main/native/NativeVersion must be updated.  It should match version of
+first release when it became incompatible with previous release.
+Note that incompatible means either change of API (adding, removing or
+modifying signature of function, including its return value) or any change of
+functional behavior, basically when the native won't work with current library
+anymore.
+
 Binary releases
 ---------------
 
