@@ -1,6 +1,6 @@
 #!/bin/bash -x
 
-VERSION=$(cat varsion)
+VERSION=$(cat version)
 
 compile() {
     ARCH=$1

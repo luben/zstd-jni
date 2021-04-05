@@ -10,7 +10,7 @@ public enum Native {
     ;
 
     private static final String nativePathOverride = "ZstdNativePath";
-    private static final String libnameShort = "zstd-jni-" + ZstdVersion.NATIVE_JNI_VERSION;
+    private static final String libnameShort = "zstd-jni-" + ZstdVersion.VERSION;
     private static final String libname = "lib" + libnameShort;
     private static final String errorMsg = "Unsupported OS/arch, cannot find " +
         resourceName() + " or load " + libnameShort + " from system libraries. Please " +

@@ -6,10 +6,6 @@ version := {
   scala.io.Source.fromFile("version").getLines.next
 }
 
-val nativeJniVersion = {
-  scala.io.Source.fromFile("version").getLines.next
-}
-
 scalaVersion := "2.12.13"
 
 enablePlugins(JniPlugin, SbtOsgi)
@@ -36,7 +32,7 @@ javacOptions in doc := Seq("-source", "1.6")
 javaOptions in Test ++= Seq("-Xcheck:jni")
 
 // sbt-jni configuration
-jniLibraryName := "zstd-jni" + "-" + nativeJniVersion
+jniLibraryName := "zstd-jni" + "-" + version.value
 
 jniNativeClasses := Seq(
   "com.github.luben.zstd.Zstd",
@@ -125,9 +121,10 @@ jniBinPath := {
 // There is also a compatibility problem - newer JDKs don't have `javah`
 jniGenerateHeaders := false
 
+// Generate a class with the version
 Compile / sourceGenerators += Def.task {
   val file = (Compile / sourceManaged).value / "com" / "github" / "luben" / "zstd" / "util" / "ZstdVersion.java"
-  IO.write(file, "package com.github.luben.zstd.util;\n\npublic class ZstdVersion {\n\tpublic static final String NATIVE_JNI_VERSION = \"" + nativeJniVersion + "\";\n}\n" )
+  IO.write(file, "package com.github.luben.zstd.util;\n\npublic class ZstdVersion {\n\tpublic static final String VERSION = \"" + version.value + "\";\n}\n" )
   Seq(file)
 }
 
@@ -157,21 +154,21 @@ description := "JNI bindings for Zstd native library that provides fast and high
 packageOptions in (Compile, packageBin) ++= Seq(
   Package.ManifestAttributes(new java.util.jar.Attributes.Name("Automatic-Module-Name") -> "com.github.luben.zstd_jni"),
   Package.ManifestAttributes(new java.util.jar.Attributes.Name("Bundle-NativeCode") ->
-  """aix/ppc64/libzstd-jni.so;osname=AIX;processor=ppc64,
-    |darwin/x86_64/libzstd-jni.dylib;osname=MacOS;osname=MacOSX;processor=x86_64,
-    |darwin/aarch64/libzstd-jni.dylib;osname=MacOS;osname=MacOSX;processor=aarch64,
-    |freebsd/amd64/libzstd-jni.so;osname=FreeBSD;processor=amd64,
-    |freebsd/i386/libzstd-jni.so;osname=FreeBSD;processor=i386,
-    |linux/aarch64/libzstd-jni.so;osname=Linux;processor=aarch64,
-    |linux/amd64/libzstd-jni.so;osname=Linux;processor=amd64,
-    |linux/arm/libzstd-jni.so;osname=Linux;processor=arm,
-    |linux/i386/libzstd-jni.so;osname=Linux;processor=i386,
-    |linux/mips64/libzstd-jni.so;osname=Linux;processor=mips64,
-    |linux/ppc64/libzstd-jni.so;osname=Linux;processor=ppc64,
-    |linux/ppc64le/libzstd-jni.so;osname=Linux;processor=ppc64le,
-    |linux/s390x/libzstd-jni.so;osname=Linux;processor=s390x,
-    |win/amd64/libzstd-jni.dll;osname=Win32;processor=amd64,
-    |win/x86/libzstd-jni.dll;osname=Win32;processor=x86""".stripMargin),
+  {s"""aix/ppc64/libzstd-jni-${version.value}.so;osname=AIX;processor=ppc64,
+    |darwin/x86_64/libzstd-jni-${version.value}.dylib;osname=MacOS;osname=MacOSX;processor=x86_64,
+    |darwin/aarch64/libzstd-jni-${version.value}.dylib;osname=MacOS;osname=MacOSX;processor=aarch64,
+    |freebsd/amd64/libzstd-jni-${version.value}.so;osname=FreeBSD;processor=amd64,
+    |freebsd/i386/libzstd-jni-${version.value}.so;osname=FreeBSD;processor=i386,
+    |linux/aarch64/libzstd-jni-${version.value}.so;osname=Linux;processor=aarch64,
+    |linux/amd64/libzstd-jni-${version.value}.so;osname=Linux;processor=amd64,
+    |linux/arm/libzstd-jni-${version.value}.so;osname=Linux;processor=arm,
+    |linux/i386/libzstd-jni-${version.value}.so;osname=Linux;processor=i386,
+    |linux/mips64/libzstd-jni-${version.value}.so;osname=Linux;processor=mips64,
+    |linux/ppc64/libzstd-jni-${version.value}.so;osname=Linux;processor=ppc64,
+    |linux/ppc64le/libzstd-jni-${version.value}.so;osname=Linux;processor=ppc64le,
+    |linux/s390x/libzstd-jni-${version.value}.so;osname=Linux;processor=s390x,
+    |win/amd64/libzstd-jni-${version.value}.dll;osname=Win32;processor=amd64,
+    |win/x86/libzstd-jni-${version.value}.dll;osname=Win32;processor=x86""".stripMargin}),
 )
 
 pomExtra := (
@@ -229,7 +226,7 @@ lazy val classes = Path.selectSubpaths(file("target/classes"), new io.SimpleFilt
 lazy val Linux_amd64 = config("linux_amd64").extend(Compile)
 inConfig(Linux_amd64)(Defaults.compileSettings)
 mappings in (Linux_amd64, packageBin) := {
-  (file("target/classes/linux/amd64/libzstd-jni.so"), "linux/amd64/libzstd-jni.so") :: classes
+  (file(s"target/classes/linux/amd64/libzstd-jni-${version.value}.so"), s"linux/amd64/libzstd-${version.value}.so") :: classes
 }
 packageOptions in (Linux_amd64, packageBin) ++= Seq(
   Package.ManifestAttributes(new java.util.jar.Attributes.Name("Automatic-Module-Name") -> "com.github.luben.zstd_jni"),
@@ -239,7 +236,7 @@ addArtifact(Artifact(nameValue, "linux_amd64"), packageBin in Linux_amd64)
 lazy val Linux_i386 = config("linux_i386").extend(Compile)
 inConfig(Linux_i386)(Defaults.compileSettings)
 mappings in (Linux_i386, packageBin) := {
-  (file("target/classes/linux/i386/libzstd-jni.so"), "linux/i386/libzstd-jni.so") :: classes
+  (file(s"target/classes/linux/i386/libzstd-jni-${version.value}.so"), s"linux/i386/libzstd-jni-${version.value}.so") :: classes
 }
 packageOptions in (Linux_i386, packageBin) ++= Seq(
   Package.ManifestAttributes(new java.util.jar.Attributes.Name("Automatic-Module-Name") -> "com.github.luben.zstd_jni"),
@@ -249,7 +246,7 @@ addArtifact(Artifact(nameValue, "linux_i386"), packageBin in Linux_i386)
 lazy val Linux_aarch64 = config("linux_aarch64").extend(Compile)
 inConfig(Linux_aarch64)(Defaults.compileSettings)
 mappings in (Linux_aarch64, packageBin) := {
-  (file("target/classes/linux/aarch64/libzstd-jni.so"), "linux/aarch64/libzstd-jni.so") :: classes
+  (file(s"target/classes/linux/aarch64/libzstd-jni-${version.value}.so"), s"linux/aarch64/libzstd-jni-${version.value}.so") :: classes
 }
 packageOptions in (Linux_aarch64, packageBin) ++= Seq(
   Package.ManifestAttributes(new java.util.jar.Attributes.Name("Automatic-Module-Name") -> "com.github.luben.zstd_jni"),
@@ -259,7 +256,7 @@ addArtifact(Artifact(nameValue, "linux_aarch64"), packageBin in Linux_aarch64)
 lazy val Linux_arm = config("linux_arm").extend(Compile)
 inConfig(Linux_arm)(Defaults.compileSettings)
 mappings in (Linux_arm, packageBin) := {
-  (file("target/classes/linux/arm/libzstd-jni.so"), "linux/arm/libzstd-jni.so") :: classes
+  (file(s"target/classes/linux/arm/libzstd-jni-${version.value}.so"), s"linux/arm/libzstd-jni-${version.value}.so") :: classes
 }
 packageOptions in (Linux_arm, packageBin) ++= Seq(
   Package.ManifestAttributes(new java.util.jar.Attributes.Name("Automatic-Module-Name") -> "com.github.luben.zstd_jni"),
@@ -269,7 +266,7 @@ addArtifact(Artifact(nameValue, "linux_arm"), packageBin in Linux_arm)
 lazy val Linux_ppc64le = config("linux_ppc64le").extend(Compile)
 inConfig(Linux_ppc64le)(Defaults.compileSettings)
 mappings in (Linux_ppc64le, packageBin) := {
-  (file("target/classes/linux/ppc64le/libzstd-jni.so"), "linux/ppc64le/libzstd-jni.so") :: classes
+  (file(s"target/classes/linux/ppc64le/libzstd-jni-${version.value}.so"), s"linux/ppc64le/libzstd-jni-${version.value}.so") :: classes
 }
 packageOptions in (Linux_ppc64le, packageBin) ++= Seq(
   Package.ManifestAttributes(new java.util.jar.Attributes.Name("Automatic-Module-Name") -> "com.github.luben.zstd_jni"),
@@ -279,7 +276,7 @@ addArtifact(Artifact(nameValue, "linux_ppc64le"), packageBin in Linux_ppc64le)
 lazy val Linux_ppc64 = config("linux_ppc64").extend(Compile)
 inConfig(Linux_ppc64)(Defaults.compileSettings)
 mappings in (Linux_ppc64, packageBin) := {
-  (file("target/classes/linux/ppc64/libzstd-jni.so"), "linux/ppc64/libzstd-jni.so") :: classes
+  (file(s"target/classes/linux/ppc64/libzstd-jni-${version.value}.so"), s"linux/ppc64/libzstd-jni-${version.value}.so") :: classes
 }
 packageOptions in (Linux_ppc64, packageBin) ++= Seq(
   Package.ManifestAttributes(new java.util.jar.Attributes.Name("Automatic-Module-Name") -> "com.github.luben.zstd_jni"),
@@ -289,7 +286,7 @@ addArtifact(Artifact(nameValue, "linux_ppc64"), packageBin in Linux_ppc64)
 lazy val Linux_mips64 = config("linux_mips64").extend(Compile)
 inConfig(Linux_mips64)(Defaults.compileSettings)
 mappings in (Linux_mips64, packageBin) := {
-  (file("target/classes/linux/mips64/libzstd-jni.so"), "linux/mips64/libzstd-jni.so") :: classes
+  (file(s"target/classes/linux/mips64/libzstd-jni-${version.value}.so"), s"linux/mips64/libzstd-jni-${version.value}.so") :: classes
 }
 packageOptions in (Linux_mips64, packageBin) ++= Seq(
   Package.ManifestAttributes(new java.util.jar.Attributes.Name("Automatic-Module-Name") -> "com.github.luben.zstd_jni"),
@@ -299,7 +296,7 @@ addArtifact(Artifact(nameValue, "linux_mips64"), packageBin in Linux_mips64)
 lazy val Linux_s390x = config("linux_s390x").extend(Compile)
 inConfig(Linux_s390x)(Defaults.compileSettings)
 mappings in (Linux_s390x, packageBin) := {
-  (file("target/classes/linux/s390x/libzstd-jni.so"), "linux/s390x/libzstd-jni.so") :: classes
+  (file(s"target/classes/linux/s390x/libzstd-jni-${version.value}.so"), s"linux/s390x/libzstd-jni-${version.value}.so") :: classes
 }
 packageOptions in (Linux_s390x, packageBin) ++= Seq(
   Package.ManifestAttributes(new java.util.jar.Attributes.Name("Automatic-Module-Name") -> "com.github.luben.zstd_jni"),
@@ -309,7 +306,7 @@ addArtifact(Artifact(nameValue, "linux_s390x"), packageBin in Linux_s390x)
 lazy val Aix_ppc64 = config("aix_ppc64").extend(Compile)
 inConfig(Aix_ppc64)(Defaults.compileSettings)
 mappings in (Aix_ppc64, packageBin) := {
-  (file("target/classes/aix/ppc64/libzstd-jni.so"), "aix/ppc64/libzstd-jni.so") :: classes
+  (file(s"target/classes/aix/ppc64/libzstd-jni-${version.value}.so"), s"aix/ppc64/libzstd-jni-${version.value}.so") :: classes
 }
 packageOptions in (Aix_ppc64, packageBin) ++= Seq(
   Package.ManifestAttributes(new java.util.jar.Attributes.Name("Automatic-Module-Name") -> "com.github.luben.zstd_jni"),
@@ -319,7 +316,7 @@ addArtifact(Artifact(nameValue, "aix_ppc64"), packageBin in Aix_ppc64)
 lazy val Darwin_x86_64 = config("darwin_x86_64").extend(Compile)
 inConfig(Darwin_x86_64)(Defaults.compileSettings)
 mappings in (Darwin_x86_64, packageBin) := {
-  (file("target/classes/darwin/x86_64/libzstd-jni.dylib"), "darwin/x86_64/libzstd-jni.dylib") :: classes
+  (file(s"target/classes/darwin/x86_64/libzstd-jni-${version.value}.dylib"), s"darwin/x86_64/libzstd-jni-${version.value}.dylib") :: classes
 }
 packageOptions in (Darwin_x86_64, packageBin) ++= Seq(
   Package.ManifestAttributes(new java.util.jar.Attributes.Name("Automatic-Module-Name") -> "com.github.luben.zstd_jni"),
@@ -329,7 +326,7 @@ addArtifact(Artifact(nameValue, "darwin_x86_64"), packageBin in Darwin_x86_64)
 lazy val Darwin_aarch64 = config("darwin_aarch64").extend(Compile)
 inConfig(Darwin_aarch64)(Defaults.compileSettings)
 mappings in (Darwin_aarch64, packageBin) := {
-  (file("target/classes/darwin/aarch64/libzstd-jni.dylib"), "darwin/aarch64/libzstd-jni.dylib") :: classes
+  (file(s"target/classes/darwin/aarch64/libzstd-jni-${version.value}.dylib"), s"darwin/aarch64/libzstd-jni-${version.value}.dylib") :: classes
 }
 packageOptions in (Darwin_aarch64, packageBin) ++= Seq(
   Package.ManifestAttributes(new java.util.jar.Attributes.Name("Automatic-Module-Name") -> "com.github.luben.zstd_jni"),
@@ -339,7 +336,7 @@ addArtifact(Artifact(nameValue, "darwin_aarch64"), packageBin in Darwin_aarch64)
 lazy val FreeBSD_amd64 = config("freebsd_amd64").extend(Compile)
 inConfig(FreeBSD_amd64)(Defaults.compileSettings)
 mappings in (FreeBSD_amd64, packageBin) := {
-  (file("target/classes/freebsd/amd64/libzstd-jni.so"), "freebsd/amd64/libzstd-jni.so") :: classes
+  (file(s"target/classes/freebsd/amd64/libzstd-jni-${version.value}.so"), s"freebsd/amd64/libzstd-jni-${version.value}.so") :: classes
 }
 packageOptions in (FreeBSD_amd64, packageBin) ++= Seq(
   Package.ManifestAttributes(new java.util.jar.Attributes.Name("Automatic-Module-Name") -> "com.github.luben.zstd_jni"),
@@ -349,7 +346,7 @@ addArtifact(Artifact(nameValue, "freebsd_amd64"), packageBin in FreeBSD_amd64)
 lazy val FreeBSD_i386 = config("freebsd_i386").extend(Compile)
 inConfig(FreeBSD_i386)(Defaults.compileSettings)
 mappings in (FreeBSD_i386, packageBin) := {
-  (file("target/classes/freebsd/i386/libzstd-jni.so"), "freebsd/i386/libzstd-jni.so") :: classes
+  (file(s"target/classes/freebsd/i386/libzstd-jni-${version.value}.so"), s"freebsd/i386/libzstd-jni-${version.value}.so") :: classes
 }
 packageOptions in (FreeBSD_i386, packageBin) ++= Seq(
   Package.ManifestAttributes(new java.util.jar.Attributes.Name("Automatic-Module-Name") -> "com.github.luben.zstd_jni"),
@@ -359,7 +356,7 @@ addArtifact(Artifact(nameValue, "freebsd_i386"), packageBin in FreeBSD_i386)
 val Win_x86 = config("win_x86").extend(Compile)
 inConfig(Win_x86)(Defaults.compileSettings)
 mappings in (Win_x86, packageBin) := {
-  (file("target/classes/win/x86/libzstd-jni.dll"), "win/x86/libzstd-jni.dll") :: classes
+  (file(s"target/classes/win/x86/libzstd-jni-${version.value}.dll"), s"win/x86/libzstd-jni-${version.value}.dll") :: classes
 }
 packageOptions in (Win_x86, packageBin) ++= Seq(
   Package.ManifestAttributes(new java.util.jar.Attributes.Name("Automatic-Module-Name") -> "com.github.luben.zstd_jni"),
@@ -369,7 +366,7 @@ addArtifact(Artifact(nameValue, "win_x86"), packageBin in Win_x86)
 val Win_amd64 = config("win_amd64").extend(Compile)
 inConfig(Win_amd64)(Defaults.compileSettings)
 mappings in (Win_amd64, packageBin) := {
-  (file("target/classes/win/amd64/libzstd-jni.dll"), "win/amd64/libzstd-jni.dll") :: classes
+  (file(s"target/classes/win/amd64/libzstd-jni-${version.value}.dll"), s"win/amd64/libzstd-jni-${version.value}.dll") :: classes
 }
 packageOptions in (Win_amd64, packageBin) ++= Seq(
   Package.ManifestAttributes(new java.util.jar.Attributes.Name("Automatic-Module-Name") -> "com.github.luben.zstd_jni"),
