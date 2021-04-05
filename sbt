@@ -252,14 +252,7 @@ is_apple_silicon() { [[ "$(uname -s)" == "Darwin" && "$(uname -m)" == "arm64" ]]
 # MaxPermSize critical on pre-8 JVMs but incurs noisy warning on 8+
 default_jvm_opts() {
   local -r v="$(java_version)"
-  if [[ $v -ge 10 ]]; then
-    if is_apple_silicon; then
-      # As of Dec 2020, JVM for Apple Silicon (M1) doesn't support JVMCI
-      echo "$default_jvm_opts_common"
-    else
-      echo "$default_jvm_opts_common -XX:+UnlockExperimentalVMOptions -XX:+UseJVMCICompiler"
-    fi
-  elif [[ $v -ge 8 ]]; then
+  if [[ $v -ge 8 ]]; then
     echo "$default_jvm_opts_common"
   else
     echo "-XX:MaxPermSize=384m $default_jvm_opts_common"
