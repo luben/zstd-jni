@@ -47,11 +47,7 @@ public class RecyclingBufferPool implements BufferPool {
     @Override
     public synchronized void release(ByteBuffer buffer) {
         if (buffer.capacity() >= buffSize) {
-            // the same as `buffer.clear()` but that method was moved from
-            // `Buffer` to `ByteBuffer` and that leads to bytecode incompatibility
-            // with previous JVMs when compiled with Jvm11
-            buffer.limit(buffer.capacity());
-            buffer.position(0);
+            buffer.clear();
             pool.addFirst(new SoftReference<ByteBuffer>(buffer));
         }
     }
