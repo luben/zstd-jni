@@ -94,7 +94,7 @@ jobs:
             update: true
         - uses: actions/setup-java@v1
           with:
-            java-version: 8
+            java-version: 11
             architecture: ${{ matrix.java_arch }}
         - name: Check Java version
           run: java -version
