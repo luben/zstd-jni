@@ -2,8 +2,6 @@ apply plugin: 'com.android.library'
 
 version = rootProject.file('version').text.trim()
 
-def nativeJniVersion = version
-
 def generatedSrcDir = new File(buildDir, "generated/main/java/");
 
 buildscript {
@@ -43,7 +41,7 @@ android {
 
     task generateZstdVersion {
         doLast {
-            ZstdVersionGenerator.generate(generatedSrcDir, nativeJniVersion)
+            ZstdVersionGenerator.generate(generatedSrcDir, version)
         }
     }
 
@@ -66,13 +64,13 @@ dependencies {
 }
 
 public class ZstdVersionGenerator {
-	public static void generate(File outputDir, String nativeJniVersion) throws Exception {
+	public static void generate(File outputDir, String version) throws Exception {
 		String packageName = "com.github.luben.zstd.util";
 		File packageDir = new File(outputDir, packageName.replace(".", "/"));
 		packageDir.mkdirs();
 		OutputStream outputStream = new FileOutputStream(new File(packageDir, "ZstdVersion.java"));
 		try {
-			def output = "package " + packageName + ";\n\npublic class ZstdVersion\n{\n\tpublic static final String NATIVE_JNI_VERSION = \"" + nativeJniVersion + "\";\n}\n";
+			def output = "package " + packageName + ";\n\npublic class ZstdVersion\n{\n\tpublic static final String VERSION = \"" + version + "\";\n}\n";
 			outputStream.write(output.getBytes("UTF-8"));
 		}
 		finally {
