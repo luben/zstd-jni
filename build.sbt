@@ -85,18 +85,12 @@ jniGccFlags := (
 jniJreIncludes := {
   jniJdkHome.value.fold(Seq.empty[String]) { home =>
     val absHome = home.getAbsolutePath
-    if (System.getProperty("os.name").toLowerCase startsWith "win") {
-      Seq(s"include").map(file => s"-I$absHome/../$file") ++
-      Seq(s"""-I${sourceDirectory.value / "windows" / "include"}""")
-    } else {
-      val jniPlatformFolder  = System.getProperty("os.name").toLowerCase match {
-        case os if os.startsWith("mac") => "darwin"
-        case os                         => os
-      }
-      // in a typical installation, JDK files are one directory above the
-      // location of the JRE set in 'java.home'
-      Seq(s"include", s"include/$jniPlatformFolder").map(file => s"-I$absHome/$file")
+    val jniPlatformFolder  = System.getProperty("os.name").toLowerCase match {
+      case os if os.startsWith("win") => "windows"
+      case os if os.startsWith("mac") => "darwin"
+      case os                         => os
     }
+    Seq(s"include", s"include/$jniPlatformFolder").map(file => s"-I$absHome/$file")
   }
 }
 
