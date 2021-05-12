@@ -161,7 +161,7 @@ class ZstdPerfSpec extends FlatSpec  {
     var nsd = new AllocTracker
     val c_ctx = new ZstdCompressCtx()
     c_ctx.setLevel(level)
-    c_ctx.setLong(31);
+    c_ctx.setLong(27);
     val d_ctx = new ZstdDecompressCtx()
     val compressed: Array[Byte] = Array.fill[Byte](input.size)(0)
     val output: Array[Byte] = Array.fill[Byte](input.size)(0)

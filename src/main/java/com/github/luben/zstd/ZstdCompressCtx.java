@@ -114,11 +114,10 @@ public class ZstdCompressCtx extends AutoCloseBase {
             throw new IllegalStateException("Compression context is closed");
         }
         acquireSharedLock();
-        setLong0(windowLog);
+        Zstd.setCompressionLong(nativePtr, windowLog);
         releaseSharedLock();
         return this;
     }
-    private native void setLong0(int windowLog);
 
     /**
      * Load compression dictionary to be used for subsequently compressed frames.

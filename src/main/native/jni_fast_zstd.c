@@ -282,26 +282,6 @@ JNIEXPORT void JNICALL Java_com_github_luben_zstd_ZstdCompressCtx_setDictID0
 
 /*
  * Class:     com_github_luben_zstd_ZstdCompressCtx
- * Method:    setLong0
- * Signature: (I)V
- */
-JNIEXPORT void JNICALL Java_com_github_luben_zstd_ZstdCompressCtx_setLong0
-  (JNIEnv *env, jobject obj, jint windowLog)
-{
-    if (compress_ctx_nativePtr == 0) return;
-    ZSTD_CCtx* cctx = (ZSTD_CCtx*)(intptr_t)(*env)->GetLongField(env, obj, compress_ctx_nativePtr);
-    if (windowLog < ZSTD_WINDOWLOG_MIN || windowLog > ZSTD_WINDOWLOG_MAX) {
-        // disable long matching and reset to default windowLog size
-        ZSTD_CCtx_setParameter(cctx, ZSTD_c_enableLongDistanceMatching, 0);
-        ZSTD_CCtx_setParameter(cctx, ZSTD_c_windowLog, 0);
-    } else {
-        ZSTD_CCtx_setParameter(cctx, ZSTD_c_enableLongDistanceMatching, 1);
-        ZSTD_CCtx_setParameter(cctx, ZSTD_c_windowLog, windowLog);
-    }
-}
-
-/*
- * Class:     com_github_luben_zstd_ZstdCompressCtx
  * Method:    loadCDictFast0
  * Signature: (Lcom/github/luben/zstd/ZstdDictCompress)J
  */
