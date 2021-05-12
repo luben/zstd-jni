@@ -8,6 +8,8 @@ version := {
 
 useCoursier := false
 
+checksums := Nil
+
 scalaVersion := "2.12.13"
 
 enablePlugins(JniPlugin, SbtOsgi)
