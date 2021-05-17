@@ -14,6 +14,8 @@ jobs:
         - uses: actions/setup-java@v1
           with:
             java-version: 11
+        - name: Install sbt-jni
+          run: ./sbt-jni/sbt publishLocal
         - name: Compile
           run: ./sbt compile
         - name: Env
@@ -49,6 +51,8 @@ jobs:
         - uses: maxim-lobanov/setup-xcode@v1
           with:
             xcode-version: latest
+        - name: Install sbt-jni
+          run: ./sbt-jni/sbt publishLocal
         - name: Compile
           env:
               CC: cc -target ${{ matrix.macos_target }}
@@ -98,6 +102,8 @@ jobs:
             architecture: ${{ matrix.java_arch }}
         - name: Check Java version
           run: java -version
+        - name: Install sbt-jni
+          run: ./sbt-jni/sbt publishLocal
         - name: Compile
           run: ./sbt compile
         - name: Test
