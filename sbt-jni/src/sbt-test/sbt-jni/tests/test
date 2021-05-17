@@ -1,0 +1,3 @@
+> test
+$ exists target/native/include/com_joprice_Basic.h
+> check
