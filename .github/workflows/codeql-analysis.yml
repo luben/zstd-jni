@@ -46,7 +46,7 @@ jobs:
         # queries: ./path/to/local/query, your-org/your-repo/queries@main
 
     - name: Install sbt-jni
-      run: ./sbt-jni/sbt publishLocal
+      run: pushd ./sbt-jni; ./sbt publishLocal; popd
 
     - name: Compile
       run: ./sbt compile

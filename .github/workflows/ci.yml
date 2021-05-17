@@ -14,18 +14,25 @@ jobs:
         - uses: actions/setup-java@v1
           with:
             java-version: 11
+
         - name: Install sbt-jni
-          run: ./sbt-jni/sbt publishLocal
+          run: pushd ./sbt-jni; ./sbt publishLocal; popd
+
         - name: Compile
           run: ./sbt compile
+
         - name: Env
           run: echo "nativeJniVersion=`cat version`" >> $GITHUB_ENV
+
         - name: Inspect
           run: ldd target/classes/${{ matrix.target }}/libzstd-jni-${nativeJniVersion}.so
+
         - name: Test
           run: ./sbt jacoco
+
         - name: Upload coverage
           uses: codecov/codecov-action@v1
+
         - name: Deploy
           if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master'}}
           env:
@@ -51,23 +58,30 @@ jobs:
         - uses: maxim-lobanov/setup-xcode@v1
           with:
             xcode-version: latest
+
         - name: Install sbt-jni
-          run: ./sbt-jni/sbt publishLocal
+          run: pushd ./sbt-jni; ./sbt publishLocal; popd
+
         - name: Compile
           env:
               CC: cc -target ${{ matrix.macos_target }}
           run: ./sbt compile
+
         - name: Env
           run: echo "nativeJniVersion=`cat version`" >> $GITHUB_ENV
+
         - name: Inspect
           if: matrix.target_arch == 'x86_64'
           run: otool -L target/classes/darwin/${{ matrix.target_arch }}/libzstd-jni-${nativeJniVersion}.dylib
+
         - name: Test
           if: matrix.target_arch == 'x86_64'
           run: ./sbt jacoco
+
         - name: Upload coverage
           if: matrix.target_arch == 'x86_64'
           uses: codecov/codecov-action@v1
+
         - name: Deploy
           if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master'}}
           env:
@@ -100,16 +114,22 @@ jobs:
           with:
             java-version: 11
             architecture: ${{ matrix.java_arch }}
+
         - name: Check Java version
           run: java -version
+
         - name: Install sbt-jni
-          run: ./sbt-jni/sbt publishLocal
+          run: pushd ./sbt-jni; ./sbt publishLocal; popd
+
         - name: Compile
           run: ./sbt compile
+
         - name: Test
           run: ./sbt jacoco
+
         - name: Upload coverage
           uses: codecov/codecov-action@v1
+
         - name: Deploy
           if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master'}}
           shell: cmd
