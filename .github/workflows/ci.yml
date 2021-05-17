@@ -119,7 +119,7 @@ jobs:
           run: java -version
 
         - name: Install sbt-jni
-          run: pushd ./sbt-jni; ./sbt publishLocal; popd
+          run: cd sbt-jni; ./sbt publishLocal
 
         - name: Compile
           run: ./sbt compile
