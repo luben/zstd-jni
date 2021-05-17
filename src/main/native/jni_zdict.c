@@ -2,7 +2,7 @@
 #define ZDICT_STATIC_LINKING_ONLY
 #endif
 #include <jni.h>
-#include <dictBuilder/zdict.h>
+#include <zdict.h>
 #include <zstd_errors.h>
 #include <stdlib.h>
 #include <string.h>
