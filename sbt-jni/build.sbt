@@ -8,8 +8,6 @@ publishArtifact in Test := false
 
 scalaVersion := "2.12.13"
 
-bintrayOrganization := Some("joprice")
-
 licenses += ("Apache-2.0", url(
   "http://www.apache.org/licenses/LICENSE-2.0.html"
 ))
@@ -30,21 +28,4 @@ scalacOptions := Seq(
   "-feature",
   "-encoding",
   "utf8"
-)
-
-addCommandAlias(
-  "validate",
-  Seq(
-    "scripted",
-    "scalafmtCheck",
-    "scalafmtSbtCheck"
-  ).mkString(";", ";", "")
-)
-
-addCommandAlias(
-  "fmt",
-  Seq(
-    "scalafmtAll",
-    "scalafmtSbt"
-  ).mkString(";", ";", "")
 )
