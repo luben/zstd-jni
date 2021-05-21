@@ -224,7 +224,7 @@ lazy val classes = Path.selectSubpaths(file("target/classes"), new io.SimpleFilt
 lazy val Linux_amd64 = config("linux_amd64").extend(Compile)
 inConfig(Linux_amd64)(Defaults.compileSettings)
 mappings in (Linux_amd64, packageBin) := {
-  (file(s"target/classes/linux/amd64/libzstd-jni-${version.value}.so"), s"linux/amd64/libzstd-${version.value}.so") :: classes
+  (file(s"target/classes/linux/amd64/libzstd-jni-${version.value}.so"), s"linux/amd64/libzstd-jni-${version.value}.so") :: classes
 }
 packageOptions in (Linux_amd64, packageBin) ++= Seq(
   Package.ManifestAttributes(new java.util.jar.Attributes.Name("Automatic-Module-Name") -> "com.github.luben.zstd_jni"),
