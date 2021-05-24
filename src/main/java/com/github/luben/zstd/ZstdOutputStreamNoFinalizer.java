@@ -253,7 +253,17 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
         }
     }
 
+
     public synchronized void close() throws IOException {
+        close(true);
+    }
+
+    public synchronized void closeWithoutClosingParentStream() throws IOException {
+        close(false);
+    }
+
+
+    private void close(boolean closeParentStream) throws IOException {
         if (isClosed) {
             return;
         }
@@ -269,7 +279,9 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
                     out.write(dst, 0, (int) dstPos);
                 } while (size > 0);
             }
-            out.close();
+	    if (closeParentStream) {
+            	out.close();
+	    }
         } finally {
             // release the resources even if underlying stream throw an exception
             isClosed = true;
