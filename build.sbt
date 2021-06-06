@@ -60,7 +60,7 @@ jniUseCpp11 := false
 jniCppExtensions := Seq("c")
 
 jniGccFlags ++= Seq(
-  "-std=c99", "-Wundef", "-Wshadow", "-Wcast-align", "-Wstrict-prototypes", "-Wno-unused-variable", "-Wno-deprecated-declarations",
+  "-std=c99", "-Wundef", "-Wshadow", "-Wcast-align", "-Wstrict-prototypes", "-Wno-unused-variable",
   "-Wpointer-arith", "-DZSTD_LEGACY_SUPPORT=4", "-DZSTD_MULTITHREAD=1", "-lpthread", "-flto", "-static-libgcc"
 )
 

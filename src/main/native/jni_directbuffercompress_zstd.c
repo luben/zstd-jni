@@ -64,7 +64,9 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdDirectBufferCompressingStr
     produced_id = (*env)->GetFieldID(env, clazz, "produced", "I");
     void *dict_buff = (*env)->GetPrimitiveArrayCritical(env, dict, NULL);
     if (dict_buff == NULL) goto E1;
-    result = ZSTD_initCStream_usingDict((ZSTD_CStream *)(intptr_t) stream, dict_buff, dict_size, level);
+    ZSTD_CCtx_reset((ZSTD_CStream *)(intptr_t) stream, ZSTD_reset_session_only);
+    ZSTD_CCtx_setParameter((ZSTD_CStream *)(intptr_t) stream, ZSTD_c_compressionLevel, level);
+    result = ZSTD_CCtx_loadDictionary((ZSTD_CStream *)(intptr_t) stream, dict_buff, dict_size);
     (*env)->ReleasePrimitiveArrayCritical(env, dict, dict_buff, JNI_ABORT);
 E1:
     return result;
@@ -83,7 +85,8 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdDirectBufferCompressingStr
     jfieldID compress_dict = (*env)->GetFieldID(env, dict_clazz, "nativePtr", "J");
     ZSTD_CDict* cdict = (ZSTD_CDict*)(intptr_t)(*env)->GetLongField(env, dict, compress_dict);
     if (cdict == NULL) return ZSTD_error_dictionary_wrong;
-    return ZSTD_initCStream_usingCDict((ZSTD_CStream *)(intptr_t) stream, cdict);
+    ZSTD_CCtx_reset((ZSTD_CStream *)(intptr_t) stream, ZSTD_reset_session_only);
+    return ZSTD_CCtx_refCDict((ZSTD_CStream *)(intptr_t) stream, cdict);
 }
 
 /*
