@@ -152,21 +152,20 @@ description := "JNI bindings for Zstd native library that provides fast and high
 packageOptions in (Compile, packageBin) ++= Seq(
   Package.ManifestAttributes(new java.util.jar.Attributes.Name("Automatic-Module-Name") -> "com.github.luben.zstd_jni"),
   Package.ManifestAttributes(new java.util.jar.Attributes.Name("Bundle-NativeCode") ->
-  {s"""aix/ppc64/libzstd-jni-${version.value}.so;osname=AIX;processor=ppc64,
-    |darwin/x86_64/libzstd-jni-${version.value}.dylib;osname=MacOS;osname=MacOSX;processor=x86_64,
-    |darwin/aarch64/libzstd-jni-${version.value}.dylib;osname=MacOS;osname=MacOSX;processor=aarch64,
-    |freebsd/amd64/libzstd-jni-${version.value}.so;osname=FreeBSD;processor=amd64,
-    |freebsd/i386/libzstd-jni-${version.value}.so;osname=FreeBSD;processor=i386,
-    |linux/aarch64/libzstd-jni-${version.value}.so;osname=Linux;processor=aarch64,
-    |linux/amd64/libzstd-jni-${version.value}.so;osname=Linux;processor=amd64,
-    |linux/arm/libzstd-jni-${version.value}.so;osname=Linux;processor=arm,
-    |linux/i386/libzstd-jni-${version.value}.so;osname=Linux;processor=i386,
-    |linux/mips64/libzstd-jni-${version.value}.so;osname=Linux;processor=mips64,
-    |linux/ppc64/libzstd-jni-${version.value}.so;osname=Linux;processor=ppc64,
-    |linux/ppc64le/libzstd-jni-${version.value}.so;osname=Linux;processor=ppc64le,
-    |linux/s390x/libzstd-jni-${version.value}.so;osname=Linux;processor=s390x,
-    |win/amd64/libzstd-jni-${version.value}.dll;osname=Win32;processor=amd64,
-    |win/x86/libzstd-jni-${version.value}.dll;osname=Win32;processor=x86""".stripMargin}),
+  {s"""darwin/x86_64/libzstd-jni-${version.value}.dylib;osname=MacOS;osname=MacOSX;processor=x86_64,
+      |darwin/aarch64/libzstd-jni-${version.value}.dylib;osname=MacOS;osname=MacOSX;processor=aarch64,
+      |freebsd/amd64/libzstd-jni-${version.value}.so;osname=FreeBSD;processor=amd64,
+      |freebsd/i386/libzstd-jni-${version.value}.so;osname=FreeBSD;processor=i386,
+      |linux/aarch64/libzstd-jni-${version.value}.so;osname=Linux;processor=aarch64,
+      |linux/amd64/libzstd-jni-${version.value}.so;osname=Linux;processor=amd64,
+      |linux/arm/libzstd-jni-${version.value}.so;osname=Linux;processor=arm,
+      |linux/i386/libzstd-jni-${version.value}.so;osname=Linux;processor=i386,
+      |linux/mips64/libzstd-jni-${version.value}.so;osname=Linux;processor=mips64,
+      |linux/ppc64/libzstd-jni-${version.value}.so;osname=Linux;processor=ppc64,
+      |linux/ppc64le/libzstd-jni-${version.value}.so;osname=Linux;processor=ppc64le,
+      |linux/s390x/libzstd-jni-${version.value}.so;osname=Linux;processor=s390x,
+      |win/amd64/libzstd-jni-${version.value}.dll;osname=Win32;processor=amd64,
+      |win/x86/libzstd-jni-${version.value}.dll;osname=Win32;processor=x86""".stripMargin}),
 )
 
 pomExtra := (
@@ -195,7 +194,7 @@ OsgiKeys.exportPackage  := Seq(s"com.github.luben.zstd", "com.github.luben.zstd.
 OsgiKeys.importPackage := Seq("org.osgi.framework;resolution:=optional")
 OsgiKeys.privatePackage := Seq(
     "linux.amd64", "linux.i386", "linux.aarch64", "linux.arm", "linux.ppc64",
-    "linux.ppc64le", "linux.mips64", "linux.s390x", "aix.ppc64", "darwin.x86_64",
+    "linux.ppc64le", "linux.mips64", "linux.s390x", "darwin.x86_64",
     "darwin.aarch64", "win.amd64", "win.x86", "freebsd.amd64", "freebsd.i386"
 )
 
@@ -301,6 +300,7 @@ packageOptions in (Linux_s390x, packageBin) ++= Seq(
 )
 addArtifact(Artifact(nameValue, "linux_s390x"), packageBin in Linux_s390x)
 
+/*
 lazy val Aix_ppc64 = config("aix_ppc64").extend(Compile)
 inConfig(Aix_ppc64)(Defaults.compileSettings)
 mappings in (Aix_ppc64, packageBin) := {
@@ -310,6 +310,7 @@ packageOptions in (Aix_ppc64, packageBin) ++= Seq(
   Package.ManifestAttributes(new java.util.jar.Attributes.Name("Automatic-Module-Name") -> "com.github.luben.zstd_jni"),
 )
 addArtifact(Artifact(nameValue, "aix_ppc64"), packageBin in Aix_ppc64)
+*/
 
 lazy val Darwin_x86_64 = config("darwin_x86_64").extend(Compile)
 inConfig(Darwin_x86_64)(Defaults.compileSettings)
