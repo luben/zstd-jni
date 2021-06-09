@@ -12,11 +12,11 @@ public class NoPool implements BufferPool {
     }
 
     @Override
-    public synchronized ByteBuffer get(int capacity) {
+    public ByteBuffer get(int capacity) {
        return ByteBuffer.allocate(capacity);
     }
 
     @Override
-    public synchronized void release(ByteBuffer buffer) {
+    public void release(ByteBuffer buffer) {
     }
 }
