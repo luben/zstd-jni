@@ -59,16 +59,21 @@ The build system depends on Scala and the tests depend on ScalaTest and
 ScalaCheck but the produced JAR does not have any dependencies. It also
 embeds the native library.
 
-How to build:
-
+Build and publish locally `sbt-jni` plugin:
 ```
- $ sbt compile test package
+ $ cd sbt-jni
+ $ ./sbt publishLocal
+ $ cd ..
+```
+
+Compile and test:
+```
+ $ ./sbt compile test package
 ```
 
 If you want to publish it to you local ivy2 repository:
-
 ```
- $ sbt publish-local
+ $ ./sbt publishLocal
 ```
 
 Binary releases
