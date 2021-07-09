@@ -59,13 +59,6 @@ The build system depends on Scala and the tests depend on ScalaTest and
 ScalaCheck but the produced JAR does not have any dependencies. It also
 embeds the native library.
 
-Build and publish locally `sbt-jni` plugin:
-```
- $ cd sbt-jni
- $ ./sbt publishLocal
- $ cd ..
-```
-
 Compile and test:
 ```
  $ ./sbt compile test package

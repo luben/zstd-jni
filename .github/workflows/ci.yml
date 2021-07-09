@@ -15,9 +15,6 @@ jobs:
           with:
             java-version: 11
 
-        - name: Install sbt-jni
-          run: pushd ./sbt-jni; ./sbt publishLocal; popd
-
         - name: Compile
           run: ./sbt compile
 
@@ -58,9 +55,6 @@ jobs:
         - uses: maxim-lobanov/setup-xcode@v1
           with:
             xcode-version: latest
-
-        - name: Install sbt-jni
-          run: pushd ./sbt-jni; ./sbt publishLocal; popd
 
         - name: Compile
           env:
@@ -117,9 +111,6 @@ jobs:
 
         - name: Check Java version
           run: java -version
-
-        - name: Install sbt-jni
-          run: cd sbt-jni; ./sbt publishLocal
 
         - name: Compile
           run: ./sbt compile
