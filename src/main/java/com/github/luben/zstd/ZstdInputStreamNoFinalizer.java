@@ -224,9 +224,12 @@ public class ZstdInputStreamNoFinalizer extends FilterInputStream {
         if (numBytes <= 0) {
             return 0;
         }
-        long toSkip = numBytes;
-        int bufferLen = Math.min((int) recommendedDOutSize(), (int) toSkip);
+        int bufferLen = (int) recommendedDOutSize();
+        if (bufferLen > numBytes) {
+            bufferLen = (int) numBytes;
+        }
         ByteBuffer buf = bufferPool.get(bufferLen);
+        long toSkip = numBytes;
         try {
             byte data[] = Zstd.extractArray(buf);
             while (toSkip > 0) {
