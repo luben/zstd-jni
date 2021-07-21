@@ -129,6 +129,49 @@ public class ZstdDecompressCtx extends AutoCloseBase {
         }
     }
 
+    /**
+     * Decompresses buffer 'srcBuff' into buffer 'dstBuff' using this ZstdDecompressCtx.
+     *
+     * Destination buffer should be sized to be larger of equal to the originalSize.
+     * This is a low-level function that does not take into account or affect the `limit`
+     * or `position` of source or destination buffers.
+     *
+     * The decompression errors are returned as negative integer, they can be checked with
+     * `Zstd.is_error` and decoded with `Zstd.getErrorCode` and `Zstd.getErrorName`
+     *
+     * @param dstBuff the destination buffer - must be direct
+     * @param dstOffset the start offset of 'dstBuff'
+     * @param dstSize the size of 'dstBuff'
+     * @param srcBuff the source buffer - must be direct
+     * @param srcOffset the start offset of 'srcBuff'
+     * @param srcSize the size of 'srcBuff'
+     * @return the number of bytes decompressed into destination buffer (originalSize)
+     */
+
+    public int decompressDirectByteBufferWithError(ByteBuffer dstBuff, int dstOffset, int dstSize, ByteBuffer srcBuff, int srcOffset, int srcSize) {
+        if (nativePtr == 0) {
+            throw new IllegalStateException("Decompression context is closed");
+        }
+        if (!srcBuff.isDirect()) {
+            throw new IllegalArgumentException("srcBuff must be a direct buffer");
+        }
+        if (!dstBuff.isDirect()) {
+            throw new IllegalArgumentException("dstBuff must be a direct buffer");
+        }
+
+        acquireSharedLock();
+
+        try {
+            long size = decompressDirectByteBuffer0(dstBuff, dstOffset, dstSize, srcBuff, srcOffset, srcSize);
+            if (size > Integer.MAX_VALUE) {
+                throw new ZstdException(Zstd.errGeneric(), "Output size is greater than MAX_INT");
+            }
+            return (int) size;
+        } finally {
+            releaseSharedLock();
+        }
+    }
+
     private native long decompressDirectByteBuffer0(ByteBuffer dst, int dstOffset, int dstSize, ByteBuffer src, int srcOffset, int srcSize);
 
     /**
@@ -156,6 +199,40 @@ public class ZstdDecompressCtx extends AutoCloseBase {
             if (Zstd.isError(size)) {
                 throw new ZstdException(size);
             }
+            if (size > Integer.MAX_VALUE) {
+                throw new ZstdException(Zstd.errGeneric(), "Output size is greater than MAX_INT");
+            }
+            return (int) size;
+        } finally {
+            releaseSharedLock();
+        }
+    }
+
+    /**
+     * Decompresses byte array 'srcBuff' into byte array 'dstBuff' using this ZstdDecompressCtx.
+     *
+     * Destination buffer should be sized to be larger of equal to the originalSize.
+     *
+     * The decompression errors are returned as negative integer, they can be checked with
+     * `Zstd.is_error` and decoded with `Zstd.getErrorCode` and `Zstd.getErrorName`
+
+     * @param dstBuff the destination buffer
+     * @param dstOffset the start offset of 'dstBuff'
+     * @param dstSize the size of 'dstBuff'
+     * @param srcBuff the source buffer
+     * @param srcOffset the start offset of 'srcBuff'
+     * @param srcSize the size of 'srcBuff'
+     * @return the number of bytes decompressed into destination buffer (originalSize)
+     */
+    public int decompressByteArrayWithError(byte[] dstBuff, int dstOffset, int dstSize, byte[] srcBuff, int srcOffset, int srcSize) {
+        if (nativePtr == 0) {
+            throw new IllegalStateException("Decompression context is closed");
+        }
+
+        acquireSharedLock();
+
+        try {
+            long size = decompressByteArray0(dstBuff, dstOffset, dstSize, srcBuff, srcOffset, srcSize);
             if (size > Integer.MAX_VALUE) {
                 throw new ZstdException(Zstd.errGeneric(), "Output size is greater than MAX_INT");
             }
