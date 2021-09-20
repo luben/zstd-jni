@@ -70,6 +70,14 @@ public class ZstdCompressCtx extends AutoCloseBase {
     }
     private native void setChecksum0(boolean checksumFlag);
 
+
+    public ZstdCompressCtx setWorkers(int workers) {
+        acquireSharedLock();
+        Zstd.setCompressionWorkers(nativePtr, workers);
+        releaseSharedLock();
+        return this;
+    }
+
     /**
      * Enable or disable content size
      * @param contentSizeFlag Content size will be written into frame header _whenever known_, default: true
