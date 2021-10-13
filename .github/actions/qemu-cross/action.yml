@@ -1,0 +1,14 @@
+name: 'QEMU Cross'
+description: 'Compile and test under QEMU'
+inputs:
+  platform:
+    description: 'qemu guest os'
+    required: true
+runs:
+  using: 'composite'
+  steps:
+    - run: ${{ github.action_path }}/docker.sh
+      shell: bash
+      env:
+        PLATFORM_NAME: ${{ inputs.platform }}
+        HOST_WORKSPACE_DIR: ${{ github.workspace }}
