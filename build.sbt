@@ -6,7 +6,7 @@ version := {
   scala.io.Source.fromFile("version").getLines.next
 }
 
-scalaVersion := "2.12.13"
+scalaVersion := "2.12.15"
 
 enablePlugins(JniPlugin, SbtOsgi)
 
@@ -20,7 +20,7 @@ parallelExecution in Test := false
 
 libraryDependencies ++= Seq(
   "org.scalatest"  %% "scalatest"  % "3.0.5"  % "test",
-  "org.scalacheck" %% "scalacheck" % "1.14.1" % "test"
+  "org.scalacheck" %% "scalacheck" % "1.15.4" % "test"
 )
 
 javacOptions ++= Seq("--release", "6", "-Xlint:unchecked")
