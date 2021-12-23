@@ -57,7 +57,7 @@ jniNativeCompiler := Option(System.getenv("CC")).getOrElse("gcc")
 
 jniUseCpp11 := false
 
-jniCppExtensions := Seq("c")
+jniCppExtensions := Seq("c", "S")
 
 jniGccFlags ++= Seq(
   "-std=c99", "-Wundef", "-Wshadow", "-Wcast-align", "-Wstrict-prototypes", "-Wno-unused-variable",

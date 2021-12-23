@@ -20,6 +20,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
 
     /* Opaque pointer to Zstd context object */
     private final long stream;
+    // Source and Destination positions
     private long srcPos = 0;
     private long dstPos = 0;
     private final BufferPool bufferPool;
@@ -77,6 +78,8 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
         super(outStream);
         // create compression context
         this.stream = createCStream();
+        // Keep this reset in order to memoize the srcPos and dstPos ids
+        resetCStream(this.stream);
         this.closeFrameOnFlush = false;
         this.bufferPool = bufferPool;
         this.dstByteBuffer = bufferPool.get(dstSize);
@@ -279,9 +282,9 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
                     out.write(dst, 0, (int) dstPos);
                 } while (size > 0);
             }
-	    if (closeParentStream) {
-            	out.close();
-	    }
+            if (closeParentStream) {
+                    out.close();
+            }
         } finally {
             // release the resources even if underlying stream throw an exception
             isClosed = true;
