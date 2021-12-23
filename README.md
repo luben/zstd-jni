@@ -50,6 +50,12 @@ compatibility support for the legacy formats (since version 0.4).
 appended with a dash, e.g. "1.2.0-2" is the second **Zstd-jni** release based
 on **Zstd** version 1.2.0.
 
+Limitations
+-----------
+The Java classes cannot be renamed/minimized/relocated. JVM linking the native
+library depends on the class name that is trying to link the native part, so
+changing the class names will lead to failed linking at runtime.
+
 Building and dependencies
 -------------------------
 
