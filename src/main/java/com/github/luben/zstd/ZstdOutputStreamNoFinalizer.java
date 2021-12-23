@@ -78,9 +78,6 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
         super(outStream);
         // create compression context
         this.stream = createCStream();
-        // Keep this reset in order to memoize the srcPos and dstPos ids
-        resetCStream(this.stream);
-        this.closeFrameOnFlush = false;
         this.bufferPool = bufferPool;
         this.dstByteBuffer = bufferPool.get(dstSize);
         if (this.dstByteBuffer == null) {
