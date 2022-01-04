@@ -41,7 +41,7 @@ public class ZstdCompressCtx extends AutoCloseBase {
 
     /**
      * Set compression level
-     * @param level compression level, default: 3
+     * @param level compression level, default: {@link Zstd#defaultCompressionLevel()}
      */
     public ZstdCompressCtx setLevel(int level) {
         if (nativePtr == 0) {

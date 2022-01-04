@@ -9,7 +9,7 @@ public class ZstdDictCompress extends SharedDictBase {
     }
 
     private long nativePtr = 0;
-    private int level = 3;
+    private int level = Zstd.defaultCompressionLevel();
 
     private native void init(byte[] dict, int dict_offset, int dict_size, int level);
 
