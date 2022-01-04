@@ -105,7 +105,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
     /**
      * Set the compression level.
      *
-     * Default: 3
+     * Default: {@link Zstd#defaultCompressionLevel()}
      */
     public synchronized ZstdOutputStreamNoFinalizer setLevel(int level) throws IOException {
         if (!frameClosed) {

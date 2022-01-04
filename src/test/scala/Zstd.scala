@@ -34,6 +34,7 @@ class ZstdSpec extends FlatSpec with Checkers {
       check { input: Array[Byte] =>
         {
           val size        = input.length
+          // Assumes that `Zstd.defaultCompressionLevel() == 3`.
           val compressed  = if (level != 3) Zstd.compress(input, level) else Zstd.compress(input)
           val decompressed= Zstd.decompress(compressed, size)
           input.toSeq == decompressed.toSeq && size == Zstd.decompressedSize(compressed)
@@ -66,6 +67,7 @@ class ZstdSpec extends FlatSpec with Checkers {
           inputBuffer.put(input)
           inputBuffer.flip()
           val compressedBuffer = ByteBuffer.allocateDirect(Zstd.compressBound(size).toInt)
+          // Assumes that `Zstd.defaultCompressionLevel() == 3`.
           val compressedSize = if (level != 3)
             Zstd.compress(compressedBuffer, inputBuffer, level)
           else

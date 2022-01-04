@@ -108,7 +108,7 @@ public class ZstdOutputStream extends FilterOutputStream{
     /**
      * Set the compression level.
      *
-     * Default: 3
+     * Default: {@link Zstd#defaultCompressionLevel()}
      */
     public ZstdOutputStream setLevel(int level) throws IOException {
         inner.setLevel(level);

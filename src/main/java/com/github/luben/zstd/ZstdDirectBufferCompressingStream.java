@@ -44,7 +44,7 @@ public class ZstdDirectBufferCompressingStream implements Closeable, Flushable {
     private boolean closed = false;
     private boolean initialized = false;
     private boolean finalize = true;
-    private int level = 3;
+    private int level = Zstd.defaultCompressionLevel();
     private byte[] dict = null;
     private ZstdDictCompress fastDict = null;
 

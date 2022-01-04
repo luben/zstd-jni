@@ -757,6 +757,7 @@ public class Zstd {
     public static native int frameHeaderSizeMin();
     public static native int frameHeaderSizeMax();
     public static native int blockSizeMax();
+    public static native int defaultCompressionLevel();
     /* Min/max compression levels */
     public static native int minCompressionLevel();
     public static native int maxCompressionLevel();
@@ -772,7 +773,7 @@ public class Zstd {
      * @return byte array with the compressed data
      */
     public static byte[] compress(byte[] src) throws ZstdException {
-        return compress(src, 3);
+        return compress(src, defaultCompressionLevel());
     }
 
     /**
@@ -811,7 +812,7 @@ public class Zstd {
      */
 
     public static int compress(ByteBuffer dstBuf, ByteBuffer srcBuf) throws ZstdException {
-        return compress(dstBuf, srcBuf, 3);
+        return compress(dstBuf, srcBuf, defaultCompressionLevel());
     }
 
     /**
