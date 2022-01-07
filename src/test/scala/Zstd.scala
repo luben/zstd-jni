@@ -13,15 +13,6 @@ import java.nio.file.StandardOpenOption
 import scala.io._
 import scala.collection.mutable.WrappedArray
 
-// zstd 1.5.0 does not produce idential compressed files on big endian and little endian platforms.
-// This is not a bug because it is not guaranteed and does not cause incorrect behavior but
-// all previous zstd versions do produce identical compressed files.
-// The zstd dev branch has changes that restore the previous behavior and the next release will
-// produce idential files so tag the affected tests for now so they can be excluded on
-// big endian platforms until the next zstd release.
-// See https://github.com/facebook/zstd/issues/2736
-object ZstdIssue2736 extends Tag("ZstdIssue2736")
-
 class ZstdSpec extends FlatSpec with Checkers {
 
   implicit override val generatorDrivenConfig =
@@ -714,7 +705,7 @@ class ZstdSpec extends FlatSpec with Checkers {
   }
 
   for (level <- levels)
-    "ZstdOutputStream" should s"produce the same compressed file as zstd binary at level $level" taggedAs ZstdIssue2736 in {
+    "ZstdOutputStream" should s"produce the same compressed file as zstd binary at level $level" in {
       val file = new File("src/test/resources/xml")
       val length = file.length.toInt
       val fis  = new FileInputStream(file)
@@ -739,7 +730,7 @@ class ZstdSpec extends FlatSpec with Checkers {
     }
 
   for (level <- levels)
-    "ZstdDirectBufferCompressingStream" should s"produce the same compressed file as zstd binary at level $level" taggedAs ZstdIssue2736 in {
+    "ZstdDirectBufferCompressingStream" should s"produce the same compressed file as zstd binary at level $level" in {
       val file = new File("src/test/resources/xml")
       val length = file.length.toInt
       val channel = FileChannel.open(file.toPath, StandardOpenOption.READ)
@@ -762,7 +753,7 @@ class ZstdSpec extends FlatSpec with Checkers {
     }
 
   for (level <- levels)
-    "ZstdDirectBufferCompressingStream" should s" even when writing one byte at a time produce the same compressed file as zstd binary at level $level" taggedAs ZstdIssue2736 in {
+    "ZstdDirectBufferCompressingStream" should s" even when writing one byte at a time produce the same compressed file as zstd binary at level $level" in {
       val file = new File("src/test/resources/xml")
       val length = file.length.toInt
       val channel = FileChannel.open(file.toPath, StandardOpenOption.READ)
