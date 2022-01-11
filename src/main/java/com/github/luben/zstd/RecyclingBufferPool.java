@@ -3,6 +3,7 @@ package com.github.luben.zstd;
 import java.lang.ref.SoftReference;
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
+import java.util.Deque;
 
 /**
  * An pool of buffers which uses a simple reference queue to recycle buffers.
@@ -18,14 +19,15 @@ public class RecyclingBufferPool implements BufferPool {
             (int) ZstdInputStreamNoFinalizer.recommendedDInSize()),
             (int) ZstdInputStreamNoFinalizer.recommendedDOutSize());
 
-    private final ArrayDeque<SoftReference<ByteBuffer>> pool;
+    private final Deque<SoftReference<ByteBuffer>> pool;
 
     private RecyclingBufferPool() {
+        // TODO: With Java 7 support, migrate this to a ConcurrentLinkedQueue and remove the 'synchronization' of it.
         this.pool = new ArrayDeque<SoftReference<ByteBuffer>>();
     }
 
     @Override
-    public synchronized ByteBuffer get(int capacity) {
+    public ByteBuffer get(int capacity) {
         if (capacity > buffSize) {
             throw new RuntimeException(
                     "Unsupported buffer size: " + capacity +
@@ -33,7 +35,17 @@ public class RecyclingBufferPool implements BufferPool {
                 );
         }
         while(true) {
-            SoftReference<ByteBuffer> sbuf = pool.pollFirst();
+            SoftReference<ByteBuffer> sbuf = null;
+
+            // This if statement introduces a possible race condition of allocating a buffer while we're trying to
+            // release one. However, the extra allocation should be considered insignificant in terms of cost.
+            // Particularly with respect to throughput.
+            if (!pool.isEmpty()) {
+                synchronized (pool) {
+                    sbuf = pool.pollFirst();
+                }
+            }
+
             if (sbuf == null) {
                 return ByteBuffer.allocate(buffSize);
             }
@@ -45,10 +57,12 @@ public class RecyclingBufferPool implements BufferPool {
     }
 
     @Override
-    public synchronized void release(ByteBuffer buffer) {
+    public void release(ByteBuffer buffer) {
         if (buffer.capacity() >= buffSize) {
             buffer.clear();
-            pool.addFirst(new SoftReference<ByteBuffer>(buffer));
+            synchronized (pool) {
+                pool.addLast(new SoftReference<ByteBuffer>(buffer));
+            }
         }
     }
 }
