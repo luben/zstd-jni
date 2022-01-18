@@ -18,6 +18,7 @@ public class ZstdOutputStream extends FilterOutputStream{
      *  @deprecated
      *  Use ZstdOutputStream() or ZstdOutputStream(level) and set the other params with the setters
      **/
+    @Deprecated
     public ZstdOutputStream(OutputStream outStream, int level, boolean closeFrameOnFlush, boolean useChecksums) throws IOException {
         super(outStream);
         inner = new ZstdOutputStreamNoFinalizer(outStream, level);
@@ -29,6 +30,7 @@ public class ZstdOutputStream extends FilterOutputStream{
      *  @deprecated
      *  Use ZstdOutputStream() or ZstdOutputStream(level) and set the other params with the setters
      **/
+    @Deprecated
     public ZstdOutputStream(OutputStream outStream, int level, boolean closeFrameOnFlush) throws IOException {
         super(outStream);
         inner = new ZstdOutputStreamNoFinalizer(outStream, level);
@@ -83,6 +85,7 @@ public class ZstdOutputStream extends FilterOutputStream{
      * @deprecated
      * If you don't rely on finalizers, use `ZstdOutputStreamNoFinalizer` instead.
      */
+    @Deprecated
     public void setFinalize(boolean finalize) {
     }
 

@@ -43,6 +43,7 @@ public class ZstdInputStream extends FilterInputStream {
      * If you don't rely on finalizers, use `ZstdInputStreamNoFinalizer` instead, instances of
      * `ZstdInputStream` will always try to close/release in the finalizer.
      */
+    @Deprecated
     public void setFinalize(boolean finalize) {
     }
 
