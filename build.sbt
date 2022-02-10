@@ -161,6 +161,7 @@ packageOptions in (Compile, packageBin) ++= Seq(
       |linux/arm/libzstd-jni-${version.value}.so;osname=Linux;processor=arm,
       |linux/i386/libzstd-jni-${version.value}.so;osname=Linux;processor=i386,
       |linux/mips64/libzstd-jni-${version.value}.so;osname=Linux;processor=mips64,
+      |linux/loongarch64/libzstd-jni-${version.value}.so;osname=Linux;processor=loongarch64,
       |linux/ppc64/libzstd-jni-${version.value}.so;osname=Linux;processor=ppc64,
       |linux/ppc64le/libzstd-jni-${version.value}.so;osname=Linux;processor=ppc64le,
       |linux/s390x/libzstd-jni-${version.value}.so;osname=Linux;processor=s390x,
@@ -194,7 +195,7 @@ OsgiKeys.exportPackage  := Seq(s"com.github.luben.zstd", "com.github.luben.zstd.
 OsgiKeys.importPackage := Seq("org.osgi.framework;resolution:=optional")
 OsgiKeys.privatePackage := Seq(
     "linux.amd64", "linux.i386", "linux.aarch64", "linux.arm", "linux.ppc64",
-    "linux.ppc64le", "linux.mips64", "linux.s390x", "darwin.x86_64",
+    "linux.ppc64le", "linux.mips64", "linux.loongarch64", "linux.s390x", "darwin.x86_64",
     "darwin.aarch64", "win.amd64", "win.x86", "freebsd.amd64", "freebsd.i386"
 )
 
@@ -289,6 +290,16 @@ packageOptions in (Linux_mips64, packageBin) ++= Seq(
   Package.ManifestAttributes(new java.util.jar.Attributes.Name("Automatic-Module-Name") -> "com.github.luben.zstd_jni"),
 )
 addArtifact(Artifact(nameValue, "linux_mips64"), packageBin in Linux_mips64)
+
+lazy val Linux_loongarch64 = config("linux_loongarch64").extend(Compile)
+inConfig(Linux_loongarch64)(Defaults.compileSettings)
+mappings in (Linux_loongarch64, packageBin) := {
+  (file(s"target/classes/linux/loongarch64/libzstd-jni-${version.value}.so"), s"linux/loongarch64/libzstd-jni-${version.value}.so") :: classes
+}
+packageOptions in (Linux_loongarch64, packageBin) ++= Seq(
+  Package.ManifestAttributes(new java.util.jar.Attributes.Name("Automatic-Module-Name") -> "com.github.luben.zstd_jni"),
+)
+addArtifact(Artifact(nameValue, "linux_loongarch64"), packageBin in Linux_loongarch64)
 
 lazy val Linux_s390x = config("linux_s390x").extend(Compile)
 inConfig(Linux_s390x)(Defaults.compileSettings)
