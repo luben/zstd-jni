@@ -765,7 +765,7 @@ public class Zstd {
     /* Convenience methods */
 
     /**
-     * Compresses the data in buffer 'src' using defaul compression level
+     * Compresses the data in buffer 'src' using default compression level
      *
      * @param src the source buffer
      * @return byte array with the compressed data
