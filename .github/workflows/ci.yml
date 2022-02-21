@@ -68,6 +68,10 @@ jobs:
           if: matrix.target_arch == 'x86_64'
           run: otool -L target/classes/darwin/${{ matrix.target_arch }}/libzstd-jni-${nativeJniVersion}.dylib
 
+        - name: Symbols
+          if: matrix.target_arch == 'x86_64'
+          run: nm -m target/classes/darwin/${{ matrix.target_arch }}/libzstd-jni-${nativeJniVersion}.dylib
+
         - name: Test
           if: matrix.target_arch == 'x86_64'
           run: ./sbt jacoco
