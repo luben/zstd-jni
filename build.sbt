@@ -55,13 +55,16 @@ jniLibSuffix := (System.getProperty("os.name").toLowerCase match {
 
 jniNativeCompiler := Option(System.getenv("CC")).getOrElse("gcc")
 
+val PWD = Option(System.getenv("PWD")).getOrElse("./")
+
 jniUseCpp11 := false
 
 jniCppExtensions := Seq("c", "S")
 
 jniGccFlags ++= Seq(
   "-std=c99", "-Wundef", "-Wshadow", "-Wcast-align", "-Wstrict-prototypes", "-Wno-unused-variable",
-  "-Wpointer-arith", "-DZSTD_LEGACY_SUPPORT=4", "-DZSTD_MULTITHREAD=1", "-lpthread", "-flto", "-static-libgcc"
+  "-Wpointer-arith", "-DZSTD_LEGACY_SUPPORT=4", "-DZSTD_MULTITHREAD=1", "-lpthread", "-flto",
+  "-static-libgcc", "-Wl,--version-script=" + PWD + "/libzstd-jni.so.map"
 )
 
 // compilation on Windows with MSYS/gcc needs extra flags in order
