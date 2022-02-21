@@ -63,8 +63,7 @@ jniCppExtensions := Seq("c", "S")
 
 jniGccFlags ++= Seq(
   "-std=c99", "-Wundef", "-Wshadow", "-Wcast-align", "-Wstrict-prototypes", "-Wno-unused-variable",
-  "-Wpointer-arith", "-DZSTD_LEGACY_SUPPORT=4", "-DZSTD_MULTITHREAD=1", "-lpthread", "-flto",
-  "-static-libgcc", "-Wl,--version-script=" + PWD + "/libzstd-jni.so.map"
+  "-Wpointer-arith", "-DZSTD_LEGACY_SUPPORT=4", "-DZSTD_MULTITHREAD=1", "-lpthread", "-flto"
 )
 
 // compilation on Windows with MSYS/gcc needs extra flags in order
@@ -73,13 +72,15 @@ jniGccFlags ++= Seq(
 jniGccFlags := (
   if (System.getProperty("os.name").toLowerCase startsWith "win")
     jniGccFlags.value.filterNot(_ == "-fPIC") ++
-      Seq("-D_JNI_IMPLEMENTATION_", "-Wl,--kill-at")
+      Seq("-D_JNI_IMPLEMENTATION_", "-Wl,--kill-at",
+        "-static-libgcc", "-Wl,--version-script=" + PWD + "/libzstd-jni.so.map")
   else if (System.getProperty("os.name").toLowerCase startsWith "mac")
-    // MacOS uses clang that does not support the "-static-libgcc" option
-    jniGccFlags.value.filterNot(_ == "-static-libgcc")
+    // MacOS uses clang that does not support the "-static-libgcc" and version scripts
+    jniGccFlags.value
   else
     // the default is compilation with GCC
-    jniGccFlags.value
+    jniGccFlags.value ++ Seq(
+        "-static-libgcc", "-Wl,--version-script=" + PWD + "/libzstd-jni.so.map")
   )
 
 // Special case the jni platform header on windows (use the one from the repo)
