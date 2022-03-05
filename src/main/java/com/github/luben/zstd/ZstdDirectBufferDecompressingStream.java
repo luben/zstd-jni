@@ -21,28 +21,16 @@ public class ZstdDirectBufferDecompressingStream implements Closeable {
         return toRefill;
     }
 
-    private ByteBuffer source;
-    private final long stream;
-    private boolean finishedFrame = false;
-    private boolean closed = false;
-    private boolean streamEnd = false;
+    private ZstdDirectBufferDecompressingStreamNoFinalizer inner;
     private boolean finalize = true;
 
-    private static native int recommendedDOutSize();
-    private static native long createDStream();
-    private static native int  freeDStream(long stream);
-    private native int initDStream(long stream);
-    private native long decompressStream(long stream, ByteBuffer dst, int dstOffset, int dstSize, ByteBuffer src, int srcOffset, int srcSize);
-
     public ZstdDirectBufferDecompressingStream(ByteBuffer source) {
-        if (!source.isDirect()) {
-            throw new IllegalArgumentException("Source buffer should be a direct buffer");
-        }
-        synchronized(this) {
-            this.source = source;
-            stream = createDStream();
-            initDStream(stream);
-        }
+        inner = new ZstdDirectBufferDecompressingStreamNoFinalizer(source) {
+                @Override
+                protected ByteBuffer refill(ByteBuffer toRefill) {
+                    return ZstdDirectBufferDecompressingStream.this.refill(toRefill);
+                }
+            };
     }
 
     /**
@@ -57,83 +45,30 @@ public class ZstdDirectBufferDecompressingStream implements Closeable {
     }
 
     public synchronized boolean hasRemaining() {
-        return !streamEnd && (source.hasRemaining() || !finishedFrame);
+        return inner.hasRemaining();
     }
 
     public static int recommendedTargetBufferSize() {
-        return (int) recommendedDOutSize();
+        return ZstdDirectBufferDecompressingStreamNoFinalizer.recommendedTargetBufferSize();
     }
 
     public synchronized ZstdDirectBufferDecompressingStream setDict(byte[] dict) throws IOException {
-        int size = Zstd.loadDictDecompress(stream, dict, dict.length);
-        if (Zstd.isError(size)) {
-            throw new IOException("Decompression error: " + Zstd.getErrorName(size));
-        }
+        inner.setDict(dict);
         return this;
     }
 
     public synchronized ZstdDirectBufferDecompressingStream setDict(ZstdDictDecompress dict) throws IOException {
-        dict.acquireSharedLock();
-        try {
-            int size = Zstd.loadFastDictDecompress(stream, dict);
-            if (Zstd.isError(size)) {
-                throw new IOException("Decompression error: " + Zstd.getErrorName(size));
-            }
-        } finally {
-            dict.releaseSharedLock();
-        }
+        inner.setDict(dict);
         return this;
     }
 
-    private int consumed;
-    private int produced;
     public synchronized int read(ByteBuffer target) throws IOException {
-        if (!target.isDirect()) {
-            throw new IllegalArgumentException("Target buffer should be a direct buffer");
-        }
-        if (closed) {
-            throw new IOException("Stream closed");
-        }
-        if (streamEnd) {
-            return 0;
-        }
-
-        long remaining = decompressStream(stream, target, target.position(), target.remaining(), source, source.position(), source.remaining());
-        if (Zstd.isError(remaining)) {
-            throw new IOException(Zstd.getErrorName(remaining));
-        }
-
-        source.position(source.position() + consumed);
-        target.position(target.position() + produced);
-
-        if (!source.hasRemaining()) {
-            source = refill(source);
-            if (!source.isDirect()) {
-                throw new IllegalArgumentException("Source buffer should be a direct buffer");
-            }
-        }
-
-        finishedFrame = remaining == 0;
-        if (finishedFrame) {
-            // nothing left, so at end of the stream
-            streamEnd = !source.hasRemaining();
-        }
-
-        return produced;
+        return inner.read(target);
     }
-
 
     @Override
     public synchronized void close() throws IOException {
-        if (!closed) {
-            try {
-                freeDStream(stream);
-            }
-            finally {
-                closed = true;
-                source = null; // help GC with realizing the buffer can be released
-            }
-        }
+        inner.close();
     }
 
     @Override
