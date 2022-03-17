@@ -441,7 +441,7 @@ class ZstdSpec extends FlatSpec with Checkers {
         pos += zis.read(buff, pos, length - pos)
       }
 
-      val original = Source.fromFile(orig)(Codec.ISO8859).map{char => char.toByte}.to[WrappedArray]
+      val original = Source.fromFile(orig)(Codec.ISO8859).map{char => char.toByte}.to(WrappedArray)
       if(original != buff.toSeq)
         sys.error(s"Failed")
       assert(zis.available == 0)
@@ -463,7 +463,7 @@ class ZstdSpec extends FlatSpec with Checkers {
         pos += zis.read(buff, pos, toRead)
       }
 
-      val original = Source.fromFile(orig)(Codec.ISO8859).map{char => char.toByte}.to[WrappedArray]
+      val original = Source.fromFile(orig)(Codec.ISO8859).map{char => char.toByte}.to(WrappedArray)
       if(original != buff.toSeq)
         sys.error(s"Failed")
     }
@@ -483,7 +483,7 @@ class ZstdSpec extends FlatSpec with Checkers {
       pos += zis.read(buff, pos, length - pos)
     }
 
-    val original = Source.fromFile(orig)(Codec.ISO8859).map{char => char.toByte}.to[WrappedArray]
+    val original = Source.fromFile(orig)(Codec.ISO8859).map{char => char.toByte}.to(WrappedArray)
     if(original != buff.toSeq)
       sys.error(s"Failed")
     assert(zis.available == 0)
@@ -510,7 +510,7 @@ class ZstdSpec extends FlatSpec with Checkers {
         pos += 1
       }
 
-      val original = Source.fromFile(orig)(Codec.ISO8859).map{char => char.toByte}.to[WrappedArray]
+      val original = Source.fromFile(orig)(Codec.ISO8859).map{char => char.toByte}.to(WrappedArray)
       if(original != buff.toSeq)
         sys.error(s"Failed")
     }
@@ -547,7 +547,7 @@ class ZstdSpec extends FlatSpec with Checkers {
       block.flip()
       block.get(buff)
 
-      val original = Source.fromFile(orig)(Codec.ISO8859).map{char => char.toByte}.to[WrappedArray]
+      val original = Source.fromFile(orig)(Codec.ISO8859).map{char => char.toByte}.to(WrappedArray)
       if(original != buff.toSeq)
         sys.error(s"Failed")
     }
@@ -571,7 +571,7 @@ class ZstdSpec extends FlatSpec with Checkers {
     window.flip()
     window.get(buff)
 
-    val original = Source.fromFile(orig)(Codec.ISO8859).map{char => char.toByte}.to[WrappedArray]
+    val original = Source.fromFile(orig)(Codec.ISO8859).map{char => char.toByte}.to(WrappedArray)
     if(original != buff.toSeq)
       sys.error(s"Failed")
   }
@@ -619,7 +619,7 @@ class ZstdSpec extends FlatSpec with Checkers {
     window.flip()
     window.get(buff)
 
-    val original = Source.fromFile(orig)(Codec.ISO8859).map{char => char.toByte}.to[WrappedArray]
+    val original = Source.fromFile(orig)(Codec.ISO8859).map{char => char.toByte}.to(WrappedArray)
     if(original != buff.toSeq)
       sys.error(s"Failed")
   }
@@ -667,7 +667,7 @@ class ZstdSpec extends FlatSpec with Checkers {
     val buff = new Array[Byte](result.remaining())
     result.get(buff)
 
-    val original = Source.fromFile(orig)(Codec.ISO8859).map{char => char.toByte}.to[WrappedArray]
+    val original = Source.fromFile(orig)(Codec.ISO8859).map{char => char.toByte}.to(WrappedArray)
     if(original != buff.toSeq)
       sys.error(s"Failed")
   }
@@ -722,7 +722,7 @@ class ZstdSpec extends FlatSpec with Checkers {
       zos.close()
 
       val compressed = os.toByteArray.toSeq
-      val zst = Source.fromFile(s"src/test/resources/xml-$level.zst")(Codec.ISO8859).map{char => char.toByte}.to[WrappedArray]
+      val zst = Source.fromFile(s"src/test/resources/xml-$level.zst")(Codec.ISO8859).map{char => char.toByte}.to(WrappedArray)
 
      if (zst != compressed) {
         sys.error(s"Failed original ${zst.length} != ${compressed.length} result")
@@ -745,7 +745,7 @@ class ZstdSpec extends FlatSpec with Checkers {
 
       val compressed = new Array[Byte](target.limit())
       target.get(compressed)
-      val zst = Source.fromFile(s"src/test/resources/xml-$level.zst")(Codec.ISO8859).map{char => char.toByte}.to[WrappedArray]
+      val zst = Source.fromFile(s"src/test/resources/xml-$level.zst")(Codec.ISO8859).map{char => char.toByte}.to(WrappedArray)
 
       if (zst != compressed.toSeq) {
         sys.error(s"Failed original ${zst.length} != ${compressed.length} result")
@@ -779,7 +779,7 @@ class ZstdSpec extends FlatSpec with Checkers {
 
       val compressed = new Array[Byte](target.limit())
       target.get(compressed)
-      val zst = Source.fromFile(s"src/test/resources/xml-$level.zst")(Codec.ISO8859).map{char => char.toByte}.to[WrappedArray]
+      val zst = Source.fromFile(s"src/test/resources/xml-$level.zst")(Codec.ISO8859).map{char => char.toByte}.to(WrappedArray)
 
       if (zst != compressed.toSeq) {
         sys.error(s"Failed original ${zst.length} != ${compressed.length} result")
@@ -803,7 +803,7 @@ class ZstdSpec extends FlatSpec with Checkers {
         pos += zis.read(buff, pos, length - pos)
       }
 
-      val original = Source.fromFile(orig)(Codec.ISO8859).map{char => char.toByte}.to[WrappedArray]
+      val original = Source.fromFile(orig)(Codec.ISO8859).map{char => char.toByte}.to(WrappedArray)
       if(original != buff.toSeq)
         sys.error(s"Failed")
       assert(zis.available == 0)
@@ -825,7 +825,7 @@ class ZstdSpec extends FlatSpec with Checkers {
         pos += zis.read(buff, pos, length - pos)
       }
 
-      val original = Source.fromFile(orig)(Codec.ISO8859).map{char => char.toByte}.to[WrappedArray]
+      val original = Source.fromFile(orig)(Codec.ISO8859).map{char => char.toByte}.to(WrappedArray)
       if(original != buff.toSeq)
         sys.error(s"Failed")
       assert(zis.available == 0)
