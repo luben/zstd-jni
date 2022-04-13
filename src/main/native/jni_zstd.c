@@ -114,7 +114,7 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_decompressedDirectByteBu
   (JNIEnv *env, jclass obj, jobject src_buf, jint src_offset, jint src_size) {
     size_t size = (size_t)(0-ZSTD_error_memory_allocation);
     jsize src_cap = (*env)->GetDirectBufferCapacity(env, src_buf);
-    if (src_offset + src_size > src_cap) return ZSTD_error_GENERIC;
+    if (src_offset + src_size > src_cap) return ZSTD_ERROR(GENERIC);
     char *src_buf_ptr = (char*)(*env)->GetDirectBufferAddress(env, src_buf);
     if (src_buf_ptr == NULL) goto E1;
     size = ZSTD_getDecompressedSize(src_buf_ptr + src_offset, (size_t) src_size);

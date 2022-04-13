@@ -84,7 +84,7 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdDirectBufferCompressingStr
     jclass dict_clazz = (*env)->GetObjectClass(env, dict);
     jfieldID compress_dict = (*env)->GetFieldID(env, dict_clazz, "nativePtr", "J");
     ZSTD_CDict* cdict = (ZSTD_CDict*)(intptr_t)(*env)->GetLongField(env, dict, compress_dict);
-    if (cdict == NULL) return ZSTD_error_dictionary_wrong;
+    if (cdict == NULL) return ZSTD_ERROR(dictionary_wrong);
     ZSTD_CCtx_reset((ZSTD_CStream *)(intptr_t) stream, ZSTD_reset_session_only);
     return ZSTD_CCtx_refCDict((ZSTD_CStream *)(intptr_t) stream, cdict);
 }
