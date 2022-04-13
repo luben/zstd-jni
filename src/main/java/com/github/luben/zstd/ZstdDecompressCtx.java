@@ -88,6 +88,51 @@ public class ZstdDecompressCtx extends AutoCloseBase {
     private native long loadDDict0(byte[] dict);
 
     /**
+     * Clear all state and parameters from the decompression context. This leaves the object in a
+     * state identical to a newly created decompression context.
+     */
+    public void reset() {
+        ensureOpen();
+        reset0();
+    }
+    private native void reset0();
+
+    private void ensureOpen() {
+        if (nativePtr == 0) {
+            throw new IllegalStateException("Decompression context is closed");
+        }
+    }
+
+    /**
+     * Decompress as much of the <code>src</code> {@link ByteBuffer} into the <code>dst</code> {@link
+     * ByteBuffer} as possible.
+     *
+     * @param dst destination of uncompressed data
+     * @param src buffer to decompress
+     * @return true if all state has been flushed from internal buffers
+     */
+    public boolean decompressDirectByteBufferStream(ByteBuffer dst, ByteBuffer src) {
+        ensureOpen();
+        long result = decompressDirectByteBufferStream0(dst, dst.position(), dst.limit(), src, src.position(), src.limit());
+        if ((result & 0x80000000L) != 0) {
+            long code = result & 0xFF;
+            throw new ZstdException(code, Zstd.getErrorName(code));
+        }
+        src.position((int)(result & 0x7FFFFFFF));
+        dst.position((int)(result >>> 32) & 0x7FFFFFFF);
+        return (result >>> 63) == 1;
+    }
+
+    /**
+     * 4 pieces of information are packed into the return value of this method, which must be
+     * treated as an unsigned long. The highest bit is set if all data has been flushed from
+     * internal buffers. The next 31 bits are the new position of the destination buffer. The next
+     * bit is set if an error occurred. If an error occurred, the lowest 31 bits encode a zstd error
+     * code. Otherwise, the lowest 31 bits are the new position of the source buffer.
+     */
+    private native long decompressDirectByteBufferStream0(ByteBuffer dst, int dstOffset, int dstSize, ByteBuffer src, int srcOffset, int srcSize);
+
+    /**
      * Decompresses buffer 'srcBuff' into buffer 'dstBuff' using this ZstdDecompressCtx.
      *
      * Destination buffer should be sized to be larger of equal to the originalSize.

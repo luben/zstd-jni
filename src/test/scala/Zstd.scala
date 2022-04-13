@@ -12,6 +12,7 @@ import java.nio.file.StandardOpenOption
 
 import scala.io._
 import scala.collection.mutable.WrappedArray
+import scala.util.Using
 
 class ZstdSpec extends FlatSpec with Checkers {
 
@@ -877,5 +878,47 @@ class ZstdSpec extends FlatSpec with Checkers {
       buf.putInt(1);
       Zstd.extractArray(buf.slice)
     }
+  }
+
+  "streaming compressiong and decompression" should "roundtrip" in {
+    Using.Manager { use =>
+      val cctx = use(new ZstdCompressCtx())
+      val dctx = use(new ZstdDecompressCtx())
+      check { input: Array[Byte] =>
+        {
+          val size        = input.length
+          val inputBuffer = ByteBuffer.allocateDirect(size)
+          inputBuffer.put(input)
+          inputBuffer.flip()
+          cctx.reset()
+          cctx.setPledgedSrcSize(size)
+          val compressedBuffer = ByteBuffer.allocateDirect(Zstd.compressBound(size).toInt)
+          while (inputBuffer.hasRemaining) {
+            compressedBuffer.limit(compressedBuffer.position() + 1)
+            cctx.compressDirectByteBufferStream(compressedBuffer, inputBuffer, EndDirective.CONTINUE)
+          }
+          compressedBuffer.limit(compressedBuffer.capacity())
+          val done = cctx.compressDirectByteBufferStream(compressedBuffer, inputBuffer, EndDirective.END)
+          assert(done)
+
+          compressedBuffer.flip()
+          val decompressedBuffer = ByteBuffer.allocateDirect(size)
+          dctx.reset()
+          while (compressedBuffer.hasRemaining) {
+            if (decompressedBuffer.limit() < decompressedBuffer.position()) {
+              decompressedBuffer.limit(compressedBuffer.position() + 1)
+            }
+            dctx.decompressDirectByteBufferStream(decompressedBuffer, compressedBuffer)
+          }
+
+          inputBuffer.rewind()
+          compressedBuffer.rewind()
+          decompressedBuffer.flip()
+
+          val comparison = inputBuffer.compareTo(decompressedBuffer)
+          comparison == 0 && Zstd.decompressedSize(compressedBuffer) == size
+        }
+      }
+    }.get
   }
 }

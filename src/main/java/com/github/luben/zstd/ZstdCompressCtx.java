@@ -177,6 +177,72 @@ public class ZstdCompressCtx extends AutoCloseBase {
     }
     private native long loadCDict0(byte[] dict);
 
+    private void ensureOpen() {
+        if (nativePtr == 0) {
+            throw new IllegalStateException("Compression context is closed");
+        }
+    }
+
+    /**
+     * Clear all state and parameters from the compression context. This leaves the object in a
+     * state identical to a newly created compression context.
+     */
+    public void reset() {
+        ensureOpen();
+        long result = reset0();
+        if (Zstd.isError(result)) {
+            throw new ZstdException(result);
+        }
+    }
+    private native long reset0();
+
+    /**
+     * Promise to compress a certain number of source bytes. Knowing the number of bytes to compress
+     * up front helps to choose proper compression settings and size internal buffers. Additionally,
+     * the pledged size is stored in the header of the output stream, allowing decompressors to know
+     * how much uncompressed data to expect.
+     *
+     * Attempting to compress more or less than than the pledged size will result in an error.
+     */
+    public void setPledgedSrcSize(long srcSize) {
+        ensureOpen();
+        long result = setPledgedSrcSize0(srcSize);
+        if (Zstd.isError(result)) {
+            throw new ZstdException(result);
+        }
+    }
+    private native long setPledgedSrcSize0(long srcSize);
+
+    /**
+     * Compress as much of the <code>src</code> {@link ByteBuffer} into the <code>dst</code> {@link
+     * ByteBuffer} as possible.
+     *
+     * @param dst destination of compressed data
+     * @param src buffer to compress
+     * @param endOp directive for handling the end of the stream
+     * @return true if all state has been flushed from internal buffers
+     */
+    public boolean compressDirectByteBufferStream(ByteBuffer dst, ByteBuffer src, EndDirective endOp) {
+        ensureOpen();
+        long result = compressDirectByteBufferStream0(dst, dst.position(), dst.limit(), src, src.position(), src.limit(), endOp.value());
+        if ((result & 0x80000000L) != 0) {
+            long code = result & 0xFF;
+            throw new ZstdException(code, Zstd.getErrorName(code));
+        }
+        src.position((int)(result & 0x7FFFFFFF));
+        dst.position((int)(result >>> 32) & 0x7FFFFFFF);
+        return (result >>> 63) == 1;
+    }
+
+    /**
+     * 4 pieces of information are packed into the return value of this method, which must be
+     * treated as an unsigned long. The highest bit is set if all data has been flushed from
+     * internal buffers. The next 31 bits are the new position of the destination buffer. The next
+     * bit is set if an error occurred. If an error occurred, the lowest 31 bits encode a zstd error
+     * code. Otherwise, the lowest 31 bits are the new position of the source buffer.
+     */
+    private native long compressDirectByteBufferStream0(ByteBuffer dst, int dstOffset, int dstSize, ByteBuffer src, int srcSize, int srcOffset, int endOp);
+
     /**
      * Compresses buffer 'srcBuff' into buffer 'dstBuff' reusing this ZstdCompressCtx.
      *
