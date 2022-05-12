@@ -48,13 +48,13 @@ public class ZstdDirectBufferCompressingStreamNoFinalizer implements Closeable, 
     /* JNI methods */
     private static native long recommendedCOutSize();
     private static native long createCStream();
-    private static native int  freeCStream(long ctx);
-    private native int  initCStream(long ctx, int level);
-    private native int  initCStreamWithDict(long ctx, byte[] dict, int dict_size, int level);
-    private native int  initCStreamWithFastDict(long ctx, ZstdDictCompress dict);
-    private native int  compressDirectByteBuffer(long ctx, ByteBuffer dst, int dstOffset, int dstSize, ByteBuffer src, int srcOffset, int srcSize);
-    private native int  flushStream(long ctx, ByteBuffer dst, int dstOffset, int dstSize);
-    private native int  endStream(long ctx, ByteBuffer dst, int dstOffset, int dstSize);
+    private static native long  freeCStream(long ctx);
+    private native long initCStream(long ctx, int level);
+    private native long initCStreamWithDict(long ctx, byte[] dict, int dict_size, int level);
+    private native long initCStreamWithFastDict(long ctx, ZstdDictCompress dict);
+    private native long compressDirectByteBuffer(long ctx, ByteBuffer dst, int dstOffset, int dstSize, ByteBuffer src, int srcOffset, int srcSize);
+    private native long flushStream(long ctx, ByteBuffer dst, int dstOffset, int dstSize);
+    private native long endStream(long ctx, ByteBuffer dst, int dstOffset, int dstSize);
 
     public ZstdDirectBufferCompressingStreamNoFinalizer setDict(byte[] dict) throws IOException {
         if (initialized) {
@@ -82,7 +82,7 @@ public class ZstdDirectBufferCompressingStreamNoFinalizer implements Closeable, 
             throw new IOException("Stream closed");
         }
         if (!initialized) {
-            int result = 0;
+            long result = 0;
             ZstdDictCompress fastDict = this.fastDict;
             if (fastDict != null) {
                 fastDict.acquireSharedLock();
@@ -111,7 +111,7 @@ public class ZstdDirectBufferCompressingStreamNoFinalizer implements Closeable, 
                     throw new IOException("The target buffer has no more space, even after flushing, and there are still bytes to compress");
                 }
             }
-            int result = compressDirectByteBuffer(stream, target, target.position(), target.remaining(), source, source.position(), source.remaining());
+            long result = compressDirectByteBuffer(stream, target, target.position(), target.remaining(), source, source.position(), source.remaining());
             if (Zstd.isError(result)) {
                 throw new IOException("Compression error: " + Zstd.getErrorName(result));
             }
@@ -126,7 +126,7 @@ public class ZstdDirectBufferCompressingStreamNoFinalizer implements Closeable, 
             throw new IOException("Already closed");
         }
         if (initialized) {
-            int needed;
+            long needed;
             do {
                 needed = flushStream(stream, target, target.position(), target.remaining());
                 if (Zstd.isError(needed)) {
@@ -151,7 +151,7 @@ public class ZstdDirectBufferCompressingStreamNoFinalizer implements Closeable, 
         if (!closed) {
             try {
                 if (initialized) {
-                    int needed;
+                    long needed;
                     do {
                         needed = endStream(stream, target, target.position(), target.remaining());
                         if (Zstd.isError(needed)) {

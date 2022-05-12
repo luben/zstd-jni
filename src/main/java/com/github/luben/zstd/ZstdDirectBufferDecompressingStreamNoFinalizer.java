@@ -27,10 +27,10 @@ public class ZstdDirectBufferDecompressingStreamNoFinalizer implements Closeable
     private boolean closed = false;
     private boolean streamEnd = false;
 
-    private static native int recommendedDOutSize();
+    private static native long recommendedDOutSize();
     private static native long createDStream();
-    private static native int  freeDStream(long stream);
-    private native int initDStream(long stream);
+    private static native long freeDStream(long stream);
+    private native long initDStream(long stream);
     private native long decompressStream(long stream, ByteBuffer dst, int dstOffset, int dstSize, ByteBuffer src, int srcOffset, int srcSize);
 
     public ZstdDirectBufferDecompressingStreamNoFinalizer(ByteBuffer source) {
@@ -51,7 +51,7 @@ public class ZstdDirectBufferDecompressingStreamNoFinalizer implements Closeable
     }
 
     public ZstdDirectBufferDecompressingStreamNoFinalizer setDict(byte[] dict) throws IOException {
-        int size = Zstd.loadDictDecompress(stream, dict, dict.length);
+        long size = Zstd.loadDictDecompress(stream, dict, dict.length);
         if (Zstd.isError(size)) {
             throw new IOException("Decompression error: " + Zstd.getErrorName(size));
         }
@@ -61,7 +61,7 @@ public class ZstdDirectBufferDecompressingStreamNoFinalizer implements Closeable
     public ZstdDirectBufferDecompressingStreamNoFinalizer setDict(ZstdDictDecompress dict) throws IOException {
         dict.acquireSharedLock();
         try {
-            int size = Zstd.loadFastDictDecompress(stream, dict);
+            long size = Zstd.loadFastDictDecompress(stream, dict);
             if (Zstd.isError(size)) {
                 throw new IOException("Decompression error: " + Zstd.getErrorName(size));
             }

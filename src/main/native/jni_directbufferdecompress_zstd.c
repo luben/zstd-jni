@@ -11,11 +11,10 @@ static jfieldID produced_id;
 /*
  * Class:     com_github_luben_zstd_ZstdDirectBufferDecompressingStreamNoFinalizer
  * Method:    recommendedDOutSize
- * Signature: ()I
  */
-JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdDirectBufferDecompressingStreamNoFinalizer_recommendedDOutSize
+JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdDirectBufferDecompressingStreamNoFinalizer_recommendedDOutSize
   (JNIEnv *env, jclass obj) {
-    return (jint) ZSTD_DStreamOutSize();
+    return ZSTD_DStreamOutSize();
 }
 
 /*
@@ -33,7 +32,7 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdDirectBufferDecompressing
  * Method:    freeDStream
  * Signature: (J)I
  */
-JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdDirectBufferDecompressingStreamNoFinalizer_freeDStream
+JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdDirectBufferDecompressingStreamNoFinalizer_freeDStream
   (JNIEnv *env, jclass obj, jlong stream) {
     return ZSTD_freeDCtx((ZSTD_DCtx *)(intptr_t) stream);
 }
@@ -43,7 +42,7 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdDirectBufferDecompressingS
  * Method:    initDStream
  * Signature: (J)I
  */
-JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdDirectBufferDecompressingStreamNoFinalizer_initDStream
+JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdDirectBufferDecompressingStreamNoFinalizer_initDStream
   (JNIEnv *env, jclass obj, jlong stream) {
     jclass clazz = (*env)->GetObjectClass(env, obj);
     consumed_id = (*env)->GetFieldID(env, clazz, "consumed", "I");

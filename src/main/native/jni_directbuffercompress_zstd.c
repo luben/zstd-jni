@@ -13,9 +13,9 @@ static jfieldID produced_id;
  * Method:    recommendedCOutSize
  * Signature: ()I
  */
-JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdDirectBufferCompressingStreamNoFinalizer_recommendedCOutSize
+JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdDirectBufferCompressingStreamNoFinalizer_recommendedCOutSize
   (JNIEnv *env, jclass obj) {
-    return (jint) ZSTD_CStreamOutSize();
+    return ZSTD_CStreamOutSize();
 }
 
 /*
@@ -33,7 +33,7 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdDirectBufferCompressingSt
  * Method:    freeCStream
  * Signature: (J)I
  */
-JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdDirectBufferCompressingStreamNoFinalizer_freeCStream
+JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdDirectBufferCompressingStreamNoFinalizer_freeCStream
   (JNIEnv *env, jclass obj, jlong stream) {
     return ZSTD_freeCStream((ZSTD_CStream *)(intptr_t) stream);
 }
@@ -43,7 +43,7 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdDirectBufferCompressingStr
  * Method:    initCStream
  * Signature: (JI)I
  */
-JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdDirectBufferCompressingStreamNoFinalizer_initCStream
+JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdDirectBufferCompressingStreamNoFinalizer_initCStream
   (JNIEnv *env, jclass obj, jlong stream, jint level) {
     jclass clazz = (*env)->GetObjectClass(env, obj);
     consumed_id = (*env)->GetFieldID(env, clazz, "consumed", "I");
@@ -56,7 +56,7 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdDirectBufferCompressingStr
  * Method:    initCStreamWithDict
  * Signature: (J[BII)I
  */
-JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdDirectBufferCompressingStreamNoFinalizer_initCStreamWithDict
+JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdDirectBufferCompressingStreamNoFinalizer_initCStreamWithDict
   (JNIEnv *env, jclass obj, jlong stream, jbyteArray dict, jint dict_size, jint level) {
     size_t result = (size_t)(0-ZSTD_error_memory_allocation);
     jclass clazz = (*env)->GetObjectClass(env, obj);
@@ -76,7 +76,7 @@ E1:
  * Class:     com_github_luben_zstd_ZstdDirectBufferCompressingStreamNoFinalizer
  * Method:    initCStreamWithFastDict
  */
-JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdDirectBufferCompressingStreamNoFinalizer_initCStreamWithFastDict
+JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdDirectBufferCompressingStreamNoFinalizer_initCStreamWithFastDict
   (JNIEnv *env, jclass obj, jlong stream, jobject dict) {
     jclass clazz = (*env)->GetObjectClass(env, obj);
     consumed_id = (*env)->GetFieldID(env, clazz, "consumed", "I");
@@ -97,7 +97,7 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdDirectBufferCompressingStr
 JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdDirectBufferCompressingStreamNoFinalizer_compressDirectByteBuffer
   (JNIEnv *env, jclass obj, jlong stream, jobject dst_buf, jint dst_offset, jint dst_size, jobject src_buf, jint src_offset, jint src_size) {
 
-    size_t size = (size_t)ERROR(memory_allocation);
+    size_t size = ERROR(memory_allocation);
     jsize dst_cap = (*env)->GetDirectBufferCapacity(env, dst_buf);
     if (dst_offset + dst_size > dst_cap) return ERROR(dstSize_tooSmall);
     jsize src_cap = (*env)->GetDirectBufferCapacity(env, src_buf);
@@ -122,7 +122,7 @@ E1: return size;
  * Method:    endStream
  * Signature: (JLjava/nio/ByteBuffer;II)I
  */
-JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdDirectBufferCompressingStreamNoFinalizer_endStream
+JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdDirectBufferCompressingStreamNoFinalizer_endStream
   (JNIEnv *env, jclass obj, jlong stream, jobject dst_buf, jint dst_offset, jint dst_size) {
 
     size_t size = (size_t)(0-ZSTD_error_memory_allocation);
@@ -136,7 +136,7 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdDirectBufferCompressingStr
         size = ZSTD_endStream((ZSTD_CStream *)(intptr_t) stream, &output);
         (*env)->SetIntField(env, obj, produced_id, output.pos);
     }
-    return (jint) size;
+    return size;
 }
 
 /*
@@ -144,7 +144,7 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdDirectBufferCompressingStr
  * Method:    flushStream
  * Signature: (JLjava/nio/ByteBuffer;II)I
  */
-JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdDirectBufferCompressingStreamNoFinalizer_flushStream
+JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdDirectBufferCompressingStreamNoFinalizer_flushStream
   (JNIEnv *env, jclass obj, jlong stream, jobject dst_buf, jint dst_offset, jint dst_size) {
 
     size_t size = (size_t)(0-ZSTD_error_memory_allocation);
@@ -157,5 +157,5 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdDirectBufferCompressingStr
         size = ZSTD_flushStream((ZSTD_CStream *)(intptr_t) stream, &output);
         (*env)->SetIntField(env, obj, produced_id, output.pos);
     }
-    return (jint) size;
+    return size;
 }
