@@ -30,7 +30,7 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdDirectBufferDecompressing
 /*
  * Class:     com_github_luben_zstd_ZstdDirectBufferDecompressingStreamNoFinalizer
  * Method:    freeDStream
- * Signature: (J)I
+ * Signature: (J)J
  */
 JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdDirectBufferDecompressingStreamNoFinalizer_freeDStream
   (JNIEnv *env, jclass obj, jlong stream) {
@@ -40,7 +40,7 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdDirectBufferDecompressing
 /*
  * Class:     com_github_luben_zstd_ZstdDirectBufferDecompressingStreamNoFinalizer
  * Method:    initDStream
- * Signature: (J)I
+ * Signature: (J)J
  */
 JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdDirectBufferDecompressingStreamNoFinalizer_initDStream
   (JNIEnv *env, jclass obj, jlong stream) {
