@@ -72,8 +72,6 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdInputStreamNoFinalizer_dec
 
     size_t size = (size_t)(0-ZSTD_error_memory_allocation);
 
-    jclass clazz = (*env)->GetObjectClass(env, obj);
-
     size_t src_pos = (size_t) (*env)->GetLongField(env, obj, src_pos_id);
     size_t dst_pos = (size_t) (*env)->GetLongField(env, obj, dst_pos_id);
 

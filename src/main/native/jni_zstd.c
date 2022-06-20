@@ -170,7 +170,6 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_getErrorCode
 JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_loadDictDecompress
   (JNIEnv *env, jclass obj, jlong stream, jbyteArray dict, jint dict_size) {
     size_t size = (size_t)(0-ZSTD_error_memory_allocation);
-    jclass clazz = (*env)->GetObjectClass(env, obj);
     void *dict_buff = (*env)->GetPrimitiveArrayCritical(env, dict, NULL);
     if (dict_buff == NULL) goto E1;
 
@@ -187,7 +186,6 @@ E1:
  */
 JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_loadFastDictDecompress
   (JNIEnv *env, jclass obj, jlong stream, jobject dict) {
-    jclass clazz = (*env)->GetObjectClass(env, obj);
     jclass dict_clazz = (*env)->GetObjectClass(env, dict);
     jfieldID decompress_dict = (*env)->GetFieldID(env, dict_clazz, "nativePtr", "J");
     ZSTD_DDict* ddict = (ZSTD_DDict*)(intptr_t)(*env)->GetLongField(env, dict, decompress_dict);
@@ -204,7 +202,6 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_loadFastDictDecompress
 JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_loadDictCompress
   (JNIEnv *env, jclass obj, jlong stream, jbyteArray dict, jint dict_size) {
     size_t size = (size_t)(0-ZSTD_error_memory_allocation);
-    jclass clazz = (*env)->GetObjectClass(env, obj);
     void *dict_buff = (*env)->GetPrimitiveArrayCritical(env, dict, NULL);
     if (dict_buff == NULL) goto E1;
 
@@ -221,7 +218,6 @@ E1:
  */
 JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_loadFastDictCompress
   (JNIEnv *env, jclass obj, jlong stream, jobject dict) {
-    jclass clazz = (*env)->GetObjectClass(env, obj);
     jclass dict_clazz = (*env)->GetObjectClass(env, dict);
     jfieldID compress_dict = (*env)->GetFieldID(env, dict_clazz, "nativePtr", "J");
     ZSTD_CDict* cdict = (ZSTD_CDict*)(intptr_t)(*env)->GetLongField(env, dict, compress_dict);
@@ -236,7 +232,6 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_loadFastDictCompress
  */
 JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_setCompressionChecksums
   (JNIEnv *env, jclass obj, jlong stream, jboolean enabled) {
-    jclass clazz = (*env)->GetObjectClass(env, obj);
     int checksum = enabled ? 1 : 0;
     return ZSTD_CCtx_setParameter((ZSTD_CCtx *)(intptr_t) stream, ZSTD_c_checksumFlag, checksum);
 }
@@ -248,7 +243,6 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_setCompressionChecksums
  */
 JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_setCompressionLevel
   (JNIEnv *env, jclass obj, jlong stream, jint level) {
-    jclass clazz = (*env)->GetObjectClass(env, obj);
     return ZSTD_CCtx_setParameter((ZSTD_CCtx *)(intptr_t) stream, ZSTD_c_compressionLevel, level);
 }
 
@@ -259,7 +253,6 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_setCompressionLevel
  */
 JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_setCompressionLong
   (JNIEnv *env, jclass obj, jlong stream, jint windowLog) {
-    jclass clazz = (*env)->GetObjectClass(env, obj);
     ZSTD_CCtx* cctx = (ZSTD_CCtx*)(intptr_t) stream;
     if (windowLog < ZSTD_WINDOWLOG_MIN || windowLog > ZSTD_WINDOWLOG_LIMIT_DEFAULT) {
       // disable long matching and reset to default windowLog size
@@ -279,7 +272,6 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_setCompressionLong
  */
 JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_setCompressionWorkers
   (JNIEnv *env, jclass obj, jlong stream, jint workers) {
-    jclass clazz = (*env)->GetObjectClass(env, obj);
     return ZSTD_CCtx_setParameter((ZSTD_CCtx *)(intptr_t) stream, ZSTD_c_nbWorkers, workers);
 }
 
