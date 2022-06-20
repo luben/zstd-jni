@@ -1,5 +1,5 @@
 #include <jni.h>
-#include <zstd_internal.h>
+#include <zstd.h>
 #include <zstd_errors.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -58,7 +58,7 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdDirectBufferCompressingSt
  */
 JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdDirectBufferCompressingStreamNoFinalizer_initCStreamWithDict
   (JNIEnv *env, jclass obj, jlong stream, jbyteArray dict, jint dict_size, jint level) {
-    size_t result = (size_t)(0-ZSTD_error_memory_allocation);
+    size_t result = -ZSTD_error_memory_allocation;
     jclass clazz = (*env)->GetObjectClass(env, obj);
     consumed_id = (*env)->GetFieldID(env, clazz, "consumed", "I");
     produced_id = (*env)->GetFieldID(env, clazz, "produced", "I");
@@ -84,7 +84,7 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdDirectBufferCompressingSt
     jclass dict_clazz = (*env)->GetObjectClass(env, dict);
     jfieldID compress_dict = (*env)->GetFieldID(env, dict_clazz, "nativePtr", "J");
     ZSTD_CDict* cdict = (ZSTD_CDict*)(intptr_t)(*env)->GetLongField(env, dict, compress_dict);
-    if (cdict == NULL) return ZSTD_ERROR(dictionary_wrong);
+    if (cdict == NULL) return -ZSTD_error_dictionary_wrong;
     ZSTD_CCtx_reset((ZSTD_CStream *)(intptr_t) stream, ZSTD_reset_session_only);
     return ZSTD_CCtx_refCDict((ZSTD_CStream *)(intptr_t) stream, cdict);
 }
@@ -97,11 +97,11 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdDirectBufferCompressingSt
 JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdDirectBufferCompressingStreamNoFinalizer_compressDirectByteBuffer
   (JNIEnv *env, jclass obj, jlong stream, jobject dst_buf, jint dst_offset, jint dst_size, jobject src_buf, jint src_offset, jint src_size) {
 
-    size_t size = ERROR(memory_allocation);
+    size_t size = -ZSTD_error_memory_allocation;
     jsize dst_cap = (*env)->GetDirectBufferCapacity(env, dst_buf);
-    if (dst_offset + dst_size > dst_cap) return ERROR(dstSize_tooSmall);
+    if (dst_offset + dst_size > dst_cap) return -ZSTD_error_dstSize_tooSmall;
     jsize src_cap = (*env)->GetDirectBufferCapacity(env, src_buf);
-    if (src_offset + src_size > src_cap) return ERROR(srcSize_wrong);
+    if (src_offset + src_size > src_cap) return -ZSTD_error_srcSize_wrong;
     char *dst_buf_ptr = (char*)(*env)->GetDirectBufferAddress(env, dst_buf);
     if (dst_buf_ptr == NULL) goto E1;
     char *src_buf_ptr = (char*)(*env)->GetDirectBufferAddress(env, src_buf);
@@ -125,10 +125,10 @@ E1: return size;
 JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdDirectBufferCompressingStreamNoFinalizer_endStream
   (JNIEnv *env, jclass obj, jlong stream, jobject dst_buf, jint dst_offset, jint dst_size) {
 
-    size_t size = (size_t)(0-ZSTD_error_memory_allocation);
+    size_t size = -ZSTD_error_memory_allocation;
 
     jsize dst_cap = (*env)->GetDirectBufferCapacity(env, dst_buf);
-    if (dst_offset + dst_size > dst_cap) return (jint) ERROR(dstSize_tooSmall);
+    if (dst_offset + dst_size > dst_cap) return -ZSTD_error_dstSize_tooSmall;
     char *dst_buf_ptr = (char*)(*env)->GetDirectBufferAddress(env, dst_buf);
 
     if (dst_buf_ptr != NULL) {
@@ -147,10 +147,10 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdDirectBufferCompressingSt
 JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdDirectBufferCompressingStreamNoFinalizer_flushStream
   (JNIEnv *env, jclass obj, jlong stream, jobject dst_buf, jint dst_offset, jint dst_size) {
 
-    size_t size = (size_t)(0-ZSTD_error_memory_allocation);
+    size_t size = -ZSTD_error_memory_allocation;
 
     jsize dst_cap = (*env)->GetDirectBufferCapacity(env, dst_buf);
-    if (dst_offset + dst_size > dst_cap) return (jint)ERROR(dstSize_tooSmall);
+    if (dst_offset + dst_size > dst_cap) return -ZSTD_error_dstSize_tooSmall;
     char *dst_buf_ptr = (char*)(*env)->GetDirectBufferAddress(env, dst_buf);
     if (dst_buf_ptr != NULL) {
         ZSTD_outBuffer output = { dst_buf_ptr + dst_offset, dst_size, 0 };

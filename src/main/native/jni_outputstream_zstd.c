@@ -1,5 +1,5 @@
 #include <jni.h>
-#include <zstd_internal.h>
+#include <zstd.h>
 #include <zstd_errors.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -59,7 +59,7 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdOutputStreamNoFinalizer_re
 JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdOutputStreamNoFinalizer_compressStream
   (JNIEnv *env, jclass obj, jlong stream, jbyteArray dst, jint dst_size, jbyteArray src, jint src_size) {
 
-    size_t size = (size_t)(0-ZSTD_error_memory_allocation);
+    size_t size = -ZSTD_error_memory_allocation;
 
     size_t src_pos = (size_t) (*env)->GetLongField(env, obj, src_pos_id);
     void *dst_buff = (*env)->GetPrimitiveArrayCritical(env, dst, NULL);
@@ -87,7 +87,7 @@ E1: return (jint) size;
 JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdOutputStreamNoFinalizer_endStream
   (JNIEnv *env, jclass obj, jlong stream, jbyteArray dst, jint dst_size) {
 
-    size_t size = (size_t)(0-ZSTD_error_memory_allocation);
+    size_t size = -ZSTD_error_memory_allocation;
     void *dst_buff = (*env)->GetPrimitiveArrayCritical(env, dst, NULL);
     if (dst_buff != NULL) {
         ZSTD_outBuffer output = { dst_buff, dst_size, 0 };
@@ -107,7 +107,7 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdOutputStreamNoFinalizer_en
 JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdOutputStreamNoFinalizer_flushStream
   (JNIEnv *env, jclass obj, jlong stream, jbyteArray dst, jint dst_size) {
 
-    size_t size = (size_t)(0-ZSTD_error_memory_allocation);
+    size_t size = -ZSTD_error_memory_allocation;
     void *dst_buff = (*env)->GetPrimitiveArrayCritical(env, dst, NULL);
     if (dst_buff != NULL) {
         ZSTD_outBuffer output = { dst_buff, dst_size, 0 };

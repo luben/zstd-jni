@@ -1,5 +1,5 @@
 #include <jni.h>
-#include <zstd_internal.h>
+#include <zstd.h>
 #include <zstd_errors.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -70,7 +70,7 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdInputStreamNoFinalizer_ini
 JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdInputStreamNoFinalizer_decompressStream
   (JNIEnv *env, jclass obj, jlong stream, jbyteArray dst, jint dst_size, jbyteArray src, jint src_size) {
 
-    size_t size = (size_t)(0-ZSTD_error_memory_allocation);
+    size_t size = -ZSTD_error_memory_allocation;
 
     size_t src_pos = (size_t) (*env)->GetLongField(env, obj, src_pos_id);
     size_t dst_pos = (size_t) (*env)->GetLongField(env, obj, dst_pos_id);

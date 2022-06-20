@@ -1,5 +1,5 @@
 #include <jni.h>
-#include <zstd_internal.h>
+#include <zstd.h>
 #include <zstd_errors.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -57,12 +57,12 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdDirectBufferDecompressing
  */
 JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdDirectBufferDecompressingStreamNoFinalizer_decompressStream
   (JNIEnv *env, jclass obj, jlong stream, jobject dst_buf, jint dst_offset, jint dst_size, jobject src_buf, jint src_offset, jint src_size) {
-    size_t size = (size_t)ERROR(memory_allocation);
+    size_t size = -ZSTD_error_memory_allocation;
 
     jsize dst_cap = (*env)->GetDirectBufferCapacity(env, dst_buf);
-    if (dst_offset + dst_size > dst_cap) return ERROR(dstSize_tooSmall);
+    if (dst_offset + dst_size > dst_cap) return -ZSTD_error_dstSize_tooSmall;
     jsize src_cap = (*env)->GetDirectBufferCapacity(env, src_buf);
-    if (src_offset + src_size > src_cap) return ERROR(srcSize_wrong);
+    if (src_offset + src_size > src_cap) return -ZSTD_error_srcSize_wrong;
     char *dst_buf_ptr = (char*)(*env)->GetDirectBufferAddress(env, dst_buf);
     if (dst_buf_ptr == NULL) goto E1;
     char *src_buf_ptr = (char*)(*env)->GetDirectBufferAddress(env, src_buf);
