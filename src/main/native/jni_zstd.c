@@ -1,6 +1,10 @@
+#ifndef ZSTD_STATIC_LINKING_ONLY
+#define ZSTD_STATIC_LINKING_ONLY
+#endif
 #include <jni.h>
-#include <zstd_internal.h>
+#include <zstd.h>
 #include <zstd_errors.h>
+#include <stdint.h>
 
 
 /*
@@ -49,7 +53,7 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_decompressUnsafe
  */
 JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_decompressedSize0
   (JNIEnv *env, jclass obj, jbyteArray src, jint offset, jint limit) {
-    size_t size = (size_t)(0-ZSTD_error_memory_allocation);
+    size_t size = -ZSTD_error_memory_allocation;
     void *src_buff = (*env)->GetPrimitiveArrayCritical(env, src, NULL);
     if (src_buff == NULL) goto E1;
     size = ZSTD_getDecompressedSize(((char *) src_buff) + offset, (size_t) limit);
@@ -112,9 +116,9 @@ E1: return (jlong) dict_id;
  */
 JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_decompressedDirectByteBufferSize
   (JNIEnv *env, jclass obj, jobject src_buf, jint src_offset, jint src_size) {
-    size_t size = (size_t)(0-ZSTD_error_memory_allocation);
+    size_t size = -ZSTD_error_memory_allocation;
     jsize src_cap = (*env)->GetDirectBufferCapacity(env, src_buf);
-    if (src_offset + src_size > src_cap) return ZSTD_ERROR(GENERIC);
+    if (src_offset + src_size > src_cap) return -ZSTD_error_GENERIC;
     char *src_buf_ptr = (char*)(*env)->GetDirectBufferAddress(env, src_buf);
     if (src_buf_ptr == NULL) goto E1;
     size = ZSTD_getDecompressedSize(src_buf_ptr + src_offset, (size_t) src_size);
@@ -169,7 +173,7 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_getErrorCode
  */
 JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_loadDictDecompress
   (JNIEnv *env, jclass obj, jlong stream, jbyteArray dict, jint dict_size) {
-    size_t size = (size_t)(0-ZSTD_error_memory_allocation);
+    size_t size = -ZSTD_error_memory_allocation;
     void *dict_buff = (*env)->GetPrimitiveArrayCritical(env, dict, NULL);
     if (dict_buff == NULL) goto E1;
 
@@ -201,7 +205,7 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_loadFastDictDecompress
  */
 JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_loadDictCompress
   (JNIEnv *env, jclass obj, jlong stream, jbyteArray dict, jint dict_size) {
-    size_t size = (size_t)(0-ZSTD_error_memory_allocation);
+    size_t size = -ZSTD_error_memory_allocation;
     void *dict_buff = (*env)->GetPrimitiveArrayCritical(env, dict, NULL);
     if (dict_buff == NULL) goto E1;
 

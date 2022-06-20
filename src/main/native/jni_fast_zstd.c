@@ -1,5 +1,5 @@
 #include <jni.h>
-#include <zstd_internal.h>
+#include <zstd.h>
 #include <zstd_errors.h>
 #include <stdint.h>
 
@@ -86,20 +86,20 @@ JNIEXPORT void JNICALL Java_com_github_luben_zstd_ZstdDictDecompress_free
 JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_decompressFastDict0
   (JNIEnv *env, jclass obj, jbyteArray dst, jint dst_offset, jbyteArray src, jint src_offset, jint src_length, jobject dict)
 {
-    if (NULL == dict) return ZSTD_ERROR(dictionary_wrong);
+    if (NULL == dict) return -ZSTD_error_dictionary_wrong;
     ZSTD_DDict* ddict = (ZSTD_DDict*)(intptr_t)(*env)->GetLongField(env, dict, decompress_dict);
-    if (NULL == ddict) return ZSTD_ERROR(dictionary_wrong);
-    if (NULL == dst) return ZSTD_ERROR(dstSize_tooSmall);
-    if (NULL == src) return ZSTD_ERROR(srcSize_wrong);
-    if (0 > dst_offset) return ZSTD_ERROR(dstSize_tooSmall);
-    if (0 > src_offset) return ZSTD_ERROR(srcSize_wrong);
-    if (0 > src_length) return ZSTD_ERROR(srcSize_wrong);
+    if (NULL == ddict) return -ZSTD_error_dictionary_wrong;
+    if (NULL == dst) return -ZSTD_error_dstSize_tooSmall;
+    if (NULL == src) return -ZSTD_error_srcSize_wrong;
+    if (0 > dst_offset) return -ZSTD_error_dstSize_tooSmall;
+    if (0 > src_offset) return -ZSTD_error_srcSize_wrong;
+    if (0 > src_length) return -ZSTD_error_srcSize_wrong;
 
-    size_t size = (size_t)(0-ZSTD_error_memory_allocation);
+    size_t size = -ZSTD_error_memory_allocation;
     jsize dst_size = (*env)->GetArrayLength(env, dst);
     jsize src_size = (*env)->GetArrayLength(env, src);
-    if (dst_offset > dst_size) return ZSTD_ERROR(dstSize_tooSmall);
-    if (src_size < (src_offset + src_length)) return ZSTD_ERROR(srcSize_wrong);
+    if (dst_offset > dst_size) return -ZSTD_error_dstSize_tooSmall;
+    if (src_size < (src_offset + src_length)) return -ZSTD_error_srcSize_wrong;
     dst_size -= dst_offset;
     void *dst_buff = (*env)->GetPrimitiveArrayCritical(env, dst, NULL);
     if (dst_buff == NULL) goto E1;
@@ -120,21 +120,21 @@ E1: return size;
  */
 JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_compressFastDict0
   (JNIEnv *env, jclass obj, jbyteArray dst, jint dst_offset, jbyteArray src, jint src_offset, jint src_length, jobject dict) {
-    if (NULL == dict) return ZSTD_ERROR(dictionary_wrong);
+    if (NULL == dict) return -ZSTD_error_dictionary_wrong;
     ZSTD_CDict* cdict = (ZSTD_CDict*)(intptr_t)(*env)->GetLongField(env, dict, compress_dict);
-    if (NULL == cdict) return ZSTD_ERROR(dictionary_wrong);
-    if (NULL == dst) return ZSTD_ERROR(dstSize_tooSmall);
-    if (NULL == src) return ZSTD_ERROR(srcSize_wrong);
-    if (0 > dst_offset) return ZSTD_ERROR(dstSize_tooSmall);
-    if (0 > src_offset) return ZSTD_ERROR(srcSize_wrong);
-    if (0 > src_length) return ZSTD_ERROR(srcSize_wrong);
+    if (NULL == cdict) return -ZSTD_error_dictionary_wrong;
+    if (NULL == dst) return -ZSTD_error_dstSize_tooSmall;
+    if (NULL == src) return -ZSTD_error_srcSize_wrong;
+    if (0 > dst_offset) return -ZSTD_error_dstSize_tooSmall;
+    if (0 > src_offset) return -ZSTD_error_srcSize_wrong;
+    if (0 > src_length) return -ZSTD_error_srcSize_wrong;
 
 
-    size_t size = (size_t)(0-ZSTD_error_memory_allocation);
+    size_t size = -ZSTD_error_memory_allocation;
     jsize dst_size = (*env)->GetArrayLength(env, dst);
     jsize src_size = (*env)->GetArrayLength(env, src);
-    if (dst_offset > dst_size) return ZSTD_ERROR(dstSize_tooSmall);
-    if (src_size < (src_offset + src_length)) return ZSTD_ERROR(srcSize_wrong);
+    if (dst_offset > dst_size) return -ZSTD_error_dstSize_tooSmall;
+    if (src_size < (src_offset + src_length)) return -ZSTD_error_srcSize_wrong;
     dst_size -= dst_offset;
     void *dst_buff = (*env)->GetPrimitiveArrayCritical(env, dst, NULL);
     if (dst_buff == NULL) goto E1;
@@ -154,15 +154,15 @@ E1: return size;
  */
 JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_compressDirectByteBufferFastDict0
   (JNIEnv *env, jclass obj, jobject dst, jint dst_offset, jint dst_size, jobject src, jint src_offset, jint src_size, jobject dict) {
-    if (NULL == dict) return ZSTD_ERROR(dictionary_wrong);
+    if (NULL == dict) return -ZSTD_error_dictionary_wrong;
     ZSTD_CDict* cdict = (ZSTD_CDict*)(intptr_t)(*env)->GetLongField(env, dict, compress_dict);
-    if (NULL == cdict) return ZSTD_ERROR(dictionary_wrong);
-    if (NULL == dst) return ZSTD_ERROR(dstSize_tooSmall);
-    if (NULL == src) return ZSTD_ERROR(srcSize_wrong);
-    if (0 > dst_offset) return ZSTD_ERROR(dstSize_tooSmall);
-    if (0 > src_offset) return ZSTD_ERROR(srcSize_wrong);
-    if (0 > src_size) return ZSTD_ERROR(srcSize_wrong);
-    size_t size = (size_t)(0-ZSTD_error_memory_allocation);
+    if (NULL == cdict) return -ZSTD_error_dictionary_wrong;
+    if (NULL == dst) return -ZSTD_error_dstSize_tooSmall;
+    if (NULL == src) return -ZSTD_error_srcSize_wrong;
+    if (0 > dst_offset) return -ZSTD_error_dstSize_tooSmall;
+    if (0 > src_offset) return -ZSTD_error_srcSize_wrong;
+    if (0 > src_size) return -ZSTD_error_srcSize_wrong;
+    size_t size = -ZSTD_error_memory_allocation;
     char *dst_buff = (char*)(*env)->GetDirectBufferAddress(env, dst);
     char *src_buff = (char*)(*env)->GetDirectBufferAddress(env, src);
     ZSTD_CCtx* ctx = ZSTD_createCCtx();
@@ -178,16 +178,16 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_compressDirectByteBuffer
 JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_decompressDirectByteBufferFastDict0
   (JNIEnv *env, jclass obj, jobject dst, jint dst_offset, jint dst_size, jobject src, jint src_offset, jint src_size, jobject dict)
 {
-    if (NULL == dict) return ZSTD_ERROR(dictionary_wrong);
+    if (NULL == dict) return -ZSTD_error_dictionary_wrong;
     ZSTD_DDict* ddict = (ZSTD_DDict*)(intptr_t)(*env)->GetLongField(env, dict, decompress_dict);
-    if (NULL == ddict) return ZSTD_ERROR(dictionary_wrong);
-    if (NULL == dst) return ZSTD_ERROR(dstSize_tooSmall);
-    if (NULL == src) return ZSTD_ERROR(srcSize_wrong);
-    if (0 > dst_offset) return ZSTD_ERROR(dstSize_tooSmall);
-    if (0 > src_offset) return ZSTD_ERROR(srcSize_wrong);
-    if (0 > src_size) return ZSTD_ERROR(srcSize_wrong);
+    if (NULL == ddict) return -ZSTD_error_dictionary_wrong;
+    if (NULL == dst) return -ZSTD_error_dstSize_tooSmall;
+    if (NULL == src) return -ZSTD_error_srcSize_wrong;
+    if (0 > dst_offset) return -ZSTD_error_dstSize_tooSmall;
+    if (0 > src_offset) return -ZSTD_error_srcSize_wrong;
+    if (0 > src_size) return -ZSTD_error_srcSize_wrong;
 
-    size_t size = (size_t)(0-ZSTD_error_memory_allocation);
+    size_t size = -ZSTD_error_memory_allocation;
     char *dst_buff = (char*)(*env)->GetDirectBufferAddress(env, dst);
     char *src_buff = (char*)(*env)->GetDirectBufferAddress(env, src);
     ZSTD_DCtx* dctx = ZSTD_createDCtx();
@@ -294,7 +294,7 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdCompressCtx_loadCDictFast
         return ZSTD_CCtx_refCDict(cctx, NULL);
     }
     ZSTD_CDict* cdict = (ZSTD_CDict*)(intptr_t)(*env)->GetLongField(env, dict, compress_dict);
-    if (NULL == cdict) return ZSTD_ERROR(dictionary_wrong);
+    if (NULL == cdict) return -ZSTD_error_dictionary_wrong;
     return ZSTD_CCtx_refCDict(cctx, cdict);
 }
 
@@ -313,7 +313,7 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdCompressCtx_loadCDict0
     }
     jsize dict_size = (*env)->GetArrayLength(env, dict);
     void *dict_buff = (*env)->GetPrimitiveArrayCritical(env, dict, NULL);
-    if (dict_buff == NULL) return ERROR(memory_allocation);
+    if (dict_buff == NULL) return -ZSTD_error_memory_allocation;
     size_t result = ZSTD_CCtx_loadDictionary(cctx, dict_buff, dict_size);
     (*env)->ReleasePrimitiveArrayCritical(env, dict, dict_buff, JNI_ABORT);
     return result;
@@ -341,28 +341,28 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdCompressCtx_setPledgedSrc
 
 static size_t compress_direct_buffer_stream
   (JNIEnv *env, jclass jctx, jobject dst, jint *dst_offset, jint dst_size, jobject src, jint *src_offset, jint src_size, jint end_op) {
-    if (NULL == dst) return ZSTD_ERROR(dstSize_tooSmall);
-    if (NULL == src) return ZSTD_ERROR(srcSize_wrong);
-    if (0 > *dst_offset) return ZSTD_ERROR(dstSize_tooSmall);
-    if (0 > *src_offset) return ZSTD_ERROR(srcSize_wrong);
-    if (0 > src_size) return ZSTD_ERROR(srcSize_wrong);
+    if (NULL == dst) return -ZSTD_error_dstSize_tooSmall;
+    if (NULL == src) return -ZSTD_error_srcSize_wrong;
+    if (0 > *dst_offset) return -ZSTD_error_dstSize_tooSmall;
+    if (0 > *src_offset) return -ZSTD_error_srcSize_wrong;
+    if (0 > src_size) return -ZSTD_error_srcSize_wrong;
 
     jsize dst_cap = (*env)->GetDirectBufferCapacity(env, dst);
-    if (dst_size > dst_cap) return ZSTD_ERROR(dstSize_tooSmall);
+    if (dst_size > dst_cap) return -ZSTD_error_dstSize_tooSmall;
     jsize src_cap = (*env)->GetDirectBufferCapacity(env, src);
-    if (src_size > src_cap) return ZSTD_ERROR(srcSize_wrong);
+    if (src_size > src_cap) return -ZSTD_error_srcSize_wrong;
     ZSTD_CCtx* cctx = (ZSTD_CCtx*)(intptr_t)(*env)->GetLongField(env, jctx, compress_ctx_nativePtr);
 
     ZSTD_outBuffer out;
     out.pos = *dst_offset;
     out.size = dst_size;
     out.dst = (*env)->GetDirectBufferAddress(env, dst);
-    if (out.dst == NULL) return ZSTD_ERROR(memory_allocation);
+    if (out.dst == NULL) return -ZSTD_error_memory_allocation;
     ZSTD_inBuffer in;
     in.pos = *src_offset;
     in.size = src_size;
     in.src = (*env)->GetDirectBufferAddress(env, src);
-    if (in.src == NULL) return ZSTD_ERROR(memory_allocation);
+    if (in.src == NULL) return -ZSTD_error_memory_allocation;
 
     size_t result = ZSTD_compressStream2(cctx, &out, &in, end_op);
     *dst_offset = out.pos;
@@ -395,23 +395,23 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdCompressCtx_compressDirec
  */
 JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdCompressCtx_compressDirectByteBuffer0
   (JNIEnv *env, jclass jctx, jobject dst, jint dst_offset, jint dst_size, jobject src, jint src_offset, jint src_size) {
-    if (NULL == dst) return ZSTD_ERROR(dstSize_tooSmall);
-    if (NULL == src) return ZSTD_ERROR(srcSize_wrong);
-    if (0 > dst_offset) return ZSTD_ERROR(dstSize_tooSmall);
-    if (0 > src_offset) return ZSTD_ERROR(srcSize_wrong);
-    if (0 > src_size) return ZSTD_ERROR(srcSize_wrong);
+    if (NULL == dst) return -ZSTD_error_dstSize_tooSmall;
+    if (NULL == src) return -ZSTD_error_srcSize_wrong;
+    if (0 > dst_offset) return -ZSTD_error_dstSize_tooSmall;
+    if (0 > src_offset) return -ZSTD_error_srcSize_wrong;
+    if (0 > src_size) return -ZSTD_error_srcSize_wrong;
 
     jsize dst_cap = (*env)->GetDirectBufferCapacity(env, dst);
-    if (dst_offset + dst_size > dst_cap) return ERROR(dstSize_tooSmall);
+    if (dst_offset + dst_size > dst_cap) return -ZSTD_error_dstSize_tooSmall;
     jsize src_cap = (*env)->GetDirectBufferCapacity(env, src);
-    if (src_offset + src_size > src_cap) return ERROR(srcSize_wrong);
+    if (src_offset + src_size > src_cap) return -ZSTD_error_srcSize_wrong;
 
     ZSTD_CCtx* cctx = (ZSTD_CCtx*)(intptr_t)(*env)->GetLongField(env, jctx, compress_ctx_nativePtr);
 
     char *dst_buff = (char*)(*env)->GetDirectBufferAddress(env, dst);
-    if (dst_buff == NULL) return ERROR(memory_allocation);
+    if (dst_buff == NULL) return -ZSTD_error_memory_allocation;
     char *src_buff = (char*)(*env)->GetDirectBufferAddress(env, src);
-    if (src_buff == NULL) return ERROR(memory_allocation);
+    if (src_buff == NULL) return -ZSTD_error_memory_allocation;
 
     ZSTD_CCtx_reset(cctx, ZSTD_reset_session_only);
     return ZSTD_compress2(cctx, dst_buff + dst_offset, (size_t) dst_size, src_buff + src_offset, (size_t) src_size);
@@ -424,14 +424,14 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdCompressCtx_compressDirec
  */
 JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdCompressCtx_compressByteArray0
   (JNIEnv *env, jclass jctx, jbyteArray dst, jint dst_offset, jint dst_size, jbyteArray src, jint src_offset, jint src_size) {
-    size_t size = (size_t)(0-ZSTD_error_memory_allocation);
+    size_t size = -ZSTD_error_memory_allocation;
 
-    if (0 > dst_offset) return ZSTD_ERROR(dstSize_tooSmall);
-    if (0 > src_offset) return ZSTD_ERROR(srcSize_wrong);
-    if (0 > src_size) return ZSTD_ERROR(srcSize_wrong);
+    if (0 > dst_offset) return -ZSTD_error_dstSize_tooSmall;
+    if (0 > src_offset) return -ZSTD_error_srcSize_wrong;
+    if (0 > src_size) return -ZSTD_error_srcSize_wrong;
 
-    if (src_offset + src_size > (*env)->GetArrayLength(env, src)) return ERROR(srcSize_wrong);
-    if (dst_offset + dst_size > (*env)->GetArrayLength(env, dst)) return ERROR(dstSize_tooSmall);
+    if (src_offset + src_size > (*env)->GetArrayLength(env, src)) return -ZSTD_error_srcSize_wrong;
+    if (dst_offset + dst_size > (*env)->GetArrayLength(env, dst)) return -ZSTD_error_dstSize_tooSmall;
 
     ZSTD_CCtx* cctx = (ZSTD_CCtx*)(intptr_t)(*env)->GetLongField(env, jctx, compress_ctx_nativePtr);
 
@@ -494,7 +494,7 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdDecompressCtx_loadDDictFa
         return ZSTD_DCtx_refDDict(dctx, NULL);
     }
     ZSTD_DDict* ddict = (ZSTD_DDict*)(intptr_t)(*env)->GetLongField(env, dict, decompress_dict);
-    if (NULL == ddict) return ZSTD_ERROR(dictionary_wrong);
+    if (NULL == ddict) return -ZSTD_error_dictionary_wrong;
     return ZSTD_DCtx_refDDict(dctx, ddict);
 }
 
@@ -513,7 +513,7 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdDecompressCtx_loadDDict0
     }
     jsize dict_size = (*env)->GetArrayLength(env, dict);
     void *dict_buff = (*env)->GetPrimitiveArrayCritical(env, dict, NULL);
-    if (dict_buff == NULL) return ERROR(memory_allocation);
+    if (dict_buff == NULL) return -ZSTD_error_memory_allocation;
     size_t result = ZSTD_DCtx_loadDictionary(dctx, dict_buff, dict_size);
     (*env)->ReleasePrimitiveArrayCritical(env, dict, dict_buff, JNI_ABORT);
     return result;
@@ -533,17 +533,17 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdDecompressCtx_reset0
 static size_t decompress_direct_buffer_stream
   (JNIEnv *env, jclass jctx, jobject dst, jint *dst_offset, jint dst_size, jobject src, jint *src_offset, jint src_size)
 {
-    if (NULL == dst) return ZSTD_ERROR(dstSize_tooSmall);
-    if (NULL == src) return ZSTD_ERROR(srcSize_wrong);
-    if (0 > *dst_offset) return ZSTD_ERROR(dstSize_tooSmall);
-    if (0 > *src_offset) return ZSTD_ERROR(srcSize_wrong);
-    if (0 > dst_size) return ZSTD_ERROR(dstSize_tooSmall);
-    if (0 > src_size) return ZSTD_ERROR(srcSize_wrong);
+    if (NULL == dst) return -ZSTD_error_dstSize_tooSmall;
+    if (NULL == src) return -ZSTD_error_srcSize_wrong;
+    if (0 > *dst_offset) return -ZSTD_error_dstSize_tooSmall;
+    if (0 > *src_offset) return -ZSTD_error_srcSize_wrong;
+    if (0 > dst_size) return -ZSTD_error_dstSize_tooSmall;
+    if (0 > src_size) return -ZSTD_error_srcSize_wrong;
 
     jsize dst_cap = (*env)->GetDirectBufferCapacity(env, dst);
-    if (dst_size > dst_cap) return ZSTD_ERROR(dstSize_tooSmall);
+    if (dst_size > dst_cap) return -ZSTD_error_dstSize_tooSmall;
     jsize src_cap = (*env)->GetDirectBufferCapacity(env, src);
-    if (src_size > src_cap) return ZSTD_ERROR(srcSize_wrong);
+    if (src_size > src_cap) return -ZSTD_error_srcSize_wrong;
 
     ZSTD_DCtx* dctx = (ZSTD_DCtx*)(intptr_t)(*env)->GetLongField(env, jctx, decompress_ctx_nativePtr);
 
@@ -551,12 +551,12 @@ static size_t decompress_direct_buffer_stream
     out.pos = *dst_offset;
     out.size = dst_size;
     out.dst = (*env)->GetDirectBufferAddress(env, dst);
-    if (out.dst == NULL) return ZSTD_ERROR(memory_allocation);
+    if (out.dst == NULL) return -ZSTD_error_memory_allocation;
     ZSTD_inBuffer in;
     in.pos = *src_offset;
     in.size = src_size;
     in.src = (*env)->GetDirectBufferAddress(env, src);
-    if (in.src == NULL) return ZSTD_ERROR(memory_allocation);
+    if (in.src == NULL) return -ZSTD_error_memory_allocation;
 
     size_t result = ZSTD_decompressStream(dctx, &out, &in);
     *dst_offset = out.pos;
@@ -592,23 +592,23 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdDecompressCtx_decompressD
 JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdDecompressCtx_decompressDirectByteBuffer0
 (JNIEnv *env, jclass jctx, jobject dst, jint dst_offset, jint dst_size, jobject src, jint src_offset, jint src_size)
 {
-    if (NULL == dst) return ZSTD_ERROR(dstSize_tooSmall);
-    if (NULL == src) return ZSTD_ERROR(srcSize_wrong);
-    if (0 > dst_offset) return ZSTD_ERROR(dstSize_tooSmall);
-    if (0 > src_offset) return ZSTD_ERROR(srcSize_wrong);
-    if (0 > src_size) return ZSTD_ERROR(srcSize_wrong);
+    if (NULL == dst) return -ZSTD_error_dstSize_tooSmall;
+    if (NULL == src) return -ZSTD_error_srcSize_wrong;
+    if (0 > dst_offset) return -ZSTD_error_dstSize_tooSmall;
+    if (0 > src_offset) return -ZSTD_error_srcSize_wrong;
+    if (0 > src_size) return -ZSTD_error_srcSize_wrong;
 
     jsize dst_cap = (*env)->GetDirectBufferCapacity(env, dst);
-    if (dst_offset + dst_size > dst_cap) return ERROR(dstSize_tooSmall);
+    if (dst_offset + dst_size > dst_cap) return -ZSTD_error_dstSize_tooSmall;
     jsize src_cap = (*env)->GetDirectBufferCapacity(env, src);
-    if (src_offset + src_size > src_cap) return ERROR(srcSize_wrong);
+    if (src_offset + src_size > src_cap) return -ZSTD_error_srcSize_wrong;
 
     ZSTD_DCtx* dctx = (ZSTD_DCtx*)(intptr_t)(*env)->GetLongField(env, jctx, decompress_ctx_nativePtr);
 
     char *dst_buff = (char*)(*env)->GetDirectBufferAddress(env, dst);
-    if (dst_buff == NULL) return ERROR(memory_allocation);
+    if (dst_buff == NULL) return -ZSTD_error_memory_allocation;
     char *src_buff = (char*)(*env)->GetDirectBufferAddress(env, src);
-    if (src_buff == NULL) return ERROR(memory_allocation);
+    if (src_buff == NULL) return -ZSTD_error_memory_allocation;
 
     ZSTD_DCtx_reset(dctx, ZSTD_reset_session_only);
     return ZSTD_decompressDCtx(dctx, dst_buff + dst_offset, (size_t) dst_size, src_buff + src_offset, (size_t) src_size);
@@ -621,14 +621,14 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdDecompressCtx_decompressD
  */
 JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdDecompressCtx_decompressByteArray0
   (JNIEnv *env, jclass jctx, jbyteArray dst, jint dst_offset, jint dst_size, jbyteArray src, jint src_offset, jint src_size) {
-    size_t size = (size_t)(0-ZSTD_error_memory_allocation);
+    size_t size = -ZSTD_error_memory_allocation;
 
-    if (0 > dst_offset) return ZSTD_ERROR(dstSize_tooSmall);
-    if (0 > src_offset) return ZSTD_ERROR(srcSize_wrong);
-    if (0 > src_size) return ZSTD_ERROR(srcSize_wrong);
+    if (0 > dst_offset) return -ZSTD_error_dstSize_tooSmall;
+    if (0 > src_offset) return -ZSTD_error_srcSize_wrong;
+    if (0 > src_size) return -ZSTD_error_srcSize_wrong;
 
-    if (src_offset + src_size > (*env)->GetArrayLength(env, src)) return ERROR(srcSize_wrong);
-    if (dst_offset + dst_size > (*env)->GetArrayLength(env, dst)) return ERROR(dstSize_tooSmall);
+    if (src_offset + src_size > (*env)->GetArrayLength(env, src)) return -ZSTD_error_srcSize_wrong;
+    if (dst_offset + dst_size > (*env)->GetArrayLength(env, dst)) return -ZSTD_error_dstSize_tooSmall;
 
     ZSTD_DCtx* dctx = (ZSTD_DCtx*)(intptr_t)(*env)->GetLongField(env, jctx, decompress_ctx_nativePtr);
 
