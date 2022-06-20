@@ -9,6 +9,7 @@
 
 JNIEXPORT jlong Java_com_github_luben_zstd_Zstd_trainFromBuffer
   (JNIEnv *env, jclass obj, jobjectArray samples, jbyteArray dictBuffer, jboolean legacy) {
+    size_t size = 0;
     jsize num_samples = (*env)->GetArrayLength(env, samples);
     size_t *samples_sizes = malloc(sizeof(size_t) * num_samples);
     if (!samples_sizes) {
@@ -41,7 +42,6 @@ JNIEXPORT jlong Java_com_github_luben_zstd_Zstd_trainFromBuffer
     size_t dict_capacity = (*env)->GetArrayLength(env, dictBuffer);
     void *dict_buff =  (*env)->GetPrimitiveArrayCritical(env, dictBuffer, NULL);
 
-    size_t size;
     if (legacy == JNI_TRUE) {
         ZDICT_legacy_params_t params;
         memset(&params,0,sizeof(params));
@@ -58,6 +58,7 @@ E1: return size;
 JNIEXPORT jlong Java_com_github_luben_zstd_Zstd_trainFromBufferDirect
   (JNIEnv *env, jclass obj, jobject samples, jintArray sampleSizes, jobject dictBuffer, jboolean legacy) {
 
+    size_t size = 0;
     void *samples_buffer = (*env)->GetDirectBufferAddress(env, samples);
     void *dict_buff = (*env)->GetDirectBufferAddress(env, dictBuffer);
     size_t dict_capacity = (*env)->GetDirectBufferCapacity(env, dictBuffer);
@@ -77,7 +78,6 @@ JNIEXPORT jlong Java_com_github_luben_zstd_Zstd_trainFromBufferDirect
     }
     (*env)->ReleasePrimitiveArrayCritical(env, sampleSizes, sample_sizes_array, JNI_ABORT);
 
-    size_t size;
     if (legacy == JNI_TRUE) {
         ZDICT_legacy_params_t params;
         memset(&params, 0, sizeof(params));
