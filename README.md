@@ -138,6 +138,7 @@ prebuilt android archive (aar):
 
     dependencies {
         implementation "com.github.luben:zstd-jni:VERSION@aar"
+        testImplementation "com.github.luben:zstd-jni:VERSION@aar"
     }
 
 For example Android app and how to declare dependencies and use zstd-jni, consult
