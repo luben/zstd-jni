@@ -193,7 +193,7 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_loadFastDictDecompress
     jclass dict_clazz = (*env)->GetObjectClass(env, dict);
     jfieldID decompress_dict = (*env)->GetFieldID(env, dict_clazz, "nativePtr", "J");
     ZSTD_DDict* ddict = (ZSTD_DDict*)(intptr_t)(*env)->GetLongField(env, dict, decompress_dict);
-    if (ddict == NULL) return ZSTD_error_dictionary_wrong;
+    if (ddict == NULL) return -ZSTD_error_dictionary_wrong;
     return ZSTD_DCtx_refDDict((ZSTD_DCtx *)(intptr_t) stream, ddict);
 }
 
@@ -225,7 +225,7 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_loadFastDictCompress
     jclass dict_clazz = (*env)->GetObjectClass(env, dict);
     jfieldID compress_dict = (*env)->GetFieldID(env, dict_clazz, "nativePtr", "J");
     ZSTD_CDict* cdict = (ZSTD_CDict*)(intptr_t)(*env)->GetLongField(env, dict, compress_dict);
-    if (cdict == NULL) return ZSTD_error_dictionary_wrong;
+    if (cdict == NULL) return -ZSTD_error_dictionary_wrong;
     return ZSTD_CCtx_refCDict((ZSTD_CCtx *)(intptr_t) stream, cdict);
 }
 
