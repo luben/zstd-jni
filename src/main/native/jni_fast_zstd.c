@@ -333,7 +333,7 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdCompressCtx_reset0
 JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdCompressCtx_setPledgedSrcSize0
   (JNIEnv *env, jclass jctx, jlong src_size) {
     if (src_size < 0) {
-        return ZSTD_error_srcSize_wrong;
+        return -ZSTD_error_srcSize_wrong;
     }
     ZSTD_CCtx* cctx = (ZSTD_CCtx*)(intptr_t)(*env)->GetLongField(env, jctx, compress_ctx_nativePtr);
     return ZSTD_CCtx_setPledgedSrcSize(cctx, (unsigned long long)src_size);
