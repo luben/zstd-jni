@@ -50,20 +50,20 @@ public class ZstdDirectBufferDecompressingStreamNoFinalizer implements Closeable
         return (int) recommendedDOutSize();
     }
 
-    public ZstdDirectBufferDecompressingStreamNoFinalizer setDict(byte[] dict) throws IOException {
+    public ZstdDirectBufferDecompressingStreamNoFinalizer setDict(byte[] dict) {
         long size = Zstd.loadDictDecompress(stream, dict, dict.length);
         if (Zstd.isError(size)) {
-            throw new IOException("Decompression error: " + Zstd.getErrorName(size));
+            throw new ZstdException(size);
         }
         return this;
     }
 
-    public ZstdDirectBufferDecompressingStreamNoFinalizer setDict(ZstdDictDecompress dict) throws IOException {
+    public ZstdDirectBufferDecompressingStreamNoFinalizer setDict(ZstdDictDecompress dict) {
         dict.acquireSharedLock();
         try {
             long size = Zstd.loadFastDictDecompress(stream, dict);
             if (Zstd.isError(size)) {
-                throw new IOException("Decompression error: " + Zstd.getErrorName(size));
+                throw new ZstdException(size);
             }
         } finally {
             dict.releaseSharedLock();
@@ -86,7 +86,7 @@ public class ZstdDirectBufferDecompressingStreamNoFinalizer implements Closeable
 
         long remaining = decompressStream(stream, target, target.position(), target.remaining(), source, source.position(), source.remaining());
         if (Zstd.isError(remaining)) {
-            throw new IOException(Zstd.getErrorName(remaining));
+            throw new ZstdException(remaining);
         }
 
         source.position(source.position() + consumed);
@@ -110,7 +110,7 @@ public class ZstdDirectBufferDecompressingStreamNoFinalizer implements Closeable
 
 
     @Override
-    public void close() throws IOException {
+    public void close() {
         if (!closed) {
             try {
                 freeDStream(stream);

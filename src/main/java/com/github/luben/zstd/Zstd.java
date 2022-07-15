@@ -770,7 +770,7 @@ public class Zstd {
      * @param src the source buffer
      * @return byte array with the compressed data
      */
-    public static byte[] compress(byte[] src) throws ZstdException {
+    public static byte[] compress(byte[] src) {
         return compress(src, defaultCompressionLevel());
     }
 
@@ -781,7 +781,7 @@ public class Zstd {
      * @param level compression level
      * @return byte array with the compressed data
      */
-    public static byte[] compress(byte[] src, int level) throws ZstdException {
+    public static byte[] compress(byte[] src, int level) {
         ZstdCompressCtx ctx = new ZstdCompressCtx();
         try {
             ctx.setLevel(level);
@@ -809,7 +809,7 @@ public class Zstd {
      * @return the size of the compressed data
      */
 
-    public static int compress(ByteBuffer dstBuf, ByteBuffer srcBuf) throws ZstdException {
+    public static int compress(ByteBuffer dstBuf, ByteBuffer srcBuf) {
         return compress(dstBuf, srcBuf, defaultCompressionLevel());
     }
 
@@ -831,7 +831,7 @@ public class Zstd {
      * @param level compression level
      * @return the size of the compressed data
      */
-    public static int compress(ByteBuffer dstBuf, ByteBuffer srcBuf, int level, boolean checksumFlag) throws ZstdException {
+    public static int compress(ByteBuffer dstBuf, ByteBuffer srcBuf, int level, boolean checksumFlag) {
         ZstdCompressCtx ctx = new ZstdCompressCtx();
         try {
             ctx.setLevel(level);
@@ -868,7 +868,7 @@ public class Zstd {
         */
     }
 
-    public static int compress(ByteBuffer dstBuf, ByteBuffer srcBuf, int level) throws ZstdException {
+    public static int compress(ByteBuffer dstBuf, ByteBuffer srcBuf, int level) {
         return compress(dstBuf, srcBuf, level, false);
     }
 
@@ -883,7 +883,7 @@ public class Zstd {
      * @param level compression level
      * @return A newly allocated direct ByteBuffer containing the compressed data.
      */
-    public static ByteBuffer compress(ByteBuffer srcBuf, int level) throws ZstdException {
+    public static ByteBuffer compress(ByteBuffer srcBuf, int level) {
         ZstdCompressCtx ctx = new ZstdCompressCtx();
         try {
             ctx.setLevel(level);
@@ -900,7 +900,7 @@ public class Zstd {
      * @param dict dictionary to use
      * @return byte array with the compressed data
      */
-    public static byte[] compress(byte[] src, ZstdDictCompress dict) throws ZstdException {
+    public static byte[] compress(byte[] src, ZstdDictCompress dict) {
         ZstdCompressCtx ctx = new ZstdCompressCtx();
         try {
             ctx.loadDict(dict);
@@ -931,7 +931,7 @@ public class Zstd {
      * @return  compressed byte array
      */
 
-    public static byte[] compressUsingDict(byte[] src, byte[] dict, int level) throws ZstdException {
+    public static byte[] compressUsingDict(byte[] src, byte[] dict, int level) {
         ZstdCompressCtx ctx = new ZstdCompressCtx();
         try {
             ctx.loadDict(dict);
@@ -973,7 +973,7 @@ public class Zstd {
      * @param level compression level
      * @return  the number of bytes written into buffer 'dstBuff'
      */
-    public static int compress(ByteBuffer dstBuff, ByteBuffer srcBuff, byte[] dict, int level) throws ZstdException {
+    public static int compress(ByteBuffer dstBuff, ByteBuffer srcBuff, byte[] dict, int level) {
         ZstdCompressCtx ctx = new ZstdCompressCtx();
         try {
             ctx.loadDict(dict);
@@ -996,7 +996,7 @@ public class Zstd {
      * @param level compression level
      * @return  compressed direct byte buffer
      */
-    public static ByteBuffer compress(ByteBuffer srcBuff, byte[] dict, int level) throws ZstdException {
+    public static ByteBuffer compress(ByteBuffer srcBuff, byte[] dict, int level) {
         ZstdCompressCtx ctx = new ZstdCompressCtx();
         try {
             ctx.loadDict(dict);
@@ -1019,7 +1019,7 @@ public class Zstd {
      * @param dict the dictionary buffer
      * @return  the number of bytes written into buffer 'dstBuff'
      */
-    public static int compress(ByteBuffer dstBuff, ByteBuffer srcBuff, ZstdDictCompress dict) throws ZstdException {
+    public static int compress(ByteBuffer dstBuff, ByteBuffer srcBuff, ZstdDictCompress dict) {
         ZstdCompressCtx ctx = new ZstdCompressCtx();
         try {
             ctx.loadDict(dict);
@@ -1041,7 +1041,7 @@ public class Zstd {
      * @param dict the dictionary buffer
      * @return  compressed direct byte buffer
      */
-    public static ByteBuffer compress(ByteBuffer srcBuff, ZstdDictCompress dict) throws ZstdException {
+    public static ByteBuffer compress(ByteBuffer srcBuff, ZstdDictCompress dict) {
         ZstdCompressCtx ctx = new ZstdCompressCtx();
         try {
             ctx.loadDict(dict);
@@ -1059,7 +1059,7 @@ public class Zstd {
      * @param originalSize the maximum size of the uncompressed data
      * @return byte array with the decompressed data
      */
-    public static byte[] decompress(byte[] src, int originalSize) throws ZstdException {
+    public static byte[] decompress(byte[] src, int originalSize) {
         ZstdDecompressCtx ctx = new ZstdDecompressCtx();
         try {
             return ctx.decompress(src, originalSize);
@@ -1085,7 +1085,7 @@ public class Zstd {
      *               </p>
      * @return the size of the decompressed data.
      */
-    public static int decompress(ByteBuffer dstBuf, ByteBuffer srcBuf) throws ZstdException {
+    public static int decompress(ByteBuffer dstBuf, ByteBuffer srcBuf) {
         ZstdDecompressCtx ctx = new ZstdDecompressCtx();
         try {
             return ctx.decompress(dstBuf, srcBuf);
@@ -1108,7 +1108,7 @@ public class Zstd {
      *          reading.  Note that this is different behavior from the other decompress() overload which takes as a parameter
      *          the destination ByteBuffer.
      */
-    public static ByteBuffer decompress(ByteBuffer srcBuf, int originalSize) throws ZstdException {
+    public static ByteBuffer decompress(ByteBuffer srcBuf, int originalSize) {
         ZstdDecompressCtx ctx = new ZstdDecompressCtx();
         try {
             return ctx.decompress(srcBuf, originalSize);
@@ -1125,7 +1125,7 @@ public class Zstd {
      * @param originalSize the maximum size of the uncompressed data
      * @return byte array with the decompressed data
      */
-    public static byte[] decompress(byte[] src, ZstdDictDecompress dict, int originalSize) throws ZstdException {
+    public static byte[] decompress(byte[] src, ZstdDictDecompress dict, int originalSize) {
         ZstdDecompressCtx ctx = new ZstdDecompressCtx();
         try {
             ctx.loadDict(dict);
@@ -1167,7 +1167,7 @@ public class Zstd {
      * @param originalSize the maximum size of the uncompressed data
      * @return byte array with the decompressed data
      */
-    public static byte[] decompress(byte[] src, byte[] dict, int originalSize) throws ZstdException {
+    public static byte[] decompress(byte[] src, byte[] dict, int originalSize) {
         ZstdDecompressCtx ctx = new ZstdDecompressCtx();
         try {
             ctx.loadDict(dict);
@@ -1208,7 +1208,7 @@ public class Zstd {
      * @param dict   the dictionary buffer to use for compression
      * @return the size of the decompressed data.
      */
-    public static int decompress(ByteBuffer dstBuff, ByteBuffer srcBuff, byte[] dict) throws ZstdException {
+    public static int decompress(ByteBuffer dstBuff, ByteBuffer srcBuff, byte[] dict) {
         ZstdDecompressCtx ctx = new ZstdDecompressCtx();
         try {
             ctx.loadDict(dict);
@@ -1233,7 +1233,7 @@ public class Zstd {
      *          reading.  Note that this is different behavior from the other decompress() overload which takes as a parameter
      *          the destination ByteBuffer.
      */
-    public static ByteBuffer decompress(ByteBuffer srcBuff, byte[] dict, int originalSize) throws ZstdException {
+    public static ByteBuffer decompress(ByteBuffer srcBuff, byte[] dict, int originalSize) {
         ZstdDecompressCtx ctx = new ZstdDecompressCtx();
         try {
             ctx.loadDict(dict);
@@ -1261,7 +1261,7 @@ public class Zstd {
      * @param dict   the dictionary buffer to use for compression
      * @return the size of the decompressed data.
      */
-    public static int decompress(ByteBuffer dstBuff, ByteBuffer srcBuff, ZstdDictDecompress dict) throws ZstdException {
+    public static int decompress(ByteBuffer dstBuff, ByteBuffer srcBuff, ZstdDictDecompress dict) {
         ZstdDecompressCtx ctx = new ZstdDecompressCtx();
         try {
             ctx.loadDict(dict);
@@ -1286,7 +1286,7 @@ public class Zstd {
      *          reading.  Note that this is different behavior from the other decompress() overload which takes as a parameter
      *          the destination ByteBuffer.
      */
-    public static ByteBuffer decompress(ByteBuffer srcBuff, ZstdDictDecompress dict, int originalSize) throws ZstdException {
+    public static ByteBuffer decompress(ByteBuffer srcBuff, ZstdDictDecompress dict, int originalSize) {
         ZstdDecompressCtx ctx = new ZstdDecompressCtx();
         try {
             ctx.loadDict(dict);

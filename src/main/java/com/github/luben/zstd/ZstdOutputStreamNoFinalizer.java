@@ -46,7 +46,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
      * @param outStream the stream to wrap
      * @param level the compression level
      */
-    public ZstdOutputStreamNoFinalizer(OutputStream outStream, int level) throws IOException {
+    public ZstdOutputStreamNoFinalizer(OutputStream outStream, int level) {
         this(outStream, NoPool.INSTANCE);
         Zstd.setCompressionLevel(this.stream, level);
     }
@@ -55,7 +55,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
      * create a new compressing OutputStream
      * @param outStream the stream to wrap
      */
-    public ZstdOutputStreamNoFinalizer(OutputStream outStream) throws IOException {
+    public ZstdOutputStreamNoFinalizer(OutputStream outStream) {
         this(outStream, NoPool.INSTANCE);
     }
 
@@ -64,7 +64,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
      * @param outStream the stream to wrap
      * @param bufferPool the pool to fetch and return buffers
      */
-    public ZstdOutputStreamNoFinalizer(OutputStream outStream, BufferPool bufferPool, int level) throws IOException {
+    public ZstdOutputStreamNoFinalizer(OutputStream outStream, BufferPool bufferPool, int level) {
         this(outStream, bufferPool);
         Zstd.setCompressionLevel(this.stream, level);
     }
@@ -74,14 +74,14 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
      * @param outStream the stream to wrap
      * @param bufferPool the pool to fetch and return buffers
      */
-    public ZstdOutputStreamNoFinalizer(OutputStream outStream, BufferPool bufferPool) throws IOException {
+    public ZstdOutputStreamNoFinalizer(OutputStream outStream, BufferPool bufferPool) {
         super(outStream);
         // create compression context
         this.stream = createCStream();
         this.bufferPool = bufferPool;
         this.dstByteBuffer = bufferPool.get(dstSize);
         if (this.dstByteBuffer == null) {
-            throw new IOException("Cannot get ByteBuffer of size " + dstSize + " from the BufferPool");
+            throw new ZstdException(Zstd.errMemoryAllocation(), "Cannot get ByteBuffer of size " + dstSize + " from the BufferPool");
         }
         this.dst = Zstd.extractArray(dstByteBuffer);
     }
@@ -91,13 +91,13 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
      *
      * Default: false
      */
-    public synchronized ZstdOutputStreamNoFinalizer setChecksum(boolean useChecksums) throws IOException {
+    public synchronized ZstdOutputStreamNoFinalizer setChecksum(boolean useChecksums) {
         if (!frameClosed) {
-            throw new IOException("Change of parameter on initialized stream");
+            throw new IllegalStateException("Change of parameter on initialized stream");
         }
         int size = Zstd.setCompressionChecksums(stream, useChecksums);
         if (Zstd.isError(size)) {
-            throw new IOException("Compression param: " + Zstd.getErrorName(size));
+            throw new ZstdException(size);
         }
         return this;
     }
@@ -107,13 +107,13 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
      *
      * Default: {@link Zstd#defaultCompressionLevel()}
      */
-    public synchronized ZstdOutputStreamNoFinalizer setLevel(int level) throws IOException {
+    public synchronized ZstdOutputStreamNoFinalizer setLevel(int level) {
         if (!frameClosed) {
-            throw new IOException("Change of parameter on initialized stream");
+            throw new IllegalStateException("Change of parameter on initialized stream");
         }
         int size = Zstd.setCompressionLevel(stream, level);
         if (Zstd.isError(size)) {
-            throw new IOException("Compression param: " + Zstd.getErrorName(size));
+            throw new ZstdException(size);
         }
         return this;
     }
@@ -123,13 +123,13 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
      *
      * Values for windowLog outside the range 10-27 will disable and reset LDM
      */
-    public synchronized ZstdOutputStreamNoFinalizer setLong(int windowLog) throws IOException {
+    public synchronized ZstdOutputStreamNoFinalizer setLong(int windowLog) {
         if (!frameClosed) {
-            throw new IOException("Change of parameter on initialized stream");
+            throw new IllegalStateException("Change of parameter on initialized stream");
         }
         int size = Zstd.setCompressionLong(stream, windowLog);
         if (Zstd.isError(size)) {
-            throw new IOException("Compression param: " + Zstd.getErrorName(size));
+            throw new ZstdException(size);
         }
         return this;
     }
@@ -139,13 +139,13 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
      *
      * Default: no worker threads.
      */
-    public synchronized ZstdOutputStreamNoFinalizer setWorkers(int n) throws IOException {
+    public synchronized ZstdOutputStreamNoFinalizer setWorkers(int n) {
         if (!frameClosed) {
-            throw new IOException("Change of parameter on initialized stream");
+            throw new IllegalStateException("Change of parameter on initialized stream");
         }
         int size = Zstd.setCompressionWorkers(stream, n);
         if (Zstd.isError(size)) {
-            throw new IOException("Compression param: " + Zstd.getErrorName(size));
+            throw new ZstdException(size);
         }
         return this;
     }
@@ -159,44 +159,44 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
      *
      * Default: false.
      */
-    public synchronized ZstdOutputStreamNoFinalizer setCloseFrameOnFlush(boolean closeOnFlush) throws IOException {
+    public synchronized ZstdOutputStreamNoFinalizer setCloseFrameOnFlush(boolean closeOnFlush) {
         if (!frameClosed) {
-            throw new IOException("Change of parameter on initialized stream");
+            throw new IllegalStateException("Change of parameter on initialized stream");
         }
         this.closeFrameOnFlush = closeOnFlush;
         return this;
     }
 
-    public synchronized ZstdOutputStreamNoFinalizer setDict(byte[] dict) throws IOException {
+    public synchronized ZstdOutputStreamNoFinalizer setDict(byte[] dict) {
         if (!frameClosed) {
-            throw new IOException("Change of parameter on initialized stream");
+            throw new IllegalStateException("Change of parameter on initialized stream");
         }
         int size = Zstd.loadDictCompress(stream, dict, dict.length);
         if (Zstd.isError(size)) {
-            throw new IOException("Compression param: " + Zstd.getErrorName(size));
+            throw new ZstdException(size);
         }
         return this;
     }
 
-    public synchronized ZstdOutputStreamNoFinalizer setDict(ZstdDictCompress dict) throws IOException {
+    public synchronized ZstdOutputStreamNoFinalizer setDict(ZstdDictCompress dict) {
         if (!frameClosed) {
-            throw new IOException("Change of parameter on initialized stream");
+            throw new IllegalStateException("Change of parameter on initialized stream");
         }
         int size = Zstd.loadFastDictCompress(stream, dict);
         if (Zstd.isError(size)) {
-            throw new IOException("Compression param: " + Zstd.getErrorName(size));
+            throw new ZstdException(size);
         }
         return this;
     }
 
     public synchronized void write(byte[] src, int offset, int len) throws IOException {
         if (isClosed) {
-            throw new IOException("Stream closed");
+            throw new IOException("StreamClosed");
         }
         if (frameClosed) {
             int size = resetCStream(this.stream);
             if (Zstd.isError(size)) {
-                throw new IOException("Compression error: cannot create header: " + Zstd.getErrorName(size));
+                throw new ZstdException(size);
             }
             frameClosed = false;
         }
@@ -205,7 +205,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
         while (srcPos < srcSize) {
             int size = compressStream(stream, dst, dstSize, src, srcSize);
             if (Zstd.isError(size)) {
-                throw new IOException("Compression error: " + Zstd.getErrorName(size));
+                throw new ZstdException(size);
             }
             if (dstPos > 0) {
                 out.write(dst, 0, (int) dstPos);
@@ -224,7 +224,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
      */
     public synchronized void flush() throws IOException {
         if (isClosed) {
-            throw new IOException("Stream closed");
+            throw new IOException("StreamClosed");
         }
         if (!frameClosed) {
             if (closeFrameOnFlush) {
@@ -233,7 +233,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
                 do {
                     size = endStream(stream, dst, dstSize);
                     if (Zstd.isError(size)) {
-                        throw new IOException("Compression error: " + Zstd.getErrorName(size));
+                        throw new ZstdException(size);
                     }
                     out.write(dst, 0, (int) dstPos);
                 } while (size > 0);
@@ -244,7 +244,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
                 do {
                     size = flushStream(stream, dst, dstSize);
                     if (Zstd.isError(size)) {
-                        throw new IOException("Compression error: " + Zstd.getErrorName(size));
+                        throw new ZstdException(size);
                     }
                     out.write(dst, 0, (int) dstPos);
                 } while (size > 0);
@@ -274,7 +274,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
                 do {
                     size = endStream(stream, dst, dstSize);
                     if (Zstd.isError(size)) {
-                        throw new IOException("Compression error: " + Zstd.getErrorName(size));
+                        throw new ZstdException(size);
                     }
                     out.write(dst, 0, (int) dstPos);
                 } while (size > 0);

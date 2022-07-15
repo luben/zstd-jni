@@ -56,18 +56,18 @@ public class ZstdDirectBufferCompressingStreamNoFinalizer implements Closeable, 
     private native long flushStream(long ctx, ByteBuffer dst, int dstOffset, int dstSize);
     private native long endStream(long ctx, ByteBuffer dst, int dstOffset, int dstSize);
 
-    public ZstdDirectBufferCompressingStreamNoFinalizer setDict(byte[] dict) throws IOException {
+    public ZstdDirectBufferCompressingStreamNoFinalizer setDict(byte[] dict) {
         if (initialized) {
-            throw new IOException("Change of parameter on initialized stream");
+            throw new IllegalStateException("Change of parameter on initialized stream");
         }
         this.dict = dict;
         this.fastDict = null;
         return this;
     }
 
-    public ZstdDirectBufferCompressingStreamNoFinalizer setDict(ZstdDictCompress dict) throws IOException {
+    public ZstdDirectBufferCompressingStreamNoFinalizer setDict(ZstdDictCompress dict) {
         if (initialized) {
-            throw new IOException("Change of parameter on initialized stream");
+            throw new IllegalStateException("Change of parameter on initialized stream");
         }
         this.dict = null;
         this.fastDict = dict;
@@ -97,7 +97,7 @@ public class ZstdDirectBufferCompressingStreamNoFinalizer implements Closeable, 
                 result = initCStream(stream, level);
             }
             if (Zstd.isError(result)) {
-                throw new IOException("Compression error: cannot create header: " + Zstd.getErrorName(result));
+                throw new ZstdException(result);
             }
             initialized = true;
         }
@@ -113,7 +113,7 @@ public class ZstdDirectBufferCompressingStreamNoFinalizer implements Closeable, 
             }
             long result = compressDirectByteBuffer(stream, target, target.position(), target.remaining(), source, source.position(), source.remaining());
             if (Zstd.isError(result)) {
-                throw new IOException("Compression error: " + Zstd.getErrorName(result));
+                throw new ZstdException(result);
             }
             target.position(target.position() + produced);
             source.position(source.position() + consumed);
@@ -130,7 +130,7 @@ public class ZstdDirectBufferCompressingStreamNoFinalizer implements Closeable, 
             do {
                 needed = flushStream(stream, target, target.position(), target.remaining());
                 if (Zstd.isError(needed)) {
-                    throw new IOException("Compression error: " + Zstd.getErrorName(needed));
+                    throw new ZstdException(needed);
                 }
                 target.position(target.position() + produced);
                 target = flushBuffer(target);
@@ -155,7 +155,7 @@ public class ZstdDirectBufferCompressingStreamNoFinalizer implements Closeable, 
                     do {
                         needed = endStream(stream, target, target.position(), target.remaining());
                         if (Zstd.isError(needed)) {
-                            throw new IOException("Compression error: " + Zstd.getErrorName(needed));
+                            throw new ZstdException(needed);
                         }
                         target.position(target.position() + produced);
                         target = flushBuffer(target);
