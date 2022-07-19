@@ -50,7 +50,7 @@ public class ZstdInputStreamNoFinalizer extends FilterInputStream {
      * create a new decompressing InputStream
      * @param inStream the stream to wrap
      */
-    public ZstdInputStreamNoFinalizer(InputStream inStream) {
+    public ZstdInputStreamNoFinalizer(InputStream inStream) throws IOException {
         this(inStream, NoPool.INSTANCE);
     }
 
@@ -59,12 +59,12 @@ public class ZstdInputStreamNoFinalizer extends FilterInputStream {
      * @param inStream the stream to wrap
      * @param bufferPool the pool to fetch and return buffers
      */
-    public ZstdInputStreamNoFinalizer(InputStream inStream, BufferPool bufferPool) {
+    public ZstdInputStreamNoFinalizer(InputStream inStream, BufferPool bufferPool) throws IOException {
         super(inStream);
         this.bufferPool = bufferPool;
         this.srcByteBuffer = bufferPool.get(srcBuffSize);
         if (this.srcByteBuffer == null) {
-            throw new ZstdException(Zstd.errMemoryAllocation(), "Cannot get ByteBuffer of size " + srcBuffSize + " from the BufferPool");
+            throw new ZstdIOException(Zstd.errMemoryAllocation(), "Cannot get ByteBuffer of size " + srcBuffSize + " from the BufferPool");
         }
         this.src = Zstd.extractArray(srcByteBuffer);
         // memory barrier
@@ -88,20 +88,20 @@ public class ZstdInputStreamNoFinalizer extends FilterInputStream {
         return this.isContinuous;
     }
 
-    public synchronized ZstdInputStreamNoFinalizer setDict(byte[] dict) {
+    public synchronized ZstdInputStreamNoFinalizer setDict(byte[] dict) throws IOException {
         int size = Zstd.loadDictDecompress(stream, dict, dict.length);
         if (Zstd.isError(size)) {
-            throw new ZstdException(size);
+            throw new ZstdIOException(size);
         }
         return this;
     }
 
-    public synchronized ZstdInputStreamNoFinalizer setDict(ZstdDictDecompress dict) {
+    public synchronized ZstdInputStreamNoFinalizer setDict(ZstdDictDecompress dict) throws IOException {
         dict.acquireSharedLock();
         try {
             int size = Zstd.loadFastDictDecompress(stream, dict);
             if (Zstd.isError(size)) {
-                throw new ZstdException(size);
+                throw new ZstdIOException(size);
             }
         } finally {
             dict.releaseSharedLock();
@@ -158,7 +158,7 @@ public class ZstdInputStreamNoFinalizer extends FilterInputStream {
                         }
                         return -1;
                     } else {
-                        throw new ZstdException(Zstd.errCorruptionDetected(), "Truncated source");
+                        throw new ZstdIOException(Zstd.errCorruptionDetected(), "Truncated source");
                     }
                 }
                 frameFinished = false;
@@ -168,7 +168,7 @@ public class ZstdInputStreamNoFinalizer extends FilterInputStream {
             int size = decompressStream(stream, dst, dstSize, src, (int) srcSize);
 
             if (Zstd.isError(size)) {
-                throw new ZstdException(size);
+                throw new ZstdIOException(size);
             }
 
             // we have completed a frame
