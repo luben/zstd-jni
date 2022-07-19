@@ -19,7 +19,7 @@ public class ZstdInputStream extends FilterInputStream {
      * create a new decompressing InputStream
      * @param inStream the stream to wrap
      */
-    public ZstdInputStream(InputStream inStream) {
+    public ZstdInputStream(InputStream inStream) throws IOException {
         super(inStream);
         inner = new ZstdInputStreamNoFinalizer(inStream);
     }
@@ -29,7 +29,7 @@ public class ZstdInputStream extends FilterInputStream {
      * @param inStream the stream to wrap
      * @param bufferPool the pool to fetch and return buffers
      */
-    public ZstdInputStream(InputStream inStream, BufferPool bufferPool) {
+    public ZstdInputStream(InputStream inStream, BufferPool bufferPool) throws IOException {
         super(inStream);
         inner = new ZstdInputStreamNoFinalizer(inStream, bufferPool);
     }
@@ -74,11 +74,11 @@ public class ZstdInputStream extends FilterInputStream {
         return inner.getContinuous();
     }
 
-    public ZstdInputStream setDict(byte[] dict) {
+    public ZstdInputStream setDict(byte[] dict) throws IOException {
         inner.setDict(dict);
         return this;
     }
-    public ZstdInputStream setDict(ZstdDictDecompress dict) {
+    public ZstdInputStream setDict(ZstdDictDecompress dict) throws IOException {
         inner.setDict(dict);
         return this;
     }

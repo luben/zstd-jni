@@ -97,7 +97,7 @@ public class ZstdDirectBufferCompressingStreamNoFinalizer implements Closeable, 
                 result = initCStream(stream, level);
             }
             if (Zstd.isError(result)) {
-                throw new ZstdException(result);
+                throw new ZstdIOException(result);
             }
             initialized = true;
         }
@@ -113,7 +113,7 @@ public class ZstdDirectBufferCompressingStreamNoFinalizer implements Closeable, 
             }
             long result = compressDirectByteBuffer(stream, target, target.position(), target.remaining(), source, source.position(), source.remaining());
             if (Zstd.isError(result)) {
-                throw new ZstdException(result);
+                throw new ZstdIOException(result);
             }
             target.position(target.position() + produced);
             source.position(source.position() + consumed);
@@ -130,7 +130,7 @@ public class ZstdDirectBufferCompressingStreamNoFinalizer implements Closeable, 
             do {
                 needed = flushStream(stream, target, target.position(), target.remaining());
                 if (Zstd.isError(needed)) {
-                    throw new ZstdException(needed);
+                    throw new ZstdIOException(needed);
                 }
                 target.position(target.position() + produced);
                 target = flushBuffer(target);
@@ -155,7 +155,7 @@ public class ZstdDirectBufferCompressingStreamNoFinalizer implements Closeable, 
                     do {
                         needed = endStream(stream, target, target.position(), target.remaining());
                         if (Zstd.isError(needed)) {
-                            throw new ZstdException(needed);
+                            throw new ZstdIOException(needed);
                         }
                         target.position(target.position() + produced);
                         target = flushBuffer(target);
