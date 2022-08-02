@@ -47,6 +47,16 @@ public enum Native {
 
     private static boolean loaded = false;
 
+    /**
+     * Tell the library to assume the native library is already loaded.
+     * This is excape hatch for environments that have special requirements for how
+     * the native part is loaded. This allows them to load the so/dll manually and tell
+     * zstd-jni to not attempt loading it again.
+     */
+    public static synchronized void assumeLoaded() {
+        loaded = true;
+    }
+
     public static synchronized boolean isLoaded() {
         return loaded;
     }
