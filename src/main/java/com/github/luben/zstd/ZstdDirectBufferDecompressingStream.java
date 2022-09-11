@@ -62,6 +62,12 @@ public class ZstdDirectBufferDecompressingStream implements Closeable {
         return this;
     }
 
+    public ZstdDirectBufferDecompressingStream setLongMax(int windowLogMax) throws IOException {
+        inner.setLongMax(windowLogMax);
+        return this;
+    }
+
+
     public synchronized int read(ByteBuffer target) throws IOException {
         return inner.read(target);
     }

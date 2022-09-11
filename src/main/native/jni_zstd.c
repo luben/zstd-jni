@@ -271,6 +271,17 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_setCompressionLong
 
 /*
  * Class:     com_github_luben_zstd_Zstd
+ * Method:    setDecompressionLong
+ * Signature: (J)V
+ */
+JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_setDecompressionLongMax
+  (JNIEnv *env, jclass obj, jlong stream, jint windowLogMax) {
+    ZSTD_DCtx* dctx = (ZSTD_DCtx*)(intptr_t) stream;
+    return ZSTD_DCtx_setParameter(dctx, ZSTD_d_windowLogMax, windowLogMax);
+}
+
+/*
+ * Class:     com_github_luben_zstd_Zstd
  * Method:    setCompressionWorkers
  * Signature: (J)I
  */

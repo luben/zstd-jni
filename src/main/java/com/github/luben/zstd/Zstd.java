@@ -564,6 +564,7 @@ public class Zstd {
     public static native int setCompressionLevel(long stream, int level);
     public static native int setCompressionLong(long stream, int windowLog);
     public static native int setCompressionWorkers(long stream, int workers);
+    public static native int setDecompressionLongMax(long stream, int windowLogMax);
 
     /* Utility methods */
 

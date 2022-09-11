@@ -83,11 +83,14 @@ public class ZstdInputStream extends FilterInputStream {
         return this;
     }
 
+    public ZstdInputStream setLongMax(int windowLogMax) throws IOException {
+        inner.setLongMax(windowLogMax);
+        return this;
+    }
 
     public int read(byte[] dst, int offset, int len) throws IOException {
         return inner.read(dst, offset, len);
     }
-
 
     public int read() throws IOException {
         return inner.read();

@@ -109,6 +109,14 @@ public class ZstdInputStreamNoFinalizer extends FilterInputStream {
         return this;
     }
 
+    public synchronized ZstdInputStreamNoFinalizer setLongMax(int windowLogMax) throws IOException {
+        int size = Zstd.setDecompressionLongMax(stream, windowLogMax);
+        if (Zstd.isError(size)) {
+            throw new ZstdIOException(size);
+        }
+        return this;
+    }
+
     public synchronized int read(byte[] dst, int offset, int len) throws IOException {
         // guard agains buffer overflows
         if (offset < 0 || len > dst.length - offset) {

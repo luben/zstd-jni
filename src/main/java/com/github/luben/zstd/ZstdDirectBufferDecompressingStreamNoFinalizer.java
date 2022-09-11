@@ -71,6 +71,14 @@ public class ZstdDirectBufferDecompressingStreamNoFinalizer implements Closeable
         return this;
     }
 
+    public ZstdDirectBufferDecompressingStreamNoFinalizer setLongMax(int windowLogMax) throws IOException {
+        long size = Zstd.setDecompressionLongMax(stream, windowLogMax);
+        if (Zstd.isError(size)) {
+            throw new ZstdIOException(size);
+        }
+        return this;
+    }
+
     private int consumed;
     private int produced;
     public int read(ByteBuffer target) throws IOException {
