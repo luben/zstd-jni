@@ -1,9 +1,7 @@
 package com.github.luben.zstd
 
-import org.scalatest.{FlatSpec, Tag}
-import org.scalatest.prop.Checkers
-import org.scalacheck.Arbitrary._
-import org.scalacheck.Prop._
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 import java.io._
 import java.nio._
 import java.nio.channels.FileChannel
@@ -14,7 +12,7 @@ import scala.io._
 import scala.collection.mutable.WrappedArray
 import scala.util.Using
 
-class ZstdSpec extends FlatSpec with Checkers {
+class ZstdSpec extends AnyFlatSpec with ScalaCheckPropertyChecks {
 
   implicit override val generatorDrivenConfig =
     PropertyCheckConfiguration(minSize = 0, sizeRange = 130 * 1024)
@@ -23,7 +21,7 @@ class ZstdSpec extends FlatSpec with Checkers {
 
   for (level <- levels) {
     "Zstd" should s"should round-trip compression/decompression at level $level" in {
-      check { input: Array[Byte] =>
+      forAll { input: Array[Byte] =>
         {
           val size        = input.length
           // Assumes that `Zstd.defaultCompressionLevel() == 3`.
@@ -35,7 +33,7 @@ class ZstdSpec extends FlatSpec with Checkers {
     }
 
     it should s"should round-trip compression/decompression with manual array buffers at level $level" in {
-      check { input: Array[Byte] =>
+      forAll { input: Array[Byte] =>
         {
           val size        = input.length
           val decompressed= new Array[Byte](size)
@@ -52,7 +50,7 @@ class ZstdSpec extends FlatSpec with Checkers {
     }
 
     it should s"round-trip compression/decompression with ByteBuffers at level $level" in {
-      check { input: Array[Byte] =>
+      forAll { input: Array[Byte] =>
         {
           val size        = input.length
           val inputBuffer = ByteBuffer.allocateDirect(size)
@@ -81,7 +79,7 @@ class ZstdSpec extends FlatSpec with Checkers {
     }
 
     it should s"compress with a byte[] and uncompress with a ByteBuffer $level" in {
-      check { input: Array[Byte] =>
+      forAll { input: Array[Byte] =>
         val size = input.length
         val compressed = Zstd.compress(input, level)
 
@@ -98,7 +96,7 @@ class ZstdSpec extends FlatSpec with Checkers {
     }
 
     it should s"compress with a ByteBuffer and uncompress with a byte[] $level" in {
-      check { input: Array[Byte] =>
+      forAll { input: Array[Byte] =>
         val size        = input.length
         val inputBuffer = ByteBuffer.allocateDirect(size)
         inputBuffer.put(input)
@@ -114,7 +112,7 @@ class ZstdSpec extends FlatSpec with Checkers {
   }
 
   it should s"honor non-zero position and limit values in ByteBuffers" in {
-    check { input: Array[Byte] =>
+    forAll { input: Array[Byte] =>
       val size = input.length
 
       //The test here is to compress the input at each of the designated levels, with each new compressed version
@@ -187,7 +185,7 @@ class ZstdSpec extends FlatSpec with Checkers {
   }
 
   it should "fail to compress when the destination buffer is too small" in {
-    check{ input: Array[Byte] =>
+    forAll { input: Array[Byte] =>
       val size = input.length
       val compressedSize = Zstd.compress(input, 3).length
       val compressedBuffer = ByteBuffer.allocateDirect(compressedSize.toInt - 1)
@@ -204,8 +202,8 @@ class ZstdSpec extends FlatSpec with Checkers {
   }
 
   it should "fail to decompress when the destination buffer is too small" in {
-    check { input: Array[Byte] =>
-      (input.length > 0) ==> {
+    forAll { input: Array[Byte] =>
+      whenever (input.length > 0) {
         val size = input.length
         val compressedSize = Zstd.compressBound(size.toLong)
         val inputBuffer = ByteBuffer.allocateDirect(size)
@@ -225,7 +223,7 @@ class ZstdSpec extends FlatSpec with Checkers {
 
   for (level <- levels) {
     "ZstdInputStream" should s"should round-trip compression/decompression at level $level" in {
-      check { input: Array[Byte] =>
+      forAll { input: Array[Byte] =>
         val size  = input.length
         val os    = new ByteArrayOutputStream(Zstd.compressBound(size.toLong).toInt)
         val zos   = new ZstdOutputStream(os).setLevel(level).setCloseFrameOnFlush(false)
@@ -262,7 +260,7 @@ class ZstdSpec extends FlatSpec with Checkers {
 
   for (level <- levels) {
     "ZstdInputStreamMT" should s"should round-trip compression/decompression at level $level" in {
-      check { input: Array[Byte] =>
+      forAll { input: Array[Byte] =>
         val size  = input.length
         val os    = new ByteArrayOutputStream(Zstd.compressBound(size.toLong).toInt)
         val zos   = new ZstdOutputStream(os)
@@ -301,7 +299,7 @@ class ZstdSpec extends FlatSpec with Checkers {
 
   for (level <- levels) {
     "ZstdDirectBufferDecompressingStream" should s"should round-trip compression/decompression at level $level" in {
-      check { input: Array[Byte] =>
+      forAll { input: Array[Byte] =>
         val size  = input.length
         val os    = ByteBuffer.allocateDirect(Zstd.compressBound(size.toLong).toInt)
 
@@ -345,7 +343,7 @@ class ZstdSpec extends FlatSpec with Checkers {
 
   for (level <- levels) {
     "ZstdInputStream in continuous mode" should s"should round-trip using streaming API with unfinished chunks at level $level" in {
-      check { input: Array[Byte] =>
+      forAll { input: Array[Byte] =>
         val size  = input.length
         val os    = new ByteArrayOutputStream(Zstd.compressBound(size.toLong).toInt)
         val zos   = new ZstdOutputStream(os, level)
@@ -380,7 +378,7 @@ class ZstdSpec extends FlatSpec with Checkers {
     }
 
     "ZstdInputStream in continuous mode" should s"not block when the stream ends unexpectedly at level $level" in {
-      check { input: Array[Byte] =>
+      forAll { input: Array[Byte] =>
         val size = input.length
         val os = new ByteArrayOutputStream(Zstd.compressBound(size.toLong).toInt)
         val zos = new ZstdOutputStream(os, level)
@@ -884,7 +882,7 @@ class ZstdSpec extends FlatSpec with Checkers {
     Using.Manager { use =>
       val cctx = use(new ZstdCompressCtx())
       val dctx = use(new ZstdDecompressCtx())
-      check { input: Array[Byte] =>
+      forAll { input: Array[Byte] =>
         {
           val size        = input.length
           val inputBuffer = ByteBuffer.allocateDirect(size)

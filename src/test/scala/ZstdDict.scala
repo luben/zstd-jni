@@ -1,9 +1,6 @@
 package com.github.luben.zstd
 
-import org.scalatest.FlatSpec
-import org.scalatest.prop.Checkers
-import org.scalacheck.Arbitrary._
-import org.scalacheck.Prop._
+import org.scalatest.flatspec.AnyFlatSpec
 import java.io._
 import java.nio._
 import java.nio.channels.FileChannel
@@ -13,7 +10,7 @@ import java.nio.file.StandardOpenOption
 import scala.io._
 import scala.collection.mutable.WrappedArray
 
-class ZstdDictSpec extends FlatSpec {
+class ZstdDictSpec extends AnyFlatSpec {
 
   def source = Source.fromFile("src/test/resources/xml")(Codec.ISO8859).map{_.toByte}
 

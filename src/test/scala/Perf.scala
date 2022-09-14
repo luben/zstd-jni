@@ -1,6 +1,6 @@
 package com.github.luben.zstd
 
-import org.scalatest.FlatSpec
+import org.scalatest.flatspec.AnyFlatSpec
 
 import scala.io._
 import java.io._
@@ -9,7 +9,7 @@ import java.nio.ByteBuffer
 
 import com.sun.management.ThreadMXBean
 
-class ZstdPerfSpec extends FlatSpec  {
+class ZstdPerfSpec extends AnyFlatSpec  {
 
   class AllocTracker {
     val tmx: ThreadMXBean = ManagementFactory.getThreadMXBean().asInstanceOf[ThreadMXBean]

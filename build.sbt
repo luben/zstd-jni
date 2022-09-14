@@ -19,8 +19,8 @@ logBuffered in Test := false
 parallelExecution in Test := false
 
 libraryDependencies ++= Seq(
-  "org.scalatest"  %% "scalatest"  % "3.0.9"  % "test",
-  "org.scalacheck" %% "scalacheck" % "1.15.4" % "test"
+  "org.scalatest"  %% "scalatest"  % "3.2.13" % "test",
+  "org.scalatestplus" %% "scalacheck-1-16" % "3.2.13.0" % "test"
 )
 
 javacOptions ++= Seq("--release", "6", "-Xlint:unchecked")
