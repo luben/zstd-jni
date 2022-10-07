@@ -113,7 +113,7 @@ public class ZstdCompressCtx extends AutoCloseBase {
      * @param windowLog Maximum allowed back-reference distance, expressed as power of 2.
      *                  This will set a memory budget for streaming decompression,
      *                  with larger values requiring more memory and typically compressing more.
-     *                  Must be clamped between 10 and 32/64 but values greater then 27 may not
+     *                  Must be clamped between 10 and 32/64 but values greater than 27 may not
      *                  be decompressable in all context as they require more memory.
      *                  0 disables LDM.
      */
@@ -202,7 +202,7 @@ public class ZstdCompressCtx extends AutoCloseBase {
      * the pledged size is stored in the header of the output stream, allowing decompressors to know
      * how much uncompressed data to expect.
      *
-     * Attempting to compress more or less than than the pledged size will result in an error.
+     * Attempting to compress more or less than the pledged size will result in an error.
      */
     public void setPledgedSrcSize(long srcSize) {
         ensureOpen();
@@ -326,7 +326,7 @@ public class ZstdCompressCtx extends AutoCloseBase {
 
     private native long compressByteArray0(byte[] dst, int dstOffset, int dstSize, byte[] src, int srcOffset, int srcSize);
 
-    /** Convenience methods */
+    /* Convenience methods */
 
     /**
      * Compresses the data in buffer 'srcBuf'
