@@ -49,7 +49,7 @@ public enum Native {
 
     /**
      * Tell the library to assume the native library is already loaded.
-     * This is excape hatch for environments that have special requirements for how
+     * This is escape hatch for environments that have special requirements for how
      * the native part is loaded. This allows them to load the so/dll manually and tell
      * zstd-jni to not attempt loading it again.
      */
@@ -73,7 +73,7 @@ public enum Native {
 
         String overridePath = System.getProperty(nativePathOverride);
         if (overridePath != null) {
-            // Do not fall-back to auto-discovery - consumers know better
+            // Do not fall back to auto-discovery - consumers know better
             System.load(overridePath);
             loaded = true;
             return;
@@ -91,8 +91,8 @@ public enum Native {
 
         InputStream is = Native.class.getResourceAsStream(resourceName);
         if (is == null) {
-            // fall-back to loading the zstd-jni from the system library path.
-            // It also cover loading on Android.
+            // fallback to loading the zstd-jni from the system library path.
+            // It also covers loading on Android.
             try {
                 System.loadLibrary(libnameShort);
                 loaded = true;
@@ -145,7 +145,7 @@ public enum Native {
             }
             loaded = true;
         } catch (IOException e) {
-            // IO errors in extacting and writing the shared object in the temp dir
+            // IO errors in extracting and writing the shared object in the temp dir
             ExceptionInInitializerError err = new ExceptionInInitializerError(
                     "Cannot unpack " + libname + ": " + e.getMessage());
             err.setStackTrace(e.getStackTrace());
