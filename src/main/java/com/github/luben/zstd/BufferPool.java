@@ -3,7 +3,7 @@ package com.github.luben.zstd;
 import java.nio.ByteBuffer;
 
 /**
- * An an interface that allows users to customize how buffers are recycled.
+ * An interface that allows users to customize how buffers are recycled.
  */
 public interface BufferPool {
 

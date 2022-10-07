@@ -715,7 +715,7 @@ public class Zstd {
      */
     public static native long getDictIdFromDict(byte[] dict);
 
-    /** Stub methods for backward comatibility
+    /* Stub methods for backward comatibility
      */
 
     /**

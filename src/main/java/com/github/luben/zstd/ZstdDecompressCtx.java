@@ -212,7 +212,7 @@ public class ZstdDecompressCtx extends AutoCloseBase {
 
     private native long decompressByteArray0(byte[] dst, int dstOffset, int dstSize, byte[] src, int srcOffset, int srcSize);
 
-    /** Covenience methods */
+    /* Covenience methods */
 
     /**
      * Decompresses buffer 'srcBuff' into buffer 'dstBuff' using this ZstdDecompressCtx.

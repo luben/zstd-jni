@@ -59,7 +59,7 @@ changing the class names will lead to failed linking at runtime.
 Building and dependencies
 -------------------------
 
-**Zstd-jni** uses SBT for building the libary and running the tests.
+**Zstd-jni** uses SBT for building the library and running the tests.
 
 The build system depends on Scala and the tests depend on ScalaTest and
 ScalaCheck but the produced JAR does not have any dependencies. It also

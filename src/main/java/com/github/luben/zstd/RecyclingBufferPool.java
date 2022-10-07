@@ -6,7 +6,7 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 
 /**
- * An pool of buffers which uses a simple reference queue to recycle buffers.
+ * A pool of buffers which uses a simple reference queue to recycle buffers.
  *
  * Do not use it as generic buffer pool - it is optimized and supports only
  * buffer sizes used by the Zstd classes.
