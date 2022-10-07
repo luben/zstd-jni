@@ -1,11 +1,8 @@
 package com.github.luben.zstd;
 
-import java.io.OutputStream;
 import java.io.FilterOutputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer;
-
-import com.github.luben.zstd.util.Native;
+import java.io.OutputStream;
 
 /**
  * OutputStream filter that compresses the data using Zstd compression

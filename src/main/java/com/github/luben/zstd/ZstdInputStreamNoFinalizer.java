@@ -146,13 +146,12 @@ public class ZstdInputStreamNoFinalizer extends FilterInputStream {
                     + " from offset " + offset + " in buffer of size " + dst.length);
         }
         int dstSize = offset + len;
-        dstPos = offset;
         long lastDstPos = -1;
 
-        while (dstPos < dstSize && lastDstPos < dstPos) {
+        while ((long) offset < dstSize && lastDstPos < (long) offset) {
             // we will read only if data from the upstream is available OR
             // we have not yet produced any output
-            if (needRead && (in.available() > 0 || dstPos == offset)) {
+            if (needRead && (in.available() > 0 || (long) offset == offset)) {
                 srcSize = in.read(src, 0, srcBuffSize);
                 srcPos = 0;
                 if (srcSize < 0) {
@@ -160,7 +159,7 @@ public class ZstdInputStreamNoFinalizer extends FilterInputStream {
                     if (frameFinished) {
                         return -1;
                     } else if (isContinuous) {
-                        srcSize = (int)(dstPos - offset);
+                        srcSize = (int)((long) offset - offset);
                         if (srcSize > 0) {
                             return (int) srcSize;
                         }
@@ -172,7 +171,7 @@ public class ZstdInputStreamNoFinalizer extends FilterInputStream {
                 frameFinished = false;
             }
 
-            lastDstPos = dstPos;
+            lastDstPos = offset;
             int size = decompressStream(stream, dst, dstSize, src, (int) srcSize);
 
             if (Zstd.isError(size)) {
@@ -185,14 +184,14 @@ public class ZstdInputStreamNoFinalizer extends FilterInputStream {
                 // we need to read from the upstream only if we have not consumed
                 // fully the source buffer
                 needRead = srcPos == srcSize;
-                return (int)(dstPos - offset);
+                return (int)((long) offset - offset);
             } else {
                 // size > 0, so more input is required but there is data left in
                 // the decompressor buffers if we have not filled the dst buffer
-                needRead = dstPos < dstSize;
+                needRead = (long) offset < dstSize;
             }
         }
-        return (int)(dstPos - offset);
+        return (int)((long) offset - offset);
     }
 
     public synchronized int read() throws IOException {
@@ -239,7 +238,7 @@ public class ZstdInputStreamNoFinalizer extends FilterInputStream {
         ByteBuffer buf = bufferPool.get(bufferLen);
         long toSkip = numBytes;
         try {
-            byte data[] = Zstd.extractArray(buf);
+            byte[] data = Zstd.extractArray(buf);
             while (toSkip > 0) {
                 int read = read(data, 0, (int) Math.min((long) bufferLen, toSkip));
                 if (read < 0) {

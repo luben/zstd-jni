@@ -358,7 +358,7 @@ class ZstdSpec extends AnyFlatSpec with ScalaCheckPropertyChecks {
         val compressed = os.toByteArray
         // now decompress
         val is    = new ByteArrayInputStream(compressed)
-        val zis   = new ZstdInputStream(is).setContinuous(true);
+        val zis   = new ZstdInputStream(is).setContinuous(true)
         val output= Array.fill[Byte](size)(0)
         ptr       = 0
 
@@ -406,7 +406,7 @@ class ZstdSpec extends AnyFlatSpec with ScalaCheckPropertyChecks {
         }
         val arbitraryTruncationAmount = 7
         val is = new IncrementalInputStream(compressed, arbitraryTruncationAmount)
-        val zis = new ZstdInputStream(is).setContinuous(true);
+        val zis = new ZstdInputStream(is).setContinuous(true)
         val output = Array.fill[Byte](size)(0)
         // Read the incomplete data.
         val amountRead = Math.max(0, zis.read(output))
@@ -435,7 +435,7 @@ class ZstdSpec extends AnyFlatSpec with ScalaCheckPropertyChecks {
       assert(zis.skip(0) == 0)
       val length = orig.length.toInt
       val buff = Array.fill[Byte](length)(0)
-      var pos  = 0;
+      var pos  = 0
       while (pos < length) {
         pos += zis.read(buff, pos, length - pos)
       }
@@ -457,7 +457,7 @@ class ZstdSpec extends AnyFlatSpec with ScalaCheckPropertyChecks {
       var pos  = 0
       val block = 1
       while (pos < length) {
-        val remain = length - pos;
+        val remain = length - pos
         val toRead = if (remain > block) block else remain
         pos += zis.read(buff, pos, toRead)
       }
@@ -477,7 +477,7 @@ class ZstdSpec extends AnyFlatSpec with ScalaCheckPropertyChecks {
     assert(zis.skip(0) == 0)
     val length = orig.length.toInt
     val buff = Array.fill[Byte](length)(0)
-    var pos  = 0;
+    var pos  = 0
     while (pos < length) {
       pos += zis.read(buff, pos, length - pos)
     }
@@ -593,7 +593,7 @@ class ZstdSpec extends AnyFlatSpec with ScalaCheckPropertyChecks {
     }
     zis.close()
 
-    val readBuffer2 = channel.map(MapMode.READ_ONLY, 0, firstFrameEnd);
+    val readBuffer2 = channel.map(MapMode.READ_ONLY, 0, firstFrameEnd)
     val zis2  = new ZstdDirectBufferDecompressingStream(readBuffer2) {
       override protected def refill(toRefill: ByteBuffer) : ByteBuffer = {
         if (toRefill eq readBuffer2) {
@@ -736,7 +736,7 @@ class ZstdSpec extends AnyFlatSpec with ScalaCheckPropertyChecks {
       val target = ByteBuffer.allocateDirect(Zstd.compressBound(length).toInt)
 
       val zos = new ZstdDirectBufferCompressingStream(target, level)
-      zos.compress(channel.map(MapMode.READ_ONLY, 0, length));
+      zos.compress(channel.map(MapMode.READ_ONLY, 0, length))
       zos.close()
       channel.close()
 
@@ -769,7 +769,7 @@ class ZstdSpec extends AnyFlatSpec with ScalaCheckPropertyChecks {
       }
       val source = channel.map(MapMode.READ_ONLY, 0, length)
       while (source.hasRemaining) {
-        zos.compress(source);
+        zos.compress(source)
       }
       zos.close()
       channel.close()
@@ -797,7 +797,7 @@ class ZstdSpec extends AnyFlatSpec with ScalaCheckPropertyChecks {
       assert(zis.skip(0) == 0)
       val length = orig.length.toInt
       val buff = Array.fill[Byte](length)(0)
-      var pos  = 0;
+      var pos  = 0
       while (pos < length) {
         pos += zis.read(buff, pos, length - pos)
       }
@@ -813,13 +813,13 @@ class ZstdSpec extends AnyFlatSpec with ScalaCheckPropertyChecks {
       val orig = new File("src/test/resources/xml")
       val file = new File(s"src/test/resources/xml_v$version.zst")
       val fis  = new FileInputStream(file)
-      val zis  = new ZstdInputStream(fis).setContinuous(true);
+      val zis  = new ZstdInputStream(fis).setContinuous(true)
       assert(!zis.markSupported)
       assert(zis.available > 0)
       assert(zis.skip(0) == 0)
       val length = orig.length.toInt
       val buff = Array.fill[Byte](length)(0)
-      var pos  = 0;
+      var pos  = 0
       while (pos < length) {
         pos += zis.read(buff, pos, length - pos)
       }
@@ -872,8 +872,8 @@ class ZstdSpec extends AnyFlatSpec with ScalaCheckPropertyChecks {
       Zstd.extractArray(ByteBuffer.allocateDirect(10))
     }
     assertThrows[IllegalArgumentException] {
-      val buf = ByteBuffer.allocate(10);
-      buf.putInt(1);
+      val buf = ByteBuffer.allocate(10)
+      buf.putInt(1)
       Zstd.extractArray(buf.slice)
     }
   }

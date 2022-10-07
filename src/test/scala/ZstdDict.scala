@@ -1,14 +1,10 @@
 package com.github.luben.zstd
 
 import org.scalatest.flatspec.AnyFlatSpec
+
 import java.io._
 import java.nio._
-import java.nio.channels.FileChannel
-import java.nio.channels.FileChannel.MapMode
-import java.nio.file.StandardOpenOption
-
 import scala.io._
-import scala.collection.mutable.WrappedArray
 
 class ZstdDictSpec extends AnyFlatSpec {
 
@@ -57,7 +53,7 @@ class ZstdDictSpec extends AnyFlatSpec {
       val inBuf = ByteBuffer.allocateDirect(size)
       inBuf.put(input)
       inBuf.flip()
-      val compressed = ByteBuffer.allocateDirect(Zstd.compressBound(size).toInt);
+      val compressed = ByteBuffer.allocateDirect(Zstd.compressBound(size).toInt)
       Zstd.compress(compressed, inBuf, dict, level)
       compressed.flip()
       val decompressed = ByteBuffer.allocateDirect(size)
@@ -100,7 +96,7 @@ class ZstdDictSpec extends AnyFlatSpec {
       inBuf.put(input)
       inBuf.flip()
       val cdict = new ZstdDictCompress(dict, level)
-      val compressed = ByteBuffer.allocateDirect(Zstd.compressBound(size).toInt);
+      val compressed = ByteBuffer.allocateDirect(Zstd.compressBound(size).toInt)
       Zstd.compress(compressed, inBuf, cdict)
       compressed.flip()
       cdict.close

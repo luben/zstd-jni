@@ -118,13 +118,13 @@ class ZstdPerfSpec extends AnyFlatSpec  {
     }
     val dictSize = Zstd.trainFromBuffer(samples, dictBuf)
     if (Zstd.isError(dictSize)) {
-      throw new RuntimeException(Zstd.getErrorName(dictSize));
+      throw new RuntimeException(Zstd.getErrorName(dictSize))
     }
     val c_zdict = new ZstdDictCompress(dictBuf, 0, dictSize.toInt, level)
     val d_zdict = new ZstdDictDecompress(dictBuf, 0, dictSize.toInt)
 
-    c_ctx.loadDict(c_zdict);
-    d_ctx.loadDict(d_zdict);
+    c_ctx.loadDict(c_zdict)
+    d_ctx.loadDict(d_zdict)
 
     val outputBuffer = ByteBuffer.allocateDirect(input.size)
     val inputBuffer = ByteBuffer.allocateDirect(input.size)
@@ -137,7 +137,7 @@ class ZstdPerfSpec extends AnyFlatSpec  {
       nsc.timeAndAlloc {
         val l = c_ctx.compressDirectByteBuffer(compressedBuffer, 0, compressedBuffer.capacity(), inputBuffer, 0, inputBuffer.limit())
         if (Zstd.isError(l)) {
-          throw new RuntimeException(Zstd.getErrorName(l));
+          throw new RuntimeException(Zstd.getErrorName(l))
         }
         compressedSize = l.toInt
       }
@@ -147,7 +147,7 @@ class ZstdPerfSpec extends AnyFlatSpec  {
       nsd.timeAndAlloc {
         val l = d_ctx.decompressDirectByteBuffer(outputBuffer, 0, outputBuffer.capacity(), compressedBuffer, 0, compressedBuffer.limit())
         if (Zstd.isError(l)) {
-          throw new RuntimeException(Zstd.getErrorName(l));
+          throw new RuntimeException(Zstd.getErrorName(l))
         }
         assert(l == input.size)
       }
@@ -161,11 +161,11 @@ class ZstdPerfSpec extends AnyFlatSpec  {
     var nsd = new AllocTracker
     val c_ctx = new ZstdCompressCtx()
     c_ctx.setLevel(level)
-    c_ctx.setLong(27);
+    c_ctx.setLong(27)
     val d_ctx = new ZstdDecompressCtx()
     val compressed: Array[Byte] = Array.fill[Byte](input.size)(0)
     val output: Array[Byte] = Array.fill[Byte](input.size)(0)
-    var compressedSize = 0;
+    var compressedSize = 0
 
     for (i <- 1 to cycles) {
       nsc.timeAndAlloc {
@@ -189,7 +189,7 @@ class ZstdPerfSpec extends AnyFlatSpec  {
     val d_ctx = new ZstdDecompressCtx()
     val compressed: Array[Byte] = Array.fill[Byte](input.size)(0)
     val output: Array[Byte] = Array.fill[Byte](input.size)(0)
-    var compressedSize = 0;
+    var compressedSize = 0
 
     for (i <- 1 to cycles) {
       nsc.timeAndAlloc {
@@ -293,7 +293,7 @@ class ZstdPerfSpec extends AnyFlatSpec  {
         zos.close()
       }
     }
-    val compressed = os.toByteArray();
+    val compressed = os.toByteArray()
 
     val output= Array.fill[Byte](size)(0)
     val nsd = new AllocTracker
@@ -319,7 +319,7 @@ class ZstdPerfSpec extends AnyFlatSpec  {
 
   def benchDirectBufferStream(name: String, input: Array[Byte], level: Int = 1): Unit = {
 
-    val compressedBuffer = ByteBuffer.allocateDirect(Zstd.compressBound(input.length.toLong).toInt);
+    val compressedBuffer = ByteBuffer.allocateDirect(Zstd.compressBound(input.length.toLong).toInt)
     val inputBuffer = ByteBuffer.allocateDirect(input.length)
     inputBuffer.put(input)
     inputBuffer.flip
@@ -329,7 +329,7 @@ class ZstdPerfSpec extends AnyFlatSpec  {
     nsc.timeAndAlloc {
       for (i <- 1 to cycles) {
         target.clear()
-        val compressor = new ZstdDirectBufferCompressingStream(target, level);
+        val compressor = new ZstdDirectBufferCompressingStream(target, level)
         inputBuffer.rewind()
         compressor.compress(inputBuffer)
         compressor.close()
@@ -370,7 +370,7 @@ class ZstdPerfSpec extends AnyFlatSpec  {
       for (i <- 1 to cycles) {
         os.reset()
         val zos = new ZstdOutputStream(os, level)
-        zos.setLong(27);
+        zos.setLong(27)
         zos.write(input)
         zos.close
       }
@@ -422,4 +422,5 @@ class ZstdPerfSpec extends AnyFlatSpec  {
         benchStreamLDM(s"Streaming at $level with Long Distance Matching", buff, level)
     }
   }
+
 }
