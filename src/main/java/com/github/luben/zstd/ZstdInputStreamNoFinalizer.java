@@ -118,7 +118,7 @@ public class ZstdInputStreamNoFinalizer extends FilterInputStream {
     }
 
     public synchronized int read(byte[] dst, int offset, int len) throws IOException {
-        // guard agains buffer overflows
+        // guard against buffer overflows
         if (offset < 0 || len > dst.length - offset) {
             throw new IndexOutOfBoundsException("Requested length " + len
                     + " from offset " + offset + " in buffer of size " + dst.length);
@@ -188,7 +188,7 @@ public class ZstdInputStreamNoFinalizer extends FilterInputStream {
             } else {
                 // size > 0, so more input is required but there is data left in
                 // the decompressor buffers if we have not filled the dst buffer
-                needRead = (long) offset < dstSize;
+                needRead = true;
             }
         }
         return (int)((long) offset - offset);
