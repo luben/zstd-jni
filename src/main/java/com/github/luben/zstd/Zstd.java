@@ -561,12 +561,36 @@ public class Zstd {
     public static native int loadDictCompress(long stream, byte[] dict, int dict_size);
     public static native int loadFastDictCompress(long stream, ZstdDictCompress dict);
     public static native int setCompressionChecksums(long stream, boolean useChecksums);
+    public static native int setCompressionMagicless(long stream, boolean useMagicless);
     public static native int setCompressionLevel(long stream, int level);
     public static native int setCompressionLong(long stream, int windowLog);
     public static native int setCompressionWorkers(long stream, int workers);
     public static native int setDecompressionLongMax(long stream, int windowLogMax);
+    public static native int setDecompressionMagicless(long stream, boolean useMagicless);
 
     /* Utility methods */
+
+    /**
+     * Return the original size of a compressed buffer (if known)
+     *
+     * @param src the compressed buffer
+     * @param srcPosition offset of the compressed data inside the src buffer
+     * @param srcSize length of the compressed data inside the src buffer
+     * @param magicless whether the buffer contains a magicless frame
+     * @return the number of bytes of the original buffer
+     *         0 if the original size is not known
+     */
+    public static long decompressedSize(byte[] src, int srcPosition, int srcSize, boolean magicless) {
+        if (srcPosition >= src.length) {
+            throw new ArrayIndexOutOfBoundsException(srcPosition);
+        }
+        if (srcPosition + srcSize > src.length) {
+            throw new ArrayIndexOutOfBoundsException(srcPosition + srcSize);
+        }
+        return decompressedSize0(src, srcPosition, srcSize, magicless);
+    }
+
+    private static native long decompressedSize0(byte[] src, int srcPosition, int srcSize, boolean magicless);
 
     /**
      * Return the original size of a compressed buffer (if known)
@@ -578,17 +602,9 @@ public class Zstd {
      *         0 if the original size is not known
      */
     public static long decompressedSize(byte[] src, int srcPosition, int srcSize) {
-        if (srcPosition >= src.length) {
-            throw new ArrayIndexOutOfBoundsException(srcPosition);
-        }
-        if (srcPosition + srcSize > src.length) {
-            throw new ArrayIndexOutOfBoundsException(srcPosition + srcSize);
-        }
-        return decompressedSize0(src, srcPosition, srcSize);
+        return decompressedSize(src, srcPosition, srcSize, false);
     }
-
-    private static native long decompressedSize0(byte[] src, int srcPosition, int srcSize);
-
+    
     /**
      * Return the original size of a compressed buffer (if known)
      *
@@ -618,10 +634,24 @@ public class Zstd {
      * @param src the compressed buffer
      * @param srcPosition offset of the compressed data inside the src buffer
      * @param srcSize length of the compressed data inside the src buffe
+     * @param magicless whether the buffer contains a magicless frame
      * @return the number of bytes of the original buffer
      *         0 if the original size is not known
      */
-    public static native long decompressedDirectByteBufferSize(ByteBuffer src, int srcPosition, int srcSize);
+    public static native long decompressedDirectByteBufferSize(ByteBuffer src, int srcPosition, int srcSize, boolean magicless);
+    
+    /**
+     * Return the original size of a compressed buffer (if known)
+     *
+     * @param src the compressed buffer
+     * @param srcPosition offset of the compressed data inside the src buffer
+     * @param srcSize length of the compressed data inside the src buffe
+     * @return the number of bytes of the original buffer
+     *         0 if the original size is not known
+     */
+    public static long decompressedDirectByteBufferSize(ByteBuffer src, int srcPosition, int srcSize) {
+        return decompressedDirectByteBufferSize(src, srcPosition, srcSize, false);
+    }
 
     /**
      * Maximum size of the compressed data
