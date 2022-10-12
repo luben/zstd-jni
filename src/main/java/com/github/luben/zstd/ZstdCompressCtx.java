@@ -56,6 +56,20 @@ public class ZstdCompressCtx extends AutoCloseBase {
     private native void setLevel0(int level);
 
     /**
+     * Enable or disable magicless frames
+     * @param magiclessFlag A 32-bits magic number is written at start of frame, default: false
+     */
+    public ZstdCompressCtx setMagicless(boolean magiclessFlag) {
+        if (nativePtr == 0) {
+            throw new IllegalStateException("Compression context is closed");
+        }
+        acquireSharedLock();
+        Zstd.setCompressionMagicless(nativePtr, magiclessFlag);
+        releaseSharedLock();
+        return this;
+    }
+    
+    /**
      * Enable or disable compression checksums
      * @param checksumFlag A 32-bits checksum of content is written at end of frame, default: false
      */

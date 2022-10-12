@@ -919,4 +919,26 @@ class ZstdSpec extends AnyFlatSpec with ScalaCheckPropertyChecks {
       }
     }.get
   }
+  
+  "magicless frames" should "be magicless and roundtrip" in {
+    Using.Manager { use =>
+      val cctx = use(new ZstdCompressCtx())
+      val dctx = use(new ZstdDecompressCtx())
+      forAll { input: Array[Byte] =>
+        {
+          cctx.reset()
+          val compressedMagic = cctx.compress(input)
+          cctx.setMagicless(true)
+          val compressedMagicless = cctx.compress(input)
+          assert(compressedMagicless.length == (compressedMagic.length - 4))
+          assert(input.length == Zstd.decompressedSize(compressedMagicless, 0, compressedMagicless.length, true))
+          
+          dctx.reset()
+          dctx.setMagicless(true)
+          val decompressed = dctx.decompress(compressedMagicless, input.length)
+          assert(input.toSeq == decompressed.toSeq)
+        }
+      }
+    }.get
+  }
 }

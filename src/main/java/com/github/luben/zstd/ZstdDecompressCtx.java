@@ -39,6 +39,20 @@ public class ZstdDecompressCtx extends AutoCloseBase {
     }
 
     /**
+     * Enable or disable magicless frames
+     * @param magiclessFlag A 32-bits checksum of content is written at end of frame, default: false
+     */
+    public ZstdDecompressCtx setMagicless(boolean magiclessFlag) {
+        if (nativePtr == 0) {
+            throw new IllegalStateException("Compression context is closed");
+        }
+        acquireSharedLock();
+        Zstd.setDecompressionMagicless(nativePtr, magiclessFlag);
+        releaseSharedLock();
+        return this;
+    }
+    
+    /**
      * Load decompression dictionary
      *
      * @param dict the dictionary or `null` to remove loaded dictionary

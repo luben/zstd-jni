@@ -27,6 +27,22 @@ static size_t JNI_ZSTD_compress(void* dst, size_t dstCapacity,
 }
 
 /*
+ * Helper for determining decompressed size
+ */
+static size_t JNI_ZSTD_decompressedSize(const void* buf, size_t bufSize, jboolean magicless) {
+    if (magicless) {
+        ZSTD_frameHeader frameHeader;
+        if (ZSTD_getFrameHeader_advanced(&frameHeader, buf, bufSize, ZSTD_f_zstd1_magicless) != 0) {
+            return 0;
+        }
+        // note that skippable frames must have a magic number, so we don't need to consider that here
+        return frameHeader.frameContentSize;
+    }
+
+    return ZSTD_getDecompressedSize(buf, bufSize);
+}
+
+/*
  * Class:     com_github_luben_zstd_Zstd
  * Method:    compressUnsafe
  * Signature: (JJJJI)J
@@ -52,11 +68,11 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_decompressUnsafe
  * Signature: ([B)JII
  */
 JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_decompressedSize0
-  (JNIEnv *env, jclass obj, jbyteArray src, jint offset, jint limit) {
+  (JNIEnv *env, jclass obj, jbyteArray src, jint offset, jint limit, jboolean magicless) {
     size_t size = -ZSTD_error_memory_allocation;
     void *src_buff = (*env)->GetPrimitiveArrayCritical(env, src, NULL);
     if (src_buff == NULL) goto E1;
-    size = ZSTD_getDecompressedSize(((char *) src_buff) + offset, (size_t) limit);
+    size = JNI_ZSTD_decompressedSize(((char *) src_buff) + offset, (size_t) limit, magicless);
     (*env)->ReleasePrimitiveArrayCritical(env, src, src_buff, JNI_ABORT);
 E1: return size;
 }
@@ -115,13 +131,13 @@ E1: return (jlong) dict_id;
  * Signature: (Ljava/nio/ByteBuffer;II)J
  */
 JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_decompressedDirectByteBufferSize
-  (JNIEnv *env, jclass obj, jobject src_buf, jint src_offset, jint src_size) {
+  (JNIEnv *env, jclass obj, jobject src_buf, jint src_offset, jint src_size, jboolean magicless) {
     size_t size = -ZSTD_error_memory_allocation;
     jsize src_cap = (*env)->GetDirectBufferCapacity(env, src_buf);
     if (src_offset + src_size > src_cap) return -ZSTD_error_GENERIC;
     char *src_buf_ptr = (char*)(*env)->GetDirectBufferAddress(env, src_buf);
     if (src_buf_ptr == NULL) goto E1;
-    size = ZSTD_getDecompressedSize(src_buf_ptr + src_offset, (size_t) src_size);
+    size = JNI_ZSTD_decompressedSize(src_buf_ptr + src_offset, (size_t) src_size, magicless);
 E1: return size;
 }
 
@@ -240,6 +256,12 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_setCompressionChecksums
     return ZSTD_CCtx_setParameter((ZSTD_CCtx *)(intptr_t) stream, ZSTD_c_checksumFlag, checksum);
 }
 
+JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_setCompressionMagicless
+  (JNIEnv *env, jclass obj, jlong stream, jboolean enabled) {
+    ZSTD_format_e format = enabled ? ZSTD_f_zstd1_magicless : ZSTD_f_zstd1;
+    return ZSTD_CCtx_setParameter((ZSTD_CCtx *)(intptr_t) stream, ZSTD_c_format, format);
+}
+
 /*
  * Class:     com_github_luben_zstd_Zstd
  * Method:    setCompressionLevel
@@ -278,6 +300,12 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_setDecompressionLongMax
   (JNIEnv *env, jclass obj, jlong stream, jint windowLogMax) {
     ZSTD_DCtx* dctx = (ZSTD_DCtx*)(intptr_t) stream;
     return ZSTD_DCtx_setParameter(dctx, ZSTD_d_windowLogMax, windowLogMax);
+}
+
+JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_setDecompressionMagicless
+  (JNIEnv *env, jclass obj, jlong stream, jboolean enabled) {
+    ZSTD_format_e format = enabled ? ZSTD_f_zstd1_magicless : ZSTD_f_zstd1;
+    return ZSTD_DCtx_setParameter((ZSTD_DCtx *)(intptr_t) stream, ZSTD_d_format, format);
 }
 
 /*
