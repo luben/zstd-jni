@@ -273,6 +273,15 @@ public class ZstdDecompressCtx extends AutoCloseBase {
         return decompressByteArray(dst, 0, dst.length, src, 0, src.length);
     }
 
+    /**
+    * Decompress data
+    *
+    * @param src the source buffer
+    * @param originalSize the maximum size of the uncompressed data.
+    *                  If originaSize is greater than the actuall uncompressed size, additional memory copy going to happen.
+    *                  If originalSize is smaller than the uncompressed size, ZstdExeption will be thrown.
+    * @return byte array with the decompressed data
+    */
     public byte[] decompress(byte[] src, int originalSize) throws ZstdException {
         byte[] dst = new byte[originalSize];
         int size = decompress(dst, src);

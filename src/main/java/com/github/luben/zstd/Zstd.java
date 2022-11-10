@@ -1087,7 +1087,9 @@ public class Zstd {
      * Decompress data
      *
      * @param src the source buffer
-     * @param originalSize the maximum size of the uncompressed data
+     * @param originalSize the maximum size of the uncompressed data.
+     *                  If originaSize is greater than the actuall uncompressed size, additional memory copy going to happen.
+     *                  If originalSize is smaller than the uncompressed size, ZstdExeption will be thrown.
      * @return byte array with the decompressed data
      */
     public static byte[] decompress(byte[] src, int originalSize) {
