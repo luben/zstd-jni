@@ -1,3 +1,6 @@
+#ifndef ZSTD_STATIC_LINKING_ONLY
+#define ZSTD_STATIC_LINKING_ONLY
+#endif
 #include <jni.h>
 #include <zstd.h>
 #include <zstd_errors.h>
@@ -328,6 +331,19 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdCompressCtx_reset0
   (JNIEnv *env, jclass jctx) {
     ZSTD_CCtx* cctx = (ZSTD_CCtx*)(intptr_t)(*env)->GetLongField(env, jctx, compress_ctx_nativePtr);
     return ZSTD_CCtx_reset(cctx, ZSTD_reset_session_and_parameters);
+}
+
+JNIEXPORT jobject JNICALL Java_com_github_luben_zstd_ZstdCompressCtx_getFrameProgression0
+  (JNIEnv *env, jclass jctx) {
+    ZSTD_CCtx* cctx = (ZSTD_CCtx*)(intptr_t)(*env)->GetLongField(env, jctx, compress_ctx_nativePtr);
+    ZSTD_frameProgression native_progression = ZSTD_getFrameProgression(cctx);
+    
+    jclass frame_progression_class = (*env)->FindClass(env, "com/github/luben/zstd/ZstdFrameProgression");
+    jmethodID frame_progression_constructor = (*env)->GetMethodID(env, frame_progression_class, "<init>", "(JJJJII)V");
+    return (*env)->NewObject(
+            env, frame_progression_class, frame_progression_constructor, native_progression.ingested,
+            native_progression.consumed, native_progression.produced, native_progression.flushed,
+            native_progression.currentJobID, native_progression.nbActiveWorkers);
 }
 
 JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdCompressCtx_setPledgedSrcSize0
