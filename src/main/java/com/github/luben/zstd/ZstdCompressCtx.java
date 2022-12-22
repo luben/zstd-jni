@@ -198,6 +198,16 @@ public class ZstdCompressCtx extends AutoCloseBase {
     }
 
     /**
+     * Tells how much data has been ingested (read from input),
+     * consumed (input actually compressed) and produced (output) for current frame.
+     */
+    public ZstdFrameProgression getFrameProgression() {
+        ensureOpen();
+        return getFrameProgression0();
+    }
+    private native ZstdFrameProgression getFrameProgression0();
+    
+    /**
      * Clear all state and parameters from the compression context. This leaves the object in a
      * state identical to a newly created compression context.
      */

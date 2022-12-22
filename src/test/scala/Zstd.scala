@@ -895,9 +895,17 @@ class ZstdSpec extends AnyFlatSpec with ScalaCheckPropertyChecks {
             compressedBuffer.limit(compressedBuffer.position() + 1)
             cctx.compressDirectByteBufferStream(compressedBuffer, inputBuffer, EndDirective.CONTINUE)
           }
+          
+          var frameProgression = cctx.getFrameProgression()
+          assert(frameProgression.getIngested() == size)
+          assert(frameProgression.getFlushed() == compressedBuffer.position())
+          
           compressedBuffer.limit(compressedBuffer.capacity())
           val done = cctx.compressDirectByteBufferStream(compressedBuffer, inputBuffer, EndDirective.END)
           assert(done)
+          
+          frameProgression = cctx.getFrameProgression()
+          assert(frameProgression.getConsumed() == size)
 
           compressedBuffer.flip()
           val decompressedBuffer = ByteBuffer.allocateDirect(size)
