@@ -5,6 +5,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.UnsatisfiedLinkError;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
 
 public enum Native {
     ;
@@ -61,6 +63,24 @@ public enum Native {
         return loaded;
     }
 
+    private static void loadLibrary(final String libName) {
+        AccessController.doPrivileged(new PrivilegedAction<Void>() {
+          public Void run() {
+            System.loadLibrary(libName);
+            return null;
+          }
+        });
+    }
+
+    private static void loadLibraryFile(final String libFileName) {
+        AccessController.doPrivileged(new PrivilegedAction<Void>() {
+          public Void run() {
+            System.load(libFileName);
+            return null;
+          }
+        });
+    }
+
     public static synchronized void load() {
         load(null);
     }
@@ -74,7 +94,7 @@ public enum Native {
         String overridePath = System.getProperty(nativePathOverride);
         if (overridePath != null) {
             // Do not fall back to auto-discovery - consumers know better
-            System.load(overridePath);
+            loadLibraryFile(overridePath);
             loaded = true;
             return;
         }
@@ -82,7 +102,7 @@ public enum Native {
         // try to load the shared library directly from the JAR
         try {
             Class.forName("org.osgi.framework.BundleEvent"); // Simple OSGI env. check
-            System.loadLibrary(libname);
+            loadLibrary(libname);
             loaded = true;
             return;
         } catch (Throwable e) {
@@ -94,7 +114,7 @@ public enum Native {
             // fallback to loading the zstd-jni from the system library path.
             // It also covers loading on Android.
             try {
-                System.loadLibrary(libnameShort);
+                loadLibrary(libnameShort);
                 loaded = true;
                 return;
             } catch (UnsatisfiedLinkError e) {
@@ -127,11 +147,11 @@ public enum Native {
                 // ignore
             }
             try {
-                System.load(tempLib.getAbsolutePath());
+                loadLibraryFile(tempLib.getAbsolutePath());
             } catch (UnsatisfiedLinkError e) {
                 // fall-back to loading the zstd-jni from the system library path
                 try {
-                    System.loadLibrary(libnameShort);
+                    loadLibrary(libnameShort);
                 } catch (UnsatisfiedLinkError e1) {
                     // display error in case problem with loading from temp folder
                     // and from system library path - concatenate both messages
