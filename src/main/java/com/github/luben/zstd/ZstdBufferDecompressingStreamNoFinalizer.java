@@ -5,27 +5,26 @@ import com.github.luben.zstd.util.Native;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-public class ZstdDirectBufferDecompressingStreamNoFinalizer extends BaseZstdBufferDecompressingStreamNoFinalizer {
+public class ZstdBufferDecompressingStreamNoFinalizer extends BaseZstdBufferDecompressingStreamNoFinalizer {
     static {
         Native.load();
     }
 
-    public ZstdDirectBufferDecompressingStreamNoFinalizer(ByteBuffer source) {
+    public ZstdBufferDecompressingStreamNoFinalizer(ByteBuffer source) {
         super(source);
-        if (!source.isDirect()) {
-            throw new IllegalArgumentException("Source buffer should be a direct buffer");
+        if (source.isDirect()) {
+            throw new IllegalArgumentException("Source buffer should be a non-direct buffer");
         }
-        this.source = source;
         stream = createDStreamNative();
         initDStreamNative(stream);
     }
 
     @Override
     public int read(ByteBuffer target) throws IOException {
-        if (!target.isDirect()) {
-            throw new IllegalArgumentException("Target buffer should be a direct buffer");
+        if (target.isDirect()) {
+            throw new IllegalArgumentException("Target buffer should be a non-direct buffer");
         }
-        return readInternal(target, true);
+        return readInternal(target, false);
     }
 
     @Override
@@ -45,20 +44,23 @@ public class ZstdDirectBufferDecompressingStreamNoFinalizer extends BaseZstdBuff
 
     @Override
     long decompressStream(long stream, ByteBuffer dst, int dstOffset, int dstSize, ByteBuffer src, int srcOffset, int srcSize) {
-        return decompressStreamNative(stream, dst, dstOffset, dstSize, src, srcOffset, srcSize);
+        byte[] targetArr = Zstd.extractArray(dst);
+        byte[] sourceArr = Zstd.extractArray(source);
+
+        return decompressStreamNative(stream, targetArr, dstOffset, dstSize, sourceArr, srcOffset, srcSize);
     }
 
     public static int recommendedTargetBufferSize() {
         return (int) recommendedDOutSizeNative();
     }
 
-    private static native long createDStreamNative();
+    private native long createDStreamNative();
 
-    private static native long freeDStreamNative(long stream);
+    private native long freeDStreamNative(long stream);
 
     private native long initDStreamNative(long stream);
 
-    private native long decompressStreamNative(long stream, ByteBuffer dst, int dstOffset, int dstSize, ByteBuffer src, int srcOffset, int srcSize);
+    private native long decompressStreamNative(long stream, byte[] dst, int dstOffset, int dstSize, byte[] src, int srcOffset, int srcSize);
 
     private static native long recommendedDOutSizeNative();
 }

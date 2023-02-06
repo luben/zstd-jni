@@ -10,39 +10,39 @@ static jfieldID produced_id;
 
 /*
  * Class:     com_github_luben_zstd_ZstdDirectBufferDecompressingStreamNoFinalizer
- * Method:    recommendedDOutSize
+ * Method:    recommendedDOutSizeNative
  */
-JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdDirectBufferDecompressingStreamNoFinalizer_recommendedDOutSize
+JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdDirectBufferDecompressingStreamNoFinalizer_recommendedDOutSizeNative
   (JNIEnv *env, jclass obj) {
     return ZSTD_DStreamOutSize();
 }
 
 /*
  * Class:     com_github_luben_zstd_ZstdDirectBufferDecompressingStreamNoFinalizer
- * Method:    createDStream
+ * Method:    createDStreamNative
  * Signature: ()J
  */
-JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdDirectBufferDecompressingStreamNoFinalizer_createDStream
+JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdDirectBufferDecompressingStreamNoFinalizer_createDStreamNative
   (JNIEnv *env, jclass obj) {
     return (jlong)(intptr_t) ZSTD_createDStream();
 }
 
 /*
  * Class:     com_github_luben_zstd_ZstdDirectBufferDecompressingStreamNoFinalizer
- * Method:    freeDStream
+ * Method:    freeDStreamNative
  * Signature: (J)J
  */
-JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdDirectBufferDecompressingStreamNoFinalizer_freeDStream
+JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdDirectBufferDecompressingStreamNoFinalizer_freeDStreamNative
   (JNIEnv *env, jclass obj, jlong stream) {
     return ZSTD_freeDCtx((ZSTD_DCtx *)(intptr_t) stream);
 }
 
 /*
  * Class:     com_github_luben_zstd_ZstdDirectBufferDecompressingStreamNoFinalizer
- * Method:    initDStream
+ * Method:    initDStreamNative
  * Signature: (J)J
  */
-JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdDirectBufferDecompressingStreamNoFinalizer_initDStream
+JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdDirectBufferDecompressingStreamNoFinalizer_initDStreamNative
   (JNIEnv *env, jclass obj, jlong stream) {
     jclass clazz = (*env)->GetObjectClass(env, obj);
     consumed_id = (*env)->GetFieldID(env, clazz, "consumed", "I");
@@ -52,10 +52,10 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdDirectBufferDecompressing
 
 /*
  * Class:     com_github_luben_zstd_ZstdDirectBufferDecompressingStreamNoFinalizer
- * Method:    decompressStream
+ * Method:    decompressStreamNative
  * Signature: (JLjava/nio/ByteBuffer;IILjava/nio/ByteBuffer;II)I
  */
-JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdDirectBufferDecompressingStreamNoFinalizer_decompressStream
+JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdDirectBufferDecompressingStreamNoFinalizer_decompressStreamNative
   (JNIEnv *env, jclass obj, jlong stream, jobject dst_buf, jint dst_offset, jint dst_size, jobject src_buf, jint src_offset, jint src_size) {
     size_t size = -ZSTD_error_memory_allocation;
 

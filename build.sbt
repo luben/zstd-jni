@@ -43,7 +43,8 @@ jniNativeClasses := Seq(
   "com.github.luben.zstd.ZstdOutputStreamNoFinalizer",
   "com.github.luben.zstd.ZstdInputStreamNoFinalizer",
   "com.github.luben.zstd.ZstdDirectBufferDecompressingStreamNoFinalizer",
-  "com.github.luben.zstd.ZstdDirectBufferCompressingStreamNoFinalizer"
+  "com.github.luben.zstd.ZstdDirectBufferCompressingStreamNoFinalizer",
+  "com.github.luben.zstd.ZstdBufferDecompressingStreamNoFinalizer"
 )
 
 jniLibSuffix := (System.getProperty("os.name").toLowerCase match {
