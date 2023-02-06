@@ -13,7 +13,7 @@ public abstract class BaseZstdBufferDecompressingStreamNoFinalizer implements Cl
     private int consumed;
     private int produced;
 
-    public BaseZstdBufferDecompressingStreamNoFinalizer(ByteBuffer source) {
+    BaseZstdBufferDecompressingStreamNoFinalizer(ByteBuffer source) {
         this.source = source;
     }
 
@@ -26,12 +26,12 @@ public abstract class BaseZstdBufferDecompressingStreamNoFinalizer implements Cl
     protected ByteBuffer refill(ByteBuffer toRefill) {
         return toRefill;
     }
-
+    
     public boolean hasRemaining() {
         return !streamEnd && (source.hasRemaining() || !finishedFrame);
     }
 
-    BaseZstdBufferDecompressingStreamNoFinalizer setDict(byte[] dict) throws IOException {
+    public BaseZstdBufferDecompressingStreamNoFinalizer setDict(byte[] dict) throws IOException {
         long size = Zstd.loadDictDecompress(stream, dict, dict.length);
         if (Zstd.isError(size)) {
             throw new ZstdIOException(size);
@@ -39,7 +39,7 @@ public abstract class BaseZstdBufferDecompressingStreamNoFinalizer implements Cl
         return this;
     }
 
-    BaseZstdBufferDecompressingStreamNoFinalizer setDict(ZstdDictDecompress dict) throws IOException {
+    public BaseZstdBufferDecompressingStreamNoFinalizer setDict(ZstdDictDecompress dict) throws IOException {
         dict.acquireSharedLock();
         try {
             long size = Zstd.loadFastDictDecompress(stream, dict);
@@ -52,7 +52,7 @@ public abstract class BaseZstdBufferDecompressingStreamNoFinalizer implements Cl
         return this;
     }
 
-    BaseZstdBufferDecompressingStreamNoFinalizer setLongMax(int windowLogMax) throws IOException {
+    public BaseZstdBufferDecompressingStreamNoFinalizer setLongMax(int windowLogMax) throws IOException {
         long size = Zstd.setDecompressionLongMax(stream, windowLogMax);
         if (Zstd.isError(size)) {
             throw new ZstdIOException(size);
