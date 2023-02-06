@@ -671,6 +671,210 @@ class ZstdSpec extends AnyFlatSpec with ScalaCheckPropertyChecks {
       sys.error(s"Failed")
   }
 
+  for (level <- levels) // the worst case
+    "ZstdBufferDecompressingStream" should s"be able to produce 1 byte at a time files compressed by the zstd binary at level $level" in {
+      val orig = new File("src/test/resources/xml")
+      val file = new File(s"src/test/resources/xml-$level.zst")
+      val channel = FileChannel.open(file.toPath, StandardOpenOption.READ)
+      val readBuffer = ByteBuffer.allocate(channel.size().toInt)
+      channel.read(readBuffer)
+      readBuffer.flip()
+      val zis = new ZstdBufferDecompressingStream(readBuffer)
+      val length = orig.length.toInt
+      val buff = Array.fill[Byte](length)(0)
+      var pos = 0
+      val block = ByteBuffer.allocate(1)
+      while (pos < length && zis.hasRemaining) {
+        block.clear
+        val read = zis.read(block)
+        if (read != 1) {
+          sys.error(s"Failed reading compressed file before end. Bytes read: $read")
+        }
+        block.flip()
+        buff.update(pos, block.get())
+        pos += 1
+      }
+
+      val original = Source.fromFile(orig)(Codec.ISO8859).map { char => char.toByte }.to(WrappedArray)
+      if (original != buff.toSeq)
+        sys.error(s"Failed")
+    }
+
+  for (level <- levels) // the worst case
+    it should s"be able to read 1 byte at a time files compressed by the zstd binary at level $level" in {
+      val orig = new File("src/test/resources/xml")
+      val file = new File(s"src/test/resources/xml-$level.zst")
+      val channel = FileChannel.open(file.toPath, StandardOpenOption.READ)
+      val actualBuffer = channel.map(MapMode.READ_ONLY, 0, channel.size)
+      val smallBuffer = ByteBuffer.allocate(1)
+      while (smallBuffer.hasRemaining) {
+        smallBuffer.put(actualBuffer.get())
+      }
+      smallBuffer.flip()
+      val zis = new ZstdBufferDecompressingStream(smallBuffer) {
+        override protected def refill(toRefill: ByteBuffer): ByteBuffer = {
+          if (actualBuffer.hasRemaining) {
+            toRefill.clear()
+            while (toRefill.hasRemaining && actualBuffer.hasRemaining) {
+              toRefill.put(actualBuffer.get())
+            }
+            toRefill.flip()
+          }
+          return toRefill
+        }
+      }
+      val length = orig.length.toInt
+      val buff = Array.fill[Byte](length)(0)
+      val block = ByteBuffer.allocate(length)
+      while (zis.hasRemaining) {
+        zis.read(block)
+      }
+      block.flip()
+      block.get(buff)
+
+      val original = Source.fromFile(orig)(Codec.ISO8859).map { char => char.toByte }.to(WrappedArray)
+      if (original != buff.toSeq)
+        sys.error(s"Failed")
+    }
+
+
+  it should s"be able to consume 2 frames in a file compressed by the zstd binary" in {
+    val orig = new File("src/test/resources/xmlx2")
+    val file = new File(s"src/test/resources/xml-1x2.zst")
+    val fis = new FileInputStream(file)
+
+    val channel = FileChannel.open(file.toPath, StandardOpenOption.READ)
+    val readBuffer = ByteBuffer.allocate(channel.size().toInt)
+    channel.read(readBuffer)
+    readBuffer.flip()
+    val zis = new ZstdBufferDecompressingStream(readBuffer)
+    val length = orig.length.toInt
+
+    val window = ByteBuffer.allocate(length)
+    while (zis.hasRemaining) {
+      zis.read(window)
+    }
+
+    val buff = new Array[Byte](length)
+    window.flip()
+    window.get(buff)
+
+    val original = Source.fromFile(orig)(Codec.ISO8859).map { char => char.toByte }.to(WrappedArray)
+    if (original != buff.toSeq)
+      sys.error(s"Failed")
+  }
+
+  it should s"be able to consume 2 frames even when they are exactly at the buffers limit" in {
+    val orig = new File("src/test/resources/xmlx2")
+    val file = new File(s"src/test/resources/xml-1x2.zst")
+    val length = orig.length.toInt
+
+    val channel = FileChannel.open(file.toPath, StandardOpenOption.READ)
+    val readBuffer = ByteBuffer.allocate(channel.size().toInt)
+    channel.read(readBuffer)
+    readBuffer.flip()
+    val zis = new ZstdBufferDecompressingStream(readBuffer)
+
+    val window = ByteBuffer.allocate(length)
+    zis.read(window)
+    val firstFrameEnd = readBuffer.position()
+    zis.read(window)
+    if (zis.hasRemaining) {
+      sys.error(s"Failed for one big buffer, two reads should be enough")
+    }
+    zis.close()
+
+    // create a buffer with contents of first frame
+    val readBufferWithFirstFrame = readBuffer.rewind().duplicate().limit(firstFrameEnd).slice()
+    var refilled = false
+    val zis2 = new ZstdBufferDecompressingStream(readBufferWithFirstFrame) {
+      override protected def refill(toRefill: ByteBuffer): ByteBuffer = {
+        if (!refilled) {
+          val offset = firstFrameEnd - toRefill.remaining()
+          readBuffer.rewind().position(offset)
+          if (readBuffer.hasRemaining) {
+            toRefill.clear()
+            while (toRefill.hasRemaining && readBuffer.hasRemaining) {
+              toRefill.put(readBuffer.get())
+            }
+            toRefill.flip()
+          }
+          refilled = true
+        }
+        return toRefill
+      }
+    }
+
+    window.clear()
+
+    zis2.read(window)
+    zis2.read(window)
+    if (zis2.hasRemaining) {
+      sys.error(s"Failed, two reads should be enough")
+    }
+    zis2.close()
+
+
+    val buff = new Array[Byte](length)
+    window.flip()
+    window.get(buff)
+
+    val original = Source.fromFile(orig)(Codec.ISO8859).map { char => char.toByte }.to(WrappedArray)
+    if (original != buff.toSeq)
+      sys.error(s"Failed")
+  }
+
+  it should s"be able to consume 2 frames from channel" in {
+    val orig = new File("src/test/resources/xmlx2")
+    val file = new File("src/test/resources/xml-1x2.zst")
+    val length = orig.length.toInt
+
+    val channel = FileChannel.open(file.toPath, StandardOpenOption.READ)
+    val readBuffer = ByteBuffer.allocate(4096)
+    readBuffer.clear().flip()
+    val zis = new ZstdBufferDecompressingStream(readBuffer) {
+      override protected def refill(toRefill: ByteBuffer): ByteBuffer = {
+        toRefill.clear()
+        channel.read(toRefill)
+        toRefill.flip()
+        return toRefill
+      }
+    }
+
+    val result = ByteBuffer.allocate(length)
+    val outChan = new java.nio.channels.WritableByteChannel {
+      override def close(): Unit = result.flip()
+
+      override def isOpen() = true
+
+      override def write(src: ByteBuffer): Int = {
+        val pos = src.position()
+        result.put(src)
+        src.position() - pos
+      }
+    }
+
+    val outBuffer = ByteBuffer.allocate(4096)
+
+    while (zis.hasRemaining) {
+      outBuffer.clear()
+      zis.read(outBuffer)
+      outBuffer.flip()
+      while (outBuffer.remaining() > 0) {
+        outChan.write(outBuffer)
+      }
+    }
+    outChan.close()
+
+    val buff = new Array[Byte](result.remaining())
+    result.get(buff)
+
+    val original = Source.fromFile(orig)(Codec.ISO8859).map { char => char.toByte }.to(WrappedArray)
+    if (original != buff.toSeq)
+      sys.error(s"Failed")
+  }
+
+
   "ZstdInputStream" should s"do nothing on double close but throw on reading of closed stream" in {
     val file = new File(s"src/test/resources/xml-1x2.zst")
     val fis  = new FileInputStream(file)
