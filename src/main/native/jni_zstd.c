@@ -39,7 +39,7 @@ static size_t JNI_ZSTD_decompressedSize(const void* buf, size_t bufSize, jboolea
         return frameHeader.frameContentSize;
     }
 
-    return ZSTD_getDecompressedSize(buf, bufSize);
+    return ZSTD_getFrameContentSize(buf, bufSize);
 }
 
 /*
