@@ -10,10 +10,11 @@ jobs:
                 ]
         runs-on: ${{ matrix.os }}
         steps:
-        - uses: actions/checkout@v2
-        - uses: actions/setup-java@v1
+        - uses: actions/checkout@v3
+        - uses: actions/setup-java@v2
           with:
             java-version: 11
+            distribution: zulu
 
         - name: Compile
           run: ./sbt compile
@@ -48,10 +49,11 @@ jobs:
                 ]
         runs-on: ${{ matrix.os }}
         steps:
-        - uses: actions/checkout@v2
-        - uses: actions/setup-java@v1
+        - uses: actions/checkout@v3
+        - uses: actions/setup-java@v2
           with:
             java-version: 11
+            distribution: zulu
         - uses: maxim-lobanov/setup-xcode@v1
           with:
             xcode-version: latest
@@ -101,16 +103,17 @@ jobs:
             run:
                 shell: msys2 {0}
         steps:
-        - uses: actions/checkout@v2
+        - uses: actions/checkout@v3
         - uses: msys2/setup-msys2@v2
           with:
             msystem: ${{ matrix.msystem }}
             install: git base-devel mingw-w64-${{ matrix.arch }}-toolchain
             path-type: inherit
             update: true
-        - uses: actions/setup-java@v1
+        - uses: actions/setup-java@v2
           with:
             java-version: 11
+            distribution: zulu
             architecture: ${{ matrix.java_arch }}
 
         - name: Check Java version
