@@ -1099,15 +1099,15 @@ class ZstdSpec extends AnyFlatSpec with ScalaCheckPropertyChecks {
             compressedBuffer.limit(compressedBuffer.position() + 1)
             cctx.compressDirectByteBufferStream(compressedBuffer, inputBuffer, EndDirective.CONTINUE)
           }
-          
+
           var frameProgression = cctx.getFrameProgression()
           assert(frameProgression.getIngested() == size)
           assert(frameProgression.getFlushed() == compressedBuffer.position())
-          
+
           compressedBuffer.limit(compressedBuffer.capacity())
           val done = cctx.compressDirectByteBufferStream(compressedBuffer, inputBuffer, EndDirective.END)
           assert(done)
-          
+
           frameProgression = cctx.getFrameProgression()
           assert(frameProgression.getConsumed() == size)
 
@@ -1131,7 +1131,7 @@ class ZstdSpec extends AnyFlatSpec with ScalaCheckPropertyChecks {
       }
     }.get
   }
-  
+
   "magicless frames" should "be magicless and roundtrip" in {
     Using.Manager { use =>
       val cctx = use(new ZstdCompressCtx())
@@ -1144,7 +1144,7 @@ class ZstdSpec extends AnyFlatSpec with ScalaCheckPropertyChecks {
           val compressedMagicless = cctx.compress(input)
           assert(compressedMagicless.length == (compressedMagic.length - 4))
           assert(input.length == Zstd.decompressedSize(compressedMagicless, 0, compressedMagicless.length, true))
-          
+
           dctx.reset()
           dctx.setMagicless(true)
           val decompressed = dctx.decompress(compressedMagicless, input.length)

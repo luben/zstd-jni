@@ -604,7 +604,7 @@ public class Zstd {
     public static long decompressedSize(byte[] src, int srcPosition, int srcSize) {
         return decompressedSize(src, srcPosition, srcSize, false);
     }
-    
+
     /**
      * Return the original size of a compressed buffer (if known)
      *
@@ -639,7 +639,7 @@ public class Zstd {
      *         0 if the original size is not known
      */
     public static native long decompressedDirectByteBufferSize(ByteBuffer src, int srcPosition, int srcSize, boolean magicless);
-    
+
     /**
      * Return the original size of a compressed buffer (if known)
      *

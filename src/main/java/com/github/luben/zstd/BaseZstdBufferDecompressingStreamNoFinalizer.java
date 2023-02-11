@@ -26,7 +26,7 @@ public abstract class BaseZstdBufferDecompressingStreamNoFinalizer implements Cl
     protected ByteBuffer refill(ByteBuffer toRefill) {
         return toRefill;
     }
-    
+
     public boolean hasRemaining() {
         return !streamEnd && (source.hasRemaining() || !finishedFrame);
     }

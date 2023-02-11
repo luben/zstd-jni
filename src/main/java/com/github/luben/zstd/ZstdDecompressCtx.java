@@ -51,7 +51,7 @@ public class ZstdDecompressCtx extends AutoCloseBase {
         releaseSharedLock();
         return this;
     }
-    
+
     /**
      * Load decompression dictionary
      *

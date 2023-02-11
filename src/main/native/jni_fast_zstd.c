@@ -337,7 +337,7 @@ JNIEXPORT jobject JNICALL Java_com_github_luben_zstd_ZstdCompressCtx_getFramePro
   (JNIEnv *env, jclass jctx) {
     ZSTD_CCtx* cctx = (ZSTD_CCtx*)(intptr_t)(*env)->GetLongField(env, jctx, compress_ctx_nativePtr);
     ZSTD_frameProgression native_progression = ZSTD_getFrameProgression(cctx);
-    
+
     jclass frame_progression_class = (*env)->FindClass(env, "com/github/luben/zstd/ZstdFrameProgression");
     jmethodID frame_progression_constructor = (*env)->GetMethodID(env, frame_progression_class, "<init>", "(JJJJII)V");
     return (*env)->NewObject(

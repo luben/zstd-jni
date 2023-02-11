@@ -68,7 +68,7 @@ public class ZstdCompressCtx extends AutoCloseBase {
         releaseSharedLock();
         return this;
     }
-    
+
     /**
      * Enable or disable compression checksums
      * @param checksumFlag A 32-bits checksum of content is written at end of frame, default: false
@@ -206,7 +206,7 @@ public class ZstdCompressCtx extends AutoCloseBase {
         return getFrameProgression0();
     }
     private native ZstdFrameProgression getFrameProgression0();
-    
+
     /**
      * Clear all state and parameters from the compression context. This leaves the object in a
      * state identical to a newly created compression context.

@@ -1,14 +1,14 @@
 package com.github.luben.zstd;
 
 public class ZstdFrameProgression {
-    
+
     private long ingested;
     private long consumed;
     private long produced;
     private long flushed;
     private int currentJobID;
     private int nbActiveWorkers;
-    
+
     public ZstdFrameProgression(long ingested, long consumed, long produced, long flushed, int currentJobID,
             int nbActiveWorkers) {
         this.ingested = ingested;
@@ -61,5 +61,5 @@ public class ZstdFrameProgression {
     public int getNbActiveWorkers() {
         return nbActiveWorkers;
     }
-    
+
 }
