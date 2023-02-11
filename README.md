@@ -3,6 +3,7 @@ Zstd-jni
 
 [![CI](https://github.com/luben/zstd-jni/workflows/CI/badge.svg)](https://github.com/luben/zstd-jni/actions)
 [![codecov.io](http://codecov.io/github/luben/zstd-jni/coverage.svg?branch=master)](http://codecov.io/github/luben/zstd-jni?branch=master)
+[![CodeQL](https://github.com/luben/zstd-jni/actions/workflows/codeql-analysis.yml/badge.svg?branch=master)](https://github.com/luben/zstd-jni/actions/workflows/codeql-analysis.yml)
 [![Maven Central](https://img.shields.io/maven-central/v/com.github.luben/zstd-jni.svg?label=Maven%20Central)](https://search.maven.org/artifact/com.github.luben/zstd-jni/)
 [![Javadocs](https://www.javadoc.io/badge/com.github.luben/zstd-jni.svg)](https://www.javadoc.io/doc/com.github.luben/zstd-jni)
 
