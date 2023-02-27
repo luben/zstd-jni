@@ -16,26 +16,32 @@ public class ZstdCompressCtx extends AutoCloseBase {
 
     private ZstdDictCompress compression_dict = null;
 
-    private native void init();
+    private static native long init();
 
-    private native void free();
+    private static native void free(long ptr);
 
     /**
      * Create a context for faster compress operations
      * One such context is required for each thread - put this in a ThreadLocal.
      */
     public ZstdCompressCtx() {
-        init();
+        nativePtr = init();
         if (0 == nativePtr) {
             throw new IllegalStateException("ZSTD_createCompressCtx failed");
         }
         storeFence();
     }
 
-    void  doClose() {
+    void doClose() {
         if (nativePtr != 0) {
-            free();
+            free(nativePtr);
             nativePtr = 0;
+        }
+    }
+
+    private void ensureOpen() {
+        if (nativePtr == 0) {
+            throw new IllegalStateException("Compression context is closed");
         }
     }
 
@@ -44,25 +50,21 @@ public class ZstdCompressCtx extends AutoCloseBase {
      * @param level compression level, default: {@link Zstd#defaultCompressionLevel()}
      */
     public ZstdCompressCtx setLevel(int level) {
-        if (nativePtr == 0) {
-            throw new IllegalStateException("Compression context is closed");
-        }
+        ensureOpen();
         acquireSharedLock();
-        setLevel0(level);
+        setLevel0(nativePtr, level);
         releaseSharedLock();
         return this;
     }
 
-    private native void setLevel0(int level);
+    private static native void setLevel0(long ptr, int level);
 
     /**
      * Enable or disable magicless frames
      * @param magiclessFlag A 32-bits magic number is written at start of frame, default: false
      */
     public ZstdCompressCtx setMagicless(boolean magiclessFlag) {
-        if (nativePtr == 0) {
-            throw new IllegalStateException("Compression context is closed");
-        }
+        ensureOpen();
         acquireSharedLock();
         Zstd.setCompressionMagicless(nativePtr, magiclessFlag);
         releaseSharedLock();
@@ -74,18 +76,17 @@ public class ZstdCompressCtx extends AutoCloseBase {
      * @param checksumFlag A 32-bits checksum of content is written at end of frame, default: false
      */
     public ZstdCompressCtx setChecksum(boolean checksumFlag) {
-        if (nativePtr == 0) {
-            throw new IllegalStateException("Compression context is closed");
-        }
+        ensureOpen();
         acquireSharedLock();
-        setChecksum0(checksumFlag);
+        setChecksum0(nativePtr, checksumFlag);
         releaseSharedLock();
         return this;
     }
-    private native void setChecksum0(boolean checksumFlag);
+    private static native void setChecksum0(long ptr, boolean checksumFlag);
 
 
     public ZstdCompressCtx setWorkers(int workers) {
+        ensureOpen();
         acquireSharedLock();
         Zstd.setCompressionWorkers(nativePtr, workers);
         releaseSharedLock();
@@ -97,30 +98,26 @@ public class ZstdCompressCtx extends AutoCloseBase {
      * @param contentSizeFlag Content size will be written into frame header _whenever known_, default: true
      */
     public ZstdCompressCtx setContentSize(boolean contentSizeFlag) {
-        if (nativePtr == 0) {
-            throw new IllegalStateException("Compression context is closed");
-        }
+        ensureOpen();
         acquireSharedLock();
-        setContentSize0(contentSizeFlag);
+        setContentSize0(nativePtr, contentSizeFlag);
         releaseSharedLock();
         return this;
     }
-    private native void setContentSize0(boolean contentSizeFlag);
+    private static native void setContentSize0(long ptr, boolean contentSizeFlag);
 
     /**
      * Enable or disable dictID
      * @param dictIDFlag When applicable, dictionary's ID is written into frame header, default: true
      */
     public ZstdCompressCtx setDictID(boolean dictIDFlag) {
-        if (nativePtr == 0) {
-            throw new IllegalStateException("Compression context is closed");
-        }
+        ensureOpen();
         acquireSharedLock();
-        setDictID0(dictIDFlag);
+        setDictID0(nativePtr, dictIDFlag);
         releaseSharedLock();
         return this;
     }
-    private native void setDictID0(boolean dictIDFlag);
+    private static native void setDictID0(long ptr, boolean dictIDFlag);
 
     /**
      * Enable or disable LongDistanceMatching and set the window size
@@ -132,9 +129,7 @@ public class ZstdCompressCtx extends AutoCloseBase {
      *                  0 disables LDM.
      */
     public ZstdCompressCtx setLong(int windowLog) {
-        if (nativePtr == 0) {
-            throw new IllegalStateException("Compression context is closed");
-        }
+        ensureOpen();
         acquireSharedLock();
         Zstd.setCompressionLong(nativePtr, windowLog);
         releaseSharedLock();
@@ -147,14 +142,11 @@ public class ZstdCompressCtx extends AutoCloseBase {
      * @param dict the dictionary or `null` to remove loaded dictionary
      */
     public ZstdCompressCtx loadDict(ZstdDictCompress dict) {
-        if (nativePtr == 0) {
-            throw new IllegalStateException("Compression context is closed");
-        }
-
+        ensureOpen();
         acquireSharedLock();
         dict.acquireSharedLock();
         try {
-            long result = loadCDictFast0(dict);
+            long result = loadCDictFast0(nativePtr, dict);
             if (Zstd.isError(result)) {
                 throw new ZstdException(result);
             }
@@ -166,7 +158,7 @@ public class ZstdCompressCtx extends AutoCloseBase {
         }
         return this;
     }
-    private native long loadCDictFast0(ZstdDictCompress dict);
+    private native long loadCDictFast0(long ptr, ZstdDictCompress dict);
 
     /**
      * Load compression dictionary to be used for subsequently compressed frames.
@@ -174,12 +166,10 @@ public class ZstdCompressCtx extends AutoCloseBase {
      * @param dict the dictionary or `null` to remove loaded dictionary
      */
     public ZstdCompressCtx loadDict(byte[] dict) {
-        if (nativePtr == 0) {
-            throw new IllegalStateException("Compression context is closed");
-        }
+        ensureOpen();
         acquireSharedLock();
         try {
-            long result = loadCDict0(dict);
+            long result = loadCDict0(nativePtr, dict);
             if (Zstd.isError(result)) {
                 throw new ZstdException(result);
             }
@@ -189,13 +179,7 @@ public class ZstdCompressCtx extends AutoCloseBase {
         }
         return this;
     }
-    private native long loadCDict0(byte[] dict);
-
-    private void ensureOpen() {
-        if (nativePtr == 0) {
-            throw new IllegalStateException("Compression context is closed");
-        }
-    }
+    private native long loadCDict0(long ptr, byte[] dict);
 
     /**
      * Tells how much data has been ingested (read from input),
@@ -203,9 +187,9 @@ public class ZstdCompressCtx extends AutoCloseBase {
      */
     public ZstdFrameProgression getFrameProgression() {
         ensureOpen();
-        return getFrameProgression0();
+        return getFrameProgression0(nativePtr);
     }
-    private native ZstdFrameProgression getFrameProgression0();
+    private static native ZstdFrameProgression getFrameProgression0(long ptr);
 
     /**
      * Clear all state and parameters from the compression context. This leaves the object in a
@@ -213,12 +197,12 @@ public class ZstdCompressCtx extends AutoCloseBase {
      */
     public void reset() {
         ensureOpen();
-        long result = reset0();
+        long result = reset0(nativePtr);
         if (Zstd.isError(result)) {
             throw new ZstdException(result);
         }
     }
-    private native long reset0();
+    private static native long reset0(long ptr);
 
     /**
      * Promise to compress a certain number of source bytes. Knowing the number of bytes to compress
@@ -230,12 +214,12 @@ public class ZstdCompressCtx extends AutoCloseBase {
      */
     public void setPledgedSrcSize(long srcSize) {
         ensureOpen();
-        long result = setPledgedSrcSize0(srcSize);
+        long result = setPledgedSrcSize0(nativePtr, srcSize);
         if (Zstd.isError(result)) {
             throw new ZstdException(result);
         }
     }
-    private native long setPledgedSrcSize0(long srcSize);
+    private static native long setPledgedSrcSize0(long ptr, long srcSize);
 
     /**
      * Compress as much of the <code>src</code> {@link ByteBuffer} into the <code>dst</code> {@link
@@ -248,7 +232,7 @@ public class ZstdCompressCtx extends AutoCloseBase {
      */
     public boolean compressDirectByteBufferStream(ByteBuffer dst, ByteBuffer src, EndDirective endOp) {
         ensureOpen();
-        long result = compressDirectByteBufferStream0(dst, dst.position(), dst.limit(), src, src.position(), src.limit(), endOp.value());
+        long result = compressDirectByteBufferStream0(nativePtr, dst, dst.position(), dst.limit(), src, src.position(), src.limit(), endOp.value());
         if ((result & 0x80000000L) != 0) {
             long code = result & 0xFF;
             throw new ZstdException(code, Zstd.getErrorName(code));
@@ -265,7 +249,7 @@ public class ZstdCompressCtx extends AutoCloseBase {
      * bit is set if an error occurred. If an error occurred, the lowest 31 bits encode a zstd error
      * code. Otherwise, the lowest 31 bits are the new position of the source buffer.
      */
-    private native long compressDirectByteBufferStream0(ByteBuffer dst, int dstOffset, int dstSize, ByteBuffer src, int srcSize, int srcOffset, int endOp);
+    private static native long compressDirectByteBufferStream0(long ptr, ByteBuffer dst, int dstOffset, int dstSize, ByteBuffer src, int srcSize, int srcOffset, int endOp);
 
     /**
      * Compresses buffer 'srcBuff' into buffer 'dstBuff' reusing this ZstdCompressCtx.
@@ -284,9 +268,7 @@ public class ZstdCompressCtx extends AutoCloseBase {
      * @return  the number of bytes written into buffer 'dstBuff'.
      */
     public int compressDirectByteBuffer(ByteBuffer dstBuff, int dstOffset, int dstSize, ByteBuffer srcBuff, int srcOffset, int srcSize) {
-        if (nativePtr == 0) {
-            throw new IllegalStateException("Compression context is closed");
-        }
+        ensureOpen();
         if (!srcBuff.isDirect()) {
             throw new IllegalArgumentException("srcBuff must be a direct buffer");
         }
@@ -297,7 +279,7 @@ public class ZstdCompressCtx extends AutoCloseBase {
         acquireSharedLock();
 
         try {
-            long size = compressDirectByteBuffer0(dstBuff, dstOffset, dstSize, srcBuff, srcOffset, srcSize);
+            long size = compressDirectByteBuffer0(nativePtr, dstBuff, dstOffset, dstSize, srcBuff, srcOffset, srcSize);
             if (Zstd.isError(size)) {
                 throw new ZstdException(size);
             }
@@ -310,7 +292,7 @@ public class ZstdCompressCtx extends AutoCloseBase {
         }
     }
 
-    private native long compressDirectByteBuffer0(ByteBuffer dst, int dstOffset, int dstSize, ByteBuffer src, int srcOffset, int srcSize);
+    private static native long compressDirectByteBuffer0(long ptr, ByteBuffer dst, int dstOffset, int dstSize, ByteBuffer src, int srcOffset, int srcSize);
 
     /**
      * Compresses byte array 'srcBuff' into byte array 'dstBuff' reusing this ZstdCompressCtx.
@@ -328,14 +310,11 @@ public class ZstdCompressCtx extends AutoCloseBase {
      * @return  the number of bytes written into buffer 'dstBuff'.
      */
     public int compressByteArray(byte[] dstBuff, int dstOffset, int dstSize, byte[] srcBuff, int srcOffset, int srcSize) {
-        if (nativePtr == 0) {
-            throw new IllegalStateException("Compression context is closed");
-        }
-
+        ensureOpen();
         acquireSharedLock();
 
         try {
-            long size = compressByteArray0(dstBuff, dstOffset, dstSize, srcBuff, srcOffset, srcSize);
+            long size = compressByteArray0(nativePtr, dstBuff, dstOffset, dstSize, srcBuff, srcOffset, srcSize);
             if (Zstd.isError(size)) {
                 throw new ZstdException(size);
             }
@@ -348,7 +327,7 @@ public class ZstdCompressCtx extends AutoCloseBase {
         }
     }
 
-    private native long compressByteArray0(byte[] dst, int dstOffset, int dstSize, byte[] src, int srcOffset, int srcSize);
+    private static native long compressByteArray0(long ptr, byte[] dst, int dstOffset, int dstSize, byte[] src, int srcOffset, int srcSize);
 
     /* Convenience methods */
 

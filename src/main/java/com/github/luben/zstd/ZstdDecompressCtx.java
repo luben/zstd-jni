@@ -272,6 +272,9 @@ public class ZstdDecompressCtx extends AutoCloseBase {
     * @return byte array with the decompressed data
     */
     public byte[] decompress(byte[] src, int originalSize) throws ZstdException {
+        if (originalSize < 0) {
+            throw new ZstdException(Zstd.errGeneric(), "Original size should not be negative");
+        }
         byte[] dst = new byte[originalSize];
         int size = decompress(dst, src);
         if (size != originalSize) {
