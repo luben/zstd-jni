@@ -30,6 +30,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
     private static final int dstSize = (int) recommendedCOutSize();
     private boolean closeFrameOnFlush = false;
     private boolean frameClosed = true;
+    private boolean frameStarted = false;
 
     /* JNI methods */
     public static native long recommendedCOutSize();
@@ -199,6 +200,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
                 throw new ZstdIOException(size);
             }
             frameClosed = false;
+            frameStarted = true;
         }
         int srcSize = offset + len;
         srcPos = offset;
@@ -268,9 +270,19 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
             return;
         }
         try {
+            int size;
+            // Closing the stream withouth before writing anything
+            // should still produce valid zstd frame. So reset the
+            // stream to start a frame if no frame was ever started.
+            if (!frameStarted) {
+                size = resetCStream(this.stream);
+                if (Zstd.isError(size)) {
+                    throw new ZstdIOException(size);
+                }
+                frameClosed = false;
+            }
+            // compress the remaining input and close the frame
             if (!frameClosed) {
-                // compress the remaining input and close the frame
-                int size;
                 do {
                     size = endStream(stream, dst, dstSize);
                     if (Zstd.isError(size)) {
@@ -280,7 +292,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
                 } while (size > 0);
             }
             if (closeParentStream) {
-                    out.close();
+                out.close();
             }
         } finally {
             // release the resources even if underlying stream throw an exception
