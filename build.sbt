@@ -204,6 +204,9 @@ OsgiKeys.privatePackage := Seq(
     "linux.ppc64le", "linux.mips64", "linux.loongarch64", "linux.s390x", "darwin.x86_64",
     "darwin.aarch64", "win.amd64", "win.x86", "freebsd.amd64", "freebsd.i386"
 )
+// Explicitly specify the version of JavaSE required
+// (rather depend on figuring that out from the JDK it was built with)
+OsgiKeys.requireCapability := "osgi.ee;filter:=\"(&(osgi.ee=JavaSE)(version>=1.6))\""
 
 // Jacoco coverage setting
 jacocoReportSettings := JacocoReportSettings(
