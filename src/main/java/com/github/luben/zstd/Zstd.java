@@ -745,6 +745,25 @@ public class Zstd {
      */
     public static native long getDictIdFromDict(byte[] dict);
 
+    private static native long getDictIdFromDictDirect(ByteBuffer dict, int offset, int length);
+
+    /**
+     * Get DictId of a dictionary
+     *
+     * @param dict dictionary as Direct ByteBuffer
+     * @return DictId or 0 if not available
+     */
+    public static long getDictIdFromDictDirect(ByteBuffer dict) {
+	int length = dict.limit() - dict.position();
+        if (!dict.isDirect()) {
+            throw new IllegalArgumentException("dict must be a direct buffer");
+        }
+        if (length < 0) {
+            throw new IllegalArgumentException("dict cannot be empty.");
+        }
+	return getDictIdFromDictDirect(dict, dict.position(), length);
+    }
+
     /* Stub methods for backward comatibility
      */
 

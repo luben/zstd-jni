@@ -1,5 +1,6 @@
 package com.github.luben.zstd;
 
+import java.nio.ByteBuffer;
 import com.github.luben.zstd.util.Native;
 
 public class ZstdDictCompress extends SharedDictBase {
@@ -12,6 +13,8 @@ public class ZstdDictCompress extends SharedDictBase {
     private int level = Zstd.defaultCompressionLevel();
 
     private native void init(byte[] dict, int dict_offset, int dict_size, int level);
+
+    private native void initDirect(ByteBuffer dict, int dict_offset, int dict_size, int level);
 
     private native void free();
 
@@ -48,6 +51,32 @@ public class ZstdDictCompress extends SharedDictBase {
         // nativePtr == 0.
         storeFence();
     }
+
+    /**
+     * Create a new dictionary for use with fast compress. The provided bytebuffer is available for reuse when the method returns.
+     *
+     * @param dict   Direct ByteBuffer containing dictionary using position and limit to define range in buffer.
+     * @param level  compression level
+     */
+    public ZstdDictCompress(ByteBuffer dict, int level) {
+	this.level = level;
+	int length = dict.limit() - dict.position();
+        if (!dict.isDirect()) {
+            throw new IllegalArgumentException("dict must be a direct buffer");
+        }
+        if (length < 0) {
+            throw new IllegalArgumentException("dict cannot be empty.");
+        }
+	initDirect(dict, dict.position(), length, level);
+
+        if (nativePtr == 0L) {
+           throw new IllegalStateException("ZSTD_createCDict failed");
+        }
+        // Ensures that even if ZstdDictCompress is created and published through a race, no thread could observe
+        // nativePtr == 0.
+        storeFence();
+    }
+
 
     int level() {
         return level;
