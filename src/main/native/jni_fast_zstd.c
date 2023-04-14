@@ -13,7 +13,7 @@ static jfieldID decompress_dict = 0;
 /*
  * Class:     com_github_luben_zstd_ZstdDictCompress
  * Method:    init
- * Signature: ([BI)V
+ * Signature: ([BIII)V
  */
 JNIEXPORT void JNICALL Java_com_github_luben_zstd_ZstdDictCompress_init
   (JNIEnv *env, jobject obj, jbyteArray dict, jint dict_offset, jint dict_size, jint level)
@@ -25,6 +25,24 @@ JNIEXPORT void JNICALL Java_com_github_luben_zstd_ZstdDictCompress_init
     if (NULL == dict_buff) return;
     ZSTD_CDict* cdict = ZSTD_createCDict(((char *)dict_buff) + dict_offset, dict_size, level);
     (*env)->ReleasePrimitiveArrayCritical(env, dict, dict_buff, JNI_ABORT);
+    if (NULL == cdict) return;
+    (*env)->SetLongField(env, obj, compress_dict, (jlong)(intptr_t) cdict);
+}
+
+/*
+ * Class:     com_github_luben_zstd_ZstdDictCompress
+ * Method:    init
+ * Signature: (Ljava/nio/ByteBuffer;III)V
+ */
+JNIEXPORT void JNICALL Java_com_github_luben_zstd_ZstdDictCompress_initDirect
+  (JNIEnv *env, jobject obj, jobject dict, jint dict_offset, jint dict_size, jint level)
+{
+    jclass clazz = (*env)->GetObjectClass(env, obj);
+    compress_dict = (*env)->GetFieldID(env, clazz, "nativePtr", "J");
+    if (NULL == dict) return;
+    void *dict_buff = (*env)->GetDirectBufferAddress(env, dict);
+    if (NULL == dict_buff) return;
+    ZSTD_CDict* cdict = ZSTD_createCDict(((char *)dict_buff) + dict_offset, dict_size, level);
     if (NULL == cdict) return;
     (*env)->SetLongField(env, obj, compress_dict, (jlong)(intptr_t) cdict);
 }
@@ -46,7 +64,7 @@ JNIEXPORT void JNICALL Java_com_github_luben_zstd_ZstdDictCompress_free
 /*
  * Class:     com_github_luben_zstd_ZstdDictDecompress
  * Method:    init
- * Signature: ([B)V
+ * Signature: ([BII)V
  */
 JNIEXPORT void JNICALL Java_com_github_luben_zstd_ZstdDictDecompress_init
   (JNIEnv *env, jobject obj, jbyteArray dict, jint dict_offset, jint dict_size)
@@ -60,6 +78,25 @@ JNIEXPORT void JNICALL Java_com_github_luben_zstd_ZstdDictDecompress_init
     ZSTD_DDict* ddict = ZSTD_createDDict(((char *)dict_buff) + dict_offset, dict_size);
 
     (*env)->ReleasePrimitiveArrayCritical(env, dict, dict_buff, JNI_ABORT);
+    if (NULL == ddict) return;
+    (*env)->SetLongField(env, obj, decompress_dict, (jlong)(intptr_t) ddict);
+}
+
+/*
+ * Class:     com_github_luben_zstd_ZstdDictDecompress
+ * Method:    initDirect
+ * Signature: (Ljava/nio/ByteBuffer;II)V
+ */
+JNIEXPORT void JNICALL Java_com_github_luben_zstd_ZstdDictDecompress_initDirect
+  (JNIEnv *env, jobject obj, jobject dict, jint dict_offset, jint dict_size)
+{
+    jclass clazz = (*env)->GetObjectClass(env, obj);
+    decompress_dict = (*env)->GetFieldID(env, clazz, "nativePtr", "J");
+    if (NULL == dict) return;
+    void *dict_buff = (*env)->GetDirectBufferAddress(env, dict);
+
+    ZSTD_DDict* ddict = ZSTD_createDDict(((char *)dict_buff) + dict_offset, dict_size);
+
     if (NULL == ddict) return;
     (*env)->SetLongField(env, obj, decompress_dict, (jlong)(intptr_t) ddict);
 }

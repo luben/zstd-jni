@@ -25,6 +25,17 @@ class ZstdDictSpec extends AnyFlatSpec {
     dict
   }
 
+  def wrapInDirectByteBuffer(array: Array[Byte]): ByteBuffer = {
+    //use a slightly oversized buffer and a nonzero offset to test we use the position/limit too
+    val bb = ByteBuffer.allocateDirect(array.length + 13);
+    bb.limit(bb.capacity())
+    bb.position(7)
+    bb.limit(bb.position() + array.length)
+    bb.put(array)
+    bb.flip()
+    bb
+  }
+
   "Zstd" should "report error when failing to make a dict" in {
     val src = source.sliding(28, 28).take(4).map(_.toArray)
     val trainer = new ZstdDictTrainer(1024 * 1024, 32 * 1024)
@@ -42,6 +53,7 @@ class ZstdDictSpec extends AnyFlatSpec {
   for {
        legacy <- legacyS
        dict = train(legacy)
+       dictInDirectByteBuffer = wrapInDirectByteBuffer(dict)
        level <- levels
   } {
 
@@ -99,19 +111,19 @@ class ZstdDictSpec extends AnyFlatSpec {
       val inBuf = ByteBuffer.allocateDirect(size)
       inBuf.put(input)
       inBuf.flip()
-      val cdict = new ZstdDictCompress(dict, level)
+      val cdict = new ZstdDictCompress(dictInDirectByteBuffer, level)
       val compressed = ByteBuffer.allocateDirect(Zstd.compressBound(size).toInt);
       Zstd.compress(compressed, inBuf, cdict)
       compressed.flip()
       cdict.close
-      val ddict = new ZstdDictDecompress(dict)
+      val ddict = new ZstdDictDecompress(dictInDirectByteBuffer)
       val decompressed = ByteBuffer.allocateDirect(size)
       Zstd.decompress(decompressed, compressed, ddict)
       decompressed.flip()
       ddict.close
       val out = new Array[Byte](decompressed.remaining)
       decompressed.get(out)
-      assert(Zstd.getDictIdFromFrameBuffer(compressed) == Zstd.getDictIdFromDict(dict))
+      assert(Zstd.getDictIdFromFrameBuffer(compressed) == Zstd.getDictIdFromDictDirect(dictInDirectByteBuffer))
       assert(input.toSeq == out.toSeq)
     }
 

@@ -127,6 +127,20 @@ E1: return (jlong) dict_id;
 
 /*
  * Class:     com_github_luben_zstd_Zstd
+ * Method:    getDictIdFromDict
+ * Signature: (Ljava/nio/ByteBuffer;II)J
+ */
+JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_getDictIdFromDictDirect
+(JNIEnv *env, jclass obj, jobject src, jint offset, jint src_size) {
+    unsigned dict_id = 0;
+    char *src_buff = (char*)(*env)->GetDirectBufferAddress(env, src);
+    if (src_buff == NULL) goto E1;
+    dict_id = ZSTD_getDictID_fromDict(src_buff + offset, (size_t) src_size);
+E1: return (jlong) dict_id;
+}
+
+/*
+ * Class:     com_github_luben_zstd_Zstd
  * Method:    decompressedDirectByteBufferSize
  * Signature: (Ljava/nio/ByteBuffer;II)J
  */
