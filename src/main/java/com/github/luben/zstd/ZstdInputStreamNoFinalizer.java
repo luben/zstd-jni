@@ -140,7 +140,7 @@ public class ZstdInputStreamNoFinalizer extends FilterInputStream {
             throw new IOException("Stream closed");
         }
 
-        // guard agains buffer overflows
+        // guard against buffer overflows
         if (offset < 0 || len > dst.length - offset) {
             throw new IndexOutOfBoundsException("Requested length " + len
                     + " from offset " + offset + " in buffer of size " + dst.length);
