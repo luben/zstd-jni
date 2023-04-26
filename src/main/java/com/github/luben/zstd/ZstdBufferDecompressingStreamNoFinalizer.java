@@ -15,8 +15,8 @@ public class ZstdBufferDecompressingStreamNoFinalizer extends BaseZstdBufferDeco
         if (source.isDirect()) {
             throw new IllegalArgumentException("Source buffer should be a non-direct buffer");
         }
-        stream = createDStreamNative();
-        initDStreamNative(stream);
+        stream = createDStream();
+        initDStream(stream);
     }
 
     @Override
@@ -44,8 +44,14 @@ public class ZstdBufferDecompressingStreamNoFinalizer extends BaseZstdBufferDeco
 
     @Override
     long decompressStream(long stream, ByteBuffer dst, int dstOffset, int dstSize, ByteBuffer src, int srcOffset, int srcSize) {
-        byte[] targetArr = Zstd.extractArray(dst);
-        byte[] sourceArr = Zstd.extractArray(source);
+        if (!src.hasArray()) {
+            throw new IllegalArgumentException("provided source ByteBuffer lacks array");
+        }
+        if (!dst.hasArray()) {
+            throw new IllegalArgumentException("provided destination ByteBuffer lacks array");
+        }
+        byte[] targetArr = dst.array();
+        byte[] sourceArr = src.array();
 
         return decompressStreamNative(stream, targetArr, dstOffset, dstSize, sourceArr, srcOffset, srcSize);
     }

@@ -16,8 +16,8 @@ public class ZstdDirectBufferDecompressingStreamNoFinalizer extends BaseZstdBuff
             throw new IllegalArgumentException("Source buffer should be a direct buffer");
         }
         this.source = source;
-        stream = createDStreamNative();
-        initDStreamNative(stream);
+        stream = createDStream();
+        initDStream(stream);
     }
 
     @Override

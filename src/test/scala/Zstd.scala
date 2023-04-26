@@ -2,12 +2,13 @@ package com.github.luben.zstd
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
+
 import java.io._
 import java.nio._
 import java.nio.channels.FileChannel
 import java.nio.channels.FileChannel.MapMode
+import java.nio.charset.Charset
 import java.nio.file.StandardOpenOption
-
 import scala.io._
 import scala.collection.mutable.WrappedArray
 import scala.util.Using
@@ -676,21 +677,34 @@ class ZstdSpec extends AnyFlatSpec with ScalaCheckPropertyChecks {
       val orig = new File("src/test/resources/xml")
       val file = new File(s"src/test/resources/xml-$level.zst")
       val channel = FileChannel.open(file.toPath, StandardOpenOption.READ)
-      val readBuffer = ByteBuffer.allocate(channel.size().toInt)
+      // write some garbage bytes at the beginning of buffer containing compressed data to prove that
+      // this buffer's position doesn't have to start from 0.
+      val garbageBytes = "garbage bytes".getBytes(Charset.defaultCharset());
+      val readBuffer = ByteBuffer.allocate(channel.size().toInt + garbageBytes.length)
+      readBuffer.put(garbageBytes)
       channel.read(readBuffer)
+      // set pos to 0 and limit to containing bytes
       readBuffer.flip()
+      // advance the position after garbage data
+      readBuffer.position(garbageBytes.length)
+
       val zis = new ZstdBufferDecompressingStream(readBuffer)
       val length = orig.length.toInt
       val buff = Array.fill[Byte](length)(0)
       var pos = 0
-      val block = ByteBuffer.allocate(1)
+      // write some garbage bytes at the beginning of buffer containing uncompressed data to prove that
+      // this buffer's position doesn't have to start from 0.
+      val block = ByteBuffer.allocate(1 + garbageBytes.length)
       while (pos < length && zis.hasRemaining) {
         block.clear
+        block.put(garbageBytes)
         val read = zis.read(block)
         if (read != 1) {
           sys.error(s"Failed reading compressed file before end. Bytes read: $read")
         }
         block.flip()
+        // advance the position after garbage data
+        block.position(garbageBytes.length);
         buff.update(pos, block.get())
         pos += 1
       }
