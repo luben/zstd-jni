@@ -1,22 +1,19 @@
 package com.github.luben.zstd
 
 import org.scalatest.flatspec.AnyFlatSpec
+
 import java.io._
 import java.nio._
-import java.nio.channels.FileChannel
-import java.nio.channels.FileChannel.MapMode
-import java.nio.file.StandardOpenOption
-
 import scala.io._
-import scala.collection.mutable.WrappedArray
+import scala.util.Using
 
 class ZstdDictSpec extends AnyFlatSpec {
 
   def source = Source.fromFile("src/test/resources/xml")(Codec.ISO8859).map{_.toByte}
 
-  def train(legacy: Boolean): Array[Byte] = {
-    val src = source.sliding(1024, 1024).take(1024).map(_.toArray)
-    val trainer = new ZstdDictTrainer(1024 * 1024, 32 * 1024)
+  def train(legacy: Boolean, sampleSize: Int): Array[Byte] = {
+    val src = source.sliding(1024, 1024).take(sampleSize).map(_.toArray)
+    val trainer = new ZstdDictTrainer(1024 * sampleSize, 32 * sampleSize)
     for (sample <- src) {
       trainer.addSample(sample)
     }
@@ -52,7 +49,8 @@ class ZstdDictSpec extends AnyFlatSpec {
   val levels = List(1)
   for {
        legacy <- legacyS
-       dict = train(legacy)
+       dict = train(legacy, 1024)
+       dict2 = train(legacy, 512)
        dictInDirectByteBuffer = wrapInDirectByteBuffer(dict)
        level <- levels
   } {
@@ -280,6 +278,83 @@ class ZstdDictSpec extends AnyFlatSpec {
       zis.close
       assert(Zstd.getDictIdFromFrame(compressed) == Zstd.getDictIdFromDict(dict))
       assert(input.toSeq == output.toSeq)
+    }
+
+    it should s"round-trip streaming compression/decompression with multiple fast dicts with legacy $legacy " in {
+      // given: compress using first one dictionary, then another
+      val cdict = new ZstdDictCompress(dict, 0, dict.length, 1)
+      val cdict2 = new ZstdDictCompress(dict2, 0, dict2.length, 1)
+
+      val compressedWithDict1 = compressWithDict(cdict)
+      val compressedWithDict2 = compressWithDict(cdict2)
+
+      // when: decompress with the both dictionaries configured and multiple dict references enabled
+      val ddict = new ZstdDictDecompress(dict)
+      val ddict2 = new ZstdDictDecompress(dict2)
+
+      val dicts = ddict::ddict2::Nil
+      val uncompressed1 = uncompressWithMultipleDicts(compressedWithDict1, dicts)
+      val uncompressed2 = uncompressWithMultipleDicts(compressedWithDict2, dicts)
+
+      // then: both compressed inputs decompressed successfully
+      assert(uncompressed1.toSeq == input.toSeq)
+      assert(Zstd.getDictIdFromFrame(compressedWithDict1) == Zstd.getDictIdFromDict(dict))
+
+      assert(uncompressed2.toSeq == input.toSeq)
+      assert(Zstd.getDictIdFromFrame(compressedWithDict2) == Zstd.getDictIdFromDict(dict2))
+    }
+
+    it should s"round-trip streaming compression/decompression with multiple fast dicts with legacy $legacy and disabled multiple dict references" in {
+      // given: compress using first one dictionary, then another
+      val cdict = new ZstdDictCompress(dict, 0, dict.length, 1)
+      val cdict2 = new ZstdDictCompress(dict2, 0, dict2.length, 1)
+
+      val compressedWithDict1 = compressWithDict(cdict)
+      val compressedWithDict2 = compressWithDict(cdict2)
+
+      // when: decompress with the both dictionaries configured and multiple dict references disabled
+      //       -> should be used only the second one
+      val ddict = new ZstdDictDecompress(dict)
+      val ddict2 = new ZstdDictDecompress(dict2)
+
+      val dicts = ddict :: ddict2 :: Nil
+      val uncompressed2 = uncompressWithMultipleDicts(compressedWithDict2, dicts, multipleDdicts = false)
+
+      // then: decompression of compressed with the first dict should fail with dictionary mismatch,
+      //       the second one should be decompressed successfully
+      val caughtException = intercept[ZstdIOException] {
+        uncompressWithMultipleDicts(compressedWithDict1, dicts, multipleDdicts = false)
+      }
+      assert(caughtException.getMessage == "Dictionary mismatch")
+
+      assert(uncompressed2.toSeq == input.toSeq)
+      assert(Zstd.getDictIdFromFrame(compressedWithDict2) == Zstd.getDictIdFromDict(dict2))
+    }
+
+    def compressWithDict(cdict: ZstdDictCompress): Array[Byte] = {
+      val os = new ByteArrayOutputStream(Zstd.compressBound(input.length.toLong).toInt)
+      Using(new ZstdOutputStream(os, 1)) { zos =>
+        zos.setDict(cdict)
+        zos.write(input)
+      }
+      os.toByteArray
+    }
+
+    def uncompressWithMultipleDicts(
+      compressed: Array[Byte],
+      dicts: List[ZstdDictDecompress],
+      multipleDdicts: Boolean = true
+    ): Array[Byte] = {
+      Using.resources(
+        new ZstdInputStream(new ByteArrayInputStream(compressed))
+          .setRefMultipleDDicts(multipleDdicts),
+        new ByteArrayOutputStream()
+      ) { (zis, os) =>
+        dicts.foreach(zis.setDict)
+
+        zis.transferTo(os)
+        os.toByteArray
+      }
     }
 
     it should s"round-trip streaming ByteBuffer compression/decompression with byte[] dict with legacy $legacy" in {

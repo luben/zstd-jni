@@ -334,6 +334,17 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_setCompressionWorkers
 
 /*
  * Class:     com_github_luben_zstd_Zstd
+ * Method:    setRefMultipleDDicts
+ * Signature: (J)I
+ */
+JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_setRefMultipleDDicts
+  (JNIEnv *env, jclass obj, jlong stream, jboolean enabled) {
+    ZSTD_refMultipleDDicts_e value = enabled ? ZSTD_rmd_refMultipleDDicts : ZSTD_rmd_refSingleDDict;
+    return ZSTD_DCtx_setParameter((ZSTD_DCtx *)(intptr_t) stream, ZSTD_d_refMultipleDDicts, value);
+}
+
+/*
+ * Class:     com_github_luben_zstd_Zstd
  * Methods:   header constants access
  * Signature: ()I
  */

@@ -567,6 +567,7 @@ public class Zstd {
     public static native int setCompressionWorkers(long stream, int workers);
     public static native int setDecompressionLongMax(long stream, int windowLogMax);
     public static native int setDecompressionMagicless(long stream, boolean useMagicless);
+    public static native int setRefMultipleDDicts(long stream, boolean useMultiple);
 
     /* Utility methods */
 

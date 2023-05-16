@@ -117,6 +117,14 @@ public class ZstdInputStreamNoFinalizer extends FilterInputStream {
         return this;
     }
 
+    public synchronized ZstdInputStreamNoFinalizer setRefMultipleDDicts(boolean useMultiple) throws IOException {
+        int size = Zstd.setRefMultipleDDicts(stream, useMultiple);
+        if (Zstd.isError(size)) {
+            throw new ZstdIOException(size);
+        }
+        return this;
+    }
+
     public synchronized int read(byte[] dst, int offset, int len) throws IOException {
         // guard agains buffer overflows
         if (offset < 0 || len > dst.length - offset) {
