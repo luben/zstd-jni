@@ -88,6 +88,17 @@ public class ZstdInputStream extends FilterInputStream {
         return this;
     }
 
+    /**
+     * Enable or disable support for multiple dictionary references
+     *
+     * @param useMultiple Enables references table for DDict, so the DDict used for decompression will be
+     *                    determined per the dictId in the frame, default: false
+     */
+    public ZstdInputStream setRefMultipleDDicts(boolean useMultiple) throws IOException {
+        inner.setRefMultipleDDicts(useMultiple);
+        return this;
+    }
+
     public int read(byte[] dst, int offset, int len) throws IOException {
         return inner.read(dst, offset, len);
     }
