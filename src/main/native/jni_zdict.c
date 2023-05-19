@@ -11,6 +11,11 @@ JNIEXPORT jlong Java_com_github_luben_zstd_Zstd_trainFromBuffer
   (JNIEnv *env, jclass obj, jobjectArray samples, jbyteArray dictBuffer, jboolean legacy) {
     size_t size = 0;
     jsize num_samples = (*env)->GetArrayLength(env, samples);
+    if (num_samples <= 10) {
+        jclass eClass = (*env)->FindClass(env, "Ljava/lang/RuntimeException;");
+        (*env)->ThrowNew(env, eClass, "nb of samples too low");
+        goto E1;
+    }
     size_t *samples_sizes = malloc(sizeof(size_t) * num_samples);
     if (!samples_sizes) {
         jclass eClass = (*env)->FindClass(env, "Ljava/lang/OutOfMemoryError;");
@@ -65,6 +70,11 @@ JNIEXPORT jlong Java_com_github_luben_zstd_Zstd_trainFromBufferDirect
 
     /* convert sized from int to size_t */
     jsize num_samples = (*env)->GetArrayLength(env, sampleSizes);
+    if (num_samples <= 10) {
+        jclass eClass = (*env)->FindClass(env, "Ljava/lang/RuntimeException;");
+        (*env)->ThrowNew(env, eClass, "nb of samples too low");
+        goto E1;
+    }
     size_t *samples_sizes = malloc(sizeof(size_t) * num_samples);
     if (!samples_sizes) {
         jclass eClass = (*env)->FindClass(env, "Ljava/lang/OutOfMemoryError;");

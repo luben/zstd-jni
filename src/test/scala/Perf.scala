@@ -110,7 +110,7 @@ class ZstdPerfSpec extends AnyFlatSpec  {
     val d_ctx = new ZstdDecompressCtx()
     val DICT_SIZE = 65536
     val dictBuf = new Array[Byte](DICT_SIZE)
-    val samples = new Array[Array[Byte]](8)
+    val samples = new Array[Array[Byte]](11)
     Range(0, samples.length).foreach { i =>
       val l = input.length / samples.length
       samples(i) = new Array[Byte](l)
