@@ -708,7 +708,13 @@ public class Zstd {
      * @return the number of bytes into buffer 'dictBuffer' or an error code if
      *          it fails (which can be tested using ZSTD_isError())
      */
-    public static native long trainFromBuffer(byte[][] samples, byte[] dictBuffer, boolean legacy);
+    public static long trainFromBuffer(byte[][] samples, byte[] dictBuffer, boolean legacy) {
+        if (samples.length <= 10) {
+            throw new ZstdException(Zstd.errGeneric(), "nb of samples too low");
+        }
+        return trainFromBuffer0(samples, dictBuffer, legacy);
+    }
+    private static native long trainFromBuffer0(byte[][] samples, byte[] dictBuffer, boolean legacy);
 
     /**
      * Creates a new dictionary to tune a kind of samples
@@ -720,7 +726,13 @@ public class Zstd {
      * @return the number of bytes into buffer 'dictBuffer' or an error code if
      *          it fails (which can be tested using ZSTD_isError())
      */
-    public static native long trainFromBufferDirect(ByteBuffer samples, int[] sampleSizes, ByteBuffer dictBuffer, boolean legacy);
+    public static long trainFromBufferDirect(ByteBuffer samples, int[] sampleSizes, ByteBuffer dictBuffer, boolean legacy) {
+        if (sampleSizes.length <= 10) {
+            throw new ZstdException(Zstd.errGeneric(), "nb of samples too low");
+        }
+        return trainFromBufferDirect0(samples, sampleSizes, dictBuffer, legacy);
+    }
+    private static native long trainFromBufferDirect0(ByteBuffer samples, int[] sampleSizes, ByteBuffer dictBuffer, boolean legacy);
 
     /**
      * Get DictId from a compressed frame

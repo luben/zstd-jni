@@ -7,15 +7,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-JNIEXPORT jlong Java_com_github_luben_zstd_Zstd_trainFromBuffer
+JNIEXPORT jlong Java_com_github_luben_zstd_Zstd_trainFromBuffer0
   (JNIEnv *env, jclass obj, jobjectArray samples, jbyteArray dictBuffer, jboolean legacy) {
     size_t size = 0;
     jsize num_samples = (*env)->GetArrayLength(env, samples);
-    if (num_samples <= 10) {
-        jclass eClass = (*env)->FindClass(env, "Ljava/lang/RuntimeException;");
-        (*env)->ThrowNew(env, eClass, "nb of samples too low");
-        goto E1;
-    }
     size_t *samples_sizes = malloc(sizeof(size_t) * num_samples);
     if (!samples_sizes) {
         jclass eClass = (*env)->FindClass(env, "Ljava/lang/OutOfMemoryError;");
@@ -60,7 +55,7 @@ E2: free(samples_sizes);
 E1: return size;
 }
 
-JNIEXPORT jlong Java_com_github_luben_zstd_Zstd_trainFromBufferDirect
+JNIEXPORT jlong Java_com_github_luben_zstd_Zstd_trainFromBufferDirect0
   (JNIEnv *env, jclass obj, jobject samples, jintArray sampleSizes, jobject dictBuffer, jboolean legacy) {
 
     size_t size = 0;
@@ -70,11 +65,6 @@ JNIEXPORT jlong Java_com_github_luben_zstd_Zstd_trainFromBufferDirect
 
     /* convert sized from int to size_t */
     jsize num_samples = (*env)->GetArrayLength(env, sampleSizes);
-    if (num_samples <= 10) {
-        jclass eClass = (*env)->FindClass(env, "Ljava/lang/RuntimeException;");
-        (*env)->ThrowNew(env, eClass, "nb of samples too low");
-        goto E1;
-    }
     size_t *samples_sizes = malloc(sizeof(size_t) * num_samples);
     if (!samples_sizes) {
         jclass eClass = (*env)->FindClass(env, "Ljava/lang/OutOfMemoryError;");
