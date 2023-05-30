@@ -679,8 +679,15 @@ class ZstdSpec extends AnyFlatSpec with ScalaCheckPropertyChecks {
       val channel = FileChannel.open(file.toPath, StandardOpenOption.READ)
       // write some garbage bytes at the beginning of buffer containing compressed data to prove that
       // this buffer's position doesn't have to start from 0.
-      val garbageBytes = "garbage bytes".getBytes(Charset.defaultCharset());
-      val readBuffer = ByteBuffer.allocate(channel.size().toInt + garbageBytes.length)
+      val garbageBytes = "garbage bytes".getBytes(Charset.defaultCharset())
+      // add some extra bytes to the underlying array of the ByteBuffer. The ByteBuffer view does not include these
+      // extra bytes. These are added to the underlying array to test for scenarios where the ByteBuffer view is a slice
+      // of the underlying array.
+      val extraBytes = "extra bytes".getBytes(Charset.defaultCharset())
+      // Create a read buffer with extraBytes, we will later carve a slice out of it to store the compressed data.
+      val bigReadBuffer = ByteBuffer.allocate(channel.size().toInt + garbageBytes.length + extraBytes.length)
+      bigReadBuffer.put(extraBytes)
+      val readBuffer = bigReadBuffer.slice()
       readBuffer.put(garbageBytes)
       channel.read(readBuffer)
       // set pos to 0 and limit to containing bytes
@@ -694,7 +701,9 @@ class ZstdSpec extends AnyFlatSpec with ScalaCheckPropertyChecks {
       var pos = 0
       // write some garbage bytes at the beginning of buffer containing uncompressed data to prove that
       // this buffer's position doesn't have to start from 0.
-      val block = ByteBuffer.allocate(1 + garbageBytes.length)
+      val bigBlock = ByteBuffer.allocate(1 + garbageBytes.length + extraBytes.length)
+      bigBlock.put(extraBytes)
+      var block = bigBlock.slice()
       while (pos < length && zis.hasRemaining) {
         block.clear
         block.put(garbageBytes)
