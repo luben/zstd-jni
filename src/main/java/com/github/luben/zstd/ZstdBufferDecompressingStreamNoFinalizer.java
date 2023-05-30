@@ -43,7 +43,7 @@ public class ZstdBufferDecompressingStreamNoFinalizer extends BaseZstdBufferDeco
     }
 
     @Override
-    long decompressStream(long stream, ByteBuffer dst, int dstOffset, int dstSize, ByteBuffer src, int srcOffset, int srcSize) {
+    long decompressStream(long stream, ByteBuffer dst, int dstBufPos, int dstSize, ByteBuffer src, int srcBufPos, int srcSize) {
         if (!src.hasArray()) {
             throw new IllegalArgumentException("provided source ByteBuffer lacks array");
         }
@@ -53,7 +53,10 @@ public class ZstdBufferDecompressingStreamNoFinalizer extends BaseZstdBufferDeco
         byte[] targetArr = dst.array();
         byte[] sourceArr = src.array();
 
-        return decompressStreamNative(stream, targetArr, dstOffset, dstSize, sourceArr, srcOffset, srcSize);
+        // We are interested in array data corresponding to the pos represented by the ByteBuffer view.
+        // A ByteBuffer may share an underlying array with other ByteBuffers. In such scenario, we need to adjust the
+        // index of the array by adding an offset using arrayOffset().
+        return decompressStreamNative(stream, targetArr, dstBufPos + dst.arrayOffset(), dstSize, sourceArr, srcBufPos + src.arrayOffset(), srcSize);
     }
 
     public static int recommendedTargetBufferSize() {
