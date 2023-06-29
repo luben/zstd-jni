@@ -139,6 +139,101 @@ public class ZstdOutputStream extends FilterOutputStream{
     }
 
     /**
+     * Advanced Compression Option: Set the amount of data reloaded from the
+     * previous job.
+     * 
+     * See https://facebook.github.io/zstd/zstd_manual.html#Chapter5 for more information.
+     */
+    public ZstdOutputStream setOverlapLog(int overlapLog) throws IOException {
+        inner.setOverlapLog(overlapLog);
+        return this;
+    }
+
+    /**
+     * Advanced Compression Option: Set the size of each compression job. Only applies when multi
+     * threaded compression is enabled. 
+     *
+     * See https://facebook.github.io/zstd/zstd_manual.html#Chapter5 for more information.
+     */
+    public ZstdOutputStream setJobSize(int jobSize) throws IOException {
+        inner.setJobSize(jobSize);
+        return this;
+    }
+
+    /**
+     * Advanced Compression Option: Set the target match length.
+     *
+     * See https://facebook.github.io/zstd/zstd_manual.html#Chapter5 for more information.
+     */
+    public ZstdOutputStream setTargetLength(int targetLength) throws IOException {
+        inner.setTargetLength(targetLength);
+        return this;
+    }
+
+    /**
+     * Advanced Compression Option: Set the minimum match length. 
+     *
+     * See https://facebook.github.io/zstd/zstd_manual.html#Chapter5 for more information.
+     */
+    public ZstdOutputStream setMinMatch(int minMatch) throws IOException {
+        inner.setMinMatch(minMatch);
+        return this;
+    }
+
+    /**
+     * Advanced Compression Option: Set the maximum number of searches in a hash chain or a binary
+     * tree using logarithmic scale. 
+     * 
+     * See https://facebook.github.io/zstd/zstd_manual.html#Chapter5 for more information.
+     */
+    public ZstdOutputStream setSearchLog(int searchLog) throws IOException {
+        inner.setSearchLog(searchLog);
+        return this;
+    }
+
+    /**
+     * Advanced Compression Option: Set the maximum number of bits for the secondary search
+     * structure.
+     * 
+     * See https://facebook.github.io/zstd/zstd_manual.html#Chapter5 for more information.
+     */
+    public ZstdOutputStream setChainLog(int chainLog) throws IOException {
+        inner.setChainLog(chainLog);
+        return this;
+    }
+
+    /**
+     * Advanced Compression Option: Set the maximum number of bits for a hash table. 
+     *
+     * See https://facebook.github.io/zstd/zstd_manual.html#Chapter5 for more information.
+     */
+    public ZstdOutputStream setHashLog(int hashLog) throws IOException {
+        inner.setHashLog(hashLog);
+        return this;
+    }
+
+    /**
+     * Advanced Compression Option: Set the maximum number of bits for a match distance.
+     *
+     * See https://facebook.github.io/zstd/zstd_manual.html#Chapter5 for more information.
+     */
+    public ZstdOutputStream setWindowLog(int windowLog) throws IOException {
+        inner.setWindowLog(windowLog);
+        return this;
+    }
+
+    /**
+     * Advanced Compression Option: Set the strategy used by a match finder.
+     * 
+     * See https://facebook.github.io/zstd/zstd_manual.html#Chapter5 for more information.
+     */
+    public ZstdOutputStream setStrategy(int strategy) throws IOException {
+        inner.setStrategy(strategy);
+        return this;
+    }
+
+
+    /**
      * Enable closing the frame on flush.
      *
      * This will guarantee that it can be ready fully if the process crashes

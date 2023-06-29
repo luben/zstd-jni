@@ -1176,4 +1176,38 @@ class ZstdSpec extends AnyFlatSpec with ScalaCheckPropertyChecks {
       }
     }.get
   }
+
+  "advanced compression api" should "produce the same file as binary zstd" in {
+    Using.Manager { use =>
+      val file = new File("src/test/resources/xml")
+      val length = file.length.toInt
+      val fis  = new FileInputStream(file)
+      val buff = Array.fill[Byte](length)(0)
+      var pos  = 0
+      while( pos < length) {
+        pos += fis.read(buff, pos, length - pos)
+      }
+
+      val os  = new ByteArrayOutputStream(Zstd.compressBound(file.length).toInt)
+      val zos = new ZstdOutputStream(os)
+      zos.setWindowLog(23)
+      zos.setSearchLog(4)
+      zos.setTargetLength(32)
+      zos.setMinMatch(7)
+      zos.setStrategy(7)
+      zos.setHashLog(16)
+      zos.setChainLog(15)
+
+      zos.write(buff(0).toInt)
+      zos.write(buff, 1, length - 1)
+      zos.close()
+
+      val compressed = os.toByteArray.toSeq
+      val zst = Source.fromFile(s"src/test/resources/xml-advanced.zst")(Codec.ISO8859).map{char => char.toByte}.to(WrappedArray)
+
+     if (zst != compressed) {
+        sys.error(s"Failed original ${zst.length} != ${compressed.length} result")
+      }
+    }
+  }.get
 }

@@ -152,6 +152,154 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
     }
 
     /**
+     * Advanced Compression Option: Set the amount of data reloaded from the
+     * previous job.
+     * 
+     * See https://facebook.github.io/zstd/zstd_manual.html#Chapter5 for more information.
+     */
+    public synchronized ZstdOutputStreamNoFinalizer setOverlapLog(int overlapLog) throws IOException {
+        if (!frameClosed) {
+            throw new IllegalStateException("Change of parameter on initialized stream");
+        }
+        int size = Zstd.setCompressionOverlapLog(stream, overlapLog);
+        if (Zstd.isError(size)) {
+            throw new ZstdIOException(size);
+        }
+        return this;
+    }
+
+    /**
+     * Advanced Compression Option: Set the size of each compression job. Only applies when multi
+     * threaded compression is enabled. 
+     *
+     * See https://facebook.github.io/zstd/zstd_manual.html#Chapter5 for more information.
+     */
+    public synchronized ZstdOutputStreamNoFinalizer setJobSize(int jobSize) throws IOException {
+        if (!frameClosed) {
+            throw new IllegalStateException("Change of parameter on initialized stream");
+        }
+        int size = Zstd.setCompressionJobSize(stream, jobSize);
+        if (Zstd.isError(size)) {
+            throw new ZstdIOException(size);
+        }
+        return this;
+    }
+
+    /**
+     * Advanced Compression Option: Set the target match length.
+     *
+     * See https://facebook.github.io/zstd/zstd_manual.html#Chapter5 for more information.
+     */
+    public synchronized ZstdOutputStreamNoFinalizer setTargetLength(int targetLength) throws IOException {
+        if (!frameClosed) {
+            throw new IllegalStateException("Change of parameter on initialized stream");
+        }
+        int size = Zstd.setCompressionTargetLength(stream, targetLength);
+        if (Zstd.isError(size)) {
+            throw new ZstdIOException(size);
+        }
+        return this;
+    }
+
+    /**
+     * Advanced Compression Option: Set the minimum match length. 
+     *
+     * See https://facebook.github.io/zstd/zstd_manual.html#Chapter5 for more information.
+     */
+    public synchronized ZstdOutputStreamNoFinalizer setMinMatch(int minMatch) throws IOException {
+        if (!frameClosed) {
+            throw new IllegalStateException("Change of parameter on initialized stream");
+        }
+        int size = Zstd.setCompressionMinMatch(stream, minMatch);
+        if (Zstd.isError(size)) {
+            throw new ZstdIOException(size);
+        }
+        return this;
+    }
+
+    /**
+     * Advanced Compression Option: Set the maximum number of searches in a hash chain or a binary
+     * tree using logarithmic scale. 
+     * 
+     * See https://facebook.github.io/zstd/zstd_manual.html#Chapter5 for more information.
+     */
+    public synchronized ZstdOutputStreamNoFinalizer setSearchLog(int searchLog) throws IOException {
+        if (!frameClosed) {
+            throw new IllegalStateException("Change of parameter on initialized stream");
+        }
+        int size = Zstd.setCompressionSearchLog(stream, searchLog);
+        if (Zstd.isError(size)) {
+            throw new ZstdIOException(size);
+        }
+        return this;
+    }
+
+    /**
+     * Advanced Compression Option: Set the maximum number of bits for the secondary search
+     * structure.
+     * 
+     * See https://facebook.github.io/zstd/zstd_manual.html#Chapter5 for more information.
+     */
+    public synchronized ZstdOutputStreamNoFinalizer setChainLog(int chainLog) throws IOException {
+        if (!frameClosed) {
+            throw new IllegalStateException("Change of parameter on initialized stream");
+        }
+        int size = Zstd.setCompressionChainLog(stream, chainLog);
+        if (Zstd.isError(size)) {
+            throw new ZstdIOException(size);
+        }
+        return this;
+    }
+
+    /**
+     * Advanced Compression Option: Set the maximum number of bits for a hash table. 
+     *
+     * See https://facebook.github.io/zstd/zstd_manual.html#Chapter5 for more information.
+     */
+    public synchronized ZstdOutputStreamNoFinalizer setHashLog(int hashLog) throws IOException {
+        if (!frameClosed) {
+            throw new IllegalStateException("Change of parameter on initialized stream");
+        }
+        int size = Zstd.setCompressionHashLog(stream, hashLog);
+        if (Zstd.isError(size)) {
+            throw new ZstdIOException(size);
+        }
+        return this;
+    }
+
+    /**
+     * Advanced Compression Option: Set the maximum number of bits for a match distance.
+     *
+     * See https://facebook.github.io/zstd/zstd_manual.html#Chapter5 for more information.
+     */
+    public synchronized ZstdOutputStreamNoFinalizer setWindowLog(int windowLog) throws IOException {
+        if (!frameClosed) {
+            throw new IllegalStateException("Change of parameter on initialized stream");
+        }
+        int size = Zstd.setCompressionWindowLog(stream, windowLog);
+        if (Zstd.isError(size)) {
+            throw new ZstdIOException(size);
+        }
+        return this;
+    }
+
+    /**
+     * Advanced Compression Option: Set the strategy used by a match finder.
+     * 
+     * See https://facebook.github.io/zstd/zstd_manual.html#Chapter5 for more information.
+     */
+    public synchronized ZstdOutputStreamNoFinalizer setStrategy(int strategy) throws IOException {
+        if (!frameClosed) {
+            throw new IllegalStateException("Change of parameter on initialized stream");
+        }
+        int size = Zstd.setCompressionStrategy(stream, strategy);
+        if (Zstd.isError(size)) {
+            throw new ZstdIOException(size);
+        }
+        return this;
+    }
+
+    /**
      * Enable closing the frame on flush.
      *
      * This will guarantee that it can be ready fully if the process crashes

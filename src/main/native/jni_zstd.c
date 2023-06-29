@@ -127,7 +127,7 @@ E1: return (jlong) dict_id;
 
 /*
  * Class:     com_github_luben_zstd_Zstd
- * Method:    getDictIdFromDict
+ * Method:    getDictIdFromDictDirect
  * Signature: (Ljava/nio/ByteBuffer;II)J
  */
 JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_getDictIdFromDictDirect
@@ -262,7 +262,7 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_loadFastDictCompress
 /*
  * Class:     com_github_luben_zstd_Zstd
  * Method:    setCompressionChecksums
- * Signature: (J)I
+ * Signature: (JZ)I
  */
 JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_setCompressionChecksums
   (JNIEnv *env, jclass obj, jlong stream, jboolean enabled) {
@@ -270,6 +270,11 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_setCompressionChecksums
     return ZSTD_CCtx_setParameter((ZSTD_CCtx *)(intptr_t) stream, ZSTD_c_checksumFlag, checksum);
 }
 
+/*
+ * Class:     com_github_luben_zstd_Zstd
+ * Method:    setCompressionMagicless
+ * Signature: (JZ)I
+ */
 JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_setCompressionMagicless
   (JNIEnv *env, jclass obj, jlong stream, jboolean enabled) {
     ZSTD_format_e format = enabled ? ZSTD_f_zstd1_magicless : ZSTD_f_zstd1;
@@ -279,7 +284,7 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_setCompressionMagicless
 /*
  * Class:     com_github_luben_zstd_Zstd
  * Method:    setCompressionLevel
- * Signature: (J)I
+ * Signature: (JI)I
  */
 JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_setCompressionLevel
   (JNIEnv *env, jclass obj, jlong stream, jint level) {
@@ -289,7 +294,7 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_setCompressionLevel
 /*
  * Class:     com_github_luben_zstd_Zstd
  * Method:    setCompressionLong
- * Signature: (J)V
+ * Signature: (JI)I
  */
 JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_setCompressionLong
   (JNIEnv *env, jclass obj, jlong stream, jint windowLog) {
@@ -307,8 +312,8 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_setCompressionLong
 
 /*
  * Class:     com_github_luben_zstd_Zstd
- * Method:    setDecompressionLong
- * Signature: (J)V
+ * Method:    setDecompressionLongMax
+ * Signature: (JI)I
  */
 JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_setDecompressionLongMax
   (JNIEnv *env, jclass obj, jlong stream, jint windowLogMax) {
@@ -316,6 +321,11 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_setDecompressionLongMax
     return ZSTD_DCtx_setParameter(dctx, ZSTD_d_windowLogMax, windowLogMax);
 }
 
+/*
+ * Class:     com_github_luben_zstd_Zstd
+ * Method:    setDecompressionMagicless
+ * Signature: (JZ)I
+ */
 JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_setDecompressionMagicless
   (JNIEnv *env, jclass obj, jlong stream, jboolean enabled) {
     ZSTD_format_e format = enabled ? ZSTD_f_zstd1_magicless : ZSTD_f_zstd1;
@@ -325,7 +335,7 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_setDecompressionMagicless
 /*
  * Class:     com_github_luben_zstd_Zstd
  * Method:    setCompressionWorkers
- * Signature: (J)I
+ * Signature: (JI)I
  */
 JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_setCompressionWorkers
   (JNIEnv *env, jclass obj, jlong stream, jint workers) {
@@ -334,8 +344,98 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_setCompressionWorkers
 
 /*
  * Class:     com_github_luben_zstd_Zstd
+ * Method:    setCompressionJobSize
+ * Signature: (JI)I
+ */
+JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_setCompressionJobSize
+  (JNIEnv *env, jclass obj, jlong stream, jint jobSize) {
+    return ZSTD_CCtx_setParameter((ZSTD_CCtx *)(intptr_t) stream, ZSTD_c_jobSize, jobSize);
+}
+
+/*
+ * Class:     com_github_luben_zstd_Zstd
+ * Method:    setCompressionOverlapLog
+ * Signature: (JI)I
+ */
+JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_setCompressionOverlapLog
+  (JNIEnv *env, jclass obj, jlong stream, jint overlapLog) {
+    return ZSTD_CCtx_setParameter((ZSTD_CCtx *)(intptr_t) stream, ZSTD_c_overlapLog, overlapLog);
+}
+
+/*
+ * Class:     com_github_luben_zstd_Zstd
+ * Method:    setCompressionWindowLog
+ * Signature: (JI)I
+ */
+JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_setCompressionWindowLog
+  (JNIEnv *env, jclass obj, jlong stream, jint windowLog) {
+    return ZSTD_CCtx_setParameter((ZSTD_CCtx *)(intptr_t) stream, ZSTD_c_windowLog, windowLog);
+}
+
+/*
+ * Class:     com_github_luben_zstd_Zstd
+ * Method:    setCompressionHashLog
+ * Signature: (JI)I
+ */
+JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_setCompressionHashLog
+  (JNIEnv *env, jclass obj, jlong stream, jint hashLog) {
+    return ZSTD_CCtx_setParameter((ZSTD_CCtx *)(intptr_t) stream, ZSTD_c_hashLog, hashLog);
+}
+
+/*
+ * Class:     com_github_luben_zstd_Zstd
+ * Method:    setCompressionChainLog
+ * Signature: (JI)I
+ */
+JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_setCompressionChainLog
+  (JNIEnv *env, jclass obj, jlong stream, jint chainLog) {
+    return ZSTD_CCtx_setParameter((ZSTD_CCtx *)(intptr_t) stream, ZSTD_c_chainLog, chainLog);
+}
+
+/*
+ * Class:     com_github_luben_zstd_Zstd
+ * Method:    setCompressionSearchLog
+ * Signature: (JI)I
+ */
+JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_setCompressionSearchLog
+  (JNIEnv *env, jclass obj, jlong stream, jint searchLog) {
+    return ZSTD_CCtx_setParameter((ZSTD_CCtx *)(intptr_t) stream, ZSTD_c_searchLog, searchLog);
+}
+
+/*
+ * Class:     com_github_luben_zstd_Zstd
+ * Method:    setCompressionMinMatch
+ * Signature: (JI)I
+ */
+JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_setCompressionMinMatch
+  (JNIEnv *env, jclass obj, jlong stream, jint minMatch) {
+    return ZSTD_CCtx_setParameter((ZSTD_CCtx *)(intptr_t) stream, ZSTD_c_minMatch, minMatch);
+}
+
+/*
+ * Class:     com_github_luben_zstd_Zstd
+ * Method:    setCompressionTargetLength
+ * Signature: (JI)I
+ */
+JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_setCompressionTargetLength
+  (JNIEnv *env, jclass obj, jlong stream, jint targetLength) {
+    return ZSTD_CCtx_setParameter((ZSTD_CCtx *)(intptr_t) stream, ZSTD_c_targetLength, targetLength);
+}
+
+/*
+ * Class:     com_github_luben_zstd_Zstd
+ * Method:    setCompressionStrategy
+ * Signature: (JI)I
+ */
+JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_setCompressionStrategy
+  (JNIEnv *env, jclass obj, jlong stream, jint strategy) {
+    return ZSTD_CCtx_setParameter((ZSTD_CCtx *)(intptr_t) stream, ZSTD_c_strategy, strategy);
+}
+
+/*
+ * Class:     com_github_luben_zstd_Zstd
  * Method:    setRefMultipleDDicts
- * Signature: (J)I
+ * Signature: (JZ)I
  */
 JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_setRefMultipleDDicts
   (JNIEnv *env, jclass obj, jlong stream, jboolean enabled) {
