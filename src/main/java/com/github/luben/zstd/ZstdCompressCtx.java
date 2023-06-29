@@ -88,8 +88,140 @@ public class ZstdCompressCtx extends AutoCloseBase {
     public ZstdCompressCtx setWorkers(int workers) {
         ensureOpen();
         acquireSharedLock();
-        Zstd.setCompressionWorkers(nativePtr, workers);
-        releaseSharedLock();
+        try {
+            long result = Zstd.setCompressionWorkers(nativePtr, workers);
+            if (Zstd.isError(result)) {
+                throw new ZstdException(result);
+            }
+        } finally {
+            releaseSharedLock();
+        }
+        return this;
+    }
+
+    public ZstdCompressCtx setOverlapLog(int overlapLog) {
+        ensureOpen();
+        acquireSharedLock();
+        try {
+            long result = Zstd.setCompressionOverlapLog(nativePtr, overlapLog);
+            if (Zstd.isError(result)) {
+                throw new ZstdException(result);
+            }
+        } finally {
+            releaseSharedLock();
+        }
+        return this;
+    }
+
+    public ZstdCompressCtx setJobSize(int jobSize) {
+        ensureOpen();
+        acquireSharedLock();
+        try {
+            long result = Zstd.setCompressionJobSize(nativePtr, jobSize);
+            if (Zstd.isError(result)) {
+                throw new ZstdException(result);
+            }
+        } finally {
+            releaseSharedLock();
+        }
+        return this;
+    }
+
+    public ZstdCompressCtx setTargetLength(int targetLength) {
+        ensureOpen();
+        acquireSharedLock();
+        try {
+            long result = Zstd.setCompressionTargetLength(nativePtr, targetLength);
+            if (Zstd.isError(result)) {
+                throw new ZstdException(result);
+            }
+        } finally {
+            releaseSharedLock();
+        }
+        return this;
+    }
+
+    public ZstdCompressCtx setMinMatch(int minMatch) {
+        ensureOpen();
+        acquireSharedLock();
+        try {
+            long result = Zstd.setCompressionMinMatch(nativePtr, minMatch);
+            if (Zstd.isError(result)) {
+                throw new ZstdException(result);
+            }
+        } finally {
+            releaseSharedLock();
+        }
+        return this;
+    }
+
+    public ZstdCompressCtx setSearchLog(int searchLog) {
+        ensureOpen();
+        acquireSharedLock();
+        try {
+            long result = Zstd.setCompressionSearchLog(nativePtr, searchLog);
+            if (Zstd.isError(result)) {
+                throw new ZstdException(result);
+            }
+        } finally {
+            releaseSharedLock();
+        }
+        return this;
+    }
+
+    public ZstdCompressCtx setChainLog(int chainLog) {
+        ensureOpen();
+        acquireSharedLock();
+        try {
+            long result = Zstd.setCompressionChainLog(nativePtr, chainLog);
+            if (Zstd.isError(result)) {
+                throw new ZstdException(result);
+            }
+        } finally {
+            releaseSharedLock();
+        }
+        return this;
+    }
+
+    public ZstdCompressCtx setHashLog(int hashLog) {
+        ensureOpen();
+        acquireSharedLock();
+        try {
+            long result = Zstd.setCompressionHashLog(nativePtr, hashLog);
+            if (Zstd.isError(result)) {
+                throw new ZstdException(result);
+            }
+        } finally {
+            releaseSharedLock();
+        }
+        return this;
+    }
+
+    public ZstdCompressCtx setWindowLog(int windowLog) {
+        ensureOpen();
+        acquireSharedLock();
+        try {
+            long result = Zstd.setCompressionWindowLog(nativePtr, windowLog);
+            if (Zstd.isError(result)) {
+                throw new ZstdException(result);
+            }
+        } finally {
+            releaseSharedLock();
+        }
+        return this;
+    }
+
+    public ZstdCompressCtx setStrategy(int strategy) {
+        ensureOpen();
+        acquireSharedLock();
+        try {
+            long result = Zstd.setCompressionStrategy(nativePtr, strategy);
+            if (Zstd.isError(result)) {
+                throw new ZstdException(result);
+            }
+        } finally {
+            releaseSharedLock();
+        }
         return this;
     }
 
