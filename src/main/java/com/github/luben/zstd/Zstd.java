@@ -724,7 +724,7 @@ public class Zstd {
      * @return the number of bytes of the original buffer
      *         0 if the original size is not known
      * @deprecated
-     * Use `getDirectByteBuferFrameContentSize` that return also the errors
+     * Use `getDirectByteBufferFrameContentSize` that return also the errors
      */
     @Deprecated
     public static native long decompressedDirectByteBufferSize(ByteBuffer src, int srcPosition, int srcSize, boolean magicless);
@@ -740,7 +740,7 @@ public class Zstd {
      *         0 if the original size is not known
      *         negative if there is an error decoding the frame header
      */
-    public static native long getDirectByteBuferFrameContentSize(ByteBuffer src, int srcPosition, int srcSize, boolean magicless);
+    public static native long getDirectByteBufferFrameContentSize(ByteBuffer src, int srcPosition, int srcSize, boolean magicless);
 
     /**
      * Return the original size of a compressed buffer (if known)
@@ -751,7 +751,7 @@ public class Zstd {
      * @return the number of bytes of the original buffer
      *         0 if the original size is not known
      * @deprecated
-     * Use `getDirectByteBuferFrameContentSize` that return also the errors
+     * Use `getDirectByteBufferFrameContentSize` that return also the errors
      */
     @Deprecated
     public static long decompressedDirectByteBufferSize(ByteBuffer src, int srcPosition, int srcSize) {
@@ -768,8 +768,8 @@ public class Zstd {
      *         0 if the original size is not known
      *         negative if there is an error decoding the frame header
      */
-    public static long getDirectByteBuferFrameContentSize(ByteBuffer src, int srcPosition, int srcSize) {
-        return getDirectByteBuferFrameContentSize(src, srcPosition, srcSize, false);
+    public static long getDirectByteBufferFrameContentSize(ByteBuffer src, int srcPosition, int srcSize) {
+        return getDirectByteBufferFrameContentSize(src, srcPosition, srcSize, false);
     }
 
     /**
@@ -1368,9 +1368,26 @@ public class Zstd {
      *               end.
      * @return the number of bytes of the original buffer
      *         0 if the original size is not known
+     * @deprecated
+     * Use `getDirectByteBufferFrameContentSize` that return also the errors
      */
+    @Deprecated
     public static long decompressedSize(ByteBuffer srcBuf) {
         return decompressedDirectByteBufferSize(srcBuf, srcBuf.position(), srcBuf.limit() - srcBuf.position());
+    }
+
+    /**
+     * Return the original size of a compressed buffer (if known)
+     *
+     * @param srcBuf the compressed buffer.  must be direct.  It is assumed that the position() of this buffer marks the beginning of the
+     *               compressed data whose decompressed size is being queried, and that the limit() of this buffer marks its
+     *               end.
+     * @return the number of bytes of the original buffer
+     *         0 if the original size is not known
+     *         negative if there is an error decoding the frame header
+     */
+    public static long getFrameContentSize(ByteBuffer srcBuf) {
+        return getDirectByteBufferFrameContentSize(srcBuf, srcBuf.position(), srcBuf.limit() - srcBuf.position());
     }
 
     /**

@@ -28,7 +28,7 @@ class ZstdSpec extends AnyFlatSpec with ScalaCheckPropertyChecks {
           // Assumes that `Zstd.defaultCompressionLevel() == 3`.
           val compressed  = if (level != 3) Zstd.compress(input, level) else Zstd.compress(input)
           val decompressed= Zstd.decompress(compressed, size)
-          input.toSeq == decompressed.toSeq && size == Zstd.decompressedSize(compressed)
+          input.toSeq == decompressed.toSeq && size == Zstd.decompressedSize(compressed) && size == Zstd.getFrameContentSize(compressed)
         }
       }
     }
@@ -45,7 +45,7 @@ class ZstdSpec extends AnyFlatSpec with ScalaCheckPropertyChecks {
           if (Zstd.isError(csize)) sys.error(Zstd.getErrorName(csize))
           val dsize       = Zstd.decompressByteArray(decompressed, 0, size, compressed, 0, csize.toInt)
           if (Zstd.isError(dsize)) sys.error(Zstd.getErrorName(dsize))
-          size == dsize && input.toSeq == decompressed.toSeq && size == Zstd.decompressedSize(compressed)
+          size == dsize && input.toSeq == decompressed.toSeq && size == Zstd.decompressedSize(compressed) && size == Zstd.getFrameContentSize(compressed)
         }
       }
     }
@@ -73,7 +73,7 @@ class ZstdSpec extends AnyFlatSpec with ScalaCheckPropertyChecks {
           decompressedBuffer.flip()
 
           val comparison = inputBuffer.compareTo(decompressedBuffer)
-          val result = comparison == 0 && Zstd.decompressedSize(compressedBuffer) == decompressedSize
+          val result = comparison == 0 && Zstd.decompressedSize(compressedBuffer) == decompressedSize && Zstd.getFrameContentSize(compressedBuffer) == decompressedSize
           result
         }
       }
@@ -1149,7 +1149,7 @@ class ZstdSpec extends AnyFlatSpec with ScalaCheckPropertyChecks {
           decompressedBuffer.flip()
 
           val comparison = inputBuffer.compareTo(decompressedBuffer)
-          comparison == 0 && Zstd.decompressedSize(compressedBuffer) == size
+          comparison == 0 && Zstd.decompressedSize(compressedBuffer) == size && Zstd.getFrameContentSize(compressedBuffer) == size
         }
       }
     }.get
@@ -1167,6 +1167,7 @@ class ZstdSpec extends AnyFlatSpec with ScalaCheckPropertyChecks {
           val compressedMagicless = cctx.compress(input)
           assert(compressedMagicless.length == (compressedMagic.length - 4))
           assert(input.length == Zstd.decompressedSize(compressedMagicless, 0, compressedMagicless.length, true))
+          assert(input.length == Zstd.getFrameContentSize(compressedMagicless, 0, compressedMagicless.length, true))
 
           dctx.reset()
           dctx.setMagicless(true)
