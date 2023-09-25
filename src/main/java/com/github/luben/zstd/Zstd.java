@@ -579,6 +579,28 @@ public class Zstd {
     public static native int setRefMultipleDDicts(long stream, boolean useMultiple);
 
     /* Utility methods */
+    /**
+     * Return the original size of a compressed buffer (if known)
+     *
+     * @param src the compressed buffer
+     * @param srcPosition offset of the compressed data inside the src buffer
+     * @param srcSize length of the compressed data inside the src buffer
+     * @param magicless whether the buffer contains a magicless frame
+     * @return the number of bytes of the original buffer
+     *         0 if the original size is not known,
+     *         negative if there is an error decoding the frame header
+     */
+    public static long getFrameContentSize(byte[] src, int srcPosition, int srcSize, boolean magicless) {
+        if (srcPosition >= src.length) {
+            throw new ArrayIndexOutOfBoundsException(srcPosition);
+        }
+        if (srcPosition + srcSize > src.length) {
+            throw new ArrayIndexOutOfBoundsException(srcPosition + srcSize);
+        }
+        return getFrameContentSize0(src, srcPosition, srcSize, magicless);
+    }
+
+    private static native long getFrameContentSize0(byte[] src, int srcPosition, int srcSize, boolean magicless);
 
     /**
      * Return the original size of a compressed buffer (if known)
@@ -589,7 +611,10 @@ public class Zstd {
      * @param magicless whether the buffer contains a magicless frame
      * @return the number of bytes of the original buffer
      *         0 if the original size is not known
+     * @deprecated
+     * Use `getFrameContentSize` that return also the errors
      */
+    @Deprecated
     public static long decompressedSize(byte[] src, int srcPosition, int srcSize, boolean magicless) {
         if (srcPosition >= src.length) {
             throw new ArrayIndexOutOfBoundsException(srcPosition);
@@ -609,8 +634,25 @@ public class Zstd {
      * @param srcPosition offset of the compressed data inside the src buffer
      * @param srcSize length of the compressed data inside the src buffer
      * @return the number of bytes of the original buffer
-     *         0 if the original size is not known
+     *         0 if the original size is not known,
+     *         negative if there is an error decoding the frame header
      */
+    public static long getFrameContentSize(byte[] src, int srcPosition, int srcSize) {
+        return getFrameContentSize(src, srcPosition, srcSize, false);
+    }
+
+    /**
+     * Return the original size of a compressed buffer (if known)
+     *
+     * @param src the compressed buffer
+     * @param srcPosition offset of the compressed data inside the src buffer
+     * @param srcSize length of the compressed data inside the src buffer
+     * @return the number of bytes of the original buffer
+     *         0 if the original size is not known
+     * @deprecated
+     * Use `getFrameContentSize` that return also the errors
+     */
+    @Deprecated
     public static long decompressedSize(byte[] src, int srcPosition, int srcSize) {
         return decompressedSize(src, srcPosition, srcSize, false);
     }
@@ -620,9 +662,26 @@ public class Zstd {
      *
      * @param src the compressed buffer
      * @param srcPosition offset of the compressed data inside the src buffer
+     * @param srcSize length of the compressed data inside the src buffer
+     * @return the number of bytes of the original buffer
+     *         0 if the original size is not known,
+     *         negative if there is an error decoding the frame header
+     */
+    public static long getFrameContentSize(byte[] src, int srcPosition) {
+        return getFrameContentSize(src, srcPosition, src.length - srcPosition);
+    }
+
+    /**
+     * Return the original size of a compressed buffer (if known)
+     *
+     * @param src the compressed buffer
+     * @param srcPosition offset of the compressed data inside the src buffer
      * @return the number of bytes of the original buffer
      *         0 if the original size is not known
+     * @deprecated
+     * Use `getFrameContentSize` that return also the errors
      */
+    @Deprecated
     public static long decompressedSize(byte[] src, int srcPosition) {
         return decompressedSize(src, srcPosition, src.length - srcPosition);
     }
@@ -631,9 +690,26 @@ public class Zstd {
      * Return the original size of a compressed buffer (if known)
      *
      * @param src the compressed buffer
+     * @param srcPosition offset of the compressed data inside the src buffer
+     * @param srcSize length of the compressed data inside the src buffer
+     * @return the number of bytes of the original buffer
+     *         0 if the original size is not known,
+     *         negative if there is an error decoding the frame header
+     */
+    public static long getFrameContentSize(byte[] src) {
+        return getFrameContentSize(src, 0);
+    }
+
+    /**
+     * Return the original size of a compressed buffer (if known)
+     *
+     * @param src the compressed buffer
      * @return the number of bytes of the original buffer
      *         0 if the original size is not known
+     * @deprecated
+     * Use `getFrameContentSize` that return also the errors
      */
+    @Deprecated
     public static long decompressedSize(byte[] src) {
         return decompressedSize(src, 0);
     };
@@ -647,8 +723,24 @@ public class Zstd {
      * @param magicless whether the buffer contains a magicless frame
      * @return the number of bytes of the original buffer
      *         0 if the original size is not known
+     * @deprecated
+     * Use `getDirectByteBuferFrameContentSize` that return also the errors
      */
+    @Deprecated
     public static native long decompressedDirectByteBufferSize(ByteBuffer src, int srcPosition, int srcSize, boolean magicless);
+
+    /**
+     * Return the original size of a compressed buffer (if known)
+     *
+     * @param src the compressed buffer
+     * @param srcPosition offset of the compressed data inside the src buffer
+     * @param srcSize length of the compressed data inside the src buffe
+     * @param magicless whether the buffer contains a magicless frame
+     * @return the number of bytes of the original buffer
+     *         0 if the original size is not known
+     *         negative if there is an error decoding the frame header
+     */
+    public static native long getDirectByteBuferFrameContentSize(ByteBuffer src, int srcPosition, int srcSize, boolean magicless);
 
     /**
      * Return the original size of a compressed buffer (if known)
@@ -658,9 +750,26 @@ public class Zstd {
      * @param srcSize length of the compressed data inside the src buffe
      * @return the number of bytes of the original buffer
      *         0 if the original size is not known
+     * @deprecated
+     * Use `getDirectByteBuferFrameContentSize` that return also the errors
      */
+    @Deprecated
     public static long decompressedDirectByteBufferSize(ByteBuffer src, int srcPosition, int srcSize) {
         return decompressedDirectByteBufferSize(src, srcPosition, srcSize, false);
+    }
+
+    /**
+     * Return the original size of a compressed buffer (if known)
+     *
+     * @param src the compressed buffer
+     * @param srcPosition offset of the compressed data inside the src buffer
+     * @param srcSize length of the compressed data inside the src buffe
+     * @return the number of bytes of the original buffer
+     *         0 if the original size is not known
+     *         negative if there is an error decoding the frame header
+     */
+    public static long getDirectByteBuferFrameContentSize(ByteBuffer src, int srcPosition, int srcSize) {
+        return getDirectByteBuferFrameContentSize(src, srcPosition, srcSize, false);
     }
 
     /**
