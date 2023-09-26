@@ -612,7 +612,7 @@ public class Zstd {
      * @return the number of bytes of the original buffer
      *         0 if the original size is not known
      * @deprecated
-     * Use `getFrameContentSize` that return also the errors
+     * Use `getFrameContentSize` to also return error codes from zstd
      */
     @Deprecated
     public static long decompressedSize(byte[] src, int srcPosition, int srcSize, boolean magicless) {
@@ -650,7 +650,7 @@ public class Zstd {
      * @return the number of bytes of the original buffer
      *         0 if the original size is not known
      * @deprecated
-     * Use `getFrameContentSize` that return also the errors
+     * Use `getFrameContentSize` to also return error codes from zstd
      */
     @Deprecated
     public static long decompressedSize(byte[] src, int srcPosition, int srcSize) {
@@ -679,7 +679,7 @@ public class Zstd {
      * @return the number of bytes of the original buffer
      *         0 if the original size is not known
      * @deprecated
-     * Use `getFrameContentSize` that return also the errors
+     * Use `getFrameContentSize` to also return error codes from zstd
      */
     @Deprecated
     public static long decompressedSize(byte[] src, int srcPosition) {
@@ -707,7 +707,7 @@ public class Zstd {
      * @return the number of bytes of the original buffer
      *         0 if the original size is not known
      * @deprecated
-     * Use `getFrameContentSize` that return also the errors
+     * Use `getFrameContentSize` to also return error codes from zstd
      */
     @Deprecated
     public static long decompressedSize(byte[] src) {
@@ -724,7 +724,7 @@ public class Zstd {
      * @return the number of bytes of the original buffer
      *         0 if the original size is not known
      * @deprecated
-     * Use `getDirectByteBufferFrameContentSize` that return also the errors
+     * Use `getDirectByteBufferFrameContentSize` to also return error codes from zstd
      */
     @Deprecated
     public static native long decompressedDirectByteBufferSize(ByteBuffer src, int srcPosition, int srcSize, boolean magicless);
