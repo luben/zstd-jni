@@ -169,6 +169,7 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_decompressedDirectByteBu
     char *src_buf_ptr = (char*)(*env)->GetDirectBufferAddress(env, src_buf);
     if (src_buf_ptr == NULL) goto E1;
     size = JNI_ZSTD_decompressedSize(src_buf_ptr + src_offset, (size_t) src_size, magicless);
+    if (size <= 0) return 0;
 E1: return size;
 }
 
@@ -185,7 +186,6 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_getDirectByteBufferFrame
     char *src_buf_ptr = (char*)(*env)->GetDirectBufferAddress(env, src_buf);
     if (src_buf_ptr == NULL) goto E1;
     size = JNI_ZSTD_decompressedSize(src_buf_ptr + src_offset, (size_t) src_size, magicless);
-    if (size <= 0) return 0;
 E1: return size;
 }
 
