@@ -6,7 +6,7 @@ version := {
   scala.io.Source.fromFile("version").getLines.next
 }
 
-scalaVersion := "2.13.8"
+scalaVersion := "2.13.12"
 
 enablePlugins(JniPlugin, SbtOsgi, ModuleInfoPlugin)
 moduleInfo := com.sandinh.javamodule.moduleinfo.JpmsModule(
@@ -23,8 +23,8 @@ Test / logBuffered := false
 Test / parallelExecution := false
 
 libraryDependencies ++= Seq(
-  "org.scalatest"  %% "scalatest"  % "3.2.13" % "test",
-  "org.scalatestplus" %% "scalacheck-1-16" % "3.2.13.0" % "test"
+  "org.scalatest"  %% "scalatest"  % "3.2.17" % "test",
+  "org.scalatestplus" %% "scalacheck-1-17" % "3.2.17.0" % "test"
 )
 
 javacOptions ++= Seq("--release", "6", "-Xlint:unchecked")
@@ -213,12 +213,14 @@ OsgiKeys.privatePackage := Seq(
 OsgiKeys.requireCapability := "osgi.ee;filter:=\"(&(osgi.ee=JavaSE)(version>=1.6))\""
 
 // Jacoco coverage setting
+/*
 jacocoReportSettings := JacocoReportSettings(
   "Jacoco Coverage Report",
   None,
   JacocoThresholds(),
   Seq(JacocoReportFormats.XML, JacocoReportFormats.HTML),
   "utf-8")
+*/
 
 // Android .aar
 val aarTask = taskKey[File]("aar Task")

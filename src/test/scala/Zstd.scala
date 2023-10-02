@@ -15,7 +15,7 @@ import scala.util.Using
 
 class ZstdSpec extends AnyFlatSpec with ScalaCheckPropertyChecks {
 
-  implicit override val generatorDrivenConfig =
+  implicit override val generatorDrivenConfig: PropertyCheckConfiguration =
     PropertyCheckConfiguration(minSize = 0, sizeRange = 130 * 1024)
 
   val levels = List(1, 3, 6, 9)
