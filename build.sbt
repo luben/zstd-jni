@@ -213,14 +213,13 @@ OsgiKeys.privatePackage := Seq(
 OsgiKeys.requireCapability := "osgi.ee;filter:=\"(&(osgi.ee=JavaSE)(version>=1.6))\""
 
 // Jacoco coverage setting
-/*
 jacocoReportSettings := JacocoReportSettings(
   "Jacoco Coverage Report",
   None,
   JacocoThresholds(),
   Seq(JacocoReportFormats.XML, JacocoReportFormats.HTML),
   "utf-8")
-*/
+jacocoInstrumentationExcludes := Seq("module-info")
 
 // Android .aar
 val aarTask = taskKey[File]("aar Task")

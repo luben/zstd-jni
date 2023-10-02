@@ -26,7 +26,7 @@ jobs:
           run: ldd target/classes/${{ matrix.target }}/libzstd-jni-${nativeJniVersion}.so
 
         - name: Test
-          run: ./sbt test
+          run: ./sbt jacoco
 
         - name: Upload coverage
           uses: codecov/codecov-action@v3
@@ -76,7 +76,7 @@ jobs:
 
         - name: Test
           if: matrix.target_arch == 'x86_64'
-          run: ./sbt test
+          run: ./sbt jacoco
 
         - name: Upload coverage
           if: matrix.target_arch == 'x86_64'
@@ -123,7 +123,7 @@ jobs:
           run: ./sbt compile
 
         - name: Test
-          run: ./sbt test
+          run: ./sbt jacoco
 
         - name: Upload coverage
           uses: codecov/codecov-action@v3
