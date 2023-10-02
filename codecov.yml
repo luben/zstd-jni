@@ -1,6 +1,7 @@
 comment:
   layout: "header, diff, changes, sunburst, uncovered"
 coverage:
+  token: 3c93f2c9-6665-44d6-99d5-32eaa359cc8c
   range: "50..75"
   status:
     patch: false
