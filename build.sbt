@@ -174,6 +174,7 @@ Compile / packageBin / packageOptions ++= Seq(
       |linux/loongarch64/libzstd-jni-${version.value}.so;osname=Linux;processor=loongarch64,
       |linux/ppc64/libzstd-jni-${version.value}.so;osname=Linux;processor=ppc64,
       |linux/ppc64le/libzstd-jni-${version.value}.so;osname=Linux;processor=ppc64le,
+      |linux/riscv64/libzstd-jni-${version.value}.so;osname=Linux;processor=riscv64,
       |linux/s390x/libzstd-jni-${version.value}.so;osname=Linux;processor=s390x,
       |win/amd64/libzstd-jni-${version.value}.dll;osname=Win32;processor=amd64,
       |win/x86/libzstd-jni-${version.value}.dll;osname=Win32;processor=x86""".stripMargin}),
@@ -206,7 +207,8 @@ OsgiKeys.importPackage := Seq("org.osgi.framework;resolution:=optional")
 OsgiKeys.privatePackage := Seq(
     "linux.amd64", "linux.i386", "linux.aarch64", "linux.arm", "linux.ppc64",
     "linux.ppc64le", "linux.mips64", "linux.loongarch64", "linux.s390x", "darwin.x86_64",
-    "darwin.aarch64", "win.amd64", "win.x86", "freebsd.amd64", "freebsd.i386"
+    "darwin.aarch64", "win.amd64", "win.x86", "freebsd.amd64", "freebsd.i386",
+    "linux.riscv64"
 )
 // Explicitly specify the version of JavaSE required
 // (rather depend on figuring that out from the JDK it was built with)
@@ -324,6 +326,16 @@ Linux_s390x / packageBin / packageOptions ++= Seq(
   Package.ManifestAttributes(new java.util.jar.Attributes.Name("Automatic-Module-Name") -> "com.github.luben.zstd_jni"),
 )
 addArtifact(Artifact(nameValue, "linux_s390x"), Linux_s390x / packageBin)
+
+lazy val Linux_riscv64 = config("linux_riscv64").extend(Compile)
+inConfig(Linux_riscv64)(Defaults.compileSettings)
+Linux_riscv64 / packageBin / mappings := {
+  (file(s"target/classes/linux/riscv64/libzstd-jni-${version.value}.so"), s"linux/riscv64/libzstd-jni-${version.value}.so") :: classes
+}
+Linux_riscv64 / packageBin / packageOptions ++= Seq(
+  Package.ManifestAttributes(new java.util.jar.Attributes.Name("Automatic-Module-Name") -> "com.github.luben.zstd_jni"),
+)
+addArtifact(Artifact(nameValue, "linux_riscv64"), Linux_riscv64 / packageBin)
 
 /*
 lazy val Aix_ppc64 = config("aix_ppc64").extend(Compile)
