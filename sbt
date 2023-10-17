@@ -218,6 +218,8 @@ getJavaVersion() {
     echo "${BASH_REMATCH[1]}"
   elif [[ "$str" =~ ^([0-9]+)(\..*)?$ ]]; then
     echo "${BASH_REMATCH[1]}"
+  elif [[ "$str" =~ ^([0-9]+)-internal$ ]]; then
+    echo "${BASH_REMATCH[1]}"
   elif [[ -n "$str" ]]; then
     echoerr "Can't parse java version from: $str"
   fi
