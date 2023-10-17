@@ -27,9 +27,9 @@ libraryDependencies ++= Seq(
   "org.scalatestplus" %% "scalacheck-1-17" % "3.2.17.0" % "test"
 )
 
-javacOptions ++= Seq("--release", "6", "-Xlint:unchecked")
+javacOptions ++= Seq("--release", "8", "-Xlint:unchecked")
 
-doc / javacOptions := Seq("--release", "6")
+doc / javacOptions := Seq("--release", "8")
 
 // fork := true
 // Check at runtime for JNI errors when running tests
@@ -210,7 +210,7 @@ OsgiKeys.privatePackage := Seq(
 )
 // Explicitly specify the version of JavaSE required
 // (rather depend on figuring that out from the JDK it was built with)
-OsgiKeys.requireCapability := "osgi.ee;filter:=\"(&(osgi.ee=JavaSE)(version>=1.6))\""
+OsgiKeys.requireCapability := "osgi.ee;filter:=\"(&(osgi.ee=JavaSE)(version>=1.8))\""
 
 // Jacoco coverage setting
 jacocoReportSettings := JacocoReportSettings(
