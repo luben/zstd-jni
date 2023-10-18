@@ -16,6 +16,8 @@ public class ZstdCompressCtx extends AutoCloseBase {
 
     private ZstdDictCompress compression_dict = null;
 
+    private AbstractSequenceProducer producer = null;
+
     private static native long init();
 
     private static native void free(long ptr);
@@ -267,6 +269,38 @@ public class ZstdCompressCtx extends AutoCloseBase {
         releaseSharedLock();
         return this;
     }
+
+    /* Jacob's pseudocode */
+    // want to handle case of changing SequenceProducerState after it was already set in a given compression context
+    /**
+     * 
+     */
+    public void registerSequenceProducer(AbstractSequenceProducer producer) {
+        ensureOpen();
+        acquireSharedLock();
+        if (producer == null) {
+            // call native code for registerSequenceProducer - ZSTD_registerSequenceProducer
+            Zstd.registerSequenceProducer(nativePtr, 0, 0);
+        } else {
+            // call native code for registerSequenceProducer - ZSTD_registerSequenceProducer
+            Zstd.registerSequenceProducer(nativePtr, producer.getStatePointer(), producer.getProducerFunction());
+        }
+        this.producer = producer;
+        releaseSharedLock();
+    }
+
+    /**
+     * Enable or disable 
+     */
+    public ZstdCompressCtx setSequenceProducerFallback(boolean fallbackFlag){
+        ensureOpen();
+        acquireSharedLock();
+        setSequenceProducerFallback0(nativePtr, fallbackFlag);
+        releaseSharedLock();
+        return this;
+    }
+    private static native void setSequenceProducerFallback0(long ptr, boolean fallbackFlag);
+
 
     /**
      * Load compression dictionary to be used for subsequently compressed frames.
