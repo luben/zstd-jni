@@ -295,6 +295,18 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_loadFastDictCompress
 
 /*
  * Class:     com_github_luben_zstd_Zstd
+ * Method:    registerSequenceProducer
+ * Signature: (JJJ)V
+ */
+JNIEXPORT void JNICALL Java_com_github_luben_zstd_Zstd_registerSequenceProducer
+  (JNIEnv *env, jclass obj, jlong stream, jlong seqProdState, jlong seqProdFunction) {
+    ZSTD_registerSequenceProducer((ZSTD_CCtx *)(intptr_t) stream,
+                                  (void *)(intptr_t) seqProdState,
+                                  (ZSTD_sequenceProducer_F*)(intptr_t) seqProdFunction);
+}
+
+/*
+ * Class:     com_github_luben_zstd_Zstd
  * Method:    setCompressionChecksums
  * Signature: (JZ)I
  */
