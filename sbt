@@ -34,11 +34,11 @@
 
 set -o pipefail
 
-declare -r sbt_release_version="1.4.6"
-declare -r sbt_unreleased_version="1.4.6"
+declare -r sbt_release_version="1.9.6"
+declare -r sbt_unreleased_version="1.9.6"
 
-declare -r latest_213="2.13.4"
-declare -r latest_212="2.12.12"
+declare -r latest_213="2.13.12"
+declare -r latest_212="2.12.18"
 declare -r latest_211="2.11.12"
 declare -r latest_210="2.10.7"
 declare -r latest_29="2.9.3"
@@ -48,7 +48,7 @@ declare -r buildProps="project/build.properties"
 
 declare -r sbt_launch_ivy_release_repo="https://repo.typesafe.com/typesafe/ivy-releases"
 declare -r sbt_launch_ivy_snapshot_repo="https://repo.scala-sbt.org/scalasbt/ivy-snapshots"
-declare -r sbt_launch_mvn_release_repo="https://repo.scala-sbt.org/scalasbt/maven-releases"
+declare -r sbt_launch_mvn_release_repo="https://repo1.maven.org/maven2"
 declare -r sbt_launch_mvn_snapshot_repo="https://repo.scala-sbt.org/scalasbt/maven-snapshots"
 
 declare -r default_jvm_opts_common="-Xms512m -Xss2m -XX:MaxInlineLevel=18"
@@ -216,7 +216,8 @@ getJavaVersion() {
   # but on 9 and 10 it's 9.x.y and 10.x.y.
   if [[ "$str" =~ ^1\.([0-9]+)(\..*)?$ ]]; then
     echo "${BASH_REMATCH[1]}"
-  elif [[ "$str" =~ ^([0-9]+)(\..*)?$ ]]; then
+  # Fixes https://github.com/dwijnand/sbt-extras/issues/326
+  elif [[ "$str" =~ ^([0-9]+)(\..*)?(-ea)?$ ]]; then
     echo "${BASH_REMATCH[1]}"
   elif [[ -n "$str" ]]; then
     echoerr "Can't parse java version from: $str"
@@ -252,7 +253,16 @@ is_apple_silicon() { [[ "$(uname -s)" == "Darwin" && "$(uname -m)" == "arm64" ]]
 # MaxPermSize critical on pre-8 JVMs but incurs noisy warning on 8+
 default_jvm_opts() {
   local -r v="$(java_version)"
-  if [[ $v -ge 8 ]]; then
+  if [[ $v -ge 17 ]]; then
+    echo "$default_jvm_opts_common"
+  elif [[ $v -ge 10 ]]; then
+    if is_apple_silicon; then
+      # As of Dec 2020, JVM for Apple Silicon (M1) doesn't support JVMCI
+      echo "$default_jvm_opts_common"
+    else
+      echo "$default_jvm_opts_common -XX:+UnlockExperimentalVMOptions -XX:+UseJVMCICompiler"
+    fi
+  elif [[ $v -ge 8 ]]; then
     echo "$default_jvm_opts_common"
   else
     echo "-XX:MaxPermSize=384m $default_jvm_opts_common"
