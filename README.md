@@ -72,6 +72,9 @@ If you want to publish it to you local ivy2 repository:
  $ ./sbt publishLocal
 ```
 
+*Note*: for the moment the project depends on local build of `sbt-java-module-info`
+v0.5.2 as that version is not publushed to Maven.
+
 Binary releases
 ---------------
 

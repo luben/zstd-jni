@@ -6,6 +6,8 @@ version := {
   scala.io.Source.fromFile("version").getLines.next
 }
 
+ThisBuild / versionScheme := Some("strict")
+
 scalaVersion := "2.13.12"
 
 enablePlugins(JniPlugin, SbtOsgi, ModuleInfoPlugin)
