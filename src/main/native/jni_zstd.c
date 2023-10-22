@@ -302,7 +302,7 @@ JNIEXPORT void JNICALL Java_com_github_luben_zstd_Zstd_registerSequenceProducer
   (JNIEnv *env, jclass obj, jlong stream, jlong seqProdState, jlong seqProdFunction) {
     ZSTD_registerSequenceProducer((ZSTD_CCtx *)(intptr_t) stream,
                                   (void *)(intptr_t) seqProdState,
-                                  (ZSTD_sequenceProducer_F*)(intptr_t) seqProdFunction);
+                                  (ZSTD_sequenceProducer_F *)(intptr_t) seqProdFunction);
 }
 
 /*

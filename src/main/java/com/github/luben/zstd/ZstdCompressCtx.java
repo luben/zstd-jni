@@ -16,7 +16,7 @@ public class ZstdCompressCtx extends AutoCloseBase {
 
     private ZstdDictCompress compression_dict = null;
 
-    private AbstractSequenceProducer producer = null;
+    private SequenceProducer sequence_producer = null;
 
     private static native long init();
 
@@ -270,27 +270,26 @@ public class ZstdCompressCtx extends AutoCloseBase {
         return this;
     }
 
-    /* Jacob's pseudocode */
-    // want to handle case of changing SequenceProducerState after it was already set in a given compression context
     /**
-     * 
+     * Register an external sequence producer
+     * @param producer the user-defined SequenceProducer to register.
      */
-    public void registerSequenceProducer(AbstractSequenceProducer producer) {
+    public void registerSequenceProducer(SequenceProducer producer) {
         ensureOpen();
         acquireSharedLock();
         if (producer == null) {
-            // call native code for registerSequenceProducer - ZSTD_registerSequenceProducer
             Zstd.registerSequenceProducer(nativePtr, 0, 0);
         } else {
-            // call native code for registerSequenceProducer - ZSTD_registerSequenceProducer
             Zstd.registerSequenceProducer(nativePtr, producer.getStatePointer(), producer.getProducerFunction());
         }
-        this.producer = producer;
+        this.sequence_producer = producer;
         releaseSharedLock();
     }
 
     /**
-     * Enable or disable 
+     * Enable or disable sequence producer fallback
+     * @param fallbackFlag Fall back to an internal sequence producer if a registered external
+     *                     sequence producer returns an error code, default: false
      */
     public ZstdCompressCtx setSequenceProducerFallback(boolean fallbackFlag){
         ensureOpen();

@@ -560,7 +560,6 @@ public class Zstd {
     public static native int loadFastDictDecompress(long stream, ZstdDictDecompress dict);
     public static native int loadDictCompress(long stream, byte[] dict, int dict_size);
     public static native int loadFastDictCompress(long stream, ZstdDictCompress dict);
-    //TODO implement this in C
     public static native void registerSequenceProducer(long stream, long seqProdState, long seqProdFunction);
     public static native int setCompressionChecksums(long stream, boolean useChecksums);
     public static native int setCompressionMagicless(long stream, boolean useMagicless);
