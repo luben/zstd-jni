@@ -310,7 +310,7 @@ JNIEXPORT void JNICALL Java_com_github_luben_zstd_ZstdCompressCtx_setDictID0
 /*
  * Class:     com_github_luben_zstd_ZstdCompressCtx
  * Method:    setSequenceProducerFallback0
- * Signature: (JI)V
+ * Signature: (JZ)V
  */
 JNIEXPORT void JNICALL Java_com_github_luben_zstd_ZstdCompressCtx_setSequenceProducerFallback0
   (JNIEnv *env, jclass clazz, jlong ptr, jboolean fallbackFlag)
