@@ -25,7 +25,7 @@ compile() {
     cp $BUILD_DIR/libzstd-jni-$VERSION.so $INSTALL
 }
 
-compile riscv64 "riscv64-linux-gnu-gcc -march=rv64gcv"
+compile riscv64 "riscv64-linux-gnu-gcc"
 #compile arm arm-linux-gnueabihf-gcc
 #compile s390x "s390x-linux-gnu-gcc -march=z196"
 #compile aarch64 aarch64-linux-gnu-gcc
