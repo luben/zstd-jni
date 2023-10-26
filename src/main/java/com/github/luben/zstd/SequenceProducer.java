@@ -5,7 +5,7 @@ package com.github.luben.zstd;
  * SequenceProducer must be provided by the user. To use, SequenceProducer should 
  * be passed to `ZstdCompressCtx.registerSequenceProducer()`.
  */
-interface SequenceProducer {
+public interface SequenceProducer {
   /**
    * Returns a function pointer of type `ZSTD_sequenceProducer_F` that will be
    * passed to zstd as the `sequenceProducer` function. The returned pointer
