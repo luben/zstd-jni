@@ -179,7 +179,7 @@ Compile / packageBin / packageOptions ++= Seq(
       |linux/riscv64/libzstd-jni-${version.value}.so;osname=Linux;processor=riscv64,
       |linux/s390x/libzstd-jni-${version.value}.so;osname=Linux;processor=s390x,
       |win/amd64/libzstd-jni-${version.value}.dll;osname=Win32;processor=amd64,
-      |win/x86/libzstd-jni-${version.value}.dll;osname=Win32;processor=x86""".stripMargin}),
+      |win/x86/libzstd-jni-${version.value}.dll;osname=Win32;processor=x86""".stripMargin.filter(_ != '\n')}),
 )
 
 pomExtra := (
