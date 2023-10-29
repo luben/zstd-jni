@@ -161,7 +161,7 @@ jobs:
             update: true
 
         - name: Compile
-          run: /opt/aarch64-w64-mingw32/bin/aarch64-w64-mingw32-clang -Wl,--version-script=./libzstd-jni.so.map -shared -flto -D_JNI_IMPLEMENTATION_ -Wl,--kill-at  -O3 -DZSTD_LEGACY_SUPPORT=4 -DZSTD_MULTITHREAD=1 -I./src/windows/include -I./jni -I./src/native -I./src/native/common -I./src/native/legacy -std=c99 -lpthread -o libzstd-jni-$(cat version).dll ./src/native/*.c ./src/native/legacy/*.c ./src/native/common/*.c ./src/native/compress/*.c ./src/native/decompress/*.[cS] ./src/native/dictBuilder/*.c
+          run: /opt/aarch64-w64-mingw32/bin/aarch64-w64-mingw32-clang -Wl,--version-script=./libzstd-jni.so.map -shared -flto -D_JNI_IMPLEMENTATION_ -Wl,--kill-at  -O3 -DZSTD_LEGACY_SUPPORT=4 -DZSTD_MULTITHREAD=1 -I./src/windows/include -I./jni -I./src/main/native -I./src/main/native/common -I./src/main/native/legacy -std=c99 -lpthread -o libzstd-jni-$(cat version).dll ./src/main/native/*.c ./src/main/native/legacy/*.c ./src/main/native/common/*.c ./src/main/native/compress/*.c ./src/main/native/decompress/*.[cS] ./src/main/native/dictBuilder/*.c
 
         - name: Deploy
           if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master'}}
