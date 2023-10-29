@@ -10,7 +10,7 @@ ThisBuild / versionScheme := Some("strict")
 
 scalaVersion := "2.13.12"
 
-enablePlugins(JniPlugin, SbtOsgi, ModuleInfoPlugin)
+enablePlugins(JniPlugin, ModuleInfoPlugin)
 moduleInfo := com.sandinh.javamodule.moduleinfo.JpmsModule(
   "com.github.luben.zstd_jni", // moduleName
   openModule = false,
@@ -163,8 +163,16 @@ description := "JNI bindings for Zstd native library that provides fast and high
 
 Compile / packageBin / packageOptions ++= Seq(
   Package.ManifestAttributes(new java.util.jar.Attributes.Name("Automatic-Module-Name") -> "com.github.luben.zstd_jni"),
+  Package.ManifestAttributes(new java.util.jar.Attributes.Name("Bnd-LastModified") -> s"${java.lang.System.currentTimeMillis()}"),
+  Package.ManifestAttributes(new java.util.jar.Attributes.Name("Bundle-Name") -> "zstd-jni"),
+  Package.ManifestAttributes(new java.util.jar.Attributes.Name("Bundle-SymbolicName") -> "com.github.luben.zstd-jni"),
+  Package.ManifestAttributes(new java.util.jar.Attributes.Name("Bundle-Description") -> description.value),
+  Package.ManifestAttributes(new java.util.jar.Attributes.Name("Bundle-Vendor") -> organization.value),
+  Package.ManifestAttributes(new java.util.jar.Attributes.Name("Bundle-License") -> "https://opensource.org/licenses/BSD-2-Clause;description=BSD 2-Clause License"),
+  Package.ManifestAttributes(new java.util.jar.Attributes.Name("Bundle-Version") -> version.value),
+  Package.ManifestAttributes(new java.util.jar.Attributes.Name("Bundle-ManifestVersion") -> version.value),
   Package.ManifestAttributes(new java.util.jar.Attributes.Name("Bundle-NativeCode") ->
-  {s"""darwin/x86_64/libzstd-jni-${version.value}.dylib;osname=MacOS;osname=MacOSX;processor=x86_64,
+   s"""darwin/x86_64/libzstd-jni-${version.value}.dylib;osname=MacOS;osname=MacOSX;processor=x86_64,
       |darwin/aarch64/libzstd-jni-${version.value}.dylib;osname=MacOS;osname=MacOSX;processor=aarch64,
       |freebsd/amd64/libzstd-jni-${version.value}.so;osname=FreeBSD;processor=amd64,
       |freebsd/i386/libzstd-jni-${version.value}.so;osname=FreeBSD;processor=i386,
@@ -180,8 +188,35 @@ Compile / packageBin / packageOptions ++= Seq(
       |linux/s390x/libzstd-jni-${version.value}.so;osname=Linux;processor=s390x,
       |win/amd64/libzstd-jni-${version.value}.dll;osname=Win32;processor=amd64,
       |win/aarch64/libzstd-jni-${version.value}.dll;osname=Win32;processor=aarch64,
-      |win/x86/libzstd-jni-${version.value}.dll;osname=Win32;processor=x86""".stripMargin}),
+      |win/x86/libzstd-jni-${version.value}.dll;osname=Win32;processor=x86""".stripMargin.replace("\n", "")),
+  Package.ManifestAttributes(new java.util.jar.Attributes.Name("Export-Package") -> s"""com.github.luben.zstd;version="${version.value}",com.github.luben.zstd.util;version="${version.value}""""),
+  Package.ManifestAttributes(new java.util.jar.Attributes.Name("Import-Package") -> "org.osgi.framework;resolution:=optional"),
+  Package.ManifestAttributes(new java.util.jar.Attributes.Name("Private-Package") ->
+    """darwin.aarch64,
+      |darwin.x86_64,
+      |freebsd.amd64,
+      |freebsd.i386,
+      |linux.aarch64,
+      |linux.amd64,
+      |linux.arm,
+      |linux.i386,
+      |linux.loongarch64,
+      |linux.mips64,
+      |linux.ppc64,
+      |linux.ppc64le,
+      |linux.riscv64,
+      |linux.s390x,
+      |win.aarch64,
+      |win.amd64,
+      |win.x86""".stripMargin.replace("\n","")),
+  Package.ManifestAttributes(new java.util.jar.Attributes.Name("Require-Capability") -> """osgi.ee;filter:="(&(osgi.ee=JavaSE)(version>=1.8))""""),
 )
+
+// publish the main jar as bundle
+Compile / packageBin / artifact := {
+  val prev: Artifact = (Compile / packageBin / artifact).value
+  prev.withType("bundle")
+}
 
 pomExtra := (
   <url>https://github.com/luben/zstd-jni</url>
@@ -199,20 +234,6 @@ pomExtra := (
     </developer>
   </developers>
 )
-
-// OSGI
-OsgiKeys.bundleSymbolicName := "com.github.luben.zstd-jni"
-OsgiKeys.exportPackage  := Seq(s"com.github.luben.zstd", "com.github.luben.zstd.util")
-OsgiKeys.importPackage := Seq("org.osgi.framework;resolution:=optional")
-OsgiKeys.privatePackage := Seq(
-    "linux.amd64", "linux.i386", "linux.aarch64", "linux.arm", "linux.ppc64",
-    "linux.ppc64le", "linux.mips64", "linux.loongarch64", "linux.s390x", "darwin.x86_64",
-    "darwin.aarch64", "win.amd64", "win.x86", "win.aarch64", "freebsd.amd64", "freebsd.i386",
-    "linux.riscv64"
-)
-// Explicitly specify the version of JavaSE required
-// (rather depend on figuring that out from the JDK it was built with)
-OsgiKeys.requireCapability := "osgi.ee;filter:=\"(&(osgi.ee=JavaSE)(version>=1.8))\""
 
 // Jacoco coverage setting
 jacocoReportSettings := JacocoReportSettings(
