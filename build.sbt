@@ -179,6 +179,7 @@ Compile / packageBin / packageOptions ++= Seq(
       |linux/riscv64/libzstd-jni-${version.value}.so;osname=Linux;processor=riscv64,
       |linux/s390x/libzstd-jni-${version.value}.so;osname=Linux;processor=s390x,
       |win/amd64/libzstd-jni-${version.value}.dll;osname=Win32;processor=amd64,
+      |win/aarch64/libzstd-jni-${version.value}.dll;osname=Win32;processor=aarch64,
       |win/x86/libzstd-jni-${version.value}.dll;osname=Win32;processor=x86""".stripMargin}),
 )
 
@@ -410,3 +411,13 @@ Win_amd64 / packageBin / packageOptions ++= Seq(
   Package.ManifestAttributes(new java.util.jar.Attributes.Name("Automatic-Module-Name") -> "com.github.luben.zstd_jni"),
 )
 addArtifact(Artifact(nameValue, "win_amd64"), Win_amd64 / packageBin)
+
+val Win_aarch64 = config("win_aarch64").extend(Compile)
+inConfig(Win_aarch64)(Defaults.compileSettings)
+Win_aarch64 / packageBin / mappings := {
+  (file(s"target/classes/win/aarch64/libzstd-jni-${version.value}.dll"), s"win/aarch64/libzstd-jni-${version.value}.dll") :: classes
+}
+Win_aarch64 / packageBin / packageOptions ++= Seq(
+  Package.ManifestAttributes(new java.util.jar.Attributes.Name("Automatic-Module-Name") -> "com.github.luben.zstd_jni"),
+)
+addArtifact(Artifact(nameValue, "win_aarch64"), Win_aarch64 / packageBin)
