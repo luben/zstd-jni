@@ -201,16 +201,13 @@ pomExtra := (
 )
 
 // OSGI
-
-osgiSettings
-
 OsgiKeys.bundleSymbolicName := "com.github.luben.zstd-jni"
 OsgiKeys.exportPackage  := Seq(s"com.github.luben.zstd", "com.github.luben.zstd.util")
 OsgiKeys.importPackage := Seq("org.osgi.framework;resolution:=optional")
 OsgiKeys.privatePackage := Seq(
     "linux.amd64", "linux.i386", "linux.aarch64", "linux.arm", "linux.ppc64",
     "linux.ppc64le", "linux.mips64", "linux.loongarch64", "linux.s390x", "darwin.x86_64",
-    "darwin.aarch64", "win.amd64", "win.x86", "freebsd.amd64", "freebsd.i386",
+    "darwin.aarch64", "win.amd64", "win.x86", "win.aarch64", "freebsd.amd64", "freebsd.i386",
     "linux.riscv64"
 )
 // Explicitly specify the version of JavaSE required
