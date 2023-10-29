@@ -145,3 +145,29 @@ jobs:
             AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
             AWS_DEFAULT_REGION: "us-east-1"
           run: 'aws s3 cp --recursive target\classes\${{ matrix.target }} s3://zstd-jni/github/${{ matrix.s3_path }}'
+
+    windows-cross:
+        runs-on: windows-latest
+        defaults:
+            run:
+                shell: msys2 {0}
+        steps:
+        - uses: actions/checkout@v3
+        - uses: msys2/setup-msys2@v2
+          with:
+            msystem: mingw64
+            install: git base-devel mingw-w64-cross-clang
+            path-type: inherit
+            update: true
+
+        - name: Compile
+          run: /opt/aarch64-w64-mingw32/bin/aarch64-w64-mingw32-clang -Wl,--version-script=./libzstd-jni.so.map -shared -flto -fPIC -O3 -DZSTD_LEGACY_SUPPORT=4 -DZSTD_MULTITHREAD=1 -I/usr/include -I./jni -I./native -I./native/common -I./native/legacy -std=c99 -lpthread -o libzstd-jni-$(cat version).so native/*.c native/legacy/*.c native/common/*.c native/compress/*.c native/decompress/*.[cS] native/dictBuilder/*.c'
+
+        - name: Deploy
+          if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master'}}
+          shell: cmd
+          env:
+            AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+            AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+            AWS_DEFAULT_REGION: "us-east-1"
+          run: 'aws s3 cp --recursive target\classes\win\aarch64 s3://zstd-jni/github/win/aarch64'
