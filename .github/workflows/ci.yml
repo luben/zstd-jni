@@ -170,4 +170,4 @@ jobs:
             AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
             AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
             AWS_DEFAULT_REGION: "us-east-1"
-          run: 'aws s3 cp libzstd-jni-$(cat version).dll s3://zstd-jni/github/win/aarch64/'
+          run: 'aws s3 cp libzstd-jni-$(cat version).dll s3://zstd-jni/github/win/aarch64'
