@@ -161,7 +161,7 @@ jobs:
             update: true
 
         - name: Compile
-          run: /opt/aarch64-w64-mingw32/bin/aarch64-w64-mingw32-clang -Wl,--version-script=./libzstd-jni.so.map -shared -flto -fPIC -O3 -DZSTD_LEGACY_SUPPORT=4 -DZSTD_MULTITHREAD=1 -I/usr/include -I./jni -I./native -I./native/common -I./native/legacy -std=c99 -lpthread -o libzstd-jni-$(cat version).so native/*.c native/legacy/*.c native/common/*.c native/compress/*.c native/decompress/*.[cS] native/dictBuilder/*.c'
+          run: /opt/aarch64-w64-mingw32/bin/aarch64-w64-mingw32-clang -Wl,--version-script=./libzstd-jni.so.map -shared -flto -D_JNI_IMPLEMENTATION_ -Wl,--kill-at  -O3 -DZSTD_LEGACY_SUPPORT=4 -DZSTD_MULTITHREAD=1 -I/usr/include -I./jni -I./native -I./native/common -I./native/legacy -std=c99 -lpthread -o libzstd-jni-$(cat version).dll native/*.c native/legacy/*.c native/common/*.c native/compress/*.c native/decompress/*.[cS] native/dictBuilder/*.c
 
         - name: Deploy
           if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master'}}
