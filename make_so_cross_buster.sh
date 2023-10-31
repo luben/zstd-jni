@@ -22,8 +22,10 @@ compile() {
 
     mkdir -p $INSTALL
     rsync buster:$BUILD_DIR/libzstd-jni-$VERSION.so $INSTALL
+    chmod -x $INSTALL/libzstd-jni-$VERSION.so
 }
 
 compile arm arm-linux-gnueabihf-gcc-8
 compile s390x "s390x-linux-gnu-gcc-8 -march=z196"
-
+compile mips64 mips64-linux-gnuabi64-gcc-8
+compile i386 "i686-linux-gnu-gcc-8 -march=i586"

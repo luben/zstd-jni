@@ -26,11 +26,11 @@ compile () {
 }
 
 compile amd64   linux
-compile i386    linux "gcc -march=i586 -static-libgcc"
+#compile i386    linux "gcc -march=i586 -static-libgcc"
 compile ppc64   linux
 compile ppc64le linux
 compile aarch64 linux
-compile mips64  linux
+#compile mips64  linux
 compile loongarch64  linux
 compile amd64   freebsd "cc"
 compile i386    freebsd "cc -m32 -march=i486 -mfancy-math-387"
