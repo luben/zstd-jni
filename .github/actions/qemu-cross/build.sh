@@ -3,7 +3,7 @@
 set -e
 
 apt-get update
-apt-get install -y gcc
+apt-get install -y gcc openjdk-11-jdk
 
 pushd sbt-java-module-info
 ./sbt publishLocal
