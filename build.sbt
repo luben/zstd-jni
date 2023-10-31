@@ -169,7 +169,7 @@ Compile / packageBin / packageOptions ++= Seq(
   Package.ManifestAttributes(new java.util.jar.Attributes.Name("Bundle-Description") -> description.value),
   Package.ManifestAttributes(new java.util.jar.Attributes.Name("Bundle-Vendor") -> organization.value),
   Package.ManifestAttributes(new java.util.jar.Attributes.Name("Bundle-License") -> "https://opensource.org/licenses/BSD-2-Clause;description=BSD 2-Clause License"),
-  Package.ManifestAttributes(new java.util.jar.Attributes.Name("Bundle-Version") -> version.value),
+  Package.ManifestAttributes(new java.util.jar.Attributes.Name("Bundle-Version") -> version.value.replace("-", ".")),
   Package.ManifestAttributes(new java.util.jar.Attributes.Name("Bundle-ManifestVersion") -> version.value),
   Package.ManifestAttributes(new java.util.jar.Attributes.Name("Bundle-NativeCode") ->
    s"""darwin/x86_64/libzstd-jni-${version.value}.dylib;osname=MacOS;osname=MacOSX;processor=x86_64,
@@ -189,7 +189,7 @@ Compile / packageBin / packageOptions ++= Seq(
       |win/amd64/libzstd-jni-${version.value}.dll;osname=Win32;processor=amd64,
       |win/aarch64/libzstd-jni-${version.value}.dll;osname=Win32;processor=aarch64,
       |win/x86/libzstd-jni-${version.value}.dll;osname=Win32;processor=x86""".stripMargin.replace("\n", "")),
-  Package.ManifestAttributes(new java.util.jar.Attributes.Name("Export-Package") -> s"""com.github.luben.zstd;version="${version.value}",com.github.luben.zstd.util;version="${version.value}""""),
+  Package.ManifestAttributes(new java.util.jar.Attributes.Name("Export-Package") -> s"""com.github.luben.zstd;version="${version.value.replace("-", ".")}",com.github.luben.zstd.util;version="${version.value.replace("-", ".")}""""),
   Package.ManifestAttributes(new java.util.jar.Attributes.Name("Import-Package") -> "org.osgi.framework;resolution:=optional"),
   Package.ManifestAttributes(new java.util.jar.Attributes.Name("Private-Package") ->
     """darwin.aarch64,
