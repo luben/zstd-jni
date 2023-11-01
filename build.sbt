@@ -170,7 +170,7 @@ Compile / packageBin / packageOptions ++= Seq(
   Package.ManifestAttributes(new java.util.jar.Attributes.Name("Bundle-Vendor") -> organization.value),
   Package.ManifestAttributes(new java.util.jar.Attributes.Name("Bundle-License") -> "https://opensource.org/licenses/BSD-2-Clause;description=BSD 2-Clause License"),
   Package.ManifestAttributes(new java.util.jar.Attributes.Name("Bundle-Version") -> version.value.replace("-", ".")),
-  Package.ManifestAttributes(new java.util.jar.Attributes.Name("Bundle-ManifestVersion") -> version.value.replace("-", ".")),
+  Package.ManifestAttributes(new java.util.jar.Attributes.Name("Bundle-ManifestVersion") -> "2"),
   Package.ManifestAttributes(new java.util.jar.Attributes.Name("Bundle-NativeCode") ->
    s"""darwin/x86_64/libzstd-jni-${version.value}.dylib;osname=MacOS;osname=MacOSX;processor=x86_64,
       |darwin/aarch64/libzstd-jni-${version.value}.dylib;osname=MacOS;osname=MacOSX;processor=aarch64,
