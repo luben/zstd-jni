@@ -23,7 +23,7 @@ compile() {
 
     mkdir -p $INSTALL
     cp $BUILD_DIR/libzstd-jni-$VERSION.so $INSTALL
-    chmod -x $INSTALL libzstd-jni-$VERSION.so
+    chmod -x $INSTALL/libzstd-jni-$VERSION.so
 }
 
 compile riscv64 "riscv64-linux-gnu-gcc"
