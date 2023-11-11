@@ -1,15 +1,15 @@
 package com.github.luben.zstd;
 
 /**
- * Interface for an extenal sequence producer. The class implementing
- * SequenceProducer must be provided by the user. To use, SequenceProducer should
- * be passed to `ZstdCompressCtx.registerSequenceProducer()`.
+ * Interface for an extenal sequence producer. To register a sequence producer,
+ * pass an object implementing this interface to
+ * {@link ZstdCompressCtx#registerSequenceProducer(SequenceProducer)}.
  */
 public interface SequenceProducer {
   /**
    * Returns a pointer to the sequence producer function. This method is called
-   * once in {@link ZstdCompressCtx registerSequenceProducer}.
-   * @return A function pointer of type `ZSTD_sequenceProducer_F *`
+   * once in {@link ZstdCompressCtx#registerSequenceProducer(SequenceProducer)}.
+   * @return A function pointer of type {@code ZSTD_sequenceProducer_F *}
    */
   public long getFunctionPointer();
 
@@ -17,7 +17,7 @@ public interface SequenceProducer {
    * Allocate the sequence producer state. The returned pointer will be passed
    * to the sequence producer function. This method is called once in
    * {@link ZstdCompressCtx#registerSequenceProducer(SequenceProducer)}.
-   * @return A `void *` pointer to the sequence producer state
+   * @return A {@code void *} pointer to the sequence producer state
    */
   public long createState();
 
