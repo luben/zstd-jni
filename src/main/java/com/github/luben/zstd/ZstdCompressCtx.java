@@ -278,7 +278,7 @@ public class ZstdCompressCtx extends AutoCloseBase {
 
     /**
      * Register an external sequence producer
-     * @param producer the user-defined SequenceProducer to register.
+     * @param producer the user-defined {@link SequenceProducer} to register.
      */
     public void registerSequenceProducer(SequenceProducer producer) {
         ensureOpen();
