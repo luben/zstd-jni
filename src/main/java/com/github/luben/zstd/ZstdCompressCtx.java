@@ -300,7 +300,7 @@ public class ZstdCompressCtx extends AutoCloseBase {
 
     /**
      * Enable or disable sequence producer fallback
-     * @param fallbackFlag Fall back to an internal sequence producer if a registered external
+     * @param fallbackFlag fall back to the default internal sequence producer if an external
      *                     sequence producer returns an error code, default: false
      */
     public ZstdCompressCtx setSequenceProducerFallback(boolean fallbackFlag){
@@ -312,6 +312,11 @@ public class ZstdCompressCtx extends AutoCloseBase {
     }
     private static native void setSequenceProducerFallback0(long ptr, boolean fallbackFlag);
 
+    /**
+     * Enable or disable sequence validation. Useful for the sequence-level API
+     * and with external sequence producers.
+     * @param validateSequences whether to validate all sequences, default: false
+     */
     public ZstdCompressCtx setValidateSequences(boolean validateSequences) {
         ensureOpen();
         acquireSharedLock();
