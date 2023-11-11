@@ -312,6 +312,24 @@ public class ZstdCompressCtx extends AutoCloseBase {
     }
     private static native void setSequenceProducerFallback0(long ptr, boolean fallbackFlag);
 
+    public ZstdCompressCtx setValidateSequences(boolean validateSequences) {
+        ensureOpen();
+        acquireSharedLock();
+        try {
+            long result = Zstd.setValidateSequences(nativePtr, validateSequences);
+            if (Zstd.isError(result)) {
+                throw new ZstdException(result);
+            }
+        } finally {
+            releaseSharedLock();
+        }
+        return this;
+    }
+
+    // Used in tests
+    long getNativePtr() {
+        return nativePtr;
+    }
 
     /**
      * Load compression dictionary to be used for subsequently compressed frames.
