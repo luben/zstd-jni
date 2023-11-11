@@ -16,7 +16,9 @@ public class ZstdCompressCtx extends AutoCloseBase {
 
     private ZstdDictCompress compression_dict = null;
 
-    private SequenceProducer sequence_producer = null;
+    private SequenceProducer seqprod = null;
+
+    private long seqprod_state = 0;
 
     private static native long init();
 
@@ -38,6 +40,10 @@ public class ZstdCompressCtx extends AutoCloseBase {
         if (nativePtr != 0) {
             free(nativePtr);
             nativePtr = 0;
+            if (seqprod != null) {
+                seqprod.freeState(seqprod_state);
+                seqprod = null;
+            }
         }
     }
 
@@ -277,12 +283,18 @@ public class ZstdCompressCtx extends AutoCloseBase {
     public void registerSequenceProducer(SequenceProducer producer) {
         ensureOpen();
         acquireSharedLock();
+        if (this.seqprod != null) {
+            this.seqprod.freeState(seqprod_state);
+        }
+
         if (producer == null) {
+            seqprod_state = 0;
             Zstd.registerSequenceProducer(nativePtr, 0, 0);
         } else {
-            Zstd.registerSequenceProducer(nativePtr, producer.getStatePointer(), producer.getProducerFunction());
+            seqprod_state = producer.createState();
+            Zstd.registerSequenceProducer(nativePtr, seqprod_state, producer.getFunctionPointer());
         }
-        this.sequence_producer = producer;
+        this.seqprod = producer;
         releaseSharedLock();
     }
 
