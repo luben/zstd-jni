@@ -561,6 +561,9 @@ public class Zstd {
     public static native int loadDictCompress(long stream, byte[] dict, int dict_size);
     public static native int loadFastDictCompress(long stream, ZstdDictCompress dict);
     public static native void registerSequenceProducer(long stream, long seqProdState, long seqProdFunction);
+    public static native void generateSequences(long stream, long outSeqs, long outSeqsSize, long src, long srcSize);
+    static native long getBuiltinSequenceProducer(); // Used in tests
+    static native long getStubSequenceProducer();    // Used in tests
     public static native int setCompressionChecksums(long stream, boolean useChecksums);
     public static native int setCompressionMagicless(long stream, boolean useMagicless);
     public static native int setCompressionLevel(long stream, int level);
@@ -578,6 +581,7 @@ public class Zstd {
     public static native int setDecompressionLongMax(long stream, int windowLogMax);
     public static native int setDecompressionMagicless(long stream, boolean useMagicless);
     public static native int setRefMultipleDDicts(long stream, boolean useMultiple);
+    public static native int setValidateSequences(long stream, boolean validateSequences);
 
     /* Utility methods */
     /**
