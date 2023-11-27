@@ -309,18 +309,6 @@ JNIEXPORT void JNICALL Java_com_github_luben_zstd_ZstdCompressCtx_setDictID0
 
 /*
  * Class:     com_github_luben_zstd_ZstdCompressCtx
- * Method:    setSequenceProducerFallback0
- * Signature: (JZ)V
- */
-JNIEXPORT void JNICALL Java_com_github_luben_zstd_ZstdCompressCtx_setSequenceProducerFallback0
-  (JNIEnv *env, jclass clazz, jlong ptr, jboolean fallbackFlag)
-{
-    ZSTD_CCtx* cctx = (ZSTD_CCtx*)(intptr_t) ptr;
-    ZSTD_CCtx_setParameter(cctx, ZSTD_c_enableSeqProducerFallback, (fallbackFlag == JNI_TRUE));
-}
-
-/*
- * Class:     com_github_luben_zstd_ZstdCompressCtx
  * Method:    loadCDictFast0
  * Signature: (JLcom/github/luben/zstd/ZstdDictCompress)J
  */

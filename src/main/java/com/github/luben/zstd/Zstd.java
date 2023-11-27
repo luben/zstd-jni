@@ -8,10 +8,40 @@ import com.github.luben.zstd.ZstdCompressCtx;
 import com.github.luben.zstd.ZstdDecompressCtx;
 
 public class Zstd {
-
     static {
         Native.load();
     }
+
+    /**
+     * Note: This enum controls features which are conditionally beneficial.
+     * Zstd typically will make a final decision on whether or not to enable the
+     * feature ({@link AUTO}), but setting the switch to {@link ENABLE} or
+     * {@link DISABLE} allows for force enabling/disabling the feature.
+     */
+    public static enum ParamSwitch {
+        /**
+         * Let the library automatically determine whether the feature shall be enabled
+         */
+        AUTO(0),
+        /**
+         * Force-enable the feature
+         */
+        ENABLE(1),
+        /**
+         * Do not use the feature
+         */
+        DISABLE(2);
+
+        private int val;
+        ParamSwitch(int val) {
+            this.val = val;
+        }
+
+        public int getValue() {
+            return val;
+        }
+    }
+
     /**
      * Compresses buffer 'src' into buffer 'dst'.
      *
@@ -581,7 +611,10 @@ public class Zstd {
     public static native int setDecompressionLongMax(long stream, int windowLogMax);
     public static native int setDecompressionMagicless(long stream, boolean useMagicless);
     public static native int setRefMultipleDDicts(long stream, boolean useMultiple);
-    public static native int setValidateSequences(long stream, boolean validateSequences);
+    public static native int setValidateSequences(long stream, int validateSequences);
+    public static native int setSequenceProducerFallback(long stream, boolean fallbackFlag);
+    public static native int setSearchForExternalRepcodes(long stream, int searchRepcodes);
+    public static native int setEnableLongDistanceMatching(long stream, int enableLDM);
 
     /* Utility methods */
     /**
