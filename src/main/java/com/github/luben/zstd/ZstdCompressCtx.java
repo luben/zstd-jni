@@ -280,7 +280,7 @@ public class ZstdCompressCtx extends AutoCloseBase {
      * Register an external sequence producer
      * @param producer the user-defined {@link SequenceProducer} to register.
      */
-    public void registerSequenceProducer(SequenceProducer producer) {
+    public ZstdCompressCtx registerSequenceProducer(SequenceProducer producer) {
         ensureOpen();
         acquireSharedLock();
         if (this.seqprod != null) {
@@ -296,6 +296,7 @@ public class ZstdCompressCtx extends AutoCloseBase {
         }
         this.seqprod = producer;
         releaseSharedLock();
+        return this;
     }
 
     /**
@@ -303,25 +304,67 @@ public class ZstdCompressCtx extends AutoCloseBase {
      * @param fallbackFlag fall back to the default internal sequence producer if an external
      *                     sequence producer returns an error code, default: false
      */
-    public ZstdCompressCtx setSequenceProducerFallback(boolean fallbackFlag){
+    public ZstdCompressCtx setSequenceProducerFallback(boolean fallbackFlag) {
         ensureOpen();
         acquireSharedLock();
-        setSequenceProducerFallback0(nativePtr, fallbackFlag);
-        releaseSharedLock();
+        try {
+            long result = Zstd.setSequenceProducerFallback(nativePtr, fallbackFlag);
+            if (Zstd.isError(result)) {
+                throw new ZstdException(result);
+            }
+        } finally {
+            releaseSharedLock();
+        }
         return this;
     }
-    private static native void setSequenceProducerFallback0(long ptr, boolean fallbackFlag);
+
+    /**
+     * Set whether to search external sequences for repeated offsets that can be
+     * encoded as repcodes.
+     * @param searchRepcodes whether to search for repcodes
+     */
+    public ZstdCompressCtx setSearchForExternalRepcodes(Zstd.ParamSwitch searchRepcodes) {
+        ensureOpen();
+        acquireSharedLock();
+        try {
+            long result = Zstd.setSearchForExternalRepcodes(nativePtr, searchRepcodes.getValue());
+            if (Zstd.isError(result)) {
+                throw new ZstdException(result);
+            }
+        } finally {
+            releaseSharedLock();
+        }
+        return this;
+    }
 
     /**
      * Enable or disable sequence validation. Useful for the sequence-level API
      * and with external sequence producers.
-     * @param validateSequences whether to validate all sequences, default: false
+     * @param validateSequences whether to enable sequence validation
      */
-    public ZstdCompressCtx setValidateSequences(boolean validateSequences) {
+    public ZstdCompressCtx setValidateSequences(Zstd.ParamSwitch validateSequences) {
         ensureOpen();
         acquireSharedLock();
         try {
-            long result = Zstd.setValidateSequences(nativePtr, validateSequences);
+            long result = Zstd.setValidateSequences(nativePtr, validateSequences.getValue());
+            if (Zstd.isError(result)) {
+                throw new ZstdException(result);
+            }
+        } finally {
+            releaseSharedLock();
+        }
+        return this;
+    }
+
+    /**
+     * Enable or disable long-distance matching.
+     * @param ldm whether to enable long-distance matching.
+     */
+    public ZstdCompressCtx setEnableLongDistanceMatching(Zstd.ParamSwitch enableLDM) {
+        ensureOpen();
+        acquireSharedLock();
+        try {
+            long result = Zstd.setEnableLongDistanceMatching(nativePtr, enableLDM.getValue());
             if (Zstd.isError(result)) {
                 throw new ZstdException(result);
             }

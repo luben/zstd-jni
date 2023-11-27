@@ -398,10 +398,10 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_setCompressionLong
     ZSTD_CCtx* cctx = (ZSTD_CCtx*)(intptr_t) stream;
     if (windowLog < ZSTD_WINDOWLOG_MIN || windowLog > ZSTD_WINDOWLOG_LIMIT_DEFAULT) {
       // disable long matching and reset to default windowLog size
-      ZSTD_CCtx_setParameter(cctx, ZSTD_c_enableLongDistanceMatching, 0);
+      ZSTD_CCtx_setParameter(cctx, ZSTD_c_enableLongDistanceMatching, ZSTD_ps_disable);
       ZSTD_CCtx_setParameter(cctx, ZSTD_c_windowLog, 0);
     } else {
-      ZSTD_CCtx_setParameter(cctx, ZSTD_c_enableLongDistanceMatching, 1);
+      ZSTD_CCtx_setParameter(cctx, ZSTD_c_enableLongDistanceMatching, ZSTD_ps_enable);
       ZSTD_CCtx_setParameter(cctx, ZSTD_c_windowLog, windowLog);
     }
     return 0;
@@ -543,11 +543,41 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_setRefMultipleDDicts
 /*
  * Class:     com_github_luben_zstd_Zstd
  * Method:    setValidateSequences
- * Signature: (JZ)I
+ * Signature: (JI)I
  */
 JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_setValidateSequences
-  (JNIEnv *env, jclass obj, jlong stream, jboolean validateSequences) {
+  (JNIEnv *env, jclass obj, jlong stream, jint validateSequences) {
     return ZSTD_CCtx_setParameter((ZSTD_CCtx *)(intptr_t) stream, ZSTD_c_validateSequences, validateSequences);
+}
+
+/*
+ * Class:     com_github_luben_zstd_Zstd
+ * Method:    setSequenceProducerFallback
+ * Signature: (JZ)I
+ */
+JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_setSequenceProducerFallback
+  (JNIEnv *env, jclass obj, jlong stream, jboolean fallbackFlag) {
+    return ZSTD_CCtx_setParameter((ZSTD_CCtx*)(intptr_t) stream, ZSTD_c_enableSeqProducerFallback, (fallbackFlag == JNI_TRUE));
+}
+
+/*
+ * Class:     com_github_luben_zstd_Zstd
+ * Method:    setSearchForExternalRepcodes
+ * Signature: (JZ)I
+ */
+JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_setSearchForExternalRepcodes
+  (JNIEnv *env, jclass obj, jlong stream, jint searchRepcodes) {
+    return ZSTD_CCtx_setParameter((ZSTD_CCtx*)(intptr_t) stream, ZSTD_c_searchForExternalRepcodes, searchRepcodes);
+}
+
+/*
+ * Class:     com_github_luben_zstd_Zstd
+ * Method:    setEnableLongDistanceMatching
+ * Signature: (JZ)I
+ */
+JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_setEnableLongDistanceMatching
+  (JNIEnv *env, jclass obj, jlong stream, jint enableLDM) {
+    return ZSTD_CCtx_setParameter((ZSTD_CCtx*)(intptr_t) stream, ZSTD_c_enableLongDistanceMatching, enableLDM);
 }
 
 /*

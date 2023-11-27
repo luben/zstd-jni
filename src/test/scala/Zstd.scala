@@ -1239,7 +1239,7 @@ class ZstdSpec extends AnyFlatSpec with ScalaCheckPropertyChecks {
             def freeState(@unused state: Long) = {}
           }
           cctx.registerSequenceProducer(seqProd)
-          cctx.setValidateSequences(true)
+          cctx.setValidateSequences(Zstd.ParamSwitch.ENABLE)
           cctx.setSequenceProducerFallback(false)
           cctx.setPledgedSrcSize(size)
           val compressedBuffer = ByteBuffer.allocateDirect(Zstd.compressBound(size).toInt)
@@ -1303,7 +1303,7 @@ class ZstdSpec extends AnyFlatSpec with ScalaCheckPropertyChecks {
           }
 
           cctx.registerSequenceProducer(seqProd)
-          cctx.setValidateSequences(true)
+          cctx.setValidateSequences(Zstd.ParamSwitch.ENABLE)
           cctx.setSequenceProducerFallback(false)
           cctx.setPledgedSrcSize(size)
 
@@ -1347,7 +1347,7 @@ class ZstdSpec extends AnyFlatSpec with ScalaCheckPropertyChecks {
           }
 
           cctx.registerSequenceProducer(seqProd)
-          cctx.setValidateSequences(true)
+          cctx.setValidateSequences(Zstd.ParamSwitch.ENABLE)
           cctx.setSequenceProducerFallback(true) // !!
           cctx.setPledgedSrcSize(size)
 
