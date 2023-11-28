@@ -283,19 +283,27 @@ public class ZstdCompressCtx extends AutoCloseBase {
     public ZstdCompressCtx registerSequenceProducer(SequenceProducer producer) {
         ensureOpen();
         acquireSharedLock();
-        if (this.seqprod != null) {
-            this.seqprod.freeState(seqprod_state);
-        }
+        try {
+            if (this.seqprod != null) {
+                this.seqprod.freeState(seqprod_state);
+                this.seqprod = null;
+            }
 
-        if (producer == null) {
-            seqprod_state = 0;
+            if (producer == null) {
+                Zstd.registerSequenceProducer(nativePtr, 0, 0);
+            } else {
+                seqprod_state = producer.createState();
+                Zstd.registerSequenceProducer(nativePtr, seqprod_state, producer.getFunctionPointer());
+                this.seqprod = producer;
+            }
+        } catch (Exception e) {
+            this.seqprod = null;
             Zstd.registerSequenceProducer(nativePtr, 0, 0);
-        } else {
-            seqprod_state = producer.createState();
-            Zstd.registerSequenceProducer(nativePtr, seqprod_state, producer.getFunctionPointer());
+            releaseSharedLock();
+            throw e;
+        } finally {
+            releaseSharedLock();
         }
-        this.seqprod = producer;
-        releaseSharedLock();
         return this;
     }
 
