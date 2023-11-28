@@ -1284,7 +1284,7 @@ class ZstdSpec extends AnyFlatSpec with ScalaCheckPropertyChecks {
     Using.Manager { use =>
       val cctx = use(new ZstdCompressCtx())
       
-      forAll(minSize(32))   { input: Array[Byte] =>
+      forAll { input: Array[Byte] => whenever (input.length >= 32)
         {
           val size        = input.length
           val inputBuffer = ByteBuffer.allocateDirect(size)
