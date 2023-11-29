@@ -299,7 +299,6 @@ public class ZstdCompressCtx extends AutoCloseBase {
         } catch (Exception e) {
             this.seqprod = null;
             Zstd.registerSequenceProducer(nativePtr, 0, 0);
-            releaseSharedLock();
             throw e;
         } finally {
             releaseSharedLock();
