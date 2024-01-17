@@ -62,6 +62,12 @@ The build system depends on Scala and the tests depend on ScalaTest and
 ScalaCheck but the produced JAR does not have any dependencies. It also
 embeds the native library.
 
+*Note*: For the moment the project depends on a local build of `sbt-java-module-info`
+v0.5.2, as that version is not published to Maven. Before compiling, you need to publish it locally:
+```
+$ cd sbt-java-module-info && ./sbt publishLocal && cd -
+```
+
 Compile and test:
 ```
  $ ./sbt compile test package
@@ -71,9 +77,6 @@ If you want to publish it to you local ivy2 repository:
 ```
  $ ./sbt publishLocal
 ```
-
-*Note*: for the moment the project depends on local build of `sbt-java-module-info`
-v0.5.2 as that version is not publushed to Maven.
 
 Binary releases
 ---------------
