@@ -80,11 +80,8 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
         // create compression context
         this.stream = createCStream();
         this.bufferPool = bufferPool;
-        this.dstByteBuffer = bufferPool.get(dstSize);
-        if (this.dstByteBuffer == null) {
-            throw new ZstdIOException(Zstd.errMemoryAllocation(), "Cannot get ByteBuffer of size " + dstSize + " from the BufferPool");
-        }
-        this.dst = Zstd.extractArray(dstByteBuffer);
+        this.dstByteBuffer = Zstd.getArrayBackedBuffer(bufferPool, dstSize);
+        this.dst = dstByteBuffer.array();
     }
 
     /**

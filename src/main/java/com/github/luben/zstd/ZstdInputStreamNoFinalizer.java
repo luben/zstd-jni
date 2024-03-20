@@ -62,11 +62,8 @@ public class ZstdInputStreamNoFinalizer extends FilterInputStream {
     public ZstdInputStreamNoFinalizer(InputStream inStream, BufferPool bufferPool) throws IOException {
         super(inStream);
         this.bufferPool = bufferPool;
-        this.srcByteBuffer = bufferPool.get(srcBuffSize);
-        if (this.srcByteBuffer == null) {
-            throw new ZstdIOException(Zstd.errMemoryAllocation(), "Cannot get ByteBuffer of size " + srcBuffSize + " from the BufferPool");
-        }
-        this.src = Zstd.extractArray(srcByteBuffer);
+        this.srcByteBuffer = Zstd.getArrayBackedBuffer(bufferPool, srcBuffSize);
+        this.src = srcByteBuffer.array();
         // memory barrier
         synchronized(this) {
             this.stream = createDStream();
@@ -244,10 +241,10 @@ public class ZstdInputStreamNoFinalizer extends FilterInputStream {
         if (bufferLen > numBytes) {
             bufferLen = (int) numBytes;
         }
-        ByteBuffer buf = bufferPool.get(bufferLen);
+        ByteBuffer buf = Zstd.getArrayBackedBuffer(bufferPool, bufferLen);
         long toSkip = numBytes;
         try {
-            byte data[] = Zstd.extractArray(buf);
+            byte data[] = buf.array();
             while (toSkip > 0) {
                 int read = read(data, 0, (int) Math.min((long) bufferLen, toSkip));
                 if (read < 0) {
