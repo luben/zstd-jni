@@ -1531,10 +1531,15 @@ public class Zstd {
         }
     }
 
-    static final byte[] extractArray(ByteBuffer buffer) {
+    static ByteBuffer getArrayBackedBuffer(BufferPool bufferPool, int size) throws ZstdIOException {
+        ByteBuffer buffer = bufferPool.get(size);
+        if (buffer == null) {
+            throw new ZstdIOException(Zstd.errMemoryAllocation(), "Cannot get ByteBuffer of size " + size + " from the BufferPool");
+        }
         if (!buffer.hasArray() || buffer.arrayOffset() != 0) {
+            bufferPool.release(buffer);
             throw new IllegalArgumentException("provided ByteBuffer lacks array or has non-zero arrayOffset");
         }
-        return buffer.array();
+        return buffer;
     }
 }
