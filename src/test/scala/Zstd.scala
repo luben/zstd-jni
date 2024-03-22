@@ -9,6 +9,7 @@ import java.nio.channels.FileChannel
 import java.nio.channels.FileChannel.MapMode
 import java.nio.charset.Charset
 import java.nio.file.StandardOpenOption
+import java.util.concurrent.CountDownLatch
 import scala.annotation.unused
 import scala.collection.mutable.WrappedArray
 import scala.io._
@@ -1095,14 +1096,14 @@ class ZstdSpec extends AnyFlatSpec with ScalaCheckPropertyChecks {
     assert(largeBuf6.array.length >= 10)
   }
 
-  "Zstd" should "validate when extracting backing arrays from ByteBuffers" in {
+  "Zstd" should "validate when ByteBuffers from the BufferPool" in {
     val directPoolLatch = new CountDownLatch(1)
     val directPool = new BufferPool {
       override def get(capacity: Int): ByteBuffer = {
         ByteBuffer.allocateDirect(capacity)
       }
 
-      override def release(buffer: ByteBuffer) = {
+      override def release(buffer: ByteBuffer): Unit = {
         directPoolLatch.countDown();
       }
     }
@@ -1114,12 +1115,12 @@ class ZstdSpec extends AnyFlatSpec with ScalaCheckPropertyChecks {
     val slicingPoolLatch = new CountDownLatch(1)
     val slicingPool = new BufferPool {
       override def get(capacity: Int): ByteBuffer = {
-        ByteBuffer.allocate(capacity);
-        buf.putInt(1);
+        var buffer = ByteBuffer.allocate(capacity);
+        buffer.putInt(1);
         buffer.slice
       }
 
-      override def release(buffer: ByteBuffer) = {
+      override def release(buffer: ByteBuffer): Unit = {
         slicingPoolLatch.countDown();
       }
     }
