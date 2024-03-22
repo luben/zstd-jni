@@ -1096,14 +1096,37 @@ class ZstdSpec extends AnyFlatSpec with ScalaCheckPropertyChecks {
   }
 
   "Zstd" should "validate when extracting backing arrays from ByteBuffers" in {
-    assertThrows[IllegalArgumentException] {
-      Zstd.extractArray(ByteBuffer.allocateDirect(10))
+    val directPoolLatch = new CountDownLatch(1)
+    val directPool = new BufferPool {
+      override def get(capacity: Int): ByteBuffer = {
+        ByteBuffer.allocateDirect(capacity)
+      }
+
+      override def release(buffer: ByteBuffer) = {
+        directPoolLatch.countDown();
+      }
     }
     assertThrows[IllegalArgumentException] {
-      val buf = ByteBuffer.allocate(10);
-      buf.putInt(1);
-      Zstd.extractArray(buf.slice)
+      Zstd.getArrayBackedBuffer(directPool, 10)
     }
+    directPoolLatch.await();
+
+    val slicingPoolLatch = new CountDownLatch(1)
+    val slicingPool = new BufferPool {
+      override def get(capacity: Int): ByteBuffer = {
+        ByteBuffer.allocate(capacity);
+        buf.putInt(1);
+        buffer.slice
+      }
+
+      override def release(buffer: ByteBuffer) = {
+        slicingPoolLatch.countDown();
+      }
+    }
+    assertThrows[IllegalArgumentException] {
+      Zstd.getArrayBackedBuffer(slicingPool, 10)
+    }
+    slicingPoolLatch.await();
   }
 
   "streaming compression and decompression" should "roundtrip" in {
