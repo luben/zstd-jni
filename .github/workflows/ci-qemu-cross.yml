@@ -5,7 +5,8 @@ jobs:
         strategy:
             matrix:
                 include: [
-                    { platform: s390x }
+                    { platform: s390x },
+                    { platform: riscv64 },
                 ]
         runs-on: ubuntu-latest
         steps:
