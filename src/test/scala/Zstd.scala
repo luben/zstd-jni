@@ -1237,7 +1237,6 @@ class ZstdSpec extends AnyFlatSpec with ScalaCheckPropertyChecks {
     }
   }.get
 
-  /* TODO: fix getBuiltinSequenceProd
   it should "be able to use a sequence producer" in {
     Using.Manager { use =>
       val cctx = use(new ZstdCompressCtx())
@@ -1323,8 +1322,8 @@ class ZstdSpec extends AnyFlatSpec with ScalaCheckPropertyChecks {
               Zstd.getStubSequenceProducer()
             }
 
-            def createState(): Long = { 0 }
-            def freeState(@unused state: Long) = { 0 }
+            def createState(): Long = 0
+            def freeState(@unused state: Long) {}
           }
 
           cctx.registerSequenceProducer(seqProd)
@@ -1367,8 +1366,8 @@ class ZstdSpec extends AnyFlatSpec with ScalaCheckPropertyChecks {
               Zstd.getStubSequenceProducer()
             }
 
-            def createState(): Long = { 0 }
-            def freeState(@unused state: Long) = { 0 }
+            def createState(): Long = 0
+            def freeState(@unused state: Long) {}
           }
 
           cctx.registerSequenceProducer(seqProd)
@@ -1413,5 +1412,4 @@ class ZstdSpec extends AnyFlatSpec with ScalaCheckPropertyChecks {
       }
     }.get
   }
-  */
 }
