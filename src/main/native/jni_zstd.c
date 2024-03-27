@@ -293,6 +293,7 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_loadFastDictCompress
     return ZSTD_CCtx_refCDict((ZSTD_CCtx *)(intptr_t) stream, cdict);
 }
 
+/*
 size_t builtinSequenceProducer(
   void* sequenceProducerState,
   ZSTD_Sequence* outSeqs, size_t outSeqsCapacity,
@@ -312,6 +313,7 @@ size_t builtinSequenceProducer(
   size_t numSeqs = ZSTD_generateSequences((ZSTD_CCtx *)sequenceProducerState, outSeqs, outSeqsCapacity, src, srcSize);
   return ZSTD_isError(numSeqs) ? ZSTD_SEQUENCE_PRODUCER_ERROR : numSeqs;
 }
+*/
 
 size_t stubSequenceProducer(
   void* sequenceProducerState,
@@ -329,10 +331,12 @@ size_t stubSequenceProducer(
  * Method:    getBuiltinSequenceProducer
  * Signature: ()J
  */
+/* TODO: fix error
 JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_getBuiltinSequenceProducer
   (JNIEnv *env, jclass obj) {
     return (jlong)(intptr_t)&builtinSequenceProducer;
 }
+*/
 
 /*
  * Class:     com_github_luben_zstd_Zstd
@@ -349,12 +353,14 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_getStubSequenceProducer
  * Method:    registerSequenceProducer
  * Signature: (JJJ)V
  */
+/* TODO: fix error
 JNIEXPORT void JNICALL Java_com_github_luben_zstd_Zstd_registerSequenceProducer
   (JNIEnv *env, jclass obj, jlong stream, jlong seqProdState, jlong seqProdFunction) {
     ZSTD_registerSequenceProducer((ZSTD_CCtx *)(intptr_t) stream,
                                   (void *)(intptr_t) seqProdState,
                                   (ZSTD_sequenceProducer_F *)(intptr_t) seqProdFunction);
 }
+*/
 
 /*
  * Class:     com_github_luben_zstd_Zstd

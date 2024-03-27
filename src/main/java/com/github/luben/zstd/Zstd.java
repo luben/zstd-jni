@@ -590,9 +590,10 @@ public class Zstd {
     public static native int loadFastDictDecompress(long stream, ZstdDictDecompress dict);
     public static native int loadDictCompress(long stream, byte[] dict, int dict_size);
     public static native int loadFastDictCompress(long stream, ZstdDictCompress dict);
-    public static native void registerSequenceProducer(long stream, long seqProdState, long seqProdFunction);
+    // TODO: Fix native compilation
+    //public static native void registerSequenceProducer(long stream, long seqProdState, long seqProdFunction);
+    // static native long getBuiltinSequenceProducer(); // Used in tests
     static native void generateSequences(long stream, long outSeqs, long outSeqsSize, long src, long srcSize);
-    static native long getBuiltinSequenceProducer(); // Used in tests
     static native long getStubSequenceProducer();    // Used in tests
     public static native int setCompressionChecksums(long stream, boolean useChecksums);
     public static native int setCompressionMagicless(long stream, boolean useMagicless);

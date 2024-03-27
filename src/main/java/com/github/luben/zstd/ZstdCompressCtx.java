@@ -280,6 +280,7 @@ public class ZstdCompressCtx extends AutoCloseBase {
      * Register an external sequence producer
      * @param producer the user-defined {@link SequenceProducer} to register.
      */
+    /* TODO: fix compilation
     public ZstdCompressCtx registerSequenceProducer(SequenceProducer producer) {
         ensureOpen();
         acquireSharedLock();
@@ -305,6 +306,7 @@ public class ZstdCompressCtx extends AutoCloseBase {
         }
         return this;
     }
+    */
 
     /**
      * Enable or disable sequence producer fallback
