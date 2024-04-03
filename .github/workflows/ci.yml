@@ -10,7 +10,7 @@ jobs:
                 ]
         runs-on: ${{ matrix.os }}
         steps:
-        - uses: actions/checkout@v3
+        - uses: actions/checkout@v4
         - uses: actions/setup-java@v4
           with:
             java-version: 11
@@ -52,7 +52,7 @@ jobs:
                 ]
         runs-on: ${{ matrix.os }}
         steps:
-        - uses: actions/checkout@v3
+        - uses: actions/checkout@v4
         - uses: actions/setup-java@v4
           with:
             java-version: 11
@@ -109,7 +109,7 @@ jobs:
             run:
                 shell: msys2 {0}
         steps:
-        - uses: actions/checkout@v3
+        - uses: actions/checkout@v4
         - uses: msys2/setup-msys2@v2
           with:
             msystem: ${{ matrix.msystem }}
@@ -152,7 +152,7 @@ jobs:
             run:
                 shell: msys2 {0}
         steps:
-        - uses: actions/checkout@v3
+        - uses: actions/checkout@v4
         - uses: msys2/setup-msys2@v2
           with:
             msystem: mingw64
