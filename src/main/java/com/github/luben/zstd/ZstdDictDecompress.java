@@ -20,6 +20,13 @@ public class ZstdDictDecompress extends SharedDictBase {
     private native void free();
 
     /**
+     * Get the byte buffer that backs this dict, if any, or null if not backed by a byte buffer.
+     */
+    public ByteBuffer getByReferenceBuffer() {
+	return sharedDict;
+    }
+
+    /**
      * Convenience constructor to create a new dictionary for use with fast decompress
      *
      * @param dict buffer containing dictionary to load/parse with exact length
