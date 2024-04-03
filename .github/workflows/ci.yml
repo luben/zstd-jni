@@ -47,8 +47,8 @@ jobs:
             fail-fast: false
             matrix:
                 include: [
-                    { os: macos-11.0, host_arch: x86_64, macos_target: x86_64-apple-macos10.12, target_arch: x86_64  },
-                    { os: macos-11.0, host_arch: x86_64, macos_target: arm64-apple-macos11,     target_arch: aarch64 }
+                    { os: macos-latest, host_arch: x86_64,  macos_target: x86_64-apple-macos10.12, target_arch: x86_64  },
+                    { os: macos-latest, host_arch: aarch64, macos_target: arm64-apple-macos11,     target_arch: aarch64 }
                 ]
         runs-on: ${{ matrix.os }}
         steps:
