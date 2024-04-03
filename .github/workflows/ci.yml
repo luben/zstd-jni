@@ -75,6 +75,9 @@ jobs:
         - name: Env
           run: echo "nativeJniVersion=`cat version`" >> $GITHUB_ENV
 
+        - name: Inspect classes
+          run: ls -al target/classes/darwin
+
         - name: Inspect
           run: otool -L target/classes/darwin/${{ matrix.target_arch }}/libzstd-jni-${nativeJniVersion}.dylib
 
