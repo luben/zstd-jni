@@ -47,8 +47,8 @@ jobs:
             fail-fast: false
             matrix:
                 include: [
-                    { os: macos-latest, host_arch: x86_64,  macos_target: x86_64-apple-macos10.12, target_arch: x86_64  },
-                    { os: macos-latest, host_arch: aarch64, macos_target: arm64-apple-macos11,     target_arch: aarch64 }
+                    { os: macos-13, host_arch: x86_64,  macos_target: x86_64-apple-macos10.12, target_arch: x86_64  },
+                    { os: macos-14, host_arch: aarch64, macos_target: arm64-apple-macos11,     target_arch: aarch64 }
                 ]
         runs-on: ${{ matrix.os }}
         steps:
@@ -61,6 +61,9 @@ jobs:
           with:
             xcode-version: latest
 
+        - name: Inspect arch
+          run: arch
+
         - name: Install sbt-java-module-info
           run: pushd ./sbt-java-module-info; ./sbt publishLocal; popd
 
@@ -71,6 +74,9 @@ jobs:
 
         - name: Env
           run: echo "nativeJniVersion=`cat version`" >> $GITHUB_ENV
+
+        - name: Inspect classes
+          run: ls -al target/classes/darwin
 
         - name: Inspect
           if: matrix.target_arch == 'x86_64'
