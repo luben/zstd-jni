@@ -11,9 +11,11 @@ public class ZstdDictDecompress extends SharedDictBase {
 
     private long nativePtr = 0L;
 
+    private ByteBuffer sharedDict = null;
+
     private native void init(byte[] dict, int dict_offset, int dict_size);
 
-    private native void initDirect(ByteBuffer dict, int dict_offset, int dict_size);
+    private native void initDirect(ByteBuffer dict, int dict_offset, int dict_size, int byReference);
 
     private native void free();
 
@@ -52,6 +54,17 @@ public class ZstdDictDecompress extends SharedDictBase {
      * @param dict   Direct ByteBuffer containing dictionary using position and limit to define range in buffer.
      */
     public ZstdDictDecompress(ByteBuffer dict) {
+	this(dict, false);
+    }
+
+    /**
+     * Create a new dictionary for use with fast decompress.
+     * If byReference is true, then the native code does not copy the data but keeps a reference to the byte buffer, which must then not be modified before this context has been closed.
+     *
+     * @param dict   Direct ByteBuffer containing dictionary using position and limit to define range in buffer.
+     * @param byReference tell the native part to use the byte buffer directly and not copy the data when true.
+     */
+    public ZstdDictDecompress(ByteBuffer dict, boolean byReference) {
 
 	int length = dict.limit() - dict.position();
         if (!dict.isDirect()) {
@@ -60,11 +73,14 @@ public class ZstdDictDecompress extends SharedDictBase {
         if (length < 0) {
             throw new IllegalArgumentException("dict cannot be empty.");
         }
-	initDirect(dict, dict.position(), length);
+	initDirect(dict, dict.position(), length, byReference ? 1 : 0);
 
         if (nativePtr == 0L) {
            throw new IllegalStateException("ZSTD_createDDict failed");
         }
+	if (byReference) {
+	    sharedDict = dict; // ensures the dict is not garbage collected while this object remains, and flags that we should not use native free.
+	}
         // Ensures that even if ZstdDictDecompress is created and published through a race, no thread could observe
         // nativePtr == 0.
         storeFence();
@@ -74,7 +90,11 @@ public class ZstdDictDecompress extends SharedDictBase {
     @Override
      void doClose() {
         if (nativePtr != 0) {
-            free();
+	    if (sharedDict == null) {
+                free();
+	    } else {
+		sharedDict = null;
+	    }
             nativePtr = 0;
         }
     }

@@ -104,17 +104,18 @@ class ZstdDictSpec extends AnyFlatSpec {
       assert(input.toSeq == decompressed.toSeq)
     }
 
-    it should s"round-trip compression/decompression ByteBuffers with fast dict at level $level with legacy $legacy" in {
+    it should s"round-trip compression/decompression ByteBuffers with fast dict at level $level with byReference $legacy" in {
+      val byReference = legacy // Reuse the variance flag here.
       val size = input.length
       val inBuf = ByteBuffer.allocateDirect(size)
       inBuf.put(input)
       inBuf.flip()
-      val cdict = new ZstdDictCompress(dictInDirectByteBuffer, level)
+      val cdict = new ZstdDictCompress(dictInDirectByteBuffer, level, byReference)
       val compressed = ByteBuffer.allocateDirect(Zstd.compressBound(size).toInt);
       Zstd.compress(compressed, inBuf, cdict)
       compressed.flip()
       cdict.close
-      val ddict = new ZstdDictDecompress(dictInDirectByteBuffer)
+      val ddict = new ZstdDictDecompress(dictInDirectByteBuffer, byReference)
       val decompressed = ByteBuffer.allocateDirect(size)
       Zstd.decompress(decompressed, compressed, ddict)
       decompressed.flip()
