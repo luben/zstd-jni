@@ -26,7 +26,7 @@ compile () {
 }
 
 compile amd64   linux
-compile i386    linux "gcc -march=i586 -static-libgcc"
+#compile i386    linux "gcc -march=i586 -static-libgcc"
 compile ppc64   linux
 compile ppc64le linux
 compile aarch64 linux
