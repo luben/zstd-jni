@@ -86,7 +86,7 @@ public class ZstdDictDecompress extends SharedDictBase {
            throw new IllegalStateException("ZSTD_createDDict failed");
         }
 	if (byReference) {
-	    sharedDict = dict; // ensures the dict is not garbage collected while this object remains, and flags that we should not use native free.
+	    sharedDict = dict; // ensures the dict is not garbage collected while this object remains
 	}
         // Ensures that even if ZstdDictDecompress is created and published through a race, no thread could observe
         // nativePtr == 0.
@@ -97,12 +97,9 @@ public class ZstdDictDecompress extends SharedDictBase {
     @Override
      void doClose() {
         if (nativePtr != 0) {
-	    if (sharedDict == null) {
-                free();
-	    } else {
-		sharedDict = null;
-	    }
+            free();
             nativePtr = 0;
+            sharedDict = null;
         }
     }
 }
