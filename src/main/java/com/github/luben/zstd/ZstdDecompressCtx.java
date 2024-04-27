@@ -215,6 +215,102 @@ public class ZstdDecompressCtx extends AutoCloseBase {
 
     private static native long decompressByteArray0(long nativePtr, byte[] dst, int dstOffset, int dstSize, byte[] src, int srcOffset, int srcSize);
 
+    
+    /**
+     * Decompresses memory buffer 'srcBuff' into memory buffer 'dstBuff' using this ZstdDecompressCtx.
+     *
+     * Destination buffer should be sized to be larger of equal to the originalSize.
+     *
+     * @param dstBuff the destination memory buffer address
+     * @param dstSize the size of destination memory buffer
+     * @param srcBuff the source memory buffer address
+     * @param srcSize the size of source memory buffer
+     * @return the number of bytes decompressed into destination buffer (originalSize)
+     */ 
+    public int decompressNativeNative(long dstBuff, int dstSize, long srcBuff, int srcSize) {
+      ensureOpen();
+      acquireSharedLock();
+
+      try {
+          long size = decompressUnsafeNativeNative0(nativePtr, dstBuff, dstSize, srcBuff, srcSize);
+          if (Zstd.isError(size)) {
+              throw new ZstdException(size);
+          }
+          if (size > Integer.MAX_VALUE) {
+              throw new ZstdException(Zstd.errGeneric(), "Output size is greater than MAX_INT");
+          }
+          return (int) size;
+      } finally {
+          releaseSharedLock();
+      }
+    }
+    
+    /**
+     * Decompresses memory buffer 'srcBuff' into byte array 'dstBuff' using this ZstdDecompressCtx.
+     *
+     * Destination buffer should be sized to be larger of equal to the originalSize.
+     *
+     * @param dstBuff the destination byte array
+     * @param dstOffset offset in the destination byte array
+     * @param dstSize the size of destination byte array buffer
+     * @param srcBuff the source memory buffer address
+     * @param srcSize the size of source memory buffer
+     * @return the number of bytes decompressed into destination buffer (originalSize)
+     */ 
+    public int decompressNativeByteArray(byte[] dstBuff, int dstOffset, int dstSize, long srcBuff, int srcSize) {
+      ensureOpen();
+      acquireSharedLock();
+
+      try {
+          long size = decompressUnsafeNativeByteArray0(nativePtr, dstBuff, dstOffset, dstSize, srcBuff, srcSize);
+          if (Zstd.isError(size)) {
+              throw new ZstdException(size);
+          }
+          if (size > Integer.MAX_VALUE) {
+              throw new ZstdException(Zstd.errGeneric(), "Output size is greater than MAX_INT");
+          }
+          return (int) size;
+      } finally {
+          releaseSharedLock();
+      }
+    }
+    
+    /**
+     * Decompresses byte array 'srcBuff' into memory 'dstBuff' using this ZstdDecompressCtx.
+     *
+     * Destination buffer should be sized to be larger of equal to the originalSize.
+     *
+     * @param dstBuff the destination memory buffer
+     * @param dstSize the size of destination memory buffer
+     * @param srcBuff the source byte array
+     * @param srcOffset offset in the source byte array
+     * @param srcSize the size of source byte array 
+     * @return the number of bytes decompressed into destination buffer (originalSize)
+     */ 
+    public int decompressByteArrayNative(long dstBuff, int dstSize, byte[] srcBuff, int srcOffset, int srcSize) {
+      ensureOpen();
+      acquireSharedLock();
+
+      try {
+          long size = decompressUnsafeByteArrayNative0(nativePtr, dstBuff, dstSize, srcBuff, srcOffset, srcSize);
+          if (Zstd.isError(size)) {
+              throw new ZstdException(size);
+          }
+          if (size > Integer.MAX_VALUE) {
+              throw new ZstdException(Zstd.errGeneric(), "Output size is greater than MAX_INT");
+          }
+          return (int) size;
+      } finally {
+          releaseSharedLock();
+      }
+    }
+
+    private static native long decompressUnsafeNativeNative0(long ptr, long dst, int dstSize, long src, int srcSize);
+
+    private static native long decompressUnsafeNativeByteArray0(long ptr, byte[] dst, int dstOffset, int dstSize, long src, int srcSize);
+
+    private static native long decompressUnsafeByteArrayNative0(long ptr, long dst, int dstSize, byte[] src, int srcOffset, int srcSize);
+    
     /* Covenience methods */
 
     /**

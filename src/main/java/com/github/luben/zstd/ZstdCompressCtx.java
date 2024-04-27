@@ -459,8 +459,98 @@ public class ZstdCompressCtx extends AutoCloseBase {
         }
     }
 
+    
+    /**
+     * Compress native memory - to native memory, reusing this ZstdCompressCtx.
+     * @param dstBuff destination memory buffer address
+     * @param dstSize destination memory buffer size
+     * @param srcBuff source memory buffer address
+     * @param srcSize source memory buffer size
+     * @return  the number of bytes written into buffer 'dstBuff'.
+     */
+    public int compressNativeNative(long dstBuff, int dstSize, long srcBuff, int srcSize) {
+      ensureOpen();
+      acquireSharedLock();
+
+      try {
+          long size = compressUnsafeNativeNative0(nativePtr, dstBuff, dstSize, srcBuff, srcSize);
+          if (Zstd.isError(size)) {
+              throw new ZstdException(size);
+          }
+          if (size > Integer.MAX_VALUE) {
+              throw new ZstdException(Zstd.errGeneric(), "Output size is greater than MAX_INT");
+          }
+          return (int) size;
+      } finally {
+          releaseSharedLock();
+      }
+   }
+
+   /**
+    * Compress native memory - to byte array, reusing this ZstdCompressCtx.
+    * @param dstBuff destination buffer
+    * @param dstOffset offset in the destination buffer
+    * @param dstSize destination buffer size
+    * @param srcBuff source memory buffer address
+    * @param srcSize source memory buffer size
+    * @return  the number of bytes written into buffer 'dstBuff'.
+    */
+    public int compressNativeByteArray(byte[] dstBuff, int dstOffset, int dstSize, long srcBuff, int srcSize) {
+      ensureOpen();
+      acquireSharedLock();
+
+      try {
+          long size = compressUnsafeNativeByteArray0(nativePtr, dstBuff, dstOffset, dstSize, srcBuff, srcSize);
+          if (Zstd.isError(size)) {
+              throw new ZstdException(size);
+          }
+          if (size > Integer.MAX_VALUE) {
+              throw new ZstdException(Zstd.errGeneric(), "Output size is greater than MAX_INT");
+          }
+          return (int) size;
+      } finally {
+          releaseSharedLock();
+      }
+    }
+    
+    /**
+     * Compress byte array - to native memory, reusing this ZstdCompressCtx.
+     * @param dstBuff destination memory buffer address
+     * @param dstSize destination memory buffer size
+     * @param srcBuff source buffer
+     * @param srcOffset source buffer offset 
+     * @param srcSize source buffer size
+     * @return  the number of bytes written into buffer 'dstBuff'.
+     */
+    public int compressByteArrayNative(long dstBuff, int dstSize, byte[] srcBuff, int srcOffset,
+        int srcSize) {
+      ensureOpen();
+      acquireSharedLock();
+
+      try {
+        long size = compressUnsafeByteArrayNative0(nativePtr, dstBuff, dstSize, srcBuff, srcOffset,
+          srcSize);
+        if (Zstd.isError(size)) {
+          throw new ZstdException(size);
+        }
+        if (size > Integer.MAX_VALUE) {
+          throw new ZstdException(Zstd.errGeneric(), "Output size is greater than MAX_INT");
+        }
+        return (int) size;
+      } finally {
+        releaseSharedLock();
+      }
+    }
+
     private static native long compressByteArray0(long ptr, byte[] dst, int dstOffset, int dstSize, byte[] src, int srcOffset, int srcSize);
 
+    private static native long compressUnsafeNativeNative0(long ptr, long dst, int dstSize, long src, int srcSize);
+
+    private static native long compressUnsafeNativeByteArray0(long ptr, byte[] dst, int dstOffset, int dstSize, long src, int srcSize);
+
+    private static native long compressUnsafeByteArrayNative0(long ptr, long dst, int dstSize, byte[] src, int srcOffset, int srcSize);
+    
+    
     /* Convenience methods */
 
     /**

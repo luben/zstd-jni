@@ -459,6 +459,26 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdCompressCtx_compressDirec
 
 /*
  * Class:     com_github_luben_zstd_ZstdCompressCtx
+ * Method:    compressUnsafeNativeNative0
+ * Signature: (JJIJI)J
+ */
+JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdCompressCtx_compressUnsafeNativeNative0
+  (JNIEnv *env, jclass jctx, jlong ptr, jlong dst, jint dst_size, jlong src, jint src_size) {
+    if (NULL == (void *) dst) return -ZSTD_error_memory_allocation;
+    if (NULL == (void *) src) return -ZSTD_error_memory_allocation;
+    if (0 > dst_size) return -ZSTD_error_dstSize_tooSmall;
+    if (0 > src_size) return -ZSTD_error_srcSize_wrong;
+
+    ZSTD_CCtx* cctx = (ZSTD_CCtx*)(intptr_t) ptr;
+
+    char *dst_buff = (char *) dst;
+    char *src_buff = (char *) src;
+
+    ZSTD_CCtx_reset(cctx, ZSTD_reset_session_only);
+    return ZSTD_compress2(cctx, dst_buff, (size_t) dst_size, src_buff, (size_t) src_size);
+}
+/*
+ * Class:     com_github_luben_zstd_ZstdCompressCtx
  * Method:    compressByteArray0
  * Signature: (JB[IIB[II)J
  */
@@ -487,6 +507,62 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdCompressCtx_compressByteA
 E2: (*env)->ReleasePrimitiveArrayCritical(env, dst, dst_buff, 0);
 E1: return size;
 }
+
+/*
+ * Class:     com_github_luben_zstd_ZstdCompressCtx
+ * Method:    compressUnsafeByteArrayNative0
+ * Signature: (JJIB[II)J
+ */
+JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdCompressCtx_compressUnsafeByteArrayNative0
+  (JNIEnv *env, jclass jctx, jlong ptr, jlong dst, jint dst_size, jbyteArray src, jint src_offset, jint src_size) {
+    size_t size = -ZSTD_error_memory_allocation;
+
+    if (0 > src_offset) return -ZSTD_error_srcSize_wrong;
+    if (0 > src_size) return -ZSTD_error_srcSize_wrong;
+
+    if (src_offset + src_size > (*env)->GetArrayLength(env, src)) return -ZSTD_error_srcSize_wrong;
+
+    ZSTD_CCtx* cctx = (ZSTD_CCtx*)(intptr_t) ptr;
+
+    void *dst_buff = (void *) dst;
+    if (dst_buff == NULL) goto E1;
+    void *src_buff = (*env)->GetPrimitiveArrayCritical(env, src, NULL);
+    if (src_buff == NULL) goto E1;
+
+    ZSTD_CCtx_reset(cctx, ZSTD_reset_session_only);
+
+    size = ZSTD_compress2(cctx, ((char *)dst_buff), (size_t) dst_size, ((char *)src_buff) + src_offset, (size_t) src_size);
+    (*env)->ReleasePrimitiveArrayCritical(env, src, src_buff, JNI_ABORT);
+E1: return size;
+}
+
+/*
+ * Class:     com_github_luben_zstd_ZstdCompressCtx
+ * Method:    compressUnsafeNativeByteArray0
+ * Signature: (JB[IIJI)J
+ */
+JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdCompressCtx_compressUnsafeNativeByteArray0
+  (JNIEnv *env, jclass jctx, jlong ptr, jbyteArray dst, jint dst_offset, jint dst_size, jlong src, jint src_size) {
+    size_t size = -ZSTD_error_memory_allocation;
+    if (0 > dst_offset) return -ZSTD_error_dstSize_tooSmall;
+    if (0 > dst_size) return -ZSTD_error_dstSize_tooSmall;
+
+    if (dst_offset + dst_size > (*env)->GetArrayLength(env, dst)) return -ZSTD_error_dstSize_tooSmall;
+
+    ZSTD_CCtx* cctx = (ZSTD_CCtx*)(intptr_t) ptr;
+
+    void *dst_buff = (*env)->GetPrimitiveArrayCritical(env, dst, NULL);
+    if (dst_buff == NULL) goto E1;
+    void *src_buff = (void *) src;
+    if (src_buff == NULL) goto E2;
+
+    ZSTD_CCtx_reset(cctx, ZSTD_reset_session_only);
+
+    size = ZSTD_compress2(cctx, ((char *)dst_buff) + dst_offset, (size_t) dst_size, ((char *)src_buff), (size_t) src_size);
+E2: (*env)->ReleasePrimitiveArrayCritical(env, dst, dst_buff, 0);
+E1: return size;
+}
+
 
 /* ================ ZstdDecompressCtx ============================ */
 
@@ -679,3 +755,82 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdDecompressCtx_decompressB
 E2: (*env)->ReleasePrimitiveArrayCritical(env, dst, dst_buff, 0);
 E1: return size;
 }
+
+/*
+ * Class:     com_github_luben_zstd_ZstdDecompressCtx
+ * Method:    decompressUnsafeByteArrayNative0
+ * Signature: (JJIB[II)J
+ */
+JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdDecompressCtx_decompressUnsafeByteArrayNative0
+  (JNIEnv *env, jclass jctx, jlong ptr, jlong dst, jint dst_size, jbyteArray src, jint src_offset, jint src_size) {
+    size_t size = -ZSTD_error_memory_allocation;
+
+    if (0 > src_offset) return -ZSTD_error_srcSize_wrong;
+    if (0 > src_size) return -ZSTD_error_srcSize_wrong;
+
+    if (src_offset + src_size > (*env)->GetArrayLength(env, src)) return -ZSTD_error_srcSize_wrong;
+
+    ZSTD_DCtx* dctx = (ZSTD_DCtx*)(intptr_t)ptr;
+
+    void *dst_buff = (void *) dst;
+    if (dst_buff == NULL) goto E1;
+    void *src_buff = (*env)->GetPrimitiveArrayCritical(env, src, NULL);
+    if (src_buff == NULL) goto E1;
+
+    ZSTD_DCtx_reset(dctx, ZSTD_reset_session_only);
+
+    size = ZSTD_decompressDCtx(dctx, ((char *)dst_buff), (size_t) dst_size, ((char *)src_buff) + src_offset, (size_t) src_size);
+    (*env)->ReleasePrimitiveArrayCritical(env, src, src_buff, JNI_ABORT);
+E1: return size;
+}
+
+/*
+ * Class:     com_github_luben_zstd_ZstdDecompressCtx
+ * Method:    decompressUnsafeNativeByteArray0
+ * Signature: (JB[IIJI)J
+ */
+JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdDecompressCtx_decompressUnsafeNativeByteArray0
+  (JNIEnv *env, jclass jctx, jlong ptr, jbyteArray dst, jint dst_offset, jint dst_size, jlong src, jint src_size) {
+    size_t size = -ZSTD_error_memory_allocation;
+    if (0 > dst_offset) return -ZSTD_error_dstSize_tooSmall;
+    if (0 > dst_size) return -ZSTD_error_dstSize_tooSmall;
+
+    if (dst_offset + dst_size > (*env)->GetArrayLength(env, dst)) return -ZSTD_error_dstSize_tooSmall;
+
+    ZSTD_DCtx* dctx = (ZSTD_DCtx*)(intptr_t)ptr;
+
+    void *dst_buff = (*env)->GetPrimitiveArrayCritical(env, dst, NULL);
+    if (dst_buff == NULL) goto E1;
+    void *src_buff = (void *) src;
+    if (src_buff == NULL) goto E2;
+
+    ZSTD_DCtx_reset(dctx, ZSTD_reset_session_only);
+
+    size = ZSTD_decompressDCtx(dctx, ((char *)dst_buff) + dst_offset, (size_t) dst_size, ((char *)src_buff), (size_t) src_size);
+E2: (*env)->ReleasePrimitiveArrayCritical(env, dst, dst_buff, 0);
+E1: return size;
+}
+
+
+/*
+ * Class:     com_github_luben_zstd_ZstdDecompressCtx
+ * Method:    decompressUnsafeNativeNative0
+ * Signature: (JJIJI)J
+ */
+JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdDecompressCtx_decompressUnsafeNativeNative0
+  (JNIEnv *env, jclass jctx, jlong ptr, jlong dst, jint dst_size, jlong src, jint src_size) {
+    if (NULL == (void *) dst) return -ZSTD_error_memory_allocation;
+    if (NULL == (void *) src) return -ZSTD_error_memory_allocation;
+    if (0 > dst_size) return -ZSTD_error_dstSize_tooSmall;
+    if (0 > src_size) return -ZSTD_error_srcSize_wrong;
+
+    ZSTD_DCtx* dctx = (ZSTD_DCtx*)(intptr_t)ptr;
+
+    char *dst_buff = (char *) dst;
+    char *src_buff = (char *) src;
+
+    ZSTD_DCtx_reset(dctx, ZSTD_reset_session_only);
+    return ZSTD_decompressDCtx(dctx, dst_buff, (size_t) dst_size, src_buff, (size_t) src_size);
+}
+
+
