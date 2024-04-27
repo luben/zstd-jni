@@ -9,13 +9,15 @@ import java.nio.channels.FileChannel
 import java.nio.channels.FileChannel.MapMode
 import java.nio.charset.Charset
 import java.nio.file.StandardOpenOption
-import scala.io._
+import java.util.concurrent.CountDownLatch
+import scala.annotation.unused
 import scala.collection.mutable.WrappedArray
+import scala.io._
 import scala.util.Using
 
 class ZstdSpec extends AnyFlatSpec with ScalaCheckPropertyChecks {
 
-  implicit override val generatorDrivenConfig =
+  implicit override val generatorDrivenConfig: PropertyCheckConfiguration =
     PropertyCheckConfiguration(minSize = 0, sizeRange = 130 * 1024)
 
   val levels = List(1, 3, 6, 9)
@@ -1094,18 +1096,41 @@ class ZstdSpec extends AnyFlatSpec with ScalaCheckPropertyChecks {
     assert(largeBuf6.array.length >= 10)
   }
 
-  "Zstd" should "validate when extracting backing arrays from ByteBuffers" in {
-    assertThrows[IllegalArgumentException] {
-      Zstd.extractArray(ByteBuffer.allocateDirect(10))
+  "Zstd" should "validate when ByteBuffers from the BufferPool" in {
+    val directPoolLatch = new CountDownLatch(1)
+    val directPool = new BufferPool {
+      override def get(capacity: Int): ByteBuffer = {
+        ByteBuffer.allocateDirect(capacity)
+      }
+
+      override def release(buffer: ByteBuffer): Unit = {
+        directPoolLatch.countDown();
+      }
     }
     assertThrows[IllegalArgumentException] {
-      val buf = ByteBuffer.allocate(10);
-      buf.putInt(1);
-      Zstd.extractArray(buf.slice)
+      Zstd.getArrayBackedBuffer(directPool, 10)
     }
+    directPoolLatch.await();
+
+    val slicingPoolLatch = new CountDownLatch(1)
+    val slicingPool = new BufferPool {
+      override def get(capacity: Int): ByteBuffer = {
+        var buffer = ByteBuffer.allocate(capacity);
+        buffer.putInt(1);
+        buffer.slice
+      }
+
+      override def release(buffer: ByteBuffer): Unit = {
+        slicingPoolLatch.countDown();
+      }
+    }
+    assertThrows[IllegalArgumentException] {
+      Zstd.getArrayBackedBuffer(slicingPool, 10)
+    }
+    slicingPoolLatch.await();
   }
 
-  "streaming compressiong and decompression" should "roundtrip" in {
+  "streaming compression and decompression" should "roundtrip" in {
     Using.Manager { use =>
       val cctx = use(new ZstdCompressCtx())
       val dctx = use(new ZstdDecompressCtx())
@@ -1149,7 +1174,7 @@ class ZstdSpec extends AnyFlatSpec with ScalaCheckPropertyChecks {
           decompressedBuffer.flip()
 
           val comparison = inputBuffer.compareTo(decompressedBuffer)
-          comparison == 0 && Zstd.decompressedSize(compressedBuffer) == size && Zstd.getFrameContentSize(compressedBuffer) == size
+          assert(comparison == 0 && Zstd.decompressedSize(compressedBuffer) == size && Zstd.getFrameContentSize(compressedBuffer) == size)
         }
       }
     }.get
@@ -1211,4 +1236,180 @@ class ZstdSpec extends AnyFlatSpec with ScalaCheckPropertyChecks {
       }
     }
   }.get
+
+  it should "be able to use a sequence producer" in {
+    Using.Manager { use =>
+      val cctx = use(new ZstdCompressCtx())
+      val cctx2 = use(new ZstdCompressCtx())
+      val dctx = use(new ZstdDecompressCtx())
+
+      forAll { input: Array[Byte] =>
+        {
+          val size        = input.length
+          val inputBuffer = ByteBuffer.allocateDirect(size)
+          inputBuffer.put(input)
+          inputBuffer.flip()
+          cctx.reset()
+          cctx.setLevel(9)
+          val seqProd = new SequenceProducer {
+            def getFunctionPointer(): Long = {
+              Zstd.getBuiltinSequenceProducer()
+            }
+
+            def createState(): Long = {
+              cctx2.getNativePtr()
+            }
+
+            def freeState(@unused state: Long) = {}
+          }
+          cctx.registerSequenceProducer(seqProd)
+          cctx.setValidateSequences(Zstd.ParamSwitch.ENABLE)
+          cctx.setSequenceProducerFallback(false)
+          cctx.setPledgedSrcSize(size)
+          val compressedBuffer = ByteBuffer.allocateDirect(Zstd.compressBound(size).toInt)
+          while (inputBuffer.hasRemaining) {
+            compressedBuffer.limit(compressedBuffer.position() + 1)
+            cctx.compressDirectByteBufferStream(compressedBuffer, inputBuffer, EndDirective.CONTINUE)
+          }
+
+          var frameProgression = cctx.getFrameProgression()
+          assert(frameProgression.getIngested() == size)
+          assert(frameProgression.getFlushed() == compressedBuffer.position())
+
+          compressedBuffer.limit(compressedBuffer.capacity())
+          val done = cctx.compressDirectByteBufferStream(compressedBuffer, inputBuffer, EndDirective.END)
+          assert(done)
+
+          frameProgression = cctx.getFrameProgression()
+          assert(frameProgression.getConsumed() == size)
+
+          compressedBuffer.flip()
+          val decompressedBuffer = ByteBuffer.allocateDirect(size)
+          dctx.reset()
+          while (compressedBuffer.hasRemaining) {
+            if (decompressedBuffer.limit() < decompressedBuffer.position()) {
+              decompressedBuffer.limit(compressedBuffer.position() + 1)
+            }
+            dctx.decompressDirectByteBufferStream(decompressedBuffer, compressedBuffer)
+          }
+
+          inputBuffer.rewind()
+          compressedBuffer.rewind()
+          decompressedBuffer.flip()
+
+          val comparison = inputBuffer.compareTo(decompressedBuffer)
+          assert(comparison == 0 && Zstd.decompressedSize(compressedBuffer) == size && Zstd.getFrameContentSize(compressedBuffer) == size)
+        }
+      }
+    }.get
+  }
+
+  it should "fail with a stub sequence producer" in {
+    Using.Manager { use =>
+      val cctx = use(new ZstdCompressCtx())
+
+      forAll { input: Array[Byte] => whenever (input.length >= 32)
+        {
+          val size        = input.length
+          val inputBuffer = ByteBuffer.allocateDirect(size)
+          inputBuffer.put(input)
+          inputBuffer.flip()
+          cctx.reset()
+          cctx.setLevel(9)
+
+          val seqProd = new SequenceProducer {
+            def getFunctionPointer(): Long = {
+              Zstd.getStubSequenceProducer()
+            }
+
+            def createState(): Long = 0
+            def freeState(@unused state: Long) {}
+          }
+
+          cctx.registerSequenceProducer(seqProd)
+          cctx.setValidateSequences(Zstd.ParamSwitch.ENABLE)
+          cctx.setSequenceProducerFallback(false)
+          cctx.setPledgedSrcSize(size)
+
+          val compressedBuffer = ByteBuffer.allocateDirect(Zstd.compressBound(size).toInt)
+          try {
+            while (inputBuffer.hasRemaining) {
+              compressedBuffer.limit(compressedBuffer.position() + 1)
+              cctx.compressDirectByteBufferStream(compressedBuffer, inputBuffer, EndDirective.CONTINUE)
+            }
+            cctx.compressDirectByteBufferStream(compressedBuffer, inputBuffer, EndDirective.END)
+            fail("compression succeeded, but should have failed")
+          } catch {
+            case _: ZstdException =>  // compression should throw a ZstdException
+          }
+        }
+      }
+    }.get
+  }
+
+  it should "succeed with a stub sequence producer and software fallback" in {
+    Using.Manager { use =>
+      val cctx = use(new ZstdCompressCtx())
+      val dctx = use(new ZstdDecompressCtx())
+
+      forAll { input: Array[Byte] =>
+        {
+          val size        = input.length
+          val inputBuffer = ByteBuffer.allocateDirect(size)
+          inputBuffer.put(input)
+          inputBuffer.flip()
+          cctx.reset()
+          cctx.setLevel(9)
+
+          val seqProd = new SequenceProducer {
+            def getFunctionPointer(): Long = {
+              Zstd.getStubSequenceProducer()
+            }
+
+            def createState(): Long = 0
+            def freeState(@unused state: Long) {}
+          }
+
+          cctx.registerSequenceProducer(seqProd)
+          cctx.setValidateSequences(Zstd.ParamSwitch.ENABLE)
+          cctx.setSequenceProducerFallback(true) // !!
+          cctx.setPledgedSrcSize(size)
+
+          val compressedBuffer = ByteBuffer.allocateDirect(Zstd.compressBound(size).toInt)
+          while (inputBuffer.hasRemaining) {
+            compressedBuffer.limit(compressedBuffer.position() + 1)
+            cctx.compressDirectByteBufferStream(compressedBuffer, inputBuffer, EndDirective.CONTINUE)
+          }
+
+          var frameProgression = cctx.getFrameProgression()
+          assert(frameProgression.getIngested() == size)
+          assert(frameProgression.getFlushed() == compressedBuffer.position())
+
+          compressedBuffer.limit(compressedBuffer.capacity())
+          val done = cctx.compressDirectByteBufferStream(compressedBuffer, inputBuffer, EndDirective.END)
+          assert(done)
+
+          frameProgression = cctx.getFrameProgression()
+          assert(frameProgression.getConsumed() == size)
+
+          compressedBuffer.flip()
+          val decompressedBuffer = ByteBuffer.allocateDirect(size)
+          dctx.reset()
+          while (compressedBuffer.hasRemaining) {
+            if (decompressedBuffer.limit() < decompressedBuffer.position()) {
+              decompressedBuffer.limit(compressedBuffer.position() + 1)
+            }
+            dctx.decompressDirectByteBufferStream(decompressedBuffer, compressedBuffer)
+          }
+
+          inputBuffer.rewind()
+          compressedBuffer.rewind()
+          decompressedBuffer.flip()
+
+          val comparison = inputBuffer.compareTo(decompressedBuffer)
+          assert(comparison == 0 && Zstd.decompressedSize(compressedBuffer) == size && Zstd.getFrameContentSize(compressedBuffer) == size)
+        }
+      }
+    }.get
+  }
 }

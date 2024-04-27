@@ -16,6 +16,10 @@ public class ZstdCompressCtx extends AutoCloseBase {
 
     private ZstdDictCompress compression_dict = null;
 
+    private SequenceProducer seqprod = null;
+
+    private long seqprod_state = 0;
+
     private static native long init();
 
     private static native void free(long ptr);
@@ -36,6 +40,10 @@ public class ZstdCompressCtx extends AutoCloseBase {
         if (nativePtr != 0) {
             free(nativePtr);
             nativePtr = 0;
+            if (seqprod != null) {
+                seqprod.freeState(seqprod_state);
+                seqprod = null;
+            }
         }
     }
 
@@ -266,6 +274,116 @@ public class ZstdCompressCtx extends AutoCloseBase {
         Zstd.setCompressionLong(nativePtr, windowLog);
         releaseSharedLock();
         return this;
+    }
+
+    /**
+     * Register an external sequence producer
+     * @param producer the user-defined {@link SequenceProducer} to register.
+     */
+    public ZstdCompressCtx registerSequenceProducer(SequenceProducer producer) {
+        ensureOpen();
+        acquireSharedLock();
+        try {
+            if (this.seqprod != null) {
+                this.seqprod.freeState(seqprod_state);
+                this.seqprod = null;
+            }
+
+            if (producer == null) {
+                Zstd.registerSequenceProducer(nativePtr, 0, 0);
+            } else {
+                seqprod_state = producer.createState();
+                Zstd.registerSequenceProducer(nativePtr, seqprod_state, producer.getFunctionPointer());
+                this.seqprod = producer;
+            }
+        } catch (Exception e) {
+            this.seqprod = null;
+            Zstd.registerSequenceProducer(nativePtr, 0, 0);
+            throw e;
+        } finally {
+            releaseSharedLock();
+        }
+        return this;
+    }
+
+    /**
+     * Enable or disable sequence producer fallback
+     * @param fallbackFlag fall back to the default internal sequence producer if an external
+     *                     sequence producer returns an error code, default: false
+     */
+    public ZstdCompressCtx setSequenceProducerFallback(boolean fallbackFlag) {
+        ensureOpen();
+        acquireSharedLock();
+        try {
+            long result = Zstd.setSequenceProducerFallback(nativePtr, fallbackFlag);
+            if (Zstd.isError(result)) {
+                throw new ZstdException(result);
+            }
+        } finally {
+            releaseSharedLock();
+        }
+        return this;
+    }
+
+    /**
+     * Set whether to search external sequences for repeated offsets that can be
+     * encoded as repcodes.
+     * @param searchRepcodes whether to search for repcodes
+     */
+    public ZstdCompressCtx setSearchForExternalRepcodes(Zstd.ParamSwitch searchRepcodes) {
+        ensureOpen();
+        acquireSharedLock();
+        try {
+            long result = Zstd.setSearchForExternalRepcodes(nativePtr, searchRepcodes.getValue());
+            if (Zstd.isError(result)) {
+                throw new ZstdException(result);
+            }
+        } finally {
+            releaseSharedLock();
+        }
+        return this;
+    }
+
+    /**
+     * Enable or disable sequence validation. Useful for the sequence-level API
+     * and with external sequence producers.
+     * @param validateSequences whether to enable sequence validation
+     */
+    public ZstdCompressCtx setValidateSequences(Zstd.ParamSwitch validateSequences) {
+        ensureOpen();
+        acquireSharedLock();
+        try {
+            long result = Zstd.setValidateSequences(nativePtr, validateSequences.getValue());
+            if (Zstd.isError(result)) {
+                throw new ZstdException(result);
+            }
+        } finally {
+            releaseSharedLock();
+        }
+        return this;
+    }
+
+    /**
+     * Enable or disable long-distance matching.
+     * @param ldm whether to enable long-distance matching.
+     */
+    public ZstdCompressCtx setEnableLongDistanceMatching(Zstd.ParamSwitch enableLDM) {
+        ensureOpen();
+        acquireSharedLock();
+        try {
+            long result = Zstd.setEnableLongDistanceMatching(nativePtr, enableLDM.getValue());
+            if (Zstd.isError(result)) {
+                throw new ZstdException(result);
+            }
+        } finally {
+            releaseSharedLock();
+        }
+        return this;
+    }
+
+    // Used in tests
+    long getNativePtr() {
+        return nativePtr;
     }
 
     /**

@@ -23,10 +23,12 @@ compile() {
 
     mkdir -p $INSTALL
     cp $BUILD_DIR/libzstd-jni-$VERSION.so $INSTALL
+    chmod -x $INSTALL/libzstd-jni-$VERSION.so
 }
 
-compile arm arm-linux-gnueabihf-gcc
-compile s390x "s390x-linux-gnu-gcc -march=z196"
+compile riscv64 "riscv64-linux-gnu-gcc"
+#compile arm arm-linux-gnueabihf-gcc
+#compile s390x "s390x-linux-gnu-gcc -march=z196"
 #compile aarch64 aarch64-linux-gnu-gcc
 #compile mips64 mips64-linux-gnu-gcc
 

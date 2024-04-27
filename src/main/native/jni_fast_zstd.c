@@ -32,17 +32,22 @@ JNIEXPORT void JNICALL Java_com_github_luben_zstd_ZstdDictCompress_init
 /*
  * Class:     com_github_luben_zstd_ZstdDictCompress
  * Method:    init
- * Signature: (Ljava/nio/ByteBuffer;III)V
+ * Signature: (Ljava/nio/ByteBuffer;IIII)V
  */
 JNIEXPORT void JNICALL Java_com_github_luben_zstd_ZstdDictCompress_initDirect
-  (JNIEnv *env, jobject obj, jobject dict, jint dict_offset, jint dict_size, jint level)
+  (JNIEnv *env, jobject obj, jobject dict, jint dict_offset, jint dict_size, jint level, jint byReference)
 {
     jclass clazz = (*env)->GetObjectClass(env, obj);
     compress_dict = (*env)->GetFieldID(env, clazz, "nativePtr", "J");
     if (NULL == dict) return;
     void *dict_buff = (*env)->GetDirectBufferAddress(env, dict);
     if (NULL == dict_buff) return;
-    ZSTD_CDict* cdict = ZSTD_createCDict(((char *)dict_buff) + dict_offset, dict_size, level);
+    ZSTD_CDict* cdict = NULL;
+    if (byReference == 0) {
+      cdict = ZSTD_createCDict(((char *)dict_buff) + dict_offset, dict_size, level);
+    } else {
+      cdict = ZSTD_createCDict_byReference(((char *)dict_buff) + dict_offset, dict_size, level);
+    }
     if (NULL == cdict) return;
     (*env)->SetLongField(env, obj, compress_dict, (jlong)(intptr_t) cdict);
 }
@@ -85,17 +90,22 @@ JNIEXPORT void JNICALL Java_com_github_luben_zstd_ZstdDictDecompress_init
 /*
  * Class:     com_github_luben_zstd_ZstdDictDecompress
  * Method:    initDirect
- * Signature: (Ljava/nio/ByteBuffer;II)V
+ * Signature: (Ljava/nio/ByteBuffer;III)V
  */
 JNIEXPORT void JNICALL Java_com_github_luben_zstd_ZstdDictDecompress_initDirect
-  (JNIEnv *env, jobject obj, jobject dict, jint dict_offset, jint dict_size)
+  (JNIEnv *env, jobject obj, jobject dict, jint dict_offset, jint dict_size, jint byReference)
 {
     jclass clazz = (*env)->GetObjectClass(env, obj);
     decompress_dict = (*env)->GetFieldID(env, clazz, "nativePtr", "J");
     if (NULL == dict) return;
     void *dict_buff = (*env)->GetDirectBufferAddress(env, dict);
 
-    ZSTD_DDict* ddict = ZSTD_createDDict(((char *)dict_buff) + dict_offset, dict_size);
+    ZSTD_DDict* ddict = NULL;
+    if (byReference == 0) {
+      ddict = ZSTD_createDDict(((char *)dict_buff) + dict_offset, dict_size);
+    } else {
+      ddict = ZSTD_createDDict_byReference(((char *)dict_buff) + dict_offset, dict_size);
+    }
 
     if (NULL == ddict) return;
     (*env)->SetLongField(env, obj, decompress_dict, (jlong)(intptr_t) ddict);

@@ -7,6 +7,7 @@ import java.io.InputStream;
 import java.lang.UnsatisfiedLinkError;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public enum Native {
     ;
@@ -47,7 +48,7 @@ public enum Native {
         return "/" + osName() + "/" + osArch() + "/" + libname + "." + libExtension();
     }
 
-    private static boolean loaded = false;
+    private static AtomicBoolean loaded = new AtomicBoolean(false);
 
     /**
      * Tell the library to assume the native library is already loaded.
@@ -56,11 +57,11 @@ public enum Native {
      * zstd-jni to not attempt loading it again.
      */
     public static synchronized void assumeLoaded() {
-        loaded = true;
+        loaded.set(true);
     }
 
     public static synchronized boolean isLoaded() {
-        return loaded;
+        return loaded.get();
     }
 
     private static void loadLibrary(final String libName) {
@@ -86,7 +87,7 @@ public enum Native {
     }
 
     public static synchronized void load(final File tempFolder) {
-        if (loaded) {
+        if (loaded.get()) {
             return;
         }
         String resourceName = resourceName();
@@ -95,7 +96,7 @@ public enum Native {
         if (overridePath != null) {
             // Do not fall back to auto-discovery - consumers know better
             loadLibraryFile(overridePath);
-            loaded = true;
+            loaded.set(true);
             return;
         }
 
@@ -103,7 +104,7 @@ public enum Native {
         try {
             Class.forName("org.osgi.framework.BundleEvent"); // Simple OSGI env. check
             loadLibrary(libname);
-            loaded = true;
+            loaded.set(true);
             return;
         } catch (Throwable e) {
             // ignore both ClassNotFound and UnsatisfiedLinkError, and try other methods
@@ -115,7 +116,7 @@ public enum Native {
             // It also covers loading on Android.
             try {
                 loadLibrary(libnameShort);
-                loaded = true;
+                loaded.set(true);
                 return;
             } catch (UnsatisfiedLinkError e) {
                 UnsatisfiedLinkError err = new UnsatisfiedLinkError(e.getMessage() + "\n" + errorMsg);
@@ -163,7 +164,7 @@ public enum Native {
                     throw err;
                 }
             }
-            loaded = true;
+            loaded.set(true);
         } catch (IOException e) {
             // IO errors in extracting and writing the shared object in the temp dir
             ExceptionInInitializerError err = new ExceptionInInitializerError(

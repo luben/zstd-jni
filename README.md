@@ -3,7 +3,6 @@ Zstd-jni
 
 [![CI](https://github.com/luben/zstd-jni/workflows/CI/badge.svg)](https://github.com/luben/zstd-jni/actions)
 [![codecov.io](http://codecov.io/github/luben/zstd-jni/coverage.svg?branch=master)](http://codecov.io/github/luben/zstd-jni?branch=master)
-[![CodeQL](https://github.com/luben/zstd-jni/actions/workflows/codeql-analysis.yml/badge.svg?branch=master)](https://github.com/luben/zstd-jni/actions/workflows/codeql-analysis.yml)
 [![Maven Central](https://img.shields.io/maven-central/v/com.github.luben/zstd-jni.svg?label=Maven%20Central)](https://search.maven.org/artifact/com.github.luben/zstd-jni/)
 [![Javadocs](https://www.javadoc.io/badge/com.github.luben/zstd-jni.svg)](https://www.javadoc.io/doc/com.github.luben/zstd-jni)
 
@@ -63,6 +62,12 @@ The build system depends on Scala and the tests depend on ScalaTest and
 ScalaCheck but the produced JAR does not have any dependencies. It also
 embeds the native library.
 
+*Note*: For the moment the project depends on a local build of `sbt-java-module-info`
+v0.5.2, as that version is not published to Maven. Before compiling, you need to publish it locally:
+```
+$ cd sbt-java-module-info && ./sbt publishLocal && cd -
+```
+
 Compile and test:
 ```
  $ ./sbt compile test package
@@ -79,8 +84,10 @@ Binary releases
 The binary releases are architecture dependent because we are embedding the
 native library in the provided Jar file. Currently they are built for
 *linux-amd64*, *linux-i386*, *linux-aarch64*, *linux-armhf*, *linux-ppc64*,
-*linux-ppc64le*, *linux-mips64*, *linux-s390x*, *win-amd64*, *win-x86*,
-*darwin-x86_64* (MacOS X), *darwin-aarch64*, *freebsd-amd64*, and *freebsd-i386*.
+*linux-ppc64le*, *linux-mips64*, *linux-s390x*, *linux-riskv64*, *linux-loongarch64*,
+*win-amd64*, *win-x86*, *win-aarch64*, *darwin-x86_64* (MacOS X), *darwin-aarch64*,
+*freebsd-amd64*, and *freebsd-i386*.
+
 More builds will be available if I get access to more platforms.
 
 You can find published releases on Maven Central.

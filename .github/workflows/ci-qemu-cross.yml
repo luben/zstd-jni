@@ -9,8 +9,8 @@ jobs:
                 ]
         runs-on: ubuntu-latest
         steps:
-        - uses: actions/checkout@v3
-        - uses: docker/setup-qemu-action@v2
+        - uses: actions/checkout@v4
+        - uses: docker/setup-qemu-action@v3
 
         - name: qemu ${{ matrix.platform }} build and test
           uses: ./.github/actions/qemu-cross

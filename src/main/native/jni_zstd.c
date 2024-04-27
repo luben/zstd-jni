@@ -293,6 +293,69 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_loadFastDictCompress
     return ZSTD_CCtx_refCDict((ZSTD_CCtx *)(intptr_t) stream, cdict);
 }
 
+size_t builtinSequenceProducer(
+  void* sequenceProducerState,
+  ZSTD_Sequence* outSeqs, size_t outSeqsCapacity,
+  const void* src, size_t srcSize,
+  const void* dict, size_t dictSize,
+  int compressionLevel,
+  size_t windowSize
+) {
+  ZSTD_CCtx *zc = (ZSTD_CCtx *)sequenceProducerState;
+  int windowLog = 0;
+  while (windowSize > 1) {
+    windowLog++;
+    windowSize >>= 1;
+  }
+  ZSTD_CCtx_setParameter(zc, ZSTD_c_compressionLevel, compressionLevel);
+  ZSTD_CCtx_setParameter(zc, ZSTD_c_windowLog, windowSize);
+  size_t numSeqs = ZSTD_generateSequences((ZSTD_CCtx *)sequenceProducerState, outSeqs, outSeqsCapacity, src, srcSize);
+  return ZSTD_isError(numSeqs) ? ZSTD_SEQUENCE_PRODUCER_ERROR : numSeqs;
+}
+
+size_t stubSequenceProducer(
+  void* sequenceProducerState,
+  ZSTD_Sequence* outSeqs, size_t outSeqsCapacity,
+  const void* src, size_t srcSize,
+  const void* dict, size_t dictSize,
+  int compressionLevel,
+  size_t windowSize
+) {
+  return ZSTD_SEQUENCE_PRODUCER_ERROR;
+}
+
+/*
+ * Class:     com_github_luben_zstd_Zstd
+ * Method:    getBuiltinSequenceProducer
+ * Signature: ()J
+ */
+JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_getBuiltinSequenceProducer
+  (JNIEnv *env, jclass obj) {
+    return (jlong)(intptr_t)&builtinSequenceProducer;
+}
+
+/*
+ * Class:     com_github_luben_zstd_Zstd
+ * Method:    getBuiltinSequenceProducer
+ * Signature: ()J
+ */
+JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_getStubSequenceProducer
+  (JNIEnv *env, jclass obj) {
+    return (jlong)(intptr_t)&stubSequenceProducer;
+}
+
+/*
+ * Class:     com_github_luben_zstd_Zstd
+ * Method:    registerSequenceProducer
+ * Signature: (JJJ)V
+ */
+JNIEXPORT void JNICALL Java_com_github_luben_zstd_Zstd_registerSequenceProducer
+  (JNIEnv *env, jclass obj, jlong stream, jlong seqProdState, jlong seqProdFunction) {
+    ZSTD_registerSequenceProducer((ZSTD_CCtx *)(intptr_t) stream,
+                                  (void *)(intptr_t) seqProdState,
+                                  (ZSTD_sequenceProducer_F)(intptr_t) seqProdFunction);
+}
+
 /*
  * Class:     com_github_luben_zstd_Zstd
  * Method:    setCompressionChecksums
@@ -335,10 +398,10 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_setCompressionLong
     ZSTD_CCtx* cctx = (ZSTD_CCtx*)(intptr_t) stream;
     if (windowLog < ZSTD_WINDOWLOG_MIN || windowLog > ZSTD_WINDOWLOG_LIMIT_DEFAULT) {
       // disable long matching and reset to default windowLog size
-      ZSTD_CCtx_setParameter(cctx, ZSTD_c_enableLongDistanceMatching, 0);
+      ZSTD_CCtx_setParameter(cctx, ZSTD_c_enableLongDistanceMatching, ZSTD_ps_disable);
       ZSTD_CCtx_setParameter(cctx, ZSTD_c_windowLog, 0);
     } else {
-      ZSTD_CCtx_setParameter(cctx, ZSTD_c_enableLongDistanceMatching, 1);
+      ZSTD_CCtx_setParameter(cctx, ZSTD_c_enableLongDistanceMatching, ZSTD_ps_enable);
       ZSTD_CCtx_setParameter(cctx, ZSTD_c_windowLog, windowLog);
     }
     return 0;
@@ -475,6 +538,46 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_setRefMultipleDDicts
   (JNIEnv *env, jclass obj, jlong stream, jboolean enabled) {
     ZSTD_refMultipleDDicts_e value = enabled ? ZSTD_rmd_refMultipleDDicts : ZSTD_rmd_refSingleDDict;
     return ZSTD_DCtx_setParameter((ZSTD_DCtx *)(intptr_t) stream, ZSTD_d_refMultipleDDicts, value);
+}
+
+/*
+ * Class:     com_github_luben_zstd_Zstd
+ * Method:    setValidateSequences
+ * Signature: (JI)I
+ */
+JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_setValidateSequences
+  (JNIEnv *env, jclass obj, jlong stream, jint validateSequences) {
+    return ZSTD_CCtx_setParameter((ZSTD_CCtx *)(intptr_t) stream, ZSTD_c_validateSequences, validateSequences);
+}
+
+/*
+ * Class:     com_github_luben_zstd_Zstd
+ * Method:    setSequenceProducerFallback
+ * Signature: (JZ)I
+ */
+JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_setSequenceProducerFallback
+  (JNIEnv *env, jclass obj, jlong stream, jboolean fallbackFlag) {
+    return ZSTD_CCtx_setParameter((ZSTD_CCtx*)(intptr_t) stream, ZSTD_c_enableSeqProducerFallback, (fallbackFlag == JNI_TRUE));
+}
+
+/*
+ * Class:     com_github_luben_zstd_Zstd
+ * Method:    setSearchForExternalRepcodes
+ * Signature: (JZ)I
+ */
+JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_setSearchForExternalRepcodes
+  (JNIEnv *env, jclass obj, jlong stream, jint searchRepcodes) {
+    return ZSTD_CCtx_setParameter((ZSTD_CCtx*)(intptr_t) stream, ZSTD_c_searchForExternalRepcodes, searchRepcodes);
+}
+
+/*
+ * Class:     com_github_luben_zstd_Zstd
+ * Method:    setEnableLongDistanceMatching
+ * Signature: (JZ)I
+ */
+JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_setEnableLongDistanceMatching
+  (JNIEnv *env, jclass obj, jlong stream, jint enableLDM) {
+    return ZSTD_CCtx_setParameter((ZSTD_CCtx*)(intptr_t) stream, ZSTD_c_enableLongDistanceMatching, enableLDM);
 }
 
 /*
