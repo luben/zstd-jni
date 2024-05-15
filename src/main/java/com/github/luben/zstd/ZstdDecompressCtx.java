@@ -5,7 +5,6 @@ import com.github.luben.zstd.ZstdDictDecompress;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
-import java.util.Objects;
 
 public class ZstdDecompressCtx extends AutoCloseBase {
 
