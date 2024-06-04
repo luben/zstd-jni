@@ -163,6 +163,8 @@ public class ZstdDecompressCtx extends AutoCloseBase {
         if (!dstBuff.isDirect()) {
             throw new IllegalArgumentException("dstBuff must be a direct buffer");
         }
+        Objects.checkFromIndexSize(srcOffset, srcSize, srcBuff.limit());
+        Objects.checkFromIndexSize(dstOffset, dstSize, dstBuff.limit());
 
         acquireSharedLock();
 
@@ -196,6 +198,9 @@ public class ZstdDecompressCtx extends AutoCloseBase {
      * @return the number of bytes decompressed into destination buffer (originalSize)
      */
     public int decompressByteArray(byte[] dstBuff, int dstOffset, int dstSize, byte[] srcBuff, int srcOffset, int srcSize) {
+        Objects.checkFromIndexSize(srcOffset, srcSize, srcBuff.length);
+        Objects.checkFromIndexSize(dstOffset, dstSize, dstBuff.length);
+
         ensureOpen();
         acquireSharedLock();
 

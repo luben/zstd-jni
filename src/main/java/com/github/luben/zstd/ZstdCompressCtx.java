@@ -525,6 +525,8 @@ public class ZstdCompressCtx extends AutoCloseBase {
         if (!dstBuff.isDirect()) {
             throw new IllegalArgumentException("dstBuff must be a direct buffer");
         }
+        Objects.checkFromIndexSize(srcOffset, srcSize, srcBuff.limit());
+        Objects.checkFromIndexSize(dstOffset, dstSize, dstBuff.limit());
 
         acquireSharedLock();
 
@@ -560,6 +562,9 @@ public class ZstdCompressCtx extends AutoCloseBase {
      * @return  the number of bytes written into buffer 'dstBuff'.
      */
     public int compressByteArray(byte[] dstBuff, int dstOffset, int dstSize, byte[] srcBuff, int srcOffset, int srcSize) {
+        Objects.checkFromIndexSize(srcOffset, srcSize, srcBuff.length);
+        Objects.checkFromIndexSize(dstOffset, dstSize, dstBuff.length);
+
         ensureOpen();
         acquireSharedLock();
 
