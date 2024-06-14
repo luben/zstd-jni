@@ -149,6 +149,13 @@ prebuilt android archive (aar):
 For example Android app and how to declare dependencies and use zstd-jni, consult
 the 2nd and 3rd commit of: https://github.com/luben/ZstdAndroidExample
 
+Projects that use zstd-jni
+--------------------------
+
+- [async-http-client](https://github.com/AsyncHttpClient/async-http-client)
+- [netty](https://github.com/netty/netty)
+- [pinot](https://github.com/apache/pinot)
+
 License
 -------
 
