@@ -85,7 +85,7 @@ jobs:
           run: nm -m target/classes/darwin/${{ matrix.target_arch }}/libzstd-jni-${nativeJniVersion}.dylib
 
         - name: Test
-          run: ./sbt jacoco
+          run: ./sbt test
 
         - name: Upload coverage
           uses: codecov/codecov-action@v4
@@ -134,7 +134,7 @@ jobs:
           run: ./sbt compile
 
         - name: Test
-          run: ./sbt jacoco
+          run: ./sbt test
 
         - name: Upload coverage
           uses: codecov/codecov-action@v4
