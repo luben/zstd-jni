@@ -33,7 +33,7 @@ javacOptions ++= Seq("--release", "8", "-Xlint:unchecked")
 
 doc / javacOptions := Seq("--release", "8")
 
-fork := true
+// fork := true
 
 // Check at runtime for JNI errors when running tests
 Test / javaOptions ++= Seq("-Xcheck:jni")
