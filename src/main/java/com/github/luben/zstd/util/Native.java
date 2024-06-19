@@ -13,6 +13,7 @@ public enum Native {
     ;
 
     private static final String nativePathOverride = "ZstdNativePath";
+    private static final String tempFolderOverride = "ZstdTempFolder";
     private static final String libnameShort = "zstd-jni-" + ZstdVersion.VERSION;
     private static final String libname = "lib" + libnameShort;
     private static final String errorMsg = "Unsupported OS/arch, cannot find " +
@@ -83,7 +84,12 @@ public enum Native {
     }
 
     public static synchronized void load() {
-        load(null);
+        String tempFolder = System.getProperty(tempFolderOverride);
+        if (tempFolder == null) {
+            load(null);
+        } else {
+            load(new File(tempFolder));
+        }
     }
 
     public static synchronized void load(final File tempFolder) {
