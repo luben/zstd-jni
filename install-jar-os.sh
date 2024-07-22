@@ -65,7 +65,7 @@ FILE_PATTERN="zstd-jni-*"
 
 # Find the jar file matching the pattern
 JAR_FILE=$(find "$TARGET_DIR" | grep ${FILE_PATTERN} | grep ${OS_TYPE} | grep ${ARCH_TYPE} | grep "\.jar")
-echo OS dependency artifact: $JAR_FILE
+echo OS-Specific Artifact: $JAR_FILE
 
 # Check if the jar file exists
 if [[ -z "$JAR_FILE" ]]; then
@@ -75,7 +75,6 @@ fi
 
 # Extract the version from the jar file name
 VERSION=$(echo "$JAR_FILE" | sed -E 's/.*-([0-9]+\.[0-9]+\.[0-9]+-[0-9]+)-[^-]+\.jar/\1/')
-
 
 # Check if version was extracted successfully
 if [[ -z "$VERSION" ]]; then
