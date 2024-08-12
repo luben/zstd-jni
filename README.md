@@ -68,86 +68,15 @@ v0.5.2, as that version is not published to Maven. Before compiling, you need to
 $ cd sbt-java-module-info && ./sbt publishLocal && cd -
 ```
 
-Compile and test:
+Create package:
 ```
- $ ./sbt compile test package
-```
-
-If you want to publish it to you local ivy2 repository:
-```
- $ ./sbt publishLocal
+ $ ./sbt package
 ```
 
-Binary releases
----------------
-
-The binary releases are architecture dependent because we are embedding the
-native library in the provided Jar file. Currently they are built for
-*linux-amd64*, *linux-i386*, *linux-aarch64*, *linux-armhf*, *linux-ppc64*,
-*linux-ppc64le*, *linux-mips64*, *linux-s390x*, *linux-riskv64*, *linux-loongarch64*,
-*win-amd64*, *win-x86*, *win-aarch64*, *darwin-x86_64* (MacOS X), *darwin-aarch64*,
-*freebsd-amd64*, and *freebsd-i386*.
-
-More builds will be available if I get access to more platforms.
-
-You can find published releases on Maven Central.
-
-    <dependency>
-        <groupId>com.github.luben</groupId>
-        <artifactId>zstd-jni</artifactId>
-        <version>VERSION</version>
-    </dependency>
-
-sbt dependency:
-
-    libraryDependencies += "com.github.luben" % "zstd-jni" % "VERSION"
-
-Single architecture classified jars are also published. They can be used like:
-
-    <dependency>
-        <groupId>com.github.luben</groupId>
-        <artifactId>zstd-jni</artifactId>
-        <version>VERSION</version>
-        <classifier>linux_amd64</classifier>
-    </dependency>
-
-or for sbt:
-
-    libraryDependencies += "com.github.luben" % "zstd-jni" % "VERSION" classifier "linux_amd64"
-
-Link for direct download if you don't use a dependency manager:
-
- - https://repo1.maven.org/maven2/com/github/luben/zstd-jni/
-
-If there is not yet a binary release compatible with your platform look how
-to build it locally under the [Building](#building-and-dependencies) section.
-
-Android support
----------------
-
-Zstd-jni is usable in Android applications by importing the sources in Android
-Studio. I guess using git sub-modules will also work.
-
-Android archive (*zstd-jni.aar*) is also published on maven central. You will need
-to add the repository in your build.gradle, e.g.:
-
-    allprojects {
-        repositories {
-            jcenter()
-            mavenCentral()
-        }
-    }
-
-as it is not added by default by Android Studio. And then add dependency on the
-prebuilt android archive (aar):
-
-    dependencies {
-        implementation "com.github.luben:zstd-jni:VERSION@aar"
-        testImplementation "com.github.luben:zstd-jni:VERSION"
-    }
-
-For example Android app and how to declare dependencies and use zstd-jni, consult
-the 2nd and 3rd commit of: https://github.com/luben/ZstdAndroidExample
+Insatll package locally into maven repository:
+```
+ $ ./install-jar.sh
+```
 
 License
 -------
