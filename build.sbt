@@ -332,10 +332,10 @@ addArtifact(Artifact(nameValue, "linux_riscv64"), Linux_riscv64 / packageBin)
 
 lazy val Aix_ppc64 = config("aix_ppc64").extend(Compile)
 inConfig(Aix_ppc64)(Defaults.compileSettings)
-mappings in (Aix_ppc64, packageBin) := {
+Aix_ppc64 / packageBin / mappings := {
   (file(s"target/classes/aix/ppc64/libzstd-jni-${version.value}.so"), s"aix/ppc64/libzstd-jni-${version.value}.so") :: classes
 }
-addArtifact(Artifact(nameValue, "aix_ppc64"), packageBin in Aix_ppc64)
+addArtifact(Artifact(nameValue, "aix_ppc64"), Aix_ppc64 / packageBin)
 
 lazy val Darwin_x86_64 = config("darwin_x86_64").extend(Compile)
 inConfig(Darwin_x86_64)(Defaults.compileSettings)
