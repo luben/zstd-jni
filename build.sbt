@@ -188,7 +188,8 @@ Compile / packageBin / packageOptions ++= Seq(
       |linux/s390x/libzstd-jni-${version.value}.so;osname=Linux;processor=s390x,
       |win/amd64/libzstd-jni-${version.value}.dll;osname=Win32;processor=amd64,
       |win/aarch64/libzstd-jni-${version.value}.dll;osname=Win32;processor=aarch64,
-      |win/x86/libzstd-jni-${version.value}.dll;osname=Win32;processor=x86""".stripMargin.replace("\n", "")),
+      |win/x86/libzstd-jni-${version.value}.dll;osname=Win32;processor=x86,
+      |aix/ppc64/libzstd-jni-${version.value}.so;osname=AIX;processor=ppc64""".stripMargin.replace("\n", "")),
   Package.ManifestAttributes(new java.util.jar.Attributes.Name("Export-Package") -> s"""com.github.luben.zstd;version="${version.value.replace("-", ".")}",com.github.luben.zstd.util;version="${version.value.replace("-", ".")}""""),
   Package.ManifestAttributes(new java.util.jar.Attributes.Name("Import-Package") -> "org.osgi.framework;resolution:=optional"),
   Package.ManifestAttributes(new java.util.jar.Attributes.Name("Private-Package") ->
@@ -208,7 +209,8 @@ Compile / packageBin / packageOptions ++= Seq(
       |linux.s390x,
       |win.aarch64,
       |win.amd64,
-      |win.x86""".stripMargin.replace("\n","")),
+      |win.x86,
+      |aix.ppc64""".stripMargin.replace("\n","")),
   Package.ManifestAttributes(new java.util.jar.Attributes.Name("Require-Capability") -> """osgi.ee;filter:="(&(osgi.ee=JavaSE)(version>=1.8))""""),
 )
 
@@ -328,14 +330,12 @@ Linux_riscv64 / packageBin / mappings := {
 }
 addArtifact(Artifact(nameValue, "linux_riscv64"), Linux_riscv64 / packageBin)
 
-/*
 lazy val Aix_ppc64 = config("aix_ppc64").extend(Compile)
 inConfig(Aix_ppc64)(Defaults.compileSettings)
 mappings in (Aix_ppc64, packageBin) := {
   (file(s"target/classes/aix/ppc64/libzstd-jni-${version.value}.so"), s"aix/ppc64/libzstd-jni-${version.value}.so") :: classes
 }
 addArtifact(Artifact(nameValue, "aix_ppc64"), packageBin in Aix_ppc64)
-*/
 
 lazy val Darwin_x86_64 = config("darwin_x86_64").extend(Compile)
 inConfig(Darwin_x86_64)(Defaults.compileSettings)
@@ -365,21 +365,21 @@ FreeBSD_i386 / packageBin / mappings := {
 }
 addArtifact(Artifact(nameValue, "freebsd_i386"), FreeBSD_i386 / packageBin)
 
-val Win_x86 = config("win_x86").extend(Compile)
+lazy val Win_x86 = config("win_x86").extend(Compile)
 inConfig(Win_x86)(Defaults.compileSettings)
 Win_x86 / packageBin / mappings := {
   (file(s"target/classes/win/x86/libzstd-jni-${version.value}.dll"), s"win/x86/libzstd-jni-${version.value}.dll") :: classes
 }
 addArtifact(Artifact(nameValue, "win_x86"), Win_x86 / packageBin)
 
-val Win_amd64 = config("win_amd64").extend(Compile)
+lazy val Win_amd64 = config("win_amd64").extend(Compile)
 inConfig(Win_amd64)(Defaults.compileSettings)
 Win_amd64 / packageBin / mappings := {
   (file(s"target/classes/win/amd64/libzstd-jni-${version.value}.dll"), s"win/amd64/libzstd-jni-${version.value}.dll") :: classes
 }
 addArtifact(Artifact(nameValue, "win_amd64"), Win_amd64 / packageBin)
 
-val Win_aarch64 = config("win_aarch64").extend(Compile)
+lazy val Win_aarch64 = config("win_aarch64").extend(Compile)
 inConfig(Win_aarch64)(Defaults.compileSettings)
 Win_aarch64 / packageBin / mappings := {
   (file(s"target/classes/win/aarch64/libzstd-jni-${version.value}.dll"), s"win/aarch64/libzstd-jni-${version.value}.dll") :: classes
