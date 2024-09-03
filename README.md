@@ -70,7 +70,7 @@ $ cd sbt-java-module-info && ./sbt publishLocal && cd -
 
 Create package:
 ```
- $ ./sbt package
+ $ ./sbt compile package
 ```
 
 Insatll package locally into maven repository:
