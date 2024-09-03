@@ -86,7 +86,7 @@ native library in the provided Jar file. Currently they are built for
 *linux-amd64*, *linux-i386*, *linux-aarch64*, *linux-armhf*, *linux-ppc64*,
 *linux-ppc64le*, *linux-mips64*, *linux-s390x*, *linux-riskv64*, *linux-loongarch64*,
 *win-amd64*, *win-x86*, *win-aarch64*, *darwin-x86_64* (MacOS X), *darwin-aarch64*,
-*freebsd-amd64*, and *freebsd-i386*.
+*aix-ppc64*, *freebsd-amd64*, and *freebsd-i386*.
 
 More builds will be available if I get access to more platforms.
 
