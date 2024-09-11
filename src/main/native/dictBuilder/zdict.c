@@ -1105,15 +1105,18 @@ size_t ZDICT_trainFromBuffer_legacy(void* dictBuffer, size_t dictBufferCapacity,
 
 
 size_t ZDICT_trainFromBuffer(void* dictBuffer, size_t dictBufferCapacity,
-                             const void* samplesBuffer, const size_t* samplesSizes, unsigned nbSamples)
+                             const void* samplesBuffer, const size_t* samplesSizes, unsigned nbSamples, int compressionLevel)
 {
     ZDICT_fastCover_params_t params;
     DEBUGLOG(3, "ZDICT_trainFromBuffer");
     memset(&params, 0, sizeof(params));
     params.d = 8;
     params.steps = 4;
-    /* Use default level since no compression level information is available */
-    params.zParams.compressionLevel = ZSTD_CLEVEL_DEFAULT;
+    if (compressionLevel <= 0) {
+        params.zParams.compressionLevel = ZSTD_CLEVEL_DEFAULT;
+    } else {
+        params.zParams.compressionLevel = compressionLevel;
+    }
 #if defined(DEBUGLEVEL) && (DEBUGLEVEL>=1)
     params.zParams.notificationLevel = DEBUGLEVEL;
 #endif

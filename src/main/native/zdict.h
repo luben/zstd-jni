@@ -209,7 +209,8 @@ extern "C" {
  */
 ZDICTLIB_API size_t ZDICT_trainFromBuffer(void* dictBuffer, size_t dictBufferCapacity,
                                     const void* samplesBuffer,
-                                    const size_t* samplesSizes, unsigned nbSamples);
+                                    const size_t* samplesSizes, unsigned nbSamples,
+                                    int compressionLevel);
 
 typedef struct {
     int      compressionLevel;   /**< optimize for a specific zstd compression level; 0 means default */
