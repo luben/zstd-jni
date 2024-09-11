@@ -862,12 +862,26 @@ public class Zstd {
      *          it fails (which can be tested using ZSTD_isError())
      */
     public static long trainFromBuffer(byte[][] samples, byte[] dictBuffer, boolean legacy) {
+        return trainFromBuffer(samples, dictBuffer, legacy, defaultCompressionLevel());
+    }
+
+    /**
+     * Creates a new dictionary to tune a kind of samples
+     *
+     * @param samples the samples buffer array
+     * @param dictBuffer the new dictionary buffer
+     * @param legacy  use the legacy training algorithm; otherwise cover
+     * @param compressionLevel  optimal if using the same level as when compressing.
+     * @return the number of bytes into buffer 'dictBuffer' or an error code if
+     *          it fails (which can be tested using ZSTD_isError())
+     */
+    public static long trainFromBuffer(byte[][] samples, byte[] dictBuffer, boolean legacy, int compressionLevel) {
         if (samples.length <= 10) {
             throw new ZstdException(Zstd.errGeneric(), "nb of samples too low");
         }
-        return trainFromBuffer0(samples, dictBuffer, legacy);
+        return trainFromBuffer0(samples, dictBuffer, legacy, compressionLevel);
     }
-    private static native long trainFromBuffer0(byte[][] samples, byte[] dictBuffer, boolean legacy);
+    private static native long trainFromBuffer0(byte[][] samples, byte[] dictBuffer, boolean legacy, int compressionLevel);
 
     /**
      * Creates a new dictionary to tune a kind of samples
@@ -880,12 +894,29 @@ public class Zstd {
      *          it fails (which can be tested using ZSTD_isError())
      */
     public static long trainFromBufferDirect(ByteBuffer samples, int[] sampleSizes, ByteBuffer dictBuffer, boolean legacy) {
+	return trainFromBufferDirect(samples, sampleSizes, dictBuffer, legacy, defaultCompressionLevel());
+    }
+
+    /**
+     * Creates a new dictionary to tune a kind of samples
+     *
+     * @param samples the samples direct byte buffer array
+     * @param sampleSizes java integer array of sizes
+     * @param dictBuffer the new dictionary buffer (preallocated direct byte buffer)
+     * @param legacy  use the legacy training algorithm; oter
+     * @param compressionLevel  optimal if using the same level as when compressing.
+     * @return the number of bytes into buffer 'dictBuffer' or an error code if
+     *          it fails (which can be tested using ZSTD_isError())
+     */
+    public static long trainFromBufferDirect(ByteBuffer samples, int[] sampleSizes, ByteBuffer dictBuffer, boolean legacy, int compressionLevel) {
         if (sampleSizes.length <= 10) {
             throw new ZstdException(Zstd.errGeneric(), "nb of samples too low");
         }
-        return trainFromBufferDirect0(samples, sampleSizes, dictBuffer, legacy);
+        return trainFromBufferDirect0(samples, sampleSizes, dictBuffer, legacy, compressionLevel);
     }
-    private static native long trainFromBufferDirect0(ByteBuffer samples, int[] sampleSizes, ByteBuffer dictBuffer, boolean legacy);
+
+
+    private static native long trainFromBufferDirect0(ByteBuffer samples, int[] sampleSizes, ByteBuffer dictBuffer, boolean legacy, int compressionLevel);
 
     /**
      * Get DictId from a compressed frame
