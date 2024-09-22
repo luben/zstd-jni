@@ -6,7 +6,7 @@ version := {
   scala.io.Source.fromFile("version").getLines.next
 }
 
-ThisBuild / versionScheme := Some("strict")
+ThisBuild / versionScheme := Some("pvp")
 
 scalaVersion := "2.13.12"
 
