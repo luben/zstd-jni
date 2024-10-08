@@ -18,7 +18,7 @@ compile() {
     rsync ./libzstd-jni.so.map $BUILD_DIR
 
     pushd $BUILD_DIR
-    $CC -shared -static-libgcc -Wl,--version-script=./libzstd-jni.so.map -fPIC -O3 -flto -DZSTD_LEGACY_SUPPORT=4 -DZSTD_MULTITHREAD=1 -I/usr/include -I./jni -I./native -I./native/common -I./native/legacy -std=c99 -lpthread -o libzstd-jni-$VERSION.so native/*.c native/legacy/*.c native/common/*.c native/compress/*.c native/decompress/*.c native/dictBuilder/*.c
+    $CC -shared -static-libgcc -Wl,--version-script=./libzstd-jni.so.map -Wl,-Bsymbolic -fPIC -O3 -flto -DZSTD_LEGACY_SUPPORT=4 -DZSTD_MULTITHREAD=1 -I/usr/include -I./jni -I./native -I./native/common -I./native/legacy -std=c99 -lpthread -o libzstd-jni-$VERSION.so native/*.c native/legacy/*.c native/common/*.c native/compress/*.c native/decompress/*.c native/dictBuilder/*.c
     popd
 
     mkdir -p $INSTALL

@@ -89,7 +89,7 @@ jniGccFlags := (
   else
     // the default is compilation with GCC
     jniGccFlags.value ++ Seq(
-        "-static-libgcc", "-Wl,--version-script=" + PWD + "/libzstd-jni.so.map")
+        "-static-libgcc", "-Wl,--version-script=" + PWD + "/libzstd-jni.so.map", "-Wl,-Bsymbolic")
   )
 
 // Special case the jni platform header on windows (use the one from the repo)
