@@ -437,7 +437,12 @@ public class ZstdCompressCtx extends AutoCloseBase {
      */
     public ZstdFrameProgression getFrameProgression() {
         ensureOpen();
-        return getFrameProgression0(nativePtr);
+        acquireSharedLock();
+        try {
+            return getFrameProgression0(nativePtr);
+        } finally {
+            releaseSharedLock();
+        }
     }
     private static native ZstdFrameProgression getFrameProgression0(long ptr);
 
@@ -447,10 +452,16 @@ public class ZstdCompressCtx extends AutoCloseBase {
      */
     public void reset() {
         ensureOpen();
-        long result = reset0(nativePtr);
-        if (Zstd.isError(result)) {
-            throw new ZstdException(result);
+        acquireSharedLock();
+        try {
+            long result = reset0(nativePtr);
+            if (Zstd.isError(result)) {
+                throw new ZstdException(result);
+            }
+        } finally {
+            releaseSharedLock();
         }
+
     }
     private static native long reset0(long ptr);
 
@@ -464,9 +475,14 @@ public class ZstdCompressCtx extends AutoCloseBase {
      */
     public void setPledgedSrcSize(long srcSize) {
         ensureOpen();
-        long result = setPledgedSrcSize0(nativePtr, srcSize);
-        if (Zstd.isError(result)) {
-            throw new ZstdException(result);
+        acquireSharedLock();
+        try {
+            long result = setPledgedSrcSize0(nativePtr, srcSize);
+            if (Zstd.isError(result)) {
+                throw new ZstdException(result);
+            }
+        } finally {
+            releaseSharedLock();
         }
     }
     private static native long setPledgedSrcSize0(long ptr, long srcSize);
@@ -482,14 +498,19 @@ public class ZstdCompressCtx extends AutoCloseBase {
      */
     public boolean compressDirectByteBufferStream(ByteBuffer dst, ByteBuffer src, EndDirective endOp) {
         ensureOpen();
-        long result = compressDirectByteBufferStream0(nativePtr, dst, dst.position(), dst.limit(), src, src.position(), src.limit(), endOp.value());
-        if ((result & 0x80000000L) != 0) {
-            long code = result & 0xFF;
-            throw new ZstdException(code, Zstd.getErrorName(code));
+        acquireSharedLock();
+        try {
+            long result = compressDirectByteBufferStream0(nativePtr, dst, dst.position(), dst.limit(), src, src.position(), src.limit(), endOp.value());
+            if ((result & 0x80000000L) != 0) {
+                long code = result & 0xFF;
+                throw new ZstdException(code, Zstd.getErrorName(code));
+            }
+            src.position((int)(result & 0x7FFFFFFF));
+            dst.position((int)(result >>> 32) & 0x7FFFFFFF);
+            return (result >>> 63) == 1;
+        } finally {
+            releaseSharedLock();
         }
-        src.position((int)(result & 0x7FFFFFFF));
-        dst.position((int)(result >>> 32) & 0x7FFFFFFF);
-        return (result >>> 63) == 1;
     }
 
     /**
@@ -604,7 +625,6 @@ public class ZstdCompressCtx extends AutoCloseBase {
      * @return the size of the compressed data
      */
     public int compress(ByteBuffer dstBuf, ByteBuffer srcBuf) {
-
         int size = compressDirectByteBuffer(dstBuf, // compress into dstBuf
                 dstBuf.position(),                   // write compressed data starting at offset position()
                 dstBuf.limit() - dstBuf.position(),  // write no more than limit() - position() bytes

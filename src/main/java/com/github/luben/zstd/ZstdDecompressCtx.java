@@ -101,9 +101,18 @@ public class ZstdDecompressCtx extends AutoCloseBase {
      */
     public void reset() {
         ensureOpen();
-        reset0(nativePtr);
+        acquireSharedLock();
+        try {
+            long result = reset0(nativePtr);
+            if (Zstd.isError(result)) {
+                throw new ZstdException(result);
+            }
+        } finally {
+            releaseSharedLock();
+        }
+
     }
-    private static native void reset0(long nativePtr);
+    private static native long reset0(long nativePtr);
 
     private void ensureOpen() {
         if (nativePtr == 0) {
@@ -121,14 +130,19 @@ public class ZstdDecompressCtx extends AutoCloseBase {
      */
     public boolean decompressDirectByteBufferStream(ByteBuffer dst, ByteBuffer src) {
         ensureOpen();
-        long result = decompressDirectByteBufferStream0(nativePtr, dst, dst.position(), dst.limit(), src, src.position(), src.limit());
-        if ((result & 0x80000000L) != 0) {
-            long code = result & 0xFF;
-            throw new ZstdException(code, Zstd.getErrorName(code));
+        acquireSharedLock();
+        try {
+            long result = decompressDirectByteBufferStream0(nativePtr, dst, dst.position(), dst.limit(), src, src.position(), src.limit());
+            if ((result & 0x80000000L) != 0) {
+                long code = result & 0xFF;
+                throw new ZstdException(code, Zstd.getErrorName(code));
+            }
+            src.position((int)(result & 0x7FFFFFFF));
+            dst.position((int)(result >>> 32) & 0x7FFFFFFF);
+            return (result >>> 63) == 1;
+        } finally {
+            releaseSharedLock();
         }
-        src.position((int)(result & 0x7FFFFFFF));
-        dst.position((int)(result >>> 32) & 0x7FFFFFFF);
-        return (result >>> 63) == 1;
     }
 
     /**
@@ -242,7 +256,6 @@ public class ZstdDecompressCtx extends AutoCloseBase {
      * @return the size of the decompressed data.
      */
     public int decompress(ByteBuffer dstBuf, ByteBuffer srcBuf) throws ZstdException {
-
         int size = decompressDirectByteBuffer(dstBuf,  // decompress into dstBuf
                 dstBuf.position(),                      // write decompressed data at offset position()
                 dstBuf.limit() - dstBuf.position(),     // write no more than limit() - position()
