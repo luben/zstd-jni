@@ -31,10 +31,6 @@ public enum Native {
         }
     }
 
-    private static String osArch() {
-        return System.getProperty("os.arch");
-    }
-
     private static String libExtension() {
         if (osName().contains("os_x") || osName().contains("darwin")) {
             return "dylib";
@@ -46,7 +42,12 @@ public enum Native {
     }
 
     private static String resourceName() {
-        return "/" + osName() + "/" + osArch() + "/" + libname + "." + libExtension();
+        String os = osName();
+        String arch = System.getProperty("os.arch");
+        if (os.equals("darwin") && arch.equals("amd64")) {
+            arch = "x86_64";
+        }
+        return "/" + os + "/" + arch + "/" + libname + "." + libExtension();
     }
 
     private static AtomicBoolean loaded = new AtomicBoolean(false);
