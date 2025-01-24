@@ -10,12 +10,18 @@ public class ZstdDictTrainer {
     private final List<Integer> sampleSizes;
     private final int dictSize;
     private long filledSize;
+    private int level;
 
     public ZstdDictTrainer(int sampleSize, int dictSize) {
+        this(sampleSize, dictSize, Zstd.defaultCompressionLevel());
+    }
+    
+    public ZstdDictTrainer(int sampleSize, int dictSize, int level) {
         trainingSamples = ByteBuffer.allocateDirect(sampleSize);
         sampleSizes =  new ArrayList<Integer>();
         this.allocatedSize = sampleSize;
         this.dictSize = dictSize;
+        this.level = level;
     }
 
     public synchronized boolean addSample(byte[] sample) {
@@ -34,7 +40,7 @@ public class ZstdDictTrainer {
 
     public synchronized ByteBuffer trainSamplesDirect(boolean legacy) throws ZstdException {
         ByteBuffer dictBuffer = ByteBuffer.allocateDirect(dictSize);
-        long l = Zstd.trainFromBufferDirect(trainingSamples, copyToIntArray(sampleSizes), dictBuffer, legacy);
+        long l = Zstd.trainFromBufferDirect(trainingSamples, copyToIntArray(sampleSizes), dictBuffer, legacy, level);
         if (Zstd.isError(l)) {
             dictBuffer.limit(0);
             throw new ZstdException(l);
