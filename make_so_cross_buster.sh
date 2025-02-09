@@ -25,7 +25,7 @@ compile() {
     chmod -x $INSTALL/libzstd-jni-$VERSION.so
 }
 
-compile arm arm-linux-gnueabihf-gcc-8
+compile arm "arm-linux-gnueabihf-gcc-8 -marm -march=armv6kz+fp -mfpu=vfp -mfloat-abi=hard"
 compile s390x "s390x-linux-gnu-gcc-8 -march=z196"
 compile mips64 mips64-linux-gnuabi64-gcc-8
 compile i386 "i686-linux-gnu-gcc-8 -march=i586"

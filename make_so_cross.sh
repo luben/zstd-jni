@@ -27,7 +27,7 @@ compile() {
 }
 
 compile riscv64 "riscv64-linux-gnu-gcc"
-#compile arm arm-linux-gnueabihf-gcc
+#compile arm "arm-linux-gnueabihf-gcc -marm -march=armv6kz+fp"
 #compile s390x "s390x-linux-gnu-gcc -march=z196"
 #compile aarch64 aarch64-linux-gnu-gcc
 #compile mips64 mips64-linux-gnu-gcc
