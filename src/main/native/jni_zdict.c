@@ -48,7 +48,7 @@ JNIEXPORT jlong Java_com_github_luben_zstd_Zstd_trainFromBuffer0
         params.zParams.compressionLevel = compressionLevel;
         size = ZDICT_trainFromBuffer_legacy(dict_buff, dict_capacity, samples_buffer, samples_sizes, num_samples, params);
     } else {
-        size = ZDICT_trainFromBuffer(dict_buff, dict_capacity, samples_buffer, samples_sizes, num_samples);
+        size = ZDICT_trainFromBuffer(dict_buff, dict_capacity, samples_buffer, samples_sizes, num_samples, compressionLevel);
     }
     (*env)->ReleasePrimitiveArrayCritical(env, dictBuffer, dict_buff, 0);
     free(samples_buffer);
@@ -85,7 +85,7 @@ JNIEXPORT jlong Java_com_github_luben_zstd_Zstd_trainFromBufferDirect0
         params.zParams.compressionLevel = compressionLevel;
         size = ZDICT_trainFromBuffer_legacy(dict_buff, dict_capacity, samples_buffer, samples_sizes, num_samples, params);
     } else {
-        size = ZDICT_trainFromBuffer(dict_buff, dict_capacity, samples_buffer, samples_sizes, num_samples);
+        size = ZDICT_trainFromBuffer(dict_buff, dict_capacity, samples_buffer, samples_sizes, num_samples, compressionLevel);
     }
 E2: free(samples_sizes);
 E1: return size;
