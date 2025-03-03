@@ -418,6 +418,15 @@ public class Zstd {
         }
     }
 
+    public static int decompress(byte[] dst, ByteBuffer srcBuf) {
+        ZstdDecompressCtx ctx = new ZstdDecompressCtx();
+        try {
+            return ctx.decompress(dst, srcBuf);
+        } finally {
+            ctx.close();
+        }
+    }
+
     /**
      * Decompresses buffer 'src' into buffer 'dst'.
      *
@@ -1338,6 +1347,15 @@ public class Zstd {
         ZstdDecompressCtx ctx = new ZstdDecompressCtx();
         try {
             return ctx.decompress(dstBuf, srcBuf);
+        } finally {
+            ctx.close();
+        }
+    }
+
+    public static int decompress(ByteBuffer dstBuf, byte[] src) {
+        ZstdDecompressCtx ctx = new ZstdDecompressCtx();
+        try {
+            return ctx.decompress(dstBuf, src);
         } finally {
             ctx.close();
         }

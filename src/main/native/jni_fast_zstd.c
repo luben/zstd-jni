@@ -689,3 +689,69 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdDecompressCtx_decompressB
 E2: (*env)->ReleasePrimitiveArrayCritical(env, dst, dst_buff, 0);
 E1: return size;
 }
+
+/*
+ * Class:     com_github_luben_zstd_ZstdDecompressCtx
+ * Method:    decompressByteArrayToDirectByteBuffer0
+ * Signature: (Ljava/nio/ByteBuffer;II[BII)I
+ */
+JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdDecompressCtx_decompressByteArrayToDirectByteBuffer0
+  (JNIEnv *env, jclass jclazz, jlong ptr, jobject dst, jint dst_offset, jint dst_size, jbyteArray src, jint src_offset, jint src_size) {
+    size_t size = -ZSTD_error_memory_allocation;
+
+    if (NULL == dst) return -ZSTD_error_dstSize_tooSmall;
+    if (NULL == src) return -ZSTD_error_srcSize_wrong;
+    if (0 > dst_offset) return -ZSTD_error_dstSize_tooSmall;
+    if (0 > src_offset) return -ZSTD_error_srcSize_wrong;
+    if (0 > src_size) return -ZSTD_error_srcSize_wrong;
+
+    if (src_offset + src_size > (*env)->GetArrayLength(env, src)) return -ZSTD_error_srcSize_wrong;
+    jsize dst_cap = (*env)->GetDirectBufferCapacity(env, dst);
+    if (dst_offset + dst_size > dst_cap) return -ZSTD_error_dstSize_tooSmall;
+
+    ZSTD_DCtx* dctx = (ZSTD_DCtx*)(intptr_t)ptr;
+
+    char *dst_buff = (char*)(*env)->GetDirectBufferAddress(env, dst);
+    if (dst_buff == NULL) return -ZSTD_error_memory_allocation;
+    void *src_buff = (*env)->GetPrimitiveArrayCritical(env, src, NULL);
+    if (src_buff == NULL) goto E1;
+
+    ZSTD_DCtx_reset(dctx, ZSTD_reset_session_only);
+    size = ZSTD_decompressDCtx(dctx, ((char *)dst_buff) + dst_offset, (size_t) dst_size, ((char *)src_buff) + src_offset, (size_t) src_size);
+
+    (*env)->ReleasePrimitiveArrayCritical(env, src, src_buff, JNI_ABORT);
+E1: return size;
+}
+
+/*
+ * Class:     com_github_luben_zstd_ZstdDecompressCtx
+ * Method:    decompressDirectByteBufferToByteArray0
+ * Signature: ([BIILjava/nio/ByteBuffer;II)I
+ */
+JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdDecompressCtx_decompressDirectByteBufferToByteArray0
+  (JNIEnv *env, jclass jclazz, jlong ptr, jbyteArray dst, jint dst_offset, jint dst_size, jobject src, jint src_offset, jint src_size) {
+    size_t size = -ZSTD_error_memory_allocation;
+
+    if (NULL == dst) return -ZSTD_error_dstSize_tooSmall;
+    if (NULL == src) return -ZSTD_error_srcSize_wrong;
+    if (0 > dst_offset) return -ZSTD_error_dstSize_tooSmall;
+    if (0 > src_offset) return -ZSTD_error_srcSize_wrong;
+    if (0 > src_size) return -ZSTD_error_srcSize_wrong;
+
+    if (dst_offset + dst_size > (*env)->GetArrayLength(env, dst)) return -ZSTD_error_dstSize_tooSmall;
+    jsize src_cap = (*env)->GetDirectBufferCapacity(env, src);
+    if (src_offset + src_size > src_cap) return -ZSTD_error_srcSize_wrong;
+
+    ZSTD_DCtx* dctx = (ZSTD_DCtx*)(intptr_t)ptr;
+
+    void *dst_buff = (*env)->GetPrimitiveArrayCritical(env, dst, NULL);
+    if (dst_buff == NULL) goto E1;
+    char *src_buff = (char*)(*env)->GetDirectBufferAddress(env, src);
+    if (src_buff == NULL) return -ZSTD_error_memory_allocation;
+
+    ZSTD_DCtx_reset(dctx, ZSTD_reset_session_only);
+    size = ZSTD_decompressDCtx(dctx, ((char *)dst_buff) + dst_offset, (size_t) dst_size, ((char *)src_buff) + src_offset, (size_t) src_size);
+
+    (*env)->ReleasePrimitiveArrayCritical(env, dst, dst_buff, 0);
+E1: return size;
+}

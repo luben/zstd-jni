@@ -86,13 +86,10 @@ class ZstdSpec extends AnyFlatSpec with ScalaCheckPropertyChecks {
         val size = input.length
         val compressed = Zstd.compress(input, level)
 
-        val compressedBuffer = ByteBuffer.allocateDirect(Zstd.compressBound(size.toLong).toInt)
-        compressedBuffer.put(compressed)
-        compressedBuffer.limit(compressedBuffer.position())
-        compressedBuffer.flip()
-
-        val decompressedBuffer = Zstd.decompress(compressedBuffer, size)
-        val decompressed = new Array[Byte](size)
+        val decompressedBuffer = ByteBuffer.allocateDirect(size)
+        val decompressedSize = Zstd.decompress(decompressedBuffer, compressed);
+        val decompressed = new Array[Byte](decompressedSize)
+        decompressedBuffer.flip();
         decompressedBuffer.get(decompressed)
         input.toSeq == decompressed.toSeq
       }
@@ -104,11 +101,10 @@ class ZstdSpec extends AnyFlatSpec with ScalaCheckPropertyChecks {
         val inputBuffer = ByteBuffer.allocateDirect(size)
         inputBuffer.put(input)
         inputBuffer.flip()
-        val compressedBuffer  = Zstd.compress(inputBuffer, level)
-        val compressed = new Array[Byte](compressedBuffer.limit() - compressedBuffer.position())
-        compressedBuffer.get(compressed)
+        val compressedBuffer = Zstd.compress(inputBuffer, level)
 
-        val decompressed = Zstd.decompress(compressed, size)
+        val decompressed = new Array[Byte](size)
+        Zstd.decompress(decompressed, compressedBuffer)
         input.toSeq == decompressed.toSeq
       }
     }
