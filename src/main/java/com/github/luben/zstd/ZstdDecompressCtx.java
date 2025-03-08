@@ -311,11 +311,11 @@ public class ZstdDecompressCtx extends AutoCloseBase {
      */
     public int decompress(ByteBuffer dstBuf, ByteBuffer srcBuf) throws ZstdException {
         int size = decompressDirectByteBuffer(dstBuf,  // decompress into dstBuf
-            dstBuf.position(),                      // write decompressed data at offset position()
-            dstBuf.limit() - dstBuf.position(),     // write no more than limit() - position()
-            srcBuf,                                 // read compressed data from srcBuf
-            srcBuf.position(),                      // read starting at offset position()
-            srcBuf.limit() - srcBuf.position());    // read no more than limit() - position()
+                dstBuf.position(),                      // write decompressed data at offset position()
+                dstBuf.limit() - dstBuf.position(),     // write no more than limit() - position()
+                srcBuf,                                 // read compressed data from srcBuf
+                srcBuf.position(),                      // read starting at offset position()
+                srcBuf.limit() - srcBuf.position());    // read no more than limit() - position()
         srcBuf.position(srcBuf.limit());
         dstBuf.position(dstBuf.position() + size);
         return size;
@@ -323,22 +323,22 @@ public class ZstdDecompressCtx extends AutoCloseBase {
 
     public int decompress(ByteBuffer dstBuf, byte[] src) throws ZstdException {
         int size = decompressByteArrayToDirectByteBuffer(dstBuf,  // decompress into dstBuf
-            dstBuf.position(),                      // write decompressed data at offset position()
-            dstBuf.limit() - dstBuf.position(),     // write no more than limit() - position()
-            src,                                 // read compressed data from src
-            0,
-            src.length);
+                dstBuf.position(),                      // write decompressed data at offset position()
+                dstBuf.limit() - dstBuf.position(),     // write no more than limit() - position()
+                src,                                 // read compressed data from src
+                0,
+                src.length);
         dstBuf.position(dstBuf.position() + size);
         return size;
     }
 
     public int decompress(byte[] dst, ByteBuffer srcBuf) throws ZstdException {
         int size = decompressDirectByteBufferToByteArray(dst,  // decompress into dst
-            0,
-            dst.length,
-            srcBuf,                                 // read compressed data from srcBuf
-            srcBuf.position(),                      // read starting at offset position()
-            srcBuf.limit() - srcBuf.position());    // read no more than limit() - position()
+                0,
+                dst.length,
+                srcBuf,                                 // read compressed data from srcBuf
+                srcBuf.position(),                      // read starting at offset position()
+                srcBuf.limit() - srcBuf.position());    // read no more than limit() - position()
         srcBuf.position(srcBuf.limit());
         return size;
     }
