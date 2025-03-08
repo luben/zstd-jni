@@ -744,10 +744,10 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdDecompressCtx_decompressD
 
     ZSTD_DCtx* dctx = (ZSTD_DCtx*)(intptr_t)ptr;
 
-    void *dst_buff = (*env)->GetPrimitiveArrayCritical(env, dst, NULL);
-    if (dst_buff == NULL) goto E1;
     char *src_buff = (char*)(*env)->GetDirectBufferAddress(env, src);
     if (src_buff == NULL) return -ZSTD_error_memory_allocation;
+    void *dst_buff = (*env)->GetPrimitiveArrayCritical(env, dst, NULL);
+    if (dst_buff == NULL) goto E1;
 
     ZSTD_DCtx_reset(dctx, ZSTD_reset_session_only);
     size = ZSTD_decompressDCtx(dctx, ((char *)dst_buff) + dst_offset, (size_t) dst_size, ((char *)src_buff) + src_offset, (size_t) src_size);
