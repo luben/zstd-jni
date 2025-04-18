@@ -918,6 +918,14 @@ class ZstdSpec extends AnyFlatSpec with ScalaCheckPropertyChecks {
     }
   }
 
+  "ZstdOutputStream" should s"do not cause a segmentation fault" in {
+    val os  = new ByteArrayOutputStream(100)
+    val zos = new ZstdOutputStream(os)
+    assertThrows[ZstdIOException] {
+      zos.setDict(null.asInstanceOf[ZstdDictCompress])
+    }
+  }
+
   "ZstdDirectBufferCompressingStream" should s"do nothing on double close but throw on writing on closed stream" in {
     val os  = ByteBuffer.allocateDirect(100)
     val zos = new ZstdDirectBufferCompressingStream(os, 1)

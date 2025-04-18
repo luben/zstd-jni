@@ -286,6 +286,7 @@ E1:
  */
 JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_loadFastDictCompress
   (JNIEnv *env, jclass obj, jlong stream, jobject dict) {
+    if (dict == NULL) return -ZSTD_error_dictionary_wrong;
     jclass dict_clazz = (*env)->GetObjectClass(env, dict);
     jfieldID compress_dict = (*env)->GetFieldID(env, dict_clazz, "nativePtr", "J");
     ZSTD_CDict* cdict = (ZSTD_CDict*)(intptr_t)(*env)->GetLongField(env, dict, compress_dict);
