@@ -9,6 +9,7 @@
 
 JNIEXPORT jlong Java_com_github_luben_zstd_Zstd_trainFromBuffer0
   (JNIEnv *env, jclass obj, jobjectArray samples, jbyteArray dictBuffer, jboolean legacy, jint compressionLevel) {
+    if (dictBuffer == NULL) return -ZSTD_error_dictionary_wrong;
     size_t size = 0;
     jsize num_samples = (*env)->GetArrayLength(env, samples);
     size_t *samples_sizes = malloc(sizeof(size_t) * num_samples);
