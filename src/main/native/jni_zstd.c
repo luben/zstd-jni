@@ -271,6 +271,7 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_loadFastDictDecompress
  */
 JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_loadDictCompress
   (JNIEnv *env, jclass obj, jlong stream, jbyteArray dict, jint dict_size) {
+    if (dict == NULL) return -ZSTD_error_dictionary_wrong;
     size_t size = -ZSTD_error_memory_allocation;
     void *dict_buff = (*env)->GetPrimitiveArrayCritical(env, dict, NULL);
     if (dict_buff == NULL) goto E1;
