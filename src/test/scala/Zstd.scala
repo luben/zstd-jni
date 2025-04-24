@@ -918,12 +918,23 @@ class ZstdSpec extends AnyFlatSpec with ScalaCheckPropertyChecks {
     }
   }
 
-  "ZstdOutputStream" should s"do not cause a segmentation fault" in {
+  "ZstdOutputStream" should s"do not cause a segmentation fault in setDict(ZstdDictCompress)" in {
     val os  = new ByteArrayOutputStream(100)
     val zos = new ZstdOutputStream(os)
     assertThrows[ZstdIOException] {
       zos.setDict(null.asInstanceOf[ZstdDictCompress])
     }
+  }
+
+  "Zstd" should s"do not cause a segmentation fault in loadFastDictDecompress()" in {
+    val zin = new ZstdInputStreamNoFinalizer(new ByteArrayInputStream(Array[Byte]()))
+    assertThrows[NullPointerException] {
+      zin.setDict(null.asInstanceOf[ZstdDictDecompress])
+    }
+    // Avoid:
+    //  0 0x0000000103a067c8 AccessInternal::PostRuntimeDispatch<G1BarrierSet::AccessBarrier<548964ull, G1BarrierSet>, (AccessInternal::BarrierType)2, 548964ull>::oop_access_barrier(void*) + 8 in libjvm.dylib
+    //  1 0x0000000103daa0f8 jni_GetObjectClass + 184 in libjvm.dylib
+    assert(Zstd.loadFastDictDecompress(0, null.asInstanceOf[ZstdDictDecompress]) == -32)
   }
 
   "ZstdDirectBufferCompressingStream" should s"do nothing on double close but throw on writing on closed stream" in {
