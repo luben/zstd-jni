@@ -937,6 +937,13 @@ class ZstdSpec extends AnyFlatSpec with ScalaCheckPropertyChecks {
     assert(Zstd.loadFastDictDecompress(0, null.asInstanceOf[ZstdDictDecompress]) == -32)
   }
 
+  "Zstd" should s"do not cause a segmentation fault in loadDictDecompress()" in {
+    // Avoid:
+    //  0 0x000000010185e7c8 AccessInternal::PostRuntimeDispatch<G1BarrierSet::AccessBarrier<548964ull, G1BarrierSet>, (AccessInternal::BarrierType)2, 548964ull>::oop_access_barrier(void*) + 8 in libjvm.dylib
+    // 1 0x0000000101c17ca8 jni_GetPrimitiveArrayCritical + 340 in libjvm.dylib
+    assert(Zstd.loadDictDecompress(0, null , 0) == -32)
+  }
+
   "ZstdDirectBufferCompressingStream" should s"do nothing on double close but throw on writing on closed stream" in {
     val os  = ByteBuffer.allocateDirect(100)
     val zos = new ZstdDirectBufferCompressingStream(os, 1)
