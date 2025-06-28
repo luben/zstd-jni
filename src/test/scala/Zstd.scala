@@ -29,8 +29,8 @@ class ZstdSpec extends AnyFlatSpec with ScalaCheckPropertyChecks {
           val size        = input.length
           // Assumes that `Zstd.defaultCompressionLevel() == 3`.
           val compressed  = if (level != 3) Zstd.compress(input, level) else Zstd.compress(input)
-          val decompressed= Zstd.decompress(compressed, size)
-          input.toSeq == decompressed.toSeq && size == Zstd.decompressedSize(compressed) && size == Zstd.getFrameContentSize(compressed)
+          val decompressed = Zstd.decompress(compressed, size)
+          input.toSeq == decompressed.toSeq && size == Zstd.decompressedSize(compressed) && size == Zstd.getFrameContentSize(compressed) && compressed.length == Zstd.findFrameCompressedSize(compressed)
         }
       }
     }
@@ -47,7 +47,7 @@ class ZstdSpec extends AnyFlatSpec with ScalaCheckPropertyChecks {
           if (Zstd.isError(csize)) sys.error(Zstd.getErrorName(csize))
           val dsize       = Zstd.decompressByteArray(decompressed, 0, size, compressed, 0, csize.toInt)
           if (Zstd.isError(dsize)) sys.error(Zstd.getErrorName(dsize))
-          size == dsize && input.toSeq == decompressed.toSeq && size == Zstd.decompressedSize(compressed) && size == Zstd.getFrameContentSize(compressed)
+          size == dsize && input.toSeq == decompressed.toSeq && size == Zstd.decompressedSize(compressed) && size == Zstd.getFrameContentSize(compressed) && compressed.length == Zstd.findFrameCompressedSize(compressed)
         }
       }
     }
@@ -75,7 +75,7 @@ class ZstdSpec extends AnyFlatSpec with ScalaCheckPropertyChecks {
           decompressedBuffer.flip()
 
           val comparison = inputBuffer.compareTo(decompressedBuffer)
-          val result = comparison == 0 && Zstd.decompressedSize(compressedBuffer) == decompressedSize && Zstd.getFrameContentSize(compressedBuffer) == decompressedSize
+          val result = comparison == 0 && Zstd.decompressedSize(compressedBuffer) == decompressedSize && Zstd.getFrameContentSize(compressedBuffer) == decompressedSize && Zstd.findFrameCompressedSize(compressedBuffer) == (compressedBuffer.limit() - compressedBuffer.position())
           result
         }
       }
@@ -1218,7 +1218,7 @@ class ZstdSpec extends AnyFlatSpec with ScalaCheckPropertyChecks {
           decompressedBuffer.flip()
 
           val comparison = inputBuffer.compareTo(decompressedBuffer)
-          assert(comparison == 0 && Zstd.decompressedSize(compressedBuffer) == size && Zstd.getFrameContentSize(compressedBuffer) == size)
+          assert(comparison == 0 && Zstd.decompressedSize(compressedBuffer) == size && Zstd.getFrameContentSize(compressedBuffer) == size && Zstd.findFrameCompressedSize(compressedBuffer) == (compressedBuffer.limit() - compressedBuffer.position()))
         }
       }
     }.get
@@ -1237,6 +1237,7 @@ class ZstdSpec extends AnyFlatSpec with ScalaCheckPropertyChecks {
           assert(compressedMagicless.length == (compressedMagic.length - 4))
           assert(input.length == Zstd.decompressedSize(compressedMagicless, 0, compressedMagicless.length, true))
           assert(input.length == Zstd.getFrameContentSize(compressedMagicless, 0, compressedMagicless.length, true))
+          // Note: Zstd.findFrameCompressedSize incompatible with magicless format
 
           dctx.reset()
           dctx.setMagicless(true)
@@ -1342,7 +1343,7 @@ class ZstdSpec extends AnyFlatSpec with ScalaCheckPropertyChecks {
           decompressedBuffer.flip()
 
           val comparison = inputBuffer.compareTo(decompressedBuffer)
-          assert(comparison == 0 && Zstd.decompressedSize(compressedBuffer) == size && Zstd.getFrameContentSize(compressedBuffer) == size)
+          assert(comparison == 0 && Zstd.decompressedSize(compressedBuffer) == size && Zstd.getFrameContentSize(compressedBuffer) == size && Zstd.findFrameCompressedSize(compressedBuffer) == (compressedBuffer.limit() - compressedBuffer.position()))
         }
       }
     }.get
@@ -1451,7 +1452,7 @@ class ZstdSpec extends AnyFlatSpec with ScalaCheckPropertyChecks {
           decompressedBuffer.flip()
 
           val comparison = inputBuffer.compareTo(decompressedBuffer)
-          assert(comparison == 0 && Zstd.decompressedSize(compressedBuffer) == size && Zstd.getFrameContentSize(compressedBuffer) == size)
+          assert(comparison == 0 && Zstd.decompressedSize(compressedBuffer) == size && Zstd.getFrameContentSize(compressedBuffer) == size && Zstd.findFrameCompressedSize(compressedBuffer) == (compressedBuffer.limit() - compressedBuffer.position()))
         }
       }
     }.get
