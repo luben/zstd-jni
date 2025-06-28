@@ -365,7 +365,7 @@ public class ZstdCompressCtx extends AutoCloseBase {
 
     /**
      * Enable or disable long-distance matching.
-     * @param ldm whether to enable long-distance matching.
+     * @param enableLDM whether to enable long-distance matching.
      */
     public ZstdCompressCtx setEnableLongDistanceMatching(Zstd.ParamSwitch enableLDM) {
         ensureOpen();

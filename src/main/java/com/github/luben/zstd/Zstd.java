@@ -627,6 +627,74 @@ public class Zstd {
 
     /* Utility methods */
     /**
+     * Return the compressed size of a frame within a buffer.
+     *
+     * @param src the compressed buffer
+     * @param srcPosition offset of the compressed frame inside the src buffer
+     * @param srcSize length of the compressed data inside the src buffer
+     * @return the number of bytes of the compressed frame
+     *         negative if there is an error decoding the frame header
+     */
+    public static long findFrameCompressedSize(byte[] src, int srcPosition, int srcSize) {
+        if (srcPosition >= src.length) {
+            throw new ArrayIndexOutOfBoundsException(srcPosition);
+        }
+        if (srcPosition + srcSize > src.length) {
+            throw new ArrayIndexOutOfBoundsException(srcPosition + srcSize);
+        }
+        return findFrameCompressedSize0(src, srcPosition, srcSize);
+    }
+
+    private static native long findFrameCompressedSize0(byte[] src, int srcPosition, int srcSize);
+
+    /**
+     * Return the compressed size of a frame within a buffer.
+     *
+     * @param src the compressed buffer
+     * @param srcPosition offset of the compressed frame inside the src buffer
+     * @return the number of bytes of the compressed frame
+     *         negative if there is an error decoding the frame header
+     */
+    public static long findFrameCompressedSize(byte[] src, int srcPosition) {
+        return findFrameCompressedSize(src, srcPosition, src.length - srcPosition);
+    }
+
+    /**
+     * Return the compressed size of a frame within a buffer.
+     *
+     * @param src the compressed buffer
+     * @return the number of bytes of the compressed frame
+     *         negative if there is an error decoding the frame header
+     */
+    public static long findFrameCompressedSize(byte[] src) {
+        return findFrameCompressedSize(src, 0);
+    }
+
+    /**
+     * Return the compressed size of a frame within a buffer.
+     *
+     * @param srcBuf the compressed buffer.  must be direct.  It is assumed that the position() of this buffer marks the beginning of the
+     *               compressed data whose decompressed size is being queried, and that the limit() of this buffer marks its
+     *               end.
+     * @return the number of bytes of the compressed frame
+     *         negative if there is an error decoding the frame header
+     */
+    public static long findFrameCompressedSize(ByteBuffer srcBuf) {
+        return findDirectByteBufferFrameCompressedSize(srcBuf, srcBuf.position(), srcBuf.limit() - srcBuf.position());
+    }
+
+    /**
+     * Return the compressed size of a frame within a buffer.
+     *
+     * @param src the compressed buffer
+     * @param srcPosition offset of the compressed data inside the src buffer
+     * @param srcSize length of the compressed data inside the src buffe
+     * @return the number of bytes of the compressed frame
+     *         negative if there is an error decoding the frame header
+     */
+    public static native long findDirectByteBufferFrameCompressedSize(ByteBuffer src, int srcPosition, int srcSize);
+
+    /**
      * Return the original size of a compressed buffer (if known)
      *
      * @param src the compressed buffer
@@ -1309,7 +1377,7 @@ public class Zstd {
     }
 
     /**
-     * Decompress data
+     * Decompress data, assuming that whole buffer is a compressed data
      *
      * @param src the source buffer
      * @param originalSize the maximum size of the uncompressed data.
@@ -1324,6 +1392,57 @@ public class Zstd {
         } finally {
             ctx.close();
         }
+    }
+
+    /**
+     * Decompress data, assuming that whole buffer is a compressed data
+     *
+     * @param src the source buffer
+     * @return byte array with the decompressed data
+     */
+    public static byte[] decompress(byte[] src) {
+        return decompress(src, (int) getFrameContentSize(src));
+    }
+
+    /**
+     * Decompress data, using only single frame from offset.
+     *
+     * @param src the source buffer
+     * @param srcOffset the start offset of 'src'
+     * @param srcSize the size of 'src'
+     * @param originalSize the maximum size of the uncompressed data.
+     *                  If originaSize is greater than the actuall uncompressed size, additional memory copy going to happen.
+     *                  If originalSize is smaller than the uncompressed size, ZstdExeption will be thrown.
+     * @return byte array with the decompressed data
+     */
+    public static byte[] decompressFrame(byte[] src, int srcOffset, int srcSize, int originalSize) {
+        ZstdDecompressCtx ctx = new ZstdDecompressCtx();
+        try {
+            return ctx.decompress(src, srcOffset, srcSize, originalSize);
+        } finally {
+            ctx.close();
+        }
+    }
+
+    /**
+     * Decompress data, using only single frame from offset.
+     *
+     * @param src the source buffer
+     * @param srcOffset the start offset of 'src'
+     * @return byte array with the decompressed data
+     */
+    public static byte[] decompressFrame(byte[] src, int srcOffset) {
+        return decompressFrame(src, srcOffset, (int) findFrameCompressedSize(src, srcOffset), (int) getFrameContentSize(src));
+    }
+
+    /**
+     * Decompress data, using only first frame from offset.
+     *
+     * @param src the source buffer
+     * @return byte array with the decompressed data
+     */
+    public static byte[] decompressFrame(byte[] src) {
+        return decompressFrame(src, 0);
     }
 
     /**

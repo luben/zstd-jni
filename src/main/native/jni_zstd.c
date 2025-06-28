@@ -65,7 +65,7 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_decompressUnsafe
 /*
  * Class:     com_github_luben_zstd_Zstd
  * Method:    decompressedSize0
- * Signature: ([B)JII
+ * Signature: ([B)JIIZ
  */
 JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_decompressedSize0
   (JNIEnv *env, jclass obj, jbyteArray src, jint offset, jint limit, jboolean magicless) {
@@ -81,7 +81,7 @@ E1: return size;
 /*
  * Class:     com_github_luben_zstd_Zstd
  * Method:    getFrameContentSize0
- * Signature: ([B)JII
+ * Signature: ([B)JIIZ
  */
 JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_getFrameContentSize0
   (JNIEnv *env, jclass obj, jbyteArray src, jint offset, jint limit, jboolean magicless) {
@@ -93,6 +93,36 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_getFrameContentSize0
 E1: return size;
 }
 
+/*
+ * Class:     com_github_luben_zstd_Zstd
+ * Method:    findFrameCompressedSize0
+ * Signature: ([B)JII
+ */
+JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_findFrameCompressedSize0
+  (JNIEnv *env, jclass obj, jbyteArray src, jint offset, jint limit) {
+    size_t size = -ZSTD_error_memory_allocation;
+    void *src_buff = (*env)->GetPrimitiveArrayCritical(env, src, NULL);
+    if (src_buff == NULL) goto E1;
+    size = ZSTD_findFrameCompressedSize(((char *) src_buff) + offset, (size_t) limit);
+    (*env)->ReleasePrimitiveArrayCritical(env, src, src_buff, JNI_ABORT);
+E1: return size;
+}
+
+/*
+ * Class:     com_github_luben_zstd_Zstd
+ * Method:    findDirectByteBufferFrameCompressedSize
+ * Signature: (Ljava/nio/ByteBuffer;II)J
+ */
+JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_findDirectByteBufferFrameCompressedSize
+  (JNIEnv *env, jclass obj, jobject src_buf, jint src_offset, jint src_size) {
+    size_t size = -ZSTD_error_memory_allocation;
+    jsize src_cap = (*env)->GetDirectBufferCapacity(env, src_buf);
+    if (src_offset + src_size > src_cap) return -ZSTD_error_GENERIC;
+    char *src_buf_ptr = (char*)(*env)->GetDirectBufferAddress(env, src_buf);
+    if (src_buf_ptr == NULL) goto E1;
+    size = ZSTD_findFrameCompressedSize(src_buf_ptr + src_offset, (size_t) src_size);
+E1: return size;
+}
 
 /*
  * Class:     com_github_luben_zstd_Zstd

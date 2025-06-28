@@ -72,6 +72,7 @@ public class ZstdDecompressCtx extends AutoCloseBase {
         }
         return this;
     }
+
     private static native long loadDDictFast0(long nativePtr, ZstdDictDecompress dict);
 
     /**
@@ -93,6 +94,7 @@ public class ZstdDecompressCtx extends AutoCloseBase {
         }
         return this;
     }
+
     private static native long loadDDict0(long nativePtr, byte[] dict);
 
     /**
@@ -112,6 +114,7 @@ public class ZstdDecompressCtx extends AutoCloseBase {
         }
 
     }
+
     private static native long reset0(long nativePtr);
 
     private void ensureOpen() {
@@ -137,8 +140,8 @@ public class ZstdDecompressCtx extends AutoCloseBase {
                 long code = result & 0xFF;
                 throw new ZstdException(code, Zstd.getErrorName(code));
             }
-            src.position((int)(result & 0x7FFFFFFF));
-            dst.position((int)(result >>> 32) & 0x7FFFFFFF);
+            src.position((int) (result & 0x7FFFFFFF));
+            dst.position((int) (result >>> 32) & 0x7FFFFFFF);
             return (result >>> 63) == 1;
         } finally {
             releaseSharedLock();
@@ -156,17 +159,17 @@ public class ZstdDecompressCtx extends AutoCloseBase {
 
     /**
      * Decompresses buffer 'srcBuff' into buffer 'dstBuff' using this ZstdDecompressCtx.
-     *
+     * <p>
      * Destination buffer should be sized to be larger of equal to the originalSize.
      * This is a low-level function that does not take into account or affect the `limit`
      * or `position` of source or destination buffers.
      *
-     * @param dstBuff the destination buffer - must be direct
+     * @param dstBuff   the destination buffer - must be direct
      * @param dstOffset the start offset of 'dstBuff'
-     * @param dstSize the size of 'dstBuff'
-     * @param srcBuff the source buffer - must be direct
+     * @param dstSize   the size of 'dstBuff'
+     * @param srcBuff   the source buffer - must be direct
      * @param srcOffset the start offset of 'srcBuff'
-     * @param srcSize the size of 'srcBuff'
+     * @param srcSize   the size of 'srcBuff'
      * @return the number of bytes decompressed into destination buffer (originalSize)
      */
     public int decompressDirectByteBuffer(ByteBuffer dstBuff, int dstOffset, int dstSize, ByteBuffer srcBuff, int srcOffset, int srcSize) {
@@ -200,15 +203,15 @@ public class ZstdDecompressCtx extends AutoCloseBase {
 
     /**
      * Decompresses byte array 'srcBuff' into byte array 'dstBuff' using this ZstdDecompressCtx.
-     *
+     * <p>
      * Destination buffer should be sized to be larger of equal to the originalSize.
      *
-     * @param dstBuff the destination buffer
+     * @param dstBuff   the destination buffer
      * @param dstOffset the start offset of 'dstBuff'
-     * @param dstSize the size of 'dstBuff'
-     * @param srcBuff the source buffer
+     * @param dstSize   the size of 'dstBuff'
+     * @param srcBuff   the source buffer
      * @param srcOffset the start offset of 'srcBuff'
-     * @param srcSize the size of 'srcBuff'
+     * @param srcSize   the size of 'srcBuff'
      * @return the number of bytes decompressed into destination buffer (originalSize)
      */
     public int decompressByteArray(byte[] dstBuff, int dstOffset, int dstSize, byte[] srcBuff, int srcOffset, int srcSize) {
@@ -292,9 +295,9 @@ public class ZstdDecompressCtx extends AutoCloseBase {
 
     /**
      * Decompresses buffer 'srcBuff' into buffer 'dstBuff' using this ZstdDecompressCtx.
-     *
+     * <p>
      * Destination buffer should be sized to be larger of equal to the originalSize.
-
+     *
      * @param dstBuf the destination buffer - must be direct. It is assumed that the `position()` of this buffer marks the offset
      *               at which the decompressed data are to be written, and that the `limit()` of this buffer is the maximum
      *               decompressed data size to allow.
@@ -357,20 +360,35 @@ public class ZstdDecompressCtx extends AutoCloseBase {
     }
 
     /**
-    * Decompress data
-    *
-    * @param src the source buffer
-    * @param originalSize the maximum size of the uncompressed data.
-    *                  If originaSize is greater than the actuall uncompressed size, additional memory copy going to happen.
-    *                  If originalSize is smaller than the uncompressed size, ZstdExeption will be thrown.
-    * @return byte array with the decompressed data
-    */
+     * Decompress data
+     *
+     * @param src          the source buffer
+     * @param originalSize the maximum size of the uncompressed data.
+     *                     If originaSize is greater than the actuall uncompressed size, additional memory copy going to happen.
+     *                     If originalSize is smaller than the uncompressed size, ZstdExeption will be thrown.
+     * @return byte array with the decompressed data
+     */
     public byte[] decompress(byte[] src, int originalSize) throws ZstdException {
+        return decompress(src, 0, src.length, originalSize);
+    }
+
+    /**
+     * Decompress data
+     *
+     * @param src          the source buffer
+     * @param srcOffset    the start offset of 'src'
+     * @param srcSize      the size of 'src'
+     * @param originalSize the maximum size of the uncompressed data.
+     *                     If originaSize is greater than the actuall uncompressed size, additional memory copy going to happen.
+     *                     If originalSize is smaller than the uncompressed size, ZstdExeption will be thrown.
+     * @return byte array with the decompressed data
+     */
+    public byte[] decompress(byte[] src, int srcOffset, int srcSize, int originalSize) throws ZstdException {
         if (originalSize < 0) {
             throw new ZstdException(Zstd.errGeneric(), "Original size should not be negative");
         }
         byte[] dst = new byte[originalSize];
-        int size = decompress(dst, src);
+        int size = decompressByteArray(dst, 0, dst.length, src, srcOffset, srcSize);
         if (size != originalSize) {
             return Arrays.copyOfRange(dst, 0, size);
         } else {
