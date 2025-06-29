@@ -14,7 +14,7 @@ public class Zstd {
 
     /**
      * Note: This enum controls features which are conditionally beneficial.
-     * Zstd typically will make a final decision on whether or not to enable the
+     * Zstd typically will make a final decision on whether to enable the
      * feature ({@link AUTO}), but setting the switch to {@link ENABLE} or
      * {@link DISABLE} allows for force enabling/disabling the feature.
      */
@@ -633,7 +633,7 @@ public class Zstd {
      * @param srcPosition offset of the compressed frame inside the src buffer
      * @param srcSize length of the compressed data inside the src buffer
      * @return the number of bytes of the compressed frame
-     *         negative if there is an error decoding the frame header
+     * @throws ZstdException if there is an error decoding the frame
      */
     public static long findFrameCompressedSize(byte[] src, int srcPosition, int srcSize) {
         if (srcPosition >= src.length) {
@@ -642,7 +642,13 @@ public class Zstd {
         if (srcPosition + srcSize > src.length) {
             throw new ArrayIndexOutOfBoundsException(srcPosition + srcSize);
         }
-        return findFrameCompressedSize0(src, srcPosition, srcSize);
+
+        long size = findFrameCompressedSize0(src, srcPosition, srcSize);
+        if (Zstd.isError(size)) {
+            throw new ZstdException(size);
+        }
+
+        return size;
     }
 
     private static native long findFrameCompressedSize0(byte[] src, int srcPosition, int srcSize);
@@ -824,7 +830,7 @@ public class Zstd {
     @Deprecated
     public static long decompressedSize(byte[] src) {
         return decompressedSize(src, 0);
-    };
+    }
 
     /**
      * Return the original size of a compressed buffer (if known)
@@ -1684,9 +1690,9 @@ public class Zstd {
      *               </p>
      * @param dict   the dictionary used in the compression
      * @param originalSize the maximum size of the uncompressed data
-     * @return A newly-allocated ByteBuffer containing the decompressed data.  The position() of this buffer will be 0,
-     *          and the limit() will be the size of the decompressed data.  In other words the buffer is ready to be used for
-     *          reading.  Note that this is different behavior from the other decompress() overload which takes as a parameter
+     * @return A newly-allocated ByteBuffer containing the decompressed data. The position() of this buffer will be 0,
+     *          and the limit() will be the size of the decompressed data. In other words the buffer is ready to be used for
+     *          reading. Note that this is different behavior from the other decompress() overload which takes as a parameter
      *          the destination ByteBuffer.
      */
     public static ByteBuffer decompress(ByteBuffer srcBuff, ZstdDictDecompress dict, int originalSize) {
