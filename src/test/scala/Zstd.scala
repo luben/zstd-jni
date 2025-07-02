@@ -552,10 +552,10 @@ class ZstdSpec extends AnyFlatSpec with ScalaCheckPropertyChecks {
 
   it should s"decompress using decompress(byte[]) function" in {
     val orig = new File("src/test/resources/xml")
-    val file = new File(s"src/test/resources/xml-1-sized.zst")
+    val file = new File("src/test/resources/xml-1-sized.zst")
     val fis  = new FileInputStream(file)
-
     val compressedBuff = fis.readAllBytes()
+    fis.close()
 
     val original = Source.fromFile(orig)(Codec.ISO8859).map{char => char.toByte}.to(WrappedArray)
 
@@ -565,7 +565,22 @@ class ZstdSpec extends AnyFlatSpec with ScalaCheckPropertyChecks {
       sys.error(s"Failed")
   }
 
-  it should s"throw content size is unknown using decompress(byte[])function" in {
+  it should s"decompress combined using decompress(byte[]) function" in {
+    val orig = new File("src/test/resources/xmlsmall-xml")
+    val file = new File("src/test/resources/xml-sized-combined.zst")
+    val fis  = new FileInputStream(file)
+    val compressedBuff = fis.readAllBytes()
+    fis.close()
+
+    val original = Source.fromFile(orig)(Codec.ISO8859).map{char => char.toByte}.to(WrappedArray)
+
+    val buff = Zstd.decompress(compressedBuff)
+
+    if(original != buff.toSeq)
+      sys.error(s"Failed")
+  }
+
+  it should s"throw content size is unknown using decompress(byte[]) function" in {
     val file = new File(s"src/test/resources/xml-1.zst")
     val fis = new FileInputStream(file)
     val compressedBuff = fis.readAllBytes()
@@ -587,15 +602,23 @@ class ZstdSpec extends AnyFlatSpec with ScalaCheckPropertyChecks {
     }
   }
 
-  it should s"decompress frame by frame using decompress(byte[]) function" in {
-    val file = new File(s"src/test/resources/xml-1.zst")
+  // requires different compressed files in a row, so xmlsmall added
+  it should s"decompress second frame using decompressFrame(byte[], int) function" in {
+    val file = new File(s"src/test/resources/xml-sized-combined.zst")
     val fis = new FileInputStream(file)
     val compressedBuff = fis.readAllBytes()
     fis.close()
 
-    assertThrows[ZstdException] {
-      Zstd.decompress(compressedBuff)
-    }
+    // xmlsmall frame
+    val firstFrameSize = Zstd.findFrameCompressedSize(compressedBuff)
+    // xml frame
+    val buff = Zstd.decompressFrame(compressedBuff, firstFrameSize.toInt)
+
+    val orig = new File("src/test/resources/xml")
+    val original = Source.fromFile(orig)(Codec.ISO8859).map{char => char.toByte}.to(WrappedArray)
+
+    if(original != buff.toSeq)
+      sys.error(s"Failed")
   }
 
   it should s"be able to consume 2 frames using decompress(byte[]) function" in {
