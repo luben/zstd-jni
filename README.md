@@ -126,7 +126,7 @@ Android support
 ---------------
 
 Zstd-jni is usable in Android applications by importing the sources in Android
-Studio. I guess using git sub-modules will also work.
+Studio. I guess using git submodules will also work.
 
 Android archive (*zstd-jni.aar*) is also published on maven central. You will need
 to add the repository in your build.gradle, e.g.:
