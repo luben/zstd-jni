@@ -140,14 +140,9 @@ Compile / sourceGenerators += Def.task {
 }
 
 // Sonatype
-
-publishTo := {
-  val nexus = "https://oss.sonatype.org/"
-  if (version.value.toString.trim.endsWith("SNAPSHOT"))
-    Some("snapshots" at nexus + "content/repositories/snapshots")
-  else
-    Some("releases" at nexus + "service/local/staging/deploy/maven2")
-}
+import xerial.sbt.Sonatype.sonatypeCentralHost
+ThisBuild / sonatypeCredentialHost := sonatypeCentralHost
+publishTo := sonatypePublishToBundle.value
 
 publishMavenStyle := true
 
