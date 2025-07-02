@@ -717,7 +717,19 @@ public class Zstd {
         if (srcPosition + srcSize > src.length) {
             throw new ArrayIndexOutOfBoundsException(srcPosition + srcSize);
         }
-        return getFrameContentSize0(src, srcPosition, srcSize, magicless);
+
+        long contentSize = getFrameContentSize0(src, srcPosition, srcSize, magicless);
+        if (Zstd.isError(contentSize)) {
+            // known error at the moment, but not for getErrorName
+            if (contentSize == -1) {
+                throw new ZstdException(contentSize, "Content size is unknown");
+            }
+
+            // otherwise let ZstdException get error message itself
+            throw new ZstdException(contentSize);
+        }
+
+        return contentSize;
     }
 
     private static native long getFrameContentSize0(byte[] src, int srcPosition, int srcSize, boolean magicless);
@@ -1444,16 +1456,6 @@ public class Zstd {
         while (srcPosition < src.length) {
             FrameData frameData = new FrameData(src, srcPosition);
 
-            if (Zstd.isError(frameData.contentSize)) {
-                // known error at the moment, but not for getErrorName
-                if (frameData.contentSize == -1) {
-                    throw new ZstdException(frameData.contentSize, "Content size is unknown");
-                }
-
-                // otherwise let ZstdException get error message itself
-                throw new ZstdException(frameData.contentSize);
-            }
-
             frames.add(frameData);
 
             srcPosition += (int) frameData.compressedSize;
@@ -1491,7 +1493,9 @@ public class Zstd {
      * @return byte array with the decompressed data
      */
     public static byte[] decompressFrame(byte[] src, int srcOffset) {
-        return decompressFrame(src, srcOffset, (int) findFrameCompressedSize(src, srcOffset), (int) getFrameContentSize(src));
+        int frameCompressedSize = (int) findFrameCompressedSize(src, srcOffset);
+        int frameContentSize = (int) getFrameContentSize(src, srcOffset, frameCompressedSize);
+        return decompressFrame(src, srcOffset, frameCompressedSize, frameContentSize);
     }
 
     /**
