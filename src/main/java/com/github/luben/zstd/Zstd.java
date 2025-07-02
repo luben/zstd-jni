@@ -1,11 +1,10 @@
 package com.github.luben.zstd;
 
-import java.nio.ByteBuffer;
-import java.util.Arrays;
-
 import com.github.luben.zstd.util.Native;
-import com.github.luben.zstd.ZstdCompressCtx;
-import com.github.luben.zstd.ZstdDecompressCtx;
+
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Zstd {
     static {
@@ -1387,8 +1386,8 @@ public class Zstd {
      *
      * @param src the source buffer
      * @param originalSize the maximum size of the uncompressed data.
-     *                  If originaSize is greater than the actuall uncompressed size, additional memory copy going to happen.
-     *                  If originalSize is smaller than the uncompressed size, ZstdExeption will be thrown.
+     *                  If originalSize is greater than the actual uncompressed size, additional memory copy going to happen.
+     *                  If originalSize is smaller than the uncompressed size, {@link ZstdException} will be thrown.
      * @return byte array with the decompressed data
      */
     public static byte[] decompress(byte[] src, int originalSize) {
@@ -1401,13 +1400,67 @@ public class Zstd {
     }
 
     /**
-     * Decompress data, assuming that whole buffer is a compressed data
+     * Decompress data, assuming that whole buffer is a compressed data.
+     * <p>
+     * Note, that file must be encoded with pledged content size, not using stream API.
+     * For more, see ZSTD_c_contentSizeFlag flag description.
+     * </p>
      *
      * @param src the source buffer
      * @return byte array with the decompressed data
      */
     public static byte[] decompress(byte[] src) {
-        return decompress(src, (int) getFrameContentSize(src));
+        List<FrameData> frames = new ArrayList<>();
+
+        int contentSize = calculateContentSizeAndFrames(src, frames);
+
+        byte[] decompressedData = new byte[contentSize];
+
+        int srcPosition = 0;
+        int decompressedPosition = 0;
+        for (int i = 0; i < frames.size(); i++) {
+            FrameData frameInfo = frames.get(i);
+            long size = decompressByteArray(decompressedData, decompressedPosition, (int) frameInfo.contentSize, src, srcPosition, (int) frameInfo.compressedSize);
+            if (Zstd.isError(size)) {
+                throw new ZstdException(size, String.format("error %s while decompressing %d frame", Zstd.getErrorName(size), i));
+            }
+
+            if (size != frameInfo.contentSize) {
+                throw new IllegalStateException("decompressed size mismatch");
+            }
+
+            srcPosition += (int) frameInfo.compressedSize;
+            decompressedPosition += (int) frameInfo.contentSize;
+        }
+
+        return decompressedData;
+    }
+
+    private static int calculateContentSizeAndFrames(byte[] src, List<FrameData> frames) {
+        int contentSize = 0;
+
+        int srcPosition = 0;
+
+        while (srcPosition < src.length) {
+            FrameData frameData = new FrameData(src, srcPosition);
+
+            if (Zstd.isError(frameData.contentSize)) {
+                // known error at the moment, but not for getErrorName
+                if (frameData.contentSize == -1) {
+                    throw new ZstdException(frameData.contentSize, "Content size is unknown");
+                }
+
+                // otherwise let ZstdException get error message itself
+                throw new ZstdException(frameData.contentSize);
+            }
+
+            frames.add(frameData);
+
+            srcPosition += (int) frameData.compressedSize;
+            contentSize += (int) frameData.contentSize;
+        }
+
+        return contentSize;
     }
 
     /**
@@ -1417,8 +1470,8 @@ public class Zstd {
      * @param srcOffset the start offset of 'src'
      * @param srcSize the size of 'src'
      * @param originalSize the maximum size of the uncompressed data.
-     *                  If originaSize is greater than the actuall uncompressed size, additional memory copy going to happen.
-     *                  If originalSize is smaller than the uncompressed size, ZstdExeption will be thrown.
+     *                  If originalSize is greater than the actual uncompressed size, additional memory copy going to happen.
+     *                  If originalSize is smaller than the uncompressed size, {@link ZstdException} will be thrown.
      * @return byte array with the decompressed data
      */
     public static byte[] decompressFrame(byte[] src, int srcOffset, int srcSize, int originalSize) {
@@ -1715,5 +1768,15 @@ public class Zstd {
             throw new IllegalArgumentException("provided ByteBuffer lacks array or has non-zero arrayOffset");
         }
         return buffer;
+    }
+
+    private static class FrameData {
+        final long contentSize;
+        final long compressedSize;
+
+        FrameData(byte[] src, int srcPosition) {
+            compressedSize = findFrameCompressedSize(src, srcPosition);
+            contentSize = getFrameContentSize(src, srcPosition, (int) compressedSize);
+        }
     }
 }

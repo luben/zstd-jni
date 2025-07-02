@@ -139,7 +139,7 @@ class ZstdSpec extends AnyFlatSpec with ScalaCheckPropertyChecks {
       }
 
       compressedBuffer.flip()
-      for ((level, compresedSize) <- levels.zip(compressedSizes)) {
+      for ((level, compressedSize) <- levels.zip(compressedSizes)) {
         val oldCompressedPosition = compressedBuffer.position()
         val oldDecompressedPosition = decompressedBuffer.position()
 
@@ -149,12 +149,12 @@ class ZstdSpec extends AnyFlatSpec with ScalaCheckPropertyChecks {
         //Note that the duplicate() call doesn't copy memory; it just makes a duplicate ByteBuffer pointing to the same
         //location in memory
         val thisChunkBuffer = compressedBuffer.duplicate()
-        thisChunkBuffer.limit(thisChunkBuffer.position() + compresedSize)
+        thisChunkBuffer.limit(thisChunkBuffer.position() + compressedSize)
         val decompressedSize = Zstd.decompress(decompressedBuffer, thisChunkBuffer)
 
         assert(decompressedSize == input.length)
         compressedBuffer.position(thisChunkBuffer.position)
-        assert(compressedBuffer.position() == oldCompressedPosition + compresedSize)
+        assert(compressedBuffer.position() == oldCompressedPosition + compressedSize)
         assert(decompressedBuffer.position() == oldDecompressedPosition + size)
       }
 
@@ -550,11 +550,89 @@ class ZstdSpec extends AnyFlatSpec with ScalaCheckPropertyChecks {
         sys.error(s"Failed")
     }
 
+  it should s"decompress using decompress(byte[]) function" in {
+    val orig = new File("src/test/resources/xml")
+    val file = new File(s"src/test/resources/xml-1-sized.zst")
+    val fis  = new FileInputStream(file)
+
+    val compressedBuff = fis.readAllBytes()
+
+    val original = Source.fromFile(orig)(Codec.ISO8859).map{char => char.toByte}.to(WrappedArray)
+
+    val buff = Zstd.decompress(compressedBuff)
+
+    if(original != buff.toSeq)
+      sys.error(s"Failed")
+  }
+
+  it should s"throw content size is unknown using decompress(byte[])function" in {
+    val file = new File(s"src/test/resources/xml-1.zst")
+    val fis = new FileInputStream(file)
+    val compressedBuff = fis.readAllBytes()
+    fis.close()
+
+    assertThrows[ZstdException] {
+      Zstd.decompress(compressedBuff)
+    }
+  }
+
+  it should s"throw content size is unknown using decompressFrame(byte[]) function" in {
+    val file = new File(s"src/test/resources/xml-1.zst")
+    val fis = new FileInputStream(file)
+    val compressedBuff = fis.readAllBytes()
+    fis.close()
+
+    assertThrows[ZstdException] {
+      Zstd.decompressFrame(compressedBuff)
+    }
+  }
+
+  it should s"decompress frame by frame using decompress(byte[]) function" in {
+    val file = new File(s"src/test/resources/xml-1.zst")
+    val fis = new FileInputStream(file)
+    val compressedBuff = fis.readAllBytes()
+    fis.close()
+
+    assertThrows[ZstdException] {
+      Zstd.decompress(compressedBuff)
+    }
+  }
+
+  it should s"be able to consume 2 frames using decompress(byte[]) function" in {
+    val orig = new File("src/test/resources/xmlx2")
+    val file = new File(s"src/test/resources/xml-1-sizedx2.zst")
+    val fis  = new FileInputStream(file)
+
+    val compressedBuff = fis.readAllBytes()
+    fis.close()
+
+    val original = Source.fromFile(orig)(Codec.ISO8859).map{char => char.toByte}.to(WrappedArray)
+
+    val buff = Zstd.decompress(compressedBuff)
+
+    if(original != buff.toSeq)
+      sys.error(s"Failed")
+  }
+
+  it should s"decompress using decompressFrame(byte[]) function" in {
+    val orig = new File("src/test/resources/xml")
+    val file = new File(s"src/test/resources/xml-1-sized.zst")
+    val fis  = new FileInputStream(file)
+
+    val compressedBuff = fis.readAllBytes()
+    fis.close()
+
+    val original = Source.fromFile(orig)(Codec.ISO8859).map{char => char.toByte}.to(WrappedArray)
+
+    val buff = Zstd.decompressFrame(compressedBuff)
+
+    if(original != buff.toSeq)
+      sys.error(s"Failed")
+  }
 
   it should s"be able to consume 2 frames in a file compressed by the zstd binary" in {
     val orig = new File("src/test/resources/xmlx2")
     val file = new File(s"src/test/resources/xml-1x2.zst")
-    val fis  = new FileInputStream(file)
 
     val channel = FileChannel.open(file.toPath, StandardOpenOption.READ)
     val zis  = new ZstdDirectBufferDecompressingStream(channel.map(MapMode.READ_ONLY, 0, channel.size))

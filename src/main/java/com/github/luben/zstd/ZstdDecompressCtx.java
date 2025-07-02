@@ -1,7 +1,6 @@
 package com.github.luben.zstd;
 
 import com.github.luben.zstd.util.Native;
-import com.github.luben.zstd.ZstdDictDecompress;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -13,6 +12,7 @@ public class ZstdDecompressCtx extends AutoCloseBase {
     }
 
     private long nativePtr = 0;
+    // Note: keeps a reference to the dictionary so it's not garbage collected
     private ZstdDictDecompress decompression_dict = null;
 
     private static native long init();
@@ -364,8 +364,8 @@ public class ZstdDecompressCtx extends AutoCloseBase {
      *
      * @param src          the source buffer
      * @param originalSize the maximum size of the uncompressed data.
-     *                     If originaSize is greater than the actuall uncompressed size, additional memory copy going to happen.
-     *                     If originalSize is smaller than the uncompressed size, ZstdExeption will be thrown.
+     *                     If originalSize is greater than the actual uncompressed size, additional memory copy going to happen.
+     *                     If originalSize is smaller than the uncompressed size, {@link ZstdException} will be thrown.
      * @return byte array with the decompressed data
      */
     public byte[] decompress(byte[] src, int originalSize) throws ZstdException {
@@ -379,8 +379,8 @@ public class ZstdDecompressCtx extends AutoCloseBase {
      * @param srcOffset    the start offset of 'src'
      * @param srcSize      the size of 'src'
      * @param originalSize the maximum size of the uncompressed data.
-     *                     If originaSize is greater than the actuall uncompressed size, additional memory copy going to happen.
-     *                     If originalSize is smaller than the uncompressed size, ZstdExeption will be thrown.
+     *                     If originalSize is greater than the actual uncompressed size, additional memory copy going to happen.
+     *                     If originalSize is smaller than the uncompressed size, {@link ZstdException} will be thrown.
      * @return byte array with the decompressed data
      */
     public byte[] decompress(byte[] src, int srcOffset, int srcSize, int originalSize) throws ZstdException {
