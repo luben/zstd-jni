@@ -1486,7 +1486,8 @@ class ZstdSpec extends AnyFlatSpec with ScalaCheckPropertyChecks {
             cctx.compressDirectByteBufferStream(compressedBuffer, inputBuffer, EndDirective.END)
             fail("compression succeeded, but should have failed")
           } catch {
-            case _: ZstdException =>  // compression should throw a ZstdException
+            case ex: ZstdException =>  // compression should throw a ZstdException
+                assert(ex.getErrorCode == -106)
           }
         }
       }
