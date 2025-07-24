@@ -502,7 +502,7 @@ public class ZstdCompressCtx extends AutoCloseBase {
         try {
             long result = compressDirectByteBufferStream0(nativePtr, dst, dst.position(), dst.limit(), src, src.position(), src.limit(), endOp.value());
             if ((result & 0x80000000L) != 0) {
-                long code = result & 0xFF;
+                long code = -(result & 0xFF);
                 throw new ZstdException(code, Zstd.getErrorName(code));
             }
             src.position((int)(result & 0x7FFFFFFF));

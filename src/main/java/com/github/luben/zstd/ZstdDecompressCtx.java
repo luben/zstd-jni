@@ -137,7 +137,7 @@ public class ZstdDecompressCtx extends AutoCloseBase {
         try {
             long result = decompressDirectByteBufferStream0(nativePtr, dst, dst.position(), dst.limit(), src, src.position(), src.limit());
             if ((result & 0x80000000L) != 0) {
-                long code = result & 0xFF;
+                long code = -(result & 0xFF);
                 throw new ZstdException(code, Zstd.getErrorName(code));
             }
             src.position((int) (result & 0x7FFFFFFF));
