@@ -380,3 +380,14 @@ Win_aarch64 / packageBin / mappings := {
   (file(s"target/classes/win/aarch64/libzstd-jni-${version.value}.dll"), s"win/aarch64/libzstd-jni-${version.value}.dll") :: classes
 }
 addArtifact(Artifact(nameValue, "win_aarch64"), Win_aarch64 / packageBin)
+
+lazy val Cloud = config("cloud").extend(Compile)
+inConfig(Cloud)(Defaults.compileSettings)
+Cloud / packageBin / mappings := {
+  (file(s"target/classes/linux/amd64/libzstd-jni-${version.value}.so"), s"linux/amd64/libzstd-jni-${version.value}.so") ::
+  (file(s"target/classes/linux/aarch64/libzstd-jni-${version.value}.so"), s"linux/aarch64/libzstd-jni-${version.value}.so") ::
+  (file(s"target/classes/darwin/aarch64/libzstd-jni-${version.value}.dylib"), s"darwin/aarch64/libzstd-jni-${version.value}.dylib") ::
+  classes
+}
+addArtifact(Artifact(nameValue, "cloud"), Cloud / packageBin)
+
