@@ -102,7 +102,12 @@ sbt dependency:
 
     libraryDependencies += "com.github.luben" % "zstd-jni" % "VERSION"
 
-Single architecture classified jars are also published. They can be used like:
+Single architecture classified jars are also published. The classifier name is
+following the "$OS_$ARCH" convention, but there is also a "cloud" classifier
+that packs binaries just for *linux-amd64*, *linux-aarch64* (for deployment),
+and *darwin-aarch64* (to help local development).
+
+They can be used like:
 
     <dependency>
         <groupId>com.github.luben</groupId>

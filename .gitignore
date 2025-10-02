@@ -10,6 +10,7 @@ project/plugins/project
 tags
 local.properties
 zstd-jni.iml
+sonatype
 gradlew*
 .gradle
 *.swp
