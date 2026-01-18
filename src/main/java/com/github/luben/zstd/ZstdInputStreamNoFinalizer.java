@@ -173,8 +173,11 @@ public class ZstdInputStreamNoFinalizer extends FilterInputStream {
                     } else {
                         throw new ZstdIOException(Zstd.errCorruptionDetected(), "Truncated source");
                     }
+                } else if (srcSize == 0) {
+                    continue;
+                } else {
+                    frameFinished = false;
                 }
-                frameFinished = false;
             }
 
             lastDstPos = dstPos;
