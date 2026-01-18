@@ -1217,6 +1217,153 @@ class ZstdSpec extends AnyFlatSpec with ScalaCheckPropertyChecks {
     assert(zis.read(buf, 0, 1) == -1)
   }
 
+  "ZstdInputStream" should "handle underlying stream returning 0 then -1 mid-frame (truncated)" in {
+    val input = "foo".getBytes("UTF-8")
+    val compressed = Zstd.compress(input)
+
+    class TruncatedZeroThenEofInputStream(data: Array[Byte]) extends InputStream {
+      private var pos = 0
+      private var zeroReturned = false
+      private val splitPoint = data.length / 2  // Only return first half of data
+
+      override def read(): Int = throw new UnsupportedOperationException()
+
+      override def read(b: Array[Byte], off: Int, len: Int): Int = {
+        if (pos < splitPoint) {
+          val toRead = Math.min(len, splitPoint - pos)
+          System.arraycopy(data, pos, b, off, toRead)
+          pos += toRead
+          toRead
+        } else if (!zeroReturned) {
+          zeroReturned = true
+          0
+        } else {
+          -1
+        }
+      }
+
+      override def available(): Int = {
+        if (pos < splitPoint) splitPoint - pos
+        else if (!zeroReturned) 1  // Indicate data might be available to trigger read
+        else 0
+      }
+    }
+
+    val is = new TruncatedZeroThenEofInputStream(compressed)
+    val zis = new ZstdInputStream(is)
+    val output = new Array[Byte](input.length)
+
+    assertThrows[ZstdIOException] {
+      var totalRead = 0
+      var bytesRead = 0
+      while ({ bytesRead = zis.read(output, totalRead, output.length - totalRead); bytesRead != -1 && totalRead < output.length }) {
+        totalRead += bytesRead
+      }
+    }
+    zis.close()
+  }
+
+  it should "handle underlying stream returning 0 then data then -1 mid-frame" in {
+    val input = "foo".getBytes("UTF-8")
+    val compressed = Zstd.compress(input)
+
+    class ZeroMidFrameInputStream(data: Array[Byte]) extends InputStream {
+      private var pos = 0
+      private var zeroReturned = false
+      private val splitPoint = data.length / 2
+
+      override def read(): Int = throw new UnsupportedOperationException()
+
+      override def read(b: Array[Byte], off: Int, len: Int): Int = {
+        if (pos < splitPoint) {
+          val toRead = Math.min(len, splitPoint - pos)
+          System.arraycopy(data, pos, b, off, toRead)
+          pos += toRead
+          toRead
+        } else if (!zeroReturned) {
+          zeroReturned = true
+          0
+        } else if (pos < data.length) {
+          val toRead = Math.min(len, data.length - pos)
+          System.arraycopy(data, pos, b, off, toRead)
+          pos += toRead
+          toRead
+        } else {
+          -1
+        }
+      }
+
+      override def available(): Int = {
+        if (pos < splitPoint) splitPoint - pos
+        else if (!zeroReturned) 1
+        else if (pos < data.length) data.length - pos
+        else 0
+      }
+    }
+
+    val is = new ZeroMidFrameInputStream(compressed)
+    val zis = new ZstdInputStream(is)
+    val output = new Array[Byte](input.length)
+    var totalRead = 0
+    var bytesRead = 0
+    while ({ bytesRead = zis.read(output, totalRead, output.length - totalRead); bytesRead != -1 && totalRead < output.length }) {
+      totalRead += bytesRead
+    }
+    zis.close()
+
+    assert(totalRead == input.length)
+    assert(output.toSeq == input.toSeq)
+  }
+
+  it should "handle underlying stream returning 0 then -1 at frame boundary" in {
+    val input = "foo".getBytes("UTF-8")
+    val compressed = Zstd.compress(input)
+
+    class ZeroThenEofInputStream(data: Array[Byte]) extends InputStream {
+      private var pos = 0
+      private var returnedZero = false
+
+      override def read(): Int = throw new UnsupportedOperationException()
+
+      override def read(b: Array[Byte], off: Int, len: Int): Int = {
+        if (pos < data.length) {
+          val toRead = Math.min(len, data.length - pos)
+          System.arraycopy(data, pos, b, off, toRead)
+          pos += toRead
+          toRead
+        } else if (!returnedZero) {
+          returnedZero = true
+          0
+        } else {
+          -1
+        }
+      }
+
+      override def available(): Int = {
+        if (pos < data.length) data.length - pos
+        else if (!returnedZero) 1  // Indicate data might be available to trigger read
+        else 0
+      }
+    }
+
+    val is = new ZeroThenEofInputStream(compressed)
+    val zis = new ZstdInputStream(is)
+    val output = new Array[Byte](input.length)
+    var totalRead = 0
+    var bytesRead = 0
+    while ({ bytesRead = zis.read(output, totalRead, output.length - totalRead); bytesRead != -1 && totalRead < output.length }) {
+      totalRead += bytesRead
+    }
+
+    val extraRead = zis.read(output, 0, 1)
+
+    zis.close()
+
+    assert(totalRead == input.length)
+    assert(output.toSeq == input.toSeq)
+    assert(extraRead == -1, "Expected -1 (EOF) when reading after frame is complete")
+  }
+
   "RecyclingBufferPool" should "recycle buffers" in {
     val pool = RecyclingBufferPool.INSTANCE
     val largeBuf1 = pool.get(10)
