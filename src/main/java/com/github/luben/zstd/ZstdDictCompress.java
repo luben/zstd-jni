@@ -49,7 +49,7 @@ public class ZstdDictCompress extends SharedDictBase {
     public ZstdDictCompress(byte[] dict, int offset, int length, int level) {
         this.level = level;
         if (dict.length - offset < 0) {
-            throw new IllegalArgumentException("Dictionary buffer is to short");
+            throw new IllegalArgumentException("Dictionary buffer is too short");
         }
 
         init(dict, offset, length, level);
