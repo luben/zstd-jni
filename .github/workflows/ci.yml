@@ -10,8 +10,8 @@ jobs:
                 ]
         runs-on: ${{ matrix.os }}
         steps:
-        - uses: actions/checkout@v4
-        - uses: actions/setup-java@v4
+        - uses: actions/checkout@v5
+        - uses: actions/setup-java@v5
           with:
             java-version: 11
             distribution: zulu
@@ -48,12 +48,12 @@ jobs:
             matrix:
                 include: [
                   { os: macos-15-intel, host_arch: x86_64,  macos_target: x86_64-apple-macos10.12, version_min: 10.12, target_arch: x86_64  },
-                  { os: macos-15,       host_arch: aarch64, macos_target: arm64-apple-macos11,     version_min: 11,    target_arch: aarch64 }
+                  { os: macos-latest,   host_arch: aarch64, macos_target: arm64-apple-macos11,     version_min: 11,    target_arch: aarch64 }
                 ]
         runs-on: ${{ matrix.os }}
         steps:
-        - uses: actions/checkout@v4
-        - uses: actions/setup-java@v4
+        - uses: actions/checkout@v5
+        - uses: actions/setup-java@v5
           with:
             java-version: 11
             distribution: zulu
@@ -111,14 +111,14 @@ jobs:
             run:
                 shell: msys2 {0}
         steps:
-        - uses: actions/checkout@v4
+        - uses: actions/checkout@v5
         - uses: msys2/setup-msys2@v2
           with:
             msystem: ${{ matrix.msystem }}
             install: git base-devel mingw-w64-${{ matrix.arch }}-toolchain
             path-type: inherit
             update: true
-        - uses: actions/setup-java@v4
+        - uses: actions/setup-java@v5
           with:
             java-version: 11
             distribution: zulu
@@ -154,7 +154,7 @@ jobs:
             run:
                 shell: msys2 {0}
         steps:
-        - uses: actions/checkout@v4
+        - uses: actions/checkout@v5
         - uses: msys2/setup-msys2@v2
           with:
             msystem: mingw64
