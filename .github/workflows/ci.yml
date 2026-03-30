@@ -6,7 +6,8 @@ jobs:
             fail-fast: false
             matrix:
                 include: [
-                    { os: ubuntu-latest, target: linux/amd64 }
+                    { os: ubuntu-latest, target: linux/amd64 },
+                    { os: ubuntu-24.04-riscv, target: linux/riscv64 }
                 ]
         runs-on: ${{ matrix.os }}
         steps:
