@@ -109,12 +109,11 @@ public enum Native {
 
         // try to load the shared library directly from the JAR
         try {
-            Class.forName("org.osgi.framework.BundleEvent"); // Simple OSGI env. check
             loadLibrary(libname);
             loaded.set(true);
             return;
         } catch (Throwable e) {
-            // ignore both ClassNotFound and UnsatisfiedLinkError, and try other methods
+            // ignore UnsatisfiedLinkError, and try other methods
         }
 
         InputStream is = Native.class.getResourceAsStream(resourceName);
