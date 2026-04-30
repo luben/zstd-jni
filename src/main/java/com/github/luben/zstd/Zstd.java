@@ -1437,7 +1437,7 @@ public class Zstd {
     }
 
     private static int calculateContentSizeAndFrames(byte[] src, List<FrameData> frames) {
-        int contentSize = 0;
+        long contentSize = 0;
 
         int srcPosition = 0;
 
@@ -1445,12 +1445,21 @@ public class Zstd {
             FrameData frameData = new FrameData(src, srcPosition);
 
             frames.add(frameData);
+            if (frameData.compressedSize > src.length - srcPosition) {
+                throw new RuntimeException("Invalid compressed size");
+            }
+
+            if (frameData.contentSize > Integer.MAX_VALUE) {
+                throw new RuntimeException("Frame content size too big");
+            }
 
             srcPosition += (int) frameData.compressedSize;
-            contentSize += (int) frameData.contentSize;
+            contentSize += frameData.contentSize;
+            if (contentSize > Integer.MAX_VALUE) {
+                throw new RuntimeException("Content size too big");
+            }
         }
-
-        return contentSize;
+        return (int) contentSize;
     }
 
     /**

@@ -37,6 +37,8 @@ public class ZstdInputStreamNoFinalizer extends FilterInputStream {
     private boolean isContinuous = false;
     private boolean frameFinished = true;
     private boolean isClosed = false;
+    // keep the active dict alive
+    private ZstdDictDecompress active_dict;
 
     /* JNI methods */
     public static native long recommendedDInSize();
@@ -100,9 +102,12 @@ public class ZstdInputStreamNoFinalizer extends FilterInputStream {
             if (Zstd.isError(size)) {
                 throw new ZstdIOException(size);
             }
+            // keep the dict alive so it's not garbage collected
+            active_dict = dict;
         } finally {
             dict.releaseSharedLock();
         }
+
         return this;
     }
 

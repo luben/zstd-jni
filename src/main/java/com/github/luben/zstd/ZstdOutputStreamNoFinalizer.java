@@ -4,6 +4,7 @@ import java.io.OutputStream;
 import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.lang.IndexOutOfBoundsException;
 
 import com.github.luben.zstd.util.Native;
 
@@ -31,6 +32,8 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
     private boolean closeFrameOnFlush = false;
     private boolean frameClosed = true;
     private boolean frameStarted = false;
+    // keep the active dict from GC
+    private ZstdDictCompress active_dict;
 
     /* JNI methods */
     public static native long recommendedCOutSize();
@@ -332,10 +335,16 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
         if (Zstd.isError(size)) {
             throw new ZstdIOException(size);
         }
+        // keep the dict alive so it's not garbage collected
+        active_dict = dict;
         return this;
     }
 
     public synchronized void write(byte[] src, int offset, int len) throws IOException {
+        if (offset < 0 || len > src.length - offset) {
+           throw new IndexOutOfBoundsException("Requested length " + len
+                      + " from offset " + offset + " in buffer of size " + src.length);
+        }
         if (isClosed) {
             throw new IOException("StreamClosed");
         }
