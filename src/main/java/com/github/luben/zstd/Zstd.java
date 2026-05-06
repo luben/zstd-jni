@@ -635,10 +635,10 @@ public class Zstd {
      * @throws ZstdException if there is an error decoding the frame
      */
     public static long findFrameCompressedSize(byte[] src, int srcPosition, int srcSize) {
-        if (srcPosition >= src.length) {
+        if (srcPosition < 0 || srcPosition >= src.length) {
             throw new ArrayIndexOutOfBoundsException(srcPosition);
         }
-        if (srcPosition + srcSize > src.length) {
+        if (srcSize < 0 || srcSize > src.length - srcPosition) {
             throw new ArrayIndexOutOfBoundsException(srcPosition + srcSize);
         }
 

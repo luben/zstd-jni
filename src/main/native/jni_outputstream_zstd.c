@@ -62,22 +62,24 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdOutputStreamNoFinalizer_co
     size_t size = -ZSTD_error_memory_allocation;
 
     size_t src_pos = (size_t) (*env)->GetLongField(env, obj, src_pos_id);
+
     void *dst_buff = (*env)->GetPrimitiveArrayCritical(env, dst, NULL);
+    ZSTD_outBuffer output = { dst_buff, dst_size, 0 };
     if (dst_buff == NULL) goto E1;
     void *src_buff = (*env)->GetPrimitiveArrayCritical(env, src, NULL);
+    ZSTD_inBuffer input = { src_buff, src_size, src_pos };
     if (src_buff == NULL) goto E2;
 
-    ZSTD_outBuffer output = { dst_buff, dst_size, 0 };
-    ZSTD_inBuffer input = { src_buff, src_size, src_pos };
 
     size = ZSTD_compressStream2((ZSTD_CStream *)(intptr_t) stream, &output, &input, ZSTD_e_continue);
 
-    (*env)->SetLongField(env, obj, src_pos_id, input.pos);
-    (*env)->SetLongField(env, obj, dst_pos_id, output.pos);
     (*env)->ReleasePrimitiveArrayCritical(env, src, src_buff, JNI_ABORT);
 E2: (*env)->ReleasePrimitiveArrayCritical(env, dst, dst_buff, 0);
 
-E1: return (jint) size;
+    (*env)->SetLongField(env, obj, src_pos_id, input.pos);
+    (*env)->SetLongField(env, obj, dst_pos_id, output.pos);
+E1:
+    return (jint) size;
 }
 
 /*

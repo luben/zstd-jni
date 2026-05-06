@@ -117,7 +117,7 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_findDirectByteBufferFram
   (JNIEnv *env, jclass obj, jobject src_buf, jint src_offset, jint src_size) {
     size_t size = -ZSTD_error_memory_allocation;
     jsize src_cap = (*env)->GetDirectBufferCapacity(env, src_buf);
-    if (src_offset + src_size > src_cap) return -ZSTD_error_GENERIC;
+    if (src_offset > src_cap - src_size) return -ZSTD_error_GENERIC;
     char *src_buf_ptr = (char*)(*env)->GetDirectBufferAddress(env, src_buf);
     if (src_buf_ptr == NULL) goto E1;
     size = ZSTD_findFrameCompressedSize(src_buf_ptr + src_offset, (size_t) src_size);

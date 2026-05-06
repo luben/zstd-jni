@@ -341,7 +341,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
     }
 
     public synchronized void write(byte[] src, int offset, int len) throws IOException {
-        if (offset < 0 || len > src.length - offset) {
+        if (offset < 0 || len < 0 || len > src.length - offset) {
            throw new IndexOutOfBoundsException("Requested length " + len
                       + " from offset " + offset + " in buffer of size " + src.length);
         }
