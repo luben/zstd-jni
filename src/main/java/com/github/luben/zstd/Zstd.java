@@ -7,8 +7,24 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Zstd {
+    private static final String maxDecompressSizeOverride = "ZstdMaxDecompressSize";
+    /**
+     * Max memory size automatically allocated on decompression when no explicit content size is supplied.
+     *
+     * It can be controlled by the ZstdMaxDecompressSize property and defaults to 512MiB
+     */
+    public static final long MAX_DECOMPRESS_SIZE;
+
     static {
         Native.load();
+        long configuredMax;
+        try {
+            String prop = System.getProperty(maxDecompressSizeOverride);
+            configuredMax = (prop != null) ? Long.parseLong(prop) : 512L * 1024L * 1024L;
+        } catch (NumberFormatException e) {
+            configuredMax = 512L * 1024L * 1024L;
+        }
+        MAX_DECOMPRESS_SIZE = configuredMax;
     }
 
     /**
@@ -1449,14 +1465,14 @@ public class Zstd {
                 throw new RuntimeException("Invalid compressed size");
             }
 
-            if (frameData.contentSize > Integer.MAX_VALUE) {
-                throw new RuntimeException("Frame content size too big");
+            if (frameData.contentSize > MAX_DECOMPRESS_SIZE) {
+                throw new RuntimeException("Frame content size is too large");
             }
 
             srcPosition += (int) frameData.compressedSize;
             contentSize += frameData.contentSize;
-            if (contentSize > Integer.MAX_VALUE) {
-                throw new RuntimeException("Content size too big");
+            if (contentSize > MAX_DECOMPRESS_SIZE) {
+                throw new RuntimeException("Content size too large");
             }
         }
         return (int) contentSize;
@@ -1499,6 +1515,9 @@ public class Zstd {
             }
             // otherwise let ZstdException get error message itself
             throw new ZstdException(contentSize);
+        }
+        if (contentSize > MAX_DECOMPRESS_SIZE) {
+            throw new RuntimeException("Frame content size is too large");
         }
 
         return decompressFrame(src, srcOffset, compressedSize, (int) contentSize);
