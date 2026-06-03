@@ -718,6 +718,12 @@ public class Zstd {
     /**
      * Return the original size of a compressed buffer (if known)
      *
+     * <p><b>Security note:</b> the returned value is read directly from the frame header and is
+     * therefore untrusted and fully attacker-controlled &mdash; a tiny frame can declare a
+     * multi-gigabyte size (the field is up to 8 bytes wide). Never size an output buffer directly
+     * from this value; validate it against an application-defined limit first, or use
+     * {@link #getFrameContentSizeBounded(byte[], long)}.
+     *
      * @param src the compressed buffer
      * @param srcPosition offset of the compressed data inside the src buffer
      * @param srcSize length of the compressed data inside the src buffer
@@ -831,6 +837,31 @@ public class Zstd {
      */
     public static long getFrameContentSize(byte[] src) {
         return getFrameContentSize(src, 0);
+    }
+
+    /**
+     * Bounded variant of {@link #getFrameContentSize(byte[])} that guards against decompression
+     * bombs. The frame content size is read from the (untrusted, attacker-controlled) frame header,
+     * so callers that pre-allocate an output buffer from it must reject oversized declarations.
+     * This returns the declared size only when it does not exceed {@code maxSize}, and throws
+     * otherwise instead of letting a crafted header drive an attacker-chosen allocation.
+     *
+     * @param src     the compressed buffer
+     * @param maxSize the largest content size to accept, in bytes
+     * @return the declared content size in bytes (0 if the size is not stored in the frame)
+     * @throws ZstdException if the frame header cannot be decoded, or it declares a size
+     *                       larger than {@code maxSize}
+     */
+    public static long getFrameContentSizeBounded(byte[] src, long maxSize) {
+        long size = getFrameContentSize(src);
+        if (size < 0) {
+            throw new ZstdException(Zstd.errGeneric(), "Could not read the zstd frame content size");
+        }
+        if (size > maxSize) {
+            throw new ZstdException(Zstd.errGeneric(),
+                "Declared frame content size (" + size + " bytes) exceeds the allowed maximum (" + maxSize + " bytes)");
+        }
+        return size;
     }
 
     /**
