@@ -14,7 +14,7 @@ JNIEXPORT jlong Java_com_github_luben_zstd_Zstd_trainFromBuffer0
     jsize num_samples = (*env)->GetArrayLength(env, samples);
     size_t *samples_sizes = malloc(sizeof(size_t) * num_samples);
     if (!samples_sizes) {
-        jclass eClass = (*env)->FindClass(env, "Ljava/lang/OutOfMemoryError;");
+        jclass eClass = (*env)->FindClass(env, "java/lang/OutOfMemoryError");
         (*env)->ThrowNew(env, eClass, "native heap");
         goto E1;
     }
@@ -28,7 +28,7 @@ JNIEXPORT jlong Java_com_github_luben_zstd_Zstd_trainFromBuffer0
     }
     void *samples_buffer = malloc(samples_buffer_size);
     if (!samples_buffer) {
-        jclass eClass = (*env)->FindClass(env, "Ljava/lang/OutOfMemoryError;");
+        jclass eClass = (*env)->FindClass(env, "java/lang/OutOfMemoryError");
         (*env)->ThrowNew(env, eClass, "native heap");
         goto E2;
     }
@@ -69,7 +69,7 @@ JNIEXPORT jlong Java_com_github_luben_zstd_Zstd_trainFromBufferDirect0
     jsize num_samples = (*env)->GetArrayLength(env, sampleSizes);
     size_t *samples_sizes = malloc(sizeof(size_t) * num_samples);
     if (!samples_sizes) {
-        jclass eClass = (*env)->FindClass(env, "Ljava/lang/OutOfMemoryError;");
+        jclass eClass = (*env)->FindClass(env, "java/lang/OutOfMemoryError");
         (*env)->ThrowNew(env, eClass, "native heap");
         goto E1;
     }
