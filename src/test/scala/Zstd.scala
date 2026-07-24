@@ -1064,7 +1064,9 @@ class ZstdSpec extends AnyFlatSpec with ScalaCheckPropertyChecks {
     // Avoid:
     // 0 0x00000001039727c8 AccessInternal::PostRuntimeDispatch<G1BarrierSet::AccessBarrier<548964ull, G1BarrierSet>, (AccessInternal::BarrierType)2, 548964ull>::oop_access_barrier(void*) + 8 in libjvm.dylib
     // 1 0x0000000103d257c0 jni_GetArrayLength + 164 in libjvm.dylib
-    assert(Zstd.trainFromBuffer(Array.fill(11, 0)(0), null, false, 0) == -32)
+    assertThrows[NullPointerException] {
+      Zstd.trainFromBuffer(Array.fill(11, 0)(0), null, false, 0)
+    }
   }
 
   "ZstdDirectBufferCompressingStream" should s"do nothing on double close but throw on writing on closed stream" in {

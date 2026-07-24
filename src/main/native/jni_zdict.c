@@ -10,7 +10,7 @@
 JNIEXPORT jlong Java_com_github_luben_zstd_Zstd_trainFromBuffer0
   (JNIEnv *env, jclass obj, jobjectArray samples, jbyteArray dictBuffer, jboolean legacy, jint compressionLevel) {
     if (dictBuffer == NULL) return -ZSTD_error_dictionary_wrong;
-    size_t size = 0;
+    size_t size = -ZSTD_error_memory_allocation;
     jsize num_samples = (*env)->GetArrayLength(env, samples);
     size_t *samples_sizes = malloc(sizeof(size_t) * num_samples);
     if (!samples_sizes) {
@@ -21,6 +21,9 @@ JNIEXPORT jlong Java_com_github_luben_zstd_Zstd_trainFromBuffer0
     size_t samples_buffer_size = 0;
     for (int i = 0; i < num_samples; i++) {
         jbyteArray sample = (*env)->GetObjectArrayElement(env, samples, i);
+        if (sample == NULL) {
+            goto E3;
+        }
         jsize length = (*env)->GetArrayLength(env, sample);
         (*env)->DeleteLocalRef(env, sample);
         samples_sizes[i] = length;
@@ -42,6 +45,9 @@ JNIEXPORT jlong Java_com_github_luben_zstd_Zstd_trainFromBuffer0
     }
     size_t dict_capacity = (*env)->GetArrayLength(env, dictBuffer);
     void *dict_buff =  (*env)->GetPrimitiveArrayCritical(env, dictBuffer, NULL);
+    if (dict_buff == NULL) {
+        goto E3;
+    }
 
     if (legacy == JNI_TRUE) {
         ZDICT_legacy_params_t params;
@@ -52,7 +58,8 @@ JNIEXPORT jlong Java_com_github_luben_zstd_Zstd_trainFromBuffer0
         size = ZDICT_trainFromBuffer(dict_buff, dict_capacity, samples_buffer, samples_sizes, num_samples, compressionLevel);
     }
     (*env)->ReleasePrimitiveArrayCritical(env, dictBuffer, dict_buff, 0);
-    free(samples_buffer);
+
+E3: free(samples_buffer);
 E2: free(samples_sizes);
 E1: return size;
 }
@@ -60,10 +67,13 @@ E1: return size;
 JNIEXPORT jlong Java_com_github_luben_zstd_Zstd_trainFromBufferDirect0
   (JNIEnv *env, jclass obj, jobject samples, jintArray sampleSizes, jobject dictBuffer, jboolean legacy, jint compressionLevel) {
 
-    size_t size = 0;
+    size_t size = -ZSTD_error_memory_allocation;;
     void *samples_buffer = (*env)->GetDirectBufferAddress(env, samples);
     void *dict_buff = (*env)->GetDirectBufferAddress(env, dictBuffer);
     size_t dict_capacity = (*env)->GetDirectBufferCapacity(env, dictBuffer);
+    if (samples_buffer == NULL || dict_buff == NULL || dict_capacity < 0) {
+        goto E1;
+    }
 
     /* convert sized from int to size_t */
     jsize num_samples = (*env)->GetArrayLength(env, sampleSizes);

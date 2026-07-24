@@ -5,6 +5,7 @@ import com.github.luben.zstd.util.Native;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class Zstd {
     private static final String maxDecompressSizeOverride = "ZstdMaxDecompressSize";
@@ -974,6 +975,11 @@ public class Zstd {
      *          it fails (which can be tested using ZSTD_isError())
      */
     public static long trainFromBuffer(byte[][] samples, byte[] dictBuffer, boolean legacy, int compressionLevel) {
+        Objects.requireNonNull(samples, "samples");
+        Objects.requireNonNull(dictBuffer, "dictBuffer");
+        for (byte[] sample : samples) {
+            Objects.requireNonNull(sample, "sample");
+        }
         if (samples.length <= 10) {
             throw new ZstdException(Zstd.errGeneric(), "nb of samples too low");
         }
@@ -1007,6 +1013,9 @@ public class Zstd {
      *          it fails (which can be tested using ZSTD_isError())
      */
     public static long trainFromBufferDirect(ByteBuffer samples, int[] sampleSizes, ByteBuffer dictBuffer, boolean legacy, int compressionLevel) {
+        Objects.requireNonNull(samples, "samples");
+        Objects.requireNonNull(sampleSizes, "sampleSizes");
+        Objects.requireNonNull(dictBuffer, "dictBuffer");
         if (sampleSizes.length <= 10) {
             throw new ZstdException(Zstd.errGeneric(), "nb of samples too low");
         }

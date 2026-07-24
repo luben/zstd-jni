@@ -273,9 +273,8 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_loadDictDecompress
     if (dict_buff == NULL) goto E1;
 
     size = ZSTD_DCtx_loadDictionary((ZSTD_DCtx *)(intptr_t) stream, dict_buff, dict_size);
-E1:
     (*env)->ReleasePrimitiveArrayCritical(env, dict, dict_buff, JNI_ABORT);
-    return size;
+E1: return size;
 }
 
 /*
@@ -307,9 +306,8 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_Zstd_loadDictCompress
     if (dict_buff == NULL) goto E1;
 
     size = ZSTD_CCtx_loadDictionary((ZSTD_CCtx *)(intptr_t) stream, dict_buff, dict_size);
-E1:
     (*env)->ReleasePrimitiveArrayCritical(env, dict, dict_buff, JNI_ABORT);
-    return size;
+E1: return size;
 }
 
 /*
