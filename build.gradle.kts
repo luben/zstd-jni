@@ -11,7 +11,7 @@ val generatedSrcDir = File(layout.buildDirectory.get().asFile, "generated/main/j
 android {
     namespace = "com.github.luben.zstd"
     compileSdk = 37
-    ndkVersion = "28.2.13676358"
+    ndkVersion = "29.0.14206865"
 
     defaultConfig {
         minSdk = 21
