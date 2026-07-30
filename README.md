@@ -41,7 +41,8 @@ Status and availability
 **Zstd** is production ready with a stable format.
 
 **Zstd-jni** is tracking the release branch of **Zstd** (master) with
-compatibility support for the legacy formats (since version 0.4).
+*without* compatibility support for the legacy formats. The last version that
+was released with support for the legacy formats (since version 0.4) is `1.5.7-12`.
 
 **Zstd-jni** version uses the base **Zstd** version with **Zstd-jni** release
 appended with a dash, e.g. "1.2.0-2" is the second **Zstd-jni** release based
@@ -133,8 +134,9 @@ Android support
 Zstd-jni is usable in Android applications by importing the sources in Android
 Studio. I guess using git submodules will also work.
 
-Android archive (*zstd-jni.aar*) is also published on maven central. You will need
-to add the repository in your build.gradle, e.g.:
+Android archive (*zstd-jni.aar*) is also published on maven central that
+support Android 5.0 and above. You will need to add the repository in your
+build.gradle, e.g.:
 
     allprojects {
         repositories {
