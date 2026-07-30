@@ -1,9 +1,7 @@
 package com.github.luben.zstd;
 
-import com.github.luben.zstd.Zstd;
 import com.github.luben.zstd.util.Native;
-import android.support.test.InstrumentationRegistry;
-import android.support.test.runner.AndroidJUnit4;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;

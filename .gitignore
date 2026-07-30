@@ -4,6 +4,7 @@ project/target
 project/project
 project/plugins/project
 .externalNativeBuild/
+.cxx/
 .idea/
 .bloop/
 .metals/
@@ -11,7 +12,6 @@ tags
 local.properties
 zstd-jni.iml
 sonatype
-gradlew*
 .gradle
 *.swp
 *.o

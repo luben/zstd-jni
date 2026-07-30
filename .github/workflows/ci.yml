@@ -1,5 +1,8 @@
 name: CI
 on: [push, pull_request]
+concurrency:
+    group: ${{ github.workflow }}-${{ github.ref }}
+    cancel-in-progress: true
 jobs:
     linux:
         strategy:
@@ -172,3 +175,18 @@ jobs:
             AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
             AWS_DEFAULT_REGION: "us-east-1"
           run: aws s3 cp libzstd-jni-$(cat version).dll s3://zstd-jni/github/win/aarch64/libzstd-jni-$(cat version).dll
+
+    android:
+        runs-on: ubuntu-latest
+        steps:
+        - uses: actions/checkout@v5
+        - uses: actions/setup-java@v5
+          with:
+            java-version: 17
+            distribution: zulu
+        - uses: android-actions/setup-android@v3
+        - name: Install Android SDK components
+          run: sdkmanager --install "platforms;android-36" "ndk;28.2.13676358" "cmake;3.22.1"
+
+        - name: Build AAR
+          run: ./sbt aarTask
