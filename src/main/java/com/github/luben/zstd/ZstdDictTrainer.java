@@ -1,5 +1,7 @@
 package com.github.luben.zstd;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
@@ -24,7 +26,7 @@ public class ZstdDictTrainer {
         this.level = level;
     }
 
-    public synchronized boolean addSample(byte[] sample) {
+    public synchronized boolean addSample(byte @NotNull [] sample) {
         if (filledSize + sample.length > allocatedSize) {
             return false;
         }
@@ -34,11 +36,11 @@ public class ZstdDictTrainer {
         return true;
     }
 
-    public ByteBuffer trainSamplesDirect() throws ZstdException {
+    public @NotNull ByteBuffer trainSamplesDirect() throws ZstdException {
         return trainSamplesDirect(false);
     }
 
-    public synchronized ByteBuffer trainSamplesDirect(boolean legacy) throws ZstdException {
+    public synchronized @NotNull ByteBuffer trainSamplesDirect(boolean legacy) throws ZstdException {
         ByteBuffer dictBuffer = ByteBuffer.allocateDirect(dictSize);
         long l = Zstd.trainFromBufferDirect(trainingSamples, copyToIntArray(sampleSizes), dictBuffer, legacy, level);
         if (Zstd.isError(l)) {
@@ -49,18 +51,18 @@ public class ZstdDictTrainer {
         return dictBuffer;
     }
 
-    public byte[] trainSamples() throws ZstdException {
+    public byte @NotNull [] trainSamples() throws ZstdException {
         return trainSamples(false);
     }
 
-    public byte[] trainSamples(boolean legacy) throws ZstdException {
+    public byte @NotNull [] trainSamples(boolean legacy) throws ZstdException {
         ByteBuffer byteBuffer = trainSamplesDirect(legacy);
         byte[] bytes = new byte[byteBuffer.remaining()];
         byteBuffer.get(bytes);
         return bytes;
     }
 
-    private int[] copyToIntArray(List<Integer> list) {
+    private int @NotNull [] copyToIntArray(@NotNull List<Integer> list) {
         int[] ints = new int[list.size()];
         int idx = 0;
         for (Integer i: list) {

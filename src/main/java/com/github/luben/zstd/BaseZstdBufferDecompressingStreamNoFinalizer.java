@@ -1,12 +1,16 @@
 package com.github.luben.zstd;
 
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
 public abstract class BaseZstdBufferDecompressingStreamNoFinalizer implements Closeable {
     protected long stream;
-    protected ByteBuffer source;
+    // TODO(nullability): nulled in close() but dereferenced without a null-check elsewhere (use-after-close risk)
+    protected @Nullable ByteBuffer source;
     protected boolean closed = false;
     private boolean finishedFrame = false;
     private boolean streamEnd = false;
@@ -19,7 +23,7 @@ public abstract class BaseZstdBufferDecompressingStreamNoFinalizer implements Cl
      */
     private int produced;
 
-    BaseZstdBufferDecompressingStreamNoFinalizer(ByteBuffer source) {
+    BaseZstdBufferDecompressingStreamNoFinalizer(@NotNull ByteBuffer source) {
         this.source = source;
     }
 
@@ -29,7 +33,7 @@ public abstract class BaseZstdBufferDecompressingStreamNoFinalizer implements Cl
      * @param toRefill current buffer
      * @return either the current buffer (but refilled and flipped if there was new content) or a new buffer.
      */
-    protected ByteBuffer refill(ByteBuffer toRefill) {
+    protected @NotNull ByteBuffer refill(@NotNull ByteBuffer toRefill) {
         return toRefill;
     }
 
@@ -37,10 +41,11 @@ public abstract class BaseZstdBufferDecompressingStreamNoFinalizer implements Cl
      * @return false if all data is processed and no more data is available from the {@link #source}
      */
     public boolean hasRemaining() {
+        // TODO(nullability): source is @Nullable (see field) and dereferenced here without a null-check
         return !streamEnd && (source.hasRemaining() || !finishedFrame);
     }
 
-    public BaseZstdBufferDecompressingStreamNoFinalizer setDict(byte[] dict) throws IOException {
+    public @NotNull BaseZstdBufferDecompressingStreamNoFinalizer setDict(byte @NotNull [] dict) throws IOException {
         long size = Zstd.loadDictDecompress(stream, dict, dict.length);
         if (Zstd.isError(size)) {
             throw new ZstdIOException(size);
@@ -48,7 +53,7 @@ public abstract class BaseZstdBufferDecompressingStreamNoFinalizer implements Cl
         return this;
     }
 
-    public BaseZstdBufferDecompressingStreamNoFinalizer setDict(ZstdDictDecompress dict) throws IOException {
+    public @NotNull BaseZstdBufferDecompressingStreamNoFinalizer setDict(@NotNull ZstdDictDecompress dict) throws IOException {
         dict.acquireSharedLock();
         try {
             long size = Zstd.loadFastDictDecompress(stream, dict);
@@ -70,7 +75,7 @@ public abstract class BaseZstdBufferDecompressingStreamNoFinalizer implements Cl
      *
      * @see <a href="https://github.com/facebook/zstd/blob/0525d1cec64a8df749ff293ee476f616de79f7b0/lib/zstd.h#L606"> Zstd's ZSTD_d_windowLogMax parameter</a>
      */
-    public BaseZstdBufferDecompressingStreamNoFinalizer setLongMax(int windowLogMax) throws IOException {
+    public @NotNull BaseZstdBufferDecompressingStreamNoFinalizer setLongMax(int windowLogMax) throws IOException {
         long size = Zstd.setDecompressionLongMax(stream, windowLogMax);
         if (Zstd.isError(size)) {
             throw new ZstdIOException(size);
@@ -78,7 +83,7 @@ public abstract class BaseZstdBufferDecompressingStreamNoFinalizer implements Cl
         return this;
     }
 
-    int readInternal(ByteBuffer target, boolean isDirectBufferRequired) throws IOException {
+    int readInternal(@NotNull ByteBuffer target, boolean isDirectBufferRequired) throws IOException {
         if (closed) {
             throw new IOException("Stream closed");
         }
@@ -86,6 +91,7 @@ public abstract class BaseZstdBufferDecompressingStreamNoFinalizer implements Cl
             return 0;
         }
 
+        // TODO(nullability): source is @Nullable but decompressStream's src parameter is @NotNull; same use-after-close risk as hasRemaining()
         long remaining = decompressStream(stream, target, target.position(), target.remaining(), source, source.position(), source.remaining());
         if (Zstd.isError(remaining)) {
             throw new ZstdIOException(remaining);
@@ -141,7 +147,7 @@ public abstract class BaseZstdBufferDecompressingStreamNoFinalizer implements Cl
      * @throws IllegalArgumentException if provided source or target buffers are incorrectly configured.
      * @throws IOException if the stream is closed before reading.
      */
-    public abstract int read(ByteBuffer target) throws IOException;
+    public abstract int read(@NotNull ByteBuffer target) throws IOException;
 
     abstract long createDStream();
 
@@ -149,5 +155,5 @@ public abstract class BaseZstdBufferDecompressingStreamNoFinalizer implements Cl
 
     abstract long initDStream(long stream);
 
-    abstract long decompressStream(long stream, ByteBuffer dst, int dstOffset, int dstSize, ByteBuffer src, int srcOffset, int srcSize);
+    abstract long decompressStream(long stream, @NotNull ByteBuffer dst, int dstOffset, int dstSize, @NotNull ByteBuffer src, int srcOffset, int srcSize);
 }

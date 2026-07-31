@@ -1,7 +1,9 @@
 package com.github.luben.zstd;
 
 import com.github.luben.zstd.util.Native;
-import com.github.luben.zstd.ZstdDictCompress;
+
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -14,8 +16,10 @@ public class ZstdCompressCtx extends AutoCloseBase {
 
     private long nativePtr = 0;
 
+    @Nullable
     private ZstdDictCompress compression_dict = null;
 
+    @Nullable
     private SequenceProducer seqprod = null;
 
     private long seqprod_state = 0;
@@ -57,6 +61,7 @@ public class ZstdCompressCtx extends AutoCloseBase {
      * Set compression level
      * @param level compression level, default: {@link Zstd#defaultCompressionLevel()}
      */
+    @NotNull
     public ZstdCompressCtx setLevel(int level) {
         ensureOpen();
         acquireSharedLock();
@@ -71,6 +76,7 @@ public class ZstdCompressCtx extends AutoCloseBase {
      * Enable or disable magicless frames
      * @param magiclessFlag A 32-bits magic number is written at start of frame, default: false
      */
+    @NotNull
     public ZstdCompressCtx setMagicless(boolean magiclessFlag) {
         ensureOpen();
         acquireSharedLock();
@@ -83,6 +89,7 @@ public class ZstdCompressCtx extends AutoCloseBase {
      * Enable or disable compression checksums
      * @param checksumFlag A 32-bits checksum of content is written at end of frame, default: false
      */
+    @NotNull
     public ZstdCompressCtx setChecksum(boolean checksumFlag) {
         ensureOpen();
         acquireSharedLock();
@@ -93,6 +100,7 @@ public class ZstdCompressCtx extends AutoCloseBase {
     private static native void setChecksum0(long ptr, boolean checksumFlag);
 
 
+    @NotNull
     public ZstdCompressCtx setWorkers(int workers) {
         ensureOpen();
         acquireSharedLock();
@@ -107,6 +115,7 @@ public class ZstdCompressCtx extends AutoCloseBase {
         return this;
     }
 
+    @NotNull
     public ZstdCompressCtx setOverlapLog(int overlapLog) {
         ensureOpen();
         acquireSharedLock();
@@ -121,6 +130,7 @@ public class ZstdCompressCtx extends AutoCloseBase {
         return this;
     }
 
+    @NotNull
     public ZstdCompressCtx setJobSize(int jobSize) {
         ensureOpen();
         acquireSharedLock();
@@ -135,6 +145,7 @@ public class ZstdCompressCtx extends AutoCloseBase {
         return this;
     }
 
+    @NotNull
     public ZstdCompressCtx setTargetLength(int targetLength) {
         ensureOpen();
         acquireSharedLock();
@@ -149,6 +160,7 @@ public class ZstdCompressCtx extends AutoCloseBase {
         return this;
     }
 
+    @NotNull
     public ZstdCompressCtx setMinMatch(int minMatch) {
         ensureOpen();
         acquireSharedLock();
@@ -163,6 +175,7 @@ public class ZstdCompressCtx extends AutoCloseBase {
         return this;
     }
 
+    @NotNull
     public ZstdCompressCtx setSearchLog(int searchLog) {
         ensureOpen();
         acquireSharedLock();
@@ -177,6 +190,7 @@ public class ZstdCompressCtx extends AutoCloseBase {
         return this;
     }
 
+    @NotNull
     public ZstdCompressCtx setChainLog(int chainLog) {
         ensureOpen();
         acquireSharedLock();
@@ -191,6 +205,7 @@ public class ZstdCompressCtx extends AutoCloseBase {
         return this;
     }
 
+    @NotNull
     public ZstdCompressCtx setHashLog(int hashLog) {
         ensureOpen();
         acquireSharedLock();
@@ -205,6 +220,7 @@ public class ZstdCompressCtx extends AutoCloseBase {
         return this;
     }
 
+    @NotNull
     public ZstdCompressCtx setWindowLog(int windowLog) {
         ensureOpen();
         acquireSharedLock();
@@ -219,6 +235,7 @@ public class ZstdCompressCtx extends AutoCloseBase {
         return this;
     }
 
+    @NotNull
     public ZstdCompressCtx setStrategy(int strategy) {
         ensureOpen();
         acquireSharedLock();
@@ -237,6 +254,7 @@ public class ZstdCompressCtx extends AutoCloseBase {
      * Enable or disable content size
      * @param contentSizeFlag Content size will be written into frame header _whenever known_, default: true
      */
+    @NotNull
     public ZstdCompressCtx setContentSize(boolean contentSizeFlag) {
         ensureOpen();
         acquireSharedLock();
@@ -250,6 +268,7 @@ public class ZstdCompressCtx extends AutoCloseBase {
      * Enable or disable dictID
      * @param dictIDFlag When applicable, dictionary's ID is written into frame header, default: true
      */
+    @NotNull
     public ZstdCompressCtx setDictID(boolean dictIDFlag) {
         ensureOpen();
         acquireSharedLock();
@@ -268,6 +287,7 @@ public class ZstdCompressCtx extends AutoCloseBase {
      *                  be decompressable in all context as they require more memory.
      *                  0 disables LDM.
      */
+    @NotNull
     public ZstdCompressCtx setLong(int windowLog) {
         ensureOpen();
         acquireSharedLock();
@@ -280,7 +300,8 @@ public class ZstdCompressCtx extends AutoCloseBase {
      * Register an external sequence producer
      * @param producer the user-defined {@link SequenceProducer} to register.
      */
-    public ZstdCompressCtx registerSequenceProducer(SequenceProducer producer) {
+    @NotNull
+    public ZstdCompressCtx registerSequenceProducer(@Nullable SequenceProducer producer) {
         ensureOpen();
         acquireSharedLock();
         try {
@@ -311,6 +332,7 @@ public class ZstdCompressCtx extends AutoCloseBase {
      * @param fallbackFlag fall back to the default internal sequence producer if an external
      *                     sequence producer returns an error code, default: false
      */
+    @NotNull
     public ZstdCompressCtx setSequenceProducerFallback(boolean fallbackFlag) {
         ensureOpen();
         acquireSharedLock();
@@ -330,7 +352,8 @@ public class ZstdCompressCtx extends AutoCloseBase {
      * encoded as repcodes.
      * @param searchRepcodes whether to search for repcodes
      */
-    public ZstdCompressCtx setSearchForExternalRepcodes(Zstd.ParamSwitch searchRepcodes) {
+    @NotNull
+    public ZstdCompressCtx setSearchForExternalRepcodes(@NotNull Zstd.ParamSwitch searchRepcodes) {
         ensureOpen();
         acquireSharedLock();
         try {
@@ -349,7 +372,8 @@ public class ZstdCompressCtx extends AutoCloseBase {
      * and with external sequence producers.
      * @param validateSequences whether to enable sequence validation
      */
-    public ZstdCompressCtx setValidateSequences(Zstd.ParamSwitch validateSequences) {
+    @NotNull
+    public ZstdCompressCtx setValidateSequences(@NotNull Zstd.ParamSwitch validateSequences) {
         ensureOpen();
         acquireSharedLock();
         try {
@@ -367,7 +391,8 @@ public class ZstdCompressCtx extends AutoCloseBase {
      * Enable or disable long-distance matching.
      * @param enableLDM whether to enable long-distance matching.
      */
-    public ZstdCompressCtx setEnableLongDistanceMatching(Zstd.ParamSwitch enableLDM) {
+    @NotNull
+    public ZstdCompressCtx setEnableLongDistanceMatching(@NotNull Zstd.ParamSwitch enableLDM) {
         ensureOpen();
         acquireSharedLock();
         try {
@@ -391,6 +416,8 @@ public class ZstdCompressCtx extends AutoCloseBase {
      *
      * @param dict the dictionary or `null` to remove loaded dictionary
      */
+    // TODO(nullability): javadoc says null clears dict, but dict.acquireSharedLock() below would NPE on null
+    @NotNull
     public ZstdCompressCtx loadDict(ZstdDictCompress dict) {
         ensureOpen();
         acquireSharedLock();
@@ -408,6 +435,7 @@ public class ZstdCompressCtx extends AutoCloseBase {
         }
         return this;
     }
+    // TODO(nullability): dict nullability mirrors loadDict(ZstdDictCompress); see TODO there
     private native long loadCDictFast0(long ptr, ZstdDictCompress dict);
 
     /**
@@ -415,7 +443,8 @@ public class ZstdCompressCtx extends AutoCloseBase {
      *
      * @param dict the dictionary or `null` to remove loaded dictionary
      */
-    public ZstdCompressCtx loadDict(byte[] dict) {
+    @NotNull
+    public ZstdCompressCtx loadDict(byte @Nullable [] dict) {
         ensureOpen();
         acquireSharedLock();
         try {
@@ -429,12 +458,13 @@ public class ZstdCompressCtx extends AutoCloseBase {
         }
         return this;
     }
-    private native long loadCDict0(long ptr, byte[] dict);
+    private native long loadCDict0(long ptr, byte @Nullable [] dict);
 
     /**
      * Tells how much data has been ingested (read from input),
      * consumed (input actually compressed) and produced (output) for current frame.
      */
+    @NotNull
     public ZstdFrameProgression getFrameProgression() {
         ensureOpen();
         acquireSharedLock();
@@ -444,6 +474,7 @@ public class ZstdCompressCtx extends AutoCloseBase {
             releaseSharedLock();
         }
     }
+    @NotNull
     private static native ZstdFrameProgression getFrameProgression0(long ptr);
 
     /**
@@ -496,7 +527,7 @@ public class ZstdCompressCtx extends AutoCloseBase {
      * @param endOp directive for handling the end of the stream
      * @return true if all state has been flushed from internal buffers
      */
-    public boolean compressDirectByteBufferStream(ByteBuffer dst, ByteBuffer src, EndDirective endOp) {
+    public boolean compressDirectByteBufferStream(@NotNull ByteBuffer dst, @NotNull ByteBuffer src, @NotNull EndDirective endOp) {
         ensureOpen();
         acquireSharedLock();
         try {
@@ -520,7 +551,7 @@ public class ZstdCompressCtx extends AutoCloseBase {
      * bit is set if an error occurred. If an error occurred, the lowest 31 bits encode a zstd error
      * code. Otherwise, the lowest 31 bits are the new position of the source buffer.
      */
-    private static native long compressDirectByteBufferStream0(long ptr, ByteBuffer dst, int dstOffset, int dstSize, ByteBuffer src, int srcSize, int srcOffset, int endOp);
+    private static native long compressDirectByteBufferStream0(long ptr, @NotNull ByteBuffer dst, int dstOffset, int dstSize, @NotNull ByteBuffer src, int srcSize, int srcOffset, int endOp);
 
     /**
      * Compresses buffer 'srcBuff' into buffer 'dstBuff' reusing this ZstdCompressCtx.
@@ -538,7 +569,7 @@ public class ZstdCompressCtx extends AutoCloseBase {
      * @param srcSize the length of 'srcBuff' (after 'srcOffset')
      * @return  the number of bytes written into buffer 'dstBuff'.
      */
-    public int compressDirectByteBuffer(ByteBuffer dstBuff, int dstOffset, int dstSize, ByteBuffer srcBuff, int srcOffset, int srcSize) {
+    public int compressDirectByteBuffer(@NotNull ByteBuffer dstBuff, int dstOffset, int dstSize, @NotNull ByteBuffer srcBuff, int srcOffset, int srcSize) {
         ensureOpen();
         if (!srcBuff.isDirect()) {
             throw new IllegalArgumentException("srcBuff must be a direct buffer");
@@ -565,7 +596,7 @@ public class ZstdCompressCtx extends AutoCloseBase {
         }
     }
 
-    private static native long compressDirectByteBuffer0(long ptr, ByteBuffer dst, int dstOffset, int dstSize, ByteBuffer src, int srcOffset, int srcSize);
+    private static native long compressDirectByteBuffer0(long ptr, @NotNull ByteBuffer dst, int dstOffset, int dstSize, @NotNull ByteBuffer src, int srcOffset, int srcSize);
 
     /**
      * Compresses byte array 'srcBuff' into byte array 'dstBuff' reusing this ZstdCompressCtx.
@@ -582,7 +613,7 @@ public class ZstdCompressCtx extends AutoCloseBase {
      * @param srcSize the length of 'srcBuff' (after 'srcOffset')
      * @return  the number of bytes written into buffer 'dstBuff'.
      */
-    public int compressByteArray(byte[] dstBuff, int dstOffset, int dstSize, byte[] srcBuff, int srcOffset, int srcSize) {
+    public int compressByteArray(byte @NotNull [] dstBuff, int dstOffset, int dstSize, byte @NotNull [] srcBuff, int srcOffset, int srcSize) {
         Objects.checkFromIndexSize(srcOffset, srcSize, srcBuff.length);
         Objects.checkFromIndexSize(dstOffset, dstSize, dstBuff.length);
 
@@ -603,7 +634,7 @@ public class ZstdCompressCtx extends AutoCloseBase {
         }
     }
 
-    private static native long compressByteArray0(long ptr, byte[] dst, int dstOffset, int dstSize, byte[] src, int srcOffset, int srcSize);
+    private static native long compressByteArray0(long ptr, byte @NotNull [] dst, int dstOffset, int dstSize, byte @NotNull [] src, int srcOffset, int srcSize);
 
     /* Convenience methods */
 
@@ -624,7 +655,7 @@ public class ZstdCompressCtx extends AutoCloseBase {
      *               </p>
      * @return the size of the compressed data
      */
-    public int compress(ByteBuffer dstBuf, ByteBuffer srcBuf) {
+    public int compress(@NotNull ByteBuffer dstBuf, @NotNull ByteBuffer srcBuf) {
         int size = compressDirectByteBuffer(dstBuf, // compress into dstBuf
                 dstBuf.position(),                   // write compressed data starting at offset position()
                 dstBuf.limit() - dstBuf.position(),  // write no more than limit() - position() bytes
@@ -648,7 +679,8 @@ public class ZstdCompressCtx extends AutoCloseBase {
      *               </p>
      * @return A newly allocated direct ByteBuffer containing the compressed data.
      */
-    public ByteBuffer compress(ByteBuffer srcBuf) throws ZstdException {
+    @NotNull
+    public ByteBuffer compress(@NotNull ByteBuffer srcBuf) throws ZstdException {
         long maxDstSize = Zstd.compressBound((long)(srcBuf.limit() - srcBuf.position()));
         if (maxDstSize > Integer.MAX_VALUE) {
             throw new ZstdException(Zstd.errGeneric(), "Max output size is greater than MAX_INT");
@@ -670,11 +702,11 @@ public class ZstdCompressCtx extends AutoCloseBase {
         return dstBuf;
     }
 
-    public int compress(byte[] dst, byte[] src) {
+    public int compress(byte @NotNull [] dst, byte @NotNull [] src) {
         return compressByteArray(dst, 0, dst.length, src, 0, src.length);
     }
 
-    public byte[] compress(byte[] src) {
+    public byte @NotNull [] compress(byte @NotNull [] src) {
         long maxDstSize = Zstd.compressBound(src.length);
         if (maxDstSize > Integer.MAX_VALUE) {
             throw new ZstdException(Zstd.errGeneric(), "Max output size is greater than MAX_INT");

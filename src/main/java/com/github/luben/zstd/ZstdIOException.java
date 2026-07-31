@@ -1,5 +1,7 @@
 package com.github.luben.zstd;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.io.IOException;
 
 public class ZstdIOException extends IOException {
@@ -26,7 +28,7 @@ public class ZstdIOException extends IOException {
      * @param code a Zstd error code
      * @param message the exception's message
      */
-    public ZstdIOException(long code, String message) {
+    public ZstdIOException(long code, @NotNull String message) {
         super(message);
         this.code = code;
     }

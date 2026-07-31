@@ -1,8 +1,10 @@
 package com.github.luben.zstd;
 
-import java.io.InputStream;
+import org.jetbrains.annotations.NotNull;
+
 import java.io.FilterInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 
 /**
  * InputStream filter that decompresses the data provided
@@ -13,13 +15,13 @@ import java.io.IOException;
 
 public class ZstdInputStream extends FilterInputStream {
 
-    private ZstdInputStreamNoFinalizer inner;
+    private @NotNull ZstdInputStreamNoFinalizer inner;
 
     /**
      * create a new decompressing InputStream
      * @param inStream the stream to wrap
      */
-    public ZstdInputStream(InputStream inStream) throws IOException {
+    public ZstdInputStream(@NotNull InputStream inStream) throws IOException {
         super(inStream);
         inner = new ZstdInputStreamNoFinalizer(inStream);
     }
@@ -29,7 +31,7 @@ public class ZstdInputStream extends FilterInputStream {
      * @param inStream the stream to wrap
      * @param bufferPool the pool to fetch and return buffers
      */
-    public ZstdInputStream(InputStream inStream, BufferPool bufferPool) throws IOException {
+    public ZstdInputStream(@NotNull InputStream inStream, @NotNull BufferPool bufferPool) throws IOException {
         super(inStream);
         inner = new ZstdInputStreamNoFinalizer(inStream, bufferPool);
     }
@@ -65,7 +67,7 @@ public class ZstdInputStream extends FilterInputStream {
      *
      * Use case: decompressing files that are not yet finished writing and compressing
      */
-    public ZstdInputStream setContinuous(boolean b) {
+    public @NotNull ZstdInputStream setContinuous(boolean b) {
         inner.setContinuous(b);
         return this;
     }
@@ -74,16 +76,16 @@ public class ZstdInputStream extends FilterInputStream {
         return inner.getContinuous();
     }
 
-    public ZstdInputStream setDict(byte[] dict) throws IOException {
+    public @NotNull ZstdInputStream setDict(byte @NotNull [] dict) throws IOException {
         inner.setDict(dict);
         return this;
     }
-    public ZstdInputStream setDict(ZstdDictDecompress dict) throws IOException {
+    public @NotNull ZstdInputStream setDict(@NotNull ZstdDictDecompress dict) throws IOException {
         inner.setDict(dict);
         return this;
     }
 
-    public ZstdInputStream setLongMax(int windowLogMax) throws IOException {
+    public @NotNull ZstdInputStream setLongMax(int windowLogMax) throws IOException {
         inner.setLongMax(windowLogMax);
         return this;
     }
@@ -94,12 +96,12 @@ public class ZstdInputStream extends FilterInputStream {
      * @param useMultiple Enables references table for DDict, so the DDict used for decompression will be
      *                    determined per the dictId in the frame, default: false
      */
-    public ZstdInputStream setRefMultipleDDicts(boolean useMultiple) throws IOException {
+    public @NotNull ZstdInputStream setRefMultipleDDicts(boolean useMultiple) throws IOException {
         inner.setRefMultipleDDicts(useMultiple);
         return this;
     }
 
-    public int read(byte[] dst, int offset, int len) throws IOException {
+    public int read(byte @NotNull [] dst, int offset, int len) throws IOException {
         return inner.read(dst, offset, len);
     }
 

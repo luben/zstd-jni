@@ -1,5 +1,7 @@
 package com.github.luben.zstd;
 
+import org.jetbrains.annotations.NotNull;
+
 public class ZstdException extends RuntimeException {
     private long code;
 
@@ -24,7 +26,7 @@ public class ZstdException extends RuntimeException {
      * @param code a Zstd error code
      * @param message the exception's message
      */
-    public ZstdException(long code, String message) {
+    public ZstdException(long code, @NotNull String message) {
         super(message);
         this.code = code;
     }

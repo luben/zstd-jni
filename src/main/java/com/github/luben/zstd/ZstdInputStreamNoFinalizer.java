@@ -1,12 +1,14 @@
 package com.github.luben.zstd;
 
-import java.io.InputStream;
+import com.github.luben.zstd.util.Native;
+
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
 import java.io.FilterInputStream;
 import java.io.IOException;
-import java.lang.IndexOutOfBoundsException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
-
-import com.github.luben.zstd.util.Native;
 
 /**
  * InputStream filter that decompresses the data provided
@@ -29,16 +31,16 @@ public class ZstdInputStreamNoFinalizer extends FilterInputStream {
     private long srcPos = 0;
     private long srcSize = 0;
     private boolean needRead = true;
-    private final BufferPool bufferPool;
-    private final ByteBuffer srcByteBuffer;
-    private final byte[] src;
+    private final @NotNull BufferPool bufferPool;
+    private final @NotNull ByteBuffer srcByteBuffer;
+    private final byte @NotNull [] src;
     private static final int srcBuffSize = (int) recommendedDInSize();
 
     private boolean isContinuous = false;
     private boolean frameFinished = true;
     private boolean isClosed = false;
     // keep the active dict alive
-    private ZstdDictDecompress active_dict;
+    private @Nullable ZstdDictDecompress active_dict;
 
     /* JNI methods */
     public static native long recommendedDInSize();
@@ -46,13 +48,13 @@ public class ZstdInputStreamNoFinalizer extends FilterInputStream {
     private static native long createDStream();
     private static native int  freeDStream(long stream);
     private native int  initDStream(long stream);
-    private native int  decompressStream(long stream, byte[] dst, int dst_size, byte[] src, int src_size);
+    private native int  decompressStream(long stream, byte @NotNull [] dst, int dst_size, byte @NotNull [] src, int src_size);
 
     /**
      * create a new decompressing InputStream
      * @param inStream the stream to wrap
      */
-    public ZstdInputStreamNoFinalizer(InputStream inStream) throws IOException {
+    public ZstdInputStreamNoFinalizer(@NotNull InputStream inStream) throws IOException {
         this(inStream, NoPool.INSTANCE);
     }
 
@@ -61,7 +63,7 @@ public class ZstdInputStreamNoFinalizer extends FilterInputStream {
      * @param inStream the stream to wrap
      * @param bufferPool the pool to fetch and return buffers
      */
-    public ZstdInputStreamNoFinalizer(InputStream inStream, BufferPool bufferPool) throws IOException {
+    public ZstdInputStreamNoFinalizer(@NotNull InputStream inStream, @NotNull BufferPool bufferPool) throws IOException {
         super(inStream);
         this.bufferPool = bufferPool;
         this.srcByteBuffer = Zstd.getArrayBackedBuffer(bufferPool, srcBuffSize);
@@ -78,7 +80,7 @@ public class ZstdInputStreamNoFinalizer extends FilterInputStream {
      *
      * Use case: decompressing files that are not yet finished writing and compressing
      */
-    public synchronized ZstdInputStreamNoFinalizer setContinuous(boolean b) {
+    public synchronized @NotNull ZstdInputStreamNoFinalizer setContinuous(boolean b) {
         isContinuous = b;
         return this;
     }
@@ -87,7 +89,7 @@ public class ZstdInputStreamNoFinalizer extends FilterInputStream {
         return this.isContinuous;
     }
 
-    public synchronized ZstdInputStreamNoFinalizer setDict(byte[] dict) throws IOException {
+    public synchronized @NotNull ZstdInputStreamNoFinalizer setDict(byte @NotNull [] dict) throws IOException {
         int size = Zstd.loadDictDecompress(stream, dict, dict.length);
         if (Zstd.isError(size)) {
             throw new ZstdIOException(size);
@@ -95,7 +97,7 @@ public class ZstdInputStreamNoFinalizer extends FilterInputStream {
         return this;
     }
 
-    public synchronized ZstdInputStreamNoFinalizer setDict(ZstdDictDecompress dict) throws IOException {
+    public synchronized @NotNull ZstdInputStreamNoFinalizer setDict(@NotNull ZstdDictDecompress dict) throws IOException {
         dict.acquireSharedLock();
         try {
             int size = Zstd.loadFastDictDecompress(stream, dict);
@@ -111,7 +113,7 @@ public class ZstdInputStreamNoFinalizer extends FilterInputStream {
         return this;
     }
 
-    public synchronized ZstdInputStreamNoFinalizer setLongMax(int windowLogMax) throws IOException {
+    public synchronized @NotNull ZstdInputStreamNoFinalizer setLongMax(int windowLogMax) throws IOException {
         int size = Zstd.setDecompressionLongMax(stream, windowLogMax);
         if (Zstd.isError(size)) {
             throw new ZstdIOException(size);
@@ -119,7 +121,7 @@ public class ZstdInputStreamNoFinalizer extends FilterInputStream {
         return this;
     }
 
-    public synchronized ZstdInputStreamNoFinalizer setRefMultipleDDicts(boolean useMultiple) throws IOException {
+    public synchronized @NotNull ZstdInputStreamNoFinalizer setRefMultipleDDicts(boolean useMultiple) throws IOException {
         int size = Zstd.setRefMultipleDDicts(stream, useMultiple);
         if (Zstd.isError(size)) {
             throw new ZstdIOException(size);
@@ -127,7 +129,7 @@ public class ZstdInputStreamNoFinalizer extends FilterInputStream {
         return this;
     }
 
-    public synchronized int read(byte[] dst, int offset, int len) throws IOException {
+    public synchronized int read(byte @NotNull [] dst, int offset, int len) throws IOException {
         // guard agains buffer overflows
         if (offset < 0 || len > dst.length - offset) {
             throw new IndexOutOfBoundsException("Requested length " + len
@@ -144,7 +146,7 @@ public class ZstdInputStreamNoFinalizer extends FilterInputStream {
         }
     }
 
-    int readInternal(byte[] dst, int offset, int len) throws IOException {
+    int readInternal(byte @NotNull [] dst, int offset, int len) throws IOException {
 
         if (isClosed) {
             throw new IOException("Stream closed");

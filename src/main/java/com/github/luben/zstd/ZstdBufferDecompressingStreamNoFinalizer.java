@@ -1,6 +1,7 @@
 package com.github.luben.zstd;
 
 import com.github.luben.zstd.util.Native;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -10,7 +11,7 @@ public class ZstdBufferDecompressingStreamNoFinalizer extends BaseZstdBufferDeco
         Native.load();
     }
 
-    public ZstdBufferDecompressingStreamNoFinalizer(ByteBuffer source) {
+    public ZstdBufferDecompressingStreamNoFinalizer(@NotNull ByteBuffer source) {
         super(source);
         if (source.isDirect()) {
             throw new IllegalArgumentException("Source buffer should be a non-direct buffer");
@@ -20,7 +21,7 @@ public class ZstdBufferDecompressingStreamNoFinalizer extends BaseZstdBufferDeco
     }
 
     @Override
-    public int read(ByteBuffer target) throws IOException {
+    public int read(@NotNull ByteBuffer target) throws IOException {
         if (target.isDirect()) {
             throw new IllegalArgumentException("Target buffer should be a non-direct buffer");
         }
@@ -43,7 +44,7 @@ public class ZstdBufferDecompressingStreamNoFinalizer extends BaseZstdBufferDeco
     }
 
     @Override
-    long decompressStream(long stream, ByteBuffer dst, int dstBufPos, int dstSize, ByteBuffer src, int srcBufPos, int srcSize) {
+    long decompressStream(long stream, @NotNull ByteBuffer dst, int dstBufPos, int dstSize, @NotNull ByteBuffer src, int srcBufPos, int srcSize) {
         if (!src.hasArray()) {
             throw new IllegalArgumentException("provided source ByteBuffer lacks array");
         }
@@ -69,7 +70,7 @@ public class ZstdBufferDecompressingStreamNoFinalizer extends BaseZstdBufferDeco
 
     private native long initDStreamNative(long stream);
 
-    private native long decompressStreamNative(long stream, byte[] dst, int dstOffset, int dstSize, byte[] src, int srcOffset, int srcSize);
+    private native long decompressStreamNative(long stream, byte @NotNull [] dst, int dstOffset, int dstSize, byte @NotNull [] src, int srcOffset, int srcSize);
 
     private static native long recommendedDOutSizeNative();
 }

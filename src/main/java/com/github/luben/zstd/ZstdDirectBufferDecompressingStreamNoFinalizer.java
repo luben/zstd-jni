@@ -2,6 +2,8 @@ package com.github.luben.zstd;
 
 import com.github.luben.zstd.util.Native;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
@@ -10,7 +12,7 @@ public class ZstdDirectBufferDecompressingStreamNoFinalizer extends BaseZstdBuff
         Native.load();
     }
 
-    public ZstdDirectBufferDecompressingStreamNoFinalizer(ByteBuffer source) {
+    public ZstdDirectBufferDecompressingStreamNoFinalizer(@NotNull ByteBuffer source) {
         super(source);
         if (!source.isDirect()) {
             throw new IllegalArgumentException("Source buffer should be a direct buffer");
@@ -21,7 +23,7 @@ public class ZstdDirectBufferDecompressingStreamNoFinalizer extends BaseZstdBuff
     }
 
     @Override
-    public int read(ByteBuffer target) throws IOException {
+    public int read(@NotNull ByteBuffer target) throws IOException {
         if (!target.isDirect()) {
             throw new IllegalArgumentException("Target buffer should be a direct buffer");
         }
@@ -44,7 +46,7 @@ public class ZstdDirectBufferDecompressingStreamNoFinalizer extends BaseZstdBuff
     }
 
     @Override
-    long decompressStream(long stream, ByteBuffer dst, int dstOffset, int dstSize, ByteBuffer src, int srcOffset, int srcSize) {
+    long decompressStream(long stream, @NotNull ByteBuffer dst, int dstOffset, int dstSize, @NotNull ByteBuffer src, int srcOffset, int srcSize) {
         return decompressStreamNative(stream, dst, dstOffset, dstSize, src, srcOffset, srcSize);
     }
 
@@ -58,7 +60,7 @@ public class ZstdDirectBufferDecompressingStreamNoFinalizer extends BaseZstdBuff
 
     private native long initDStreamNative(long stream);
 
-    private native long decompressStreamNative(long stream, ByteBuffer dst, int dstOffset, int dstSize, ByteBuffer src, int srcOffset, int srcSize);
+    private native long decompressStreamNative(long stream, @NotNull ByteBuffer dst, int dstOffset, int dstSize, @NotNull ByteBuffer src, int srcOffset, int srcSize);
 
     private static native long recommendedDOutSizeNative();
 }
