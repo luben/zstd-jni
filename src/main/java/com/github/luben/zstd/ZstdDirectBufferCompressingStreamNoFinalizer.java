@@ -16,7 +16,6 @@ public class ZstdDirectBufferCompressingStreamNoFinalizer implements Closeable, 
         Native.load();
     }
 
-    // TODO(nullability): nulled in close() but dereferenced without a null-check elsewhere (use-after-close risk)
     private @Nullable ByteBuffer target;
     private final long stream;
 
@@ -106,9 +105,13 @@ public class ZstdDirectBufferCompressingStreamNoFinalizer implements Closeable, 
             initialized = true;
         }
         while (source.hasRemaining()) {
-            // TODO(nullability): target is @Nullable (see field) and dereferenced here without a null-check
+            ByteBuffer target = this.target;
+            if (target == null) {
+                throw new IOException("Stream closed");
+            }
             if (!target.hasRemaining()) {
                 target = flushBuffer(target);
+                this.target = target;
                 if (!target.isDirect()) {
                     throw new IllegalArgumentException("Target buffer should be a direct buffer");
                 }
@@ -133,13 +136,17 @@ public class ZstdDirectBufferCompressingStreamNoFinalizer implements Closeable, 
         if (initialized) {
             long needed;
             do {
-                // TODO(nullability): target is @Nullable but flushStream's dst parameter is @NotNull; same use-after-close risk noted on the field
+                ByteBuffer target = this.target;
+                if (target == null) {
+                    throw new IOException("Stream closed");
+                }
                 needed = flushStream(stream, target, target.position(), target.remaining());
                 if (Zstd.isError(needed)) {
                     throw new ZstdIOException(needed);
                 }
                 target.position(target.position() + produced);
                 target = flushBuffer(target);
+                this.target = target;
                 if (!target.isDirect()) {
                     throw new IllegalArgumentException("Target buffer should be a direct buffer");
                 }
@@ -159,13 +166,17 @@ public class ZstdDirectBufferCompressingStreamNoFinalizer implements Closeable, 
                 if (initialized) {
                     long needed;
                     do {
-                        // TODO(nullability): target is @Nullable but endStream's dst parameter is @NotNull; same use-after-close risk noted on the field
+                        ByteBuffer target = this.target;
+                        if (target == null) {
+                            throw new IOException("Stream closed");
+                        }
                         needed = endStream(stream, target, target.position(), target.remaining());
                         if (Zstd.isError(needed)) {
                             throw new ZstdIOException(needed);
                         }
                         target.position(target.position() + produced);
                         target = flushBuffer(target);
+                        this.target = target;
                         if (!target.isDirect()) {
                             throw new IllegalArgumentException("Target buffer should be a direct buffer");
                         }

@@ -23,8 +23,8 @@ public enum Native {
         "try building from source the jar or providing " + libname + " in your system.";
 
     private static @NotNull String osName() {
-        // TODO(nullability): System.getProperty("os.name") is @Nullable if the property is unset, but toLowerCase() is called unchecked
-        String os = System.getProperty("os.name").toLowerCase().replace(' ', '_');
+        String osProperty = System.getProperty("os.name");
+        String os = (osProperty == null ? "" : osProperty).toLowerCase().replace(' ', '_');
         if (os.startsWith("win")){
             return "win";
         } else if (os.startsWith("mac")) {
@@ -47,8 +47,7 @@ public enum Native {
     private static @NotNull String resourceName() {
         String os = osName();
         String arch = System.getProperty("os.arch");
-        // TODO(nullability): System.getProperty("os.arch") is @Nullable if the property is unset, but equals() is called unchecked
-        if (os.equals("darwin") && arch.equals("amd64")) {
+        if (os.equals("darwin") && "amd64".equals(arch)) {
             arch = "x86_64";
         }
         return "/" + os + "/" + arch + "/" + libname + "." + libExtension();

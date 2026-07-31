@@ -1800,8 +1800,8 @@ public class Zstd {
 
     static @NotNull ByteBuffer getArrayBackedBuffer(@NotNull BufferPool bufferPool, int size) throws ZstdIOException {
         ByteBuffer buffer = bufferPool.get(size);
-        // TODO(nullability): BufferPool.get() has no @NotNull/@Nullable annotation; known impls (NoPool, RecyclingBufferPool)
-        // never return null so IntelliJ flags this as dead code, but a third-party BufferPool implementation still could
+        // defensive: BufferPool is a public interface, a third-party implementation could violate the @NotNull contract
+        //noinspection ConstantValue
         if (buffer == null) {
             throw new ZstdIOException(Zstd.errMemoryAllocation(), "Cannot get ByteBuffer of size " + size + " from the BufferPool");
         }
