@@ -1,10 +1,13 @@
 package com.github.luben.zstd;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.io.Closeable;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 abstract class AutoCloseBase implements Closeable {
 
+    @NotNull
     private static final AtomicIntegerFieldUpdater<AutoCloseBase> SHARED_LOCK_UPDATER =
             AtomicIntegerFieldUpdater.newUpdater(AutoCloseBase.class, "sharedLock");
     private static final int SHARED_LOCK_CLOSED = -1;

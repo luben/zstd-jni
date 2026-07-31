@@ -1,7 +1,11 @@
 package com.github.luben.zstd;
 
-import java.nio.ByteBuffer;
 import com.github.luben.zstd.util.Native;
+
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import java.nio.ByteBuffer;
 
 public class ZstdDictCompress extends SharedDictBase {
 
@@ -15,16 +19,16 @@ public class ZstdDictCompress extends SharedDictBase {
 
     private int level = Zstd.defaultCompressionLevel();
 
-    private native void init(byte[] dict, int dict_offset, int dict_size, int level);
+    private native void init(byte @NotNull [] dict, int dict_offset, int dict_size, int level);
 
-    private native void initDirect(ByteBuffer dict, int dict_offset, int dict_size, int level, int byReference);
+    private native void initDirect(@NotNull ByteBuffer dict, int dict_offset, int dict_size, int level, int byReference);
 
     private native void free();
 
     /**
      * Get the byte buffer that backs this dict, if any, or null if not backed by a byte buffer.
      */
-    public ByteBuffer getByReferenceBuffer() {
+    public @Nullable ByteBuffer getByReferenceBuffer() {
 	return sharedDict;
     }
 
@@ -34,7 +38,7 @@ public class ZstdDictCompress extends SharedDictBase {
      * @param dict  buffer containing dictionary to load/parse with exact length
      * @param level compression level
      */
-    public ZstdDictCompress(byte[] dict, int level) {
+    public ZstdDictCompress(byte @NotNull [] dict, int level) {
         this(dict, 0, dict.length, level);
     }
 
@@ -46,7 +50,7 @@ public class ZstdDictCompress extends SharedDictBase {
      * @param length number of bytes to use from the buffer
      * @param level  compression level
      */
-    public ZstdDictCompress(byte[] dict, int offset, int length, int level) {
+    public ZstdDictCompress(byte @NotNull [] dict, int offset, int length, int level) {
         this.level = level;
         if (dict.length - offset < 0) {
             throw new IllegalArgumentException("Dictionary buffer is too short");
@@ -68,7 +72,7 @@ public class ZstdDictCompress extends SharedDictBase {
      * @param dict   Direct ByteBuffer containing dictionary using position and limit to define range in buffer.
      * @param level  compression level
      */
-    public ZstdDictCompress(ByteBuffer dict, int level) {
+    public ZstdDictCompress(@NotNull ByteBuffer dict, int level) {
 	this(dict, level, false);
     }
 
@@ -80,7 +84,7 @@ public class ZstdDictCompress extends SharedDictBase {
      * @param level  compression level
      * @param byReference tell the native part to use the byte buffer directly and not copy the data when true.
      */
-    public ZstdDictCompress(ByteBuffer dict, int level, boolean byReference) {
+    public ZstdDictCompress(@NotNull ByteBuffer dict, int level, boolean byReference) {
 	this.level = level;
 	int length = dict.limit() - dict.position();
         if (!dict.isDirect()) {

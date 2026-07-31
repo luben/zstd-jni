@@ -25,6 +25,7 @@ Test / logBuffered := false
 Test / parallelExecution := false
 
 libraryDependencies ++= Seq(
+  "org.jetbrains" % "annotations" % "24.1.0" % "provided",
   "org.scalatest"  %% "scalatest"  % "3.2.17" % "test",
   "org.scalatestplus" %% "scalacheck-1-17" % "3.2.17.0" % "test"
 )

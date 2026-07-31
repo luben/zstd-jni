@@ -2,13 +2,15 @@ package com.github.luben.zstd;
 
 import com.github.luben.zstd.util.Native;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
 public class Zstd {
-    private static final String maxDecompressSizeOverride = "ZstdMaxDecompressSize";
+    private static final @NotNull String maxDecompressSizeOverride = "ZstdMaxDecompressSize";
     /**
      * Max memory size automatically allocated on decompression when no explicit content size is supplied.
      *
@@ -72,7 +74,7 @@ public class Zstd {
      * @return  the number of bytes written into buffer 'dst' or an error code if
      *          it fails (which can be tested using ZSTD_isError())
      */
-    public static long compress(byte[] dst, byte[] src, int level, boolean checksumFlag) {
+    public static long compress(byte @NotNull [] dst, byte @NotNull [] src, int level, boolean checksumFlag) {
         ZstdCompressCtx ctx = new ZstdCompressCtx();
         try {
             ctx.setLevel(level);
@@ -96,7 +98,7 @@ public class Zstd {
      * @return  the number of bytes written into buffer 'dst' or an error code if
      *          it fails (which can be tested using ZSTD_isError())
      */
-    public static long compress(byte[] dst, byte[] src, int level) {
+    public static long compress(byte @NotNull [] dst, byte @NotNull [] src, int level) {
         return compress(dst, src, level, false);
     }
 
@@ -118,7 +120,7 @@ public class Zstd {
      * @return  the number of bytes written into buffer 'dst' or an error code if
      *          it fails (which can be tested using ZSTD_isError())
      */
-    public static long compressByteArray(byte[] dst, int dstOffset, int dstSize, byte[] src, int srcOffset, int srcSize, int level, boolean checksumFlag) {
+    public static long compressByteArray(byte @NotNull [] dst, int dstOffset, int dstSize, byte @NotNull [] src, int srcOffset, int srcSize, int level, boolean checksumFlag) {
         ZstdCompressCtx ctx = new ZstdCompressCtx();
         try {
             ctx.setLevel(level);
@@ -146,7 +148,7 @@ public class Zstd {
      * @return  the number of bytes written into buffer 'dst' or an error code if
      *          it fails (which can be tested using ZSTD_isError())
      */
-    public static long compressByteArray(byte[] dst, int dstOffset, int dstSize, byte[] src, int srcOffset, int srcSize, int level) {
+    public static long compressByteArray(byte @NotNull [] dst, int dstOffset, int dstSize, byte @NotNull [] src, int srcOffset, int srcSize, int level) {
         return compressByteArray(dst, dstOffset, dstSize, src, srcOffset, srcSize, level, false);
     }
 
@@ -168,7 +170,7 @@ public class Zstd {
      * @return  the number of bytes written into buffer 'dst' or an error code if
      *          it fails (which can be tested using ZSTD_isError())
      */
-    public static long compressDirectByteBuffer(ByteBuffer dst, int dstOffset, int dstSize, ByteBuffer src, int srcOffset, int srcSize, int level, boolean checksumFlag) {
+    public static long compressDirectByteBuffer(@NotNull ByteBuffer dst, int dstOffset, int dstSize, @NotNull ByteBuffer src, int srcOffset, int srcSize, int level, boolean checksumFlag) {
         ZstdCompressCtx ctx = new ZstdCompressCtx();
         try {
             ctx.setLevel(level);
@@ -196,7 +198,7 @@ public class Zstd {
      * @return  the number of bytes written into buffer 'dst' or an error code if
      *          it fails (which can be tested using ZSTD_isError())
      */
-    public static long compressDirectByteBuffer(ByteBuffer dst, int dstOffset, int dstSize, ByteBuffer src, int srcOffset, int srcSize, int level) {
+    public static long compressDirectByteBuffer(@NotNull ByteBuffer dst, int dstOffset, int dstSize, @NotNull ByteBuffer src, int srcOffset, int srcSize, int level) {
         return compressDirectByteBuffer(dst, dstOffset, dstSize, src, srcOffset, srcSize, level, false);
     }
 
@@ -255,7 +257,7 @@ public class Zstd {
      * @return  the number of bytes written into buffer 'dst' or an error code if
      *          it fails (which can be tested using ZSTD_isError())
      */
-    public static long compressUsingDict (byte[] dst, int dstOffset, byte[] src, int srcOffset, int length, byte[] dict, int level) {
+    public static long compressUsingDict (byte @NotNull [] dst, int dstOffset, byte @NotNull [] src, int srcOffset, int length, byte @NotNull [] dict, int level) {
         ZstdCompressCtx ctx = new ZstdCompressCtx();
         try {
             ctx.setLevel(level);
@@ -282,7 +284,7 @@ public class Zstd {
      * @return  the number of bytes written into buffer 'dst' or an error code if
      *          it fails (which can be tested using ZSTD_isError())
      */
-    public static long compressUsingDict (byte[] dst, int dstOffset, byte[] src, int srcOffset, byte[] dict, int level) {
+    public static long compressUsingDict (byte @NotNull [] dst, int dstOffset, byte @NotNull [] src, int srcOffset, byte @NotNull [] dict, int level) {
         ZstdCompressCtx ctx = new ZstdCompressCtx();
         try {
             ctx.setLevel(level);
@@ -311,7 +313,7 @@ public class Zstd {
      * @return  the number of bytes written into buffer 'dst' or an error code if
      *          it fails (which can be tested using ZSTD_isError())
      */
-    public static long compressDirectByteBufferUsingDict(ByteBuffer dst, int dstOffset, int dstSize, ByteBuffer src, int srcOffset, int srcSize, byte[] dict, int level) {
+    public static long compressDirectByteBufferUsingDict(@NotNull ByteBuffer dst, int dstOffset, int dstSize, @NotNull ByteBuffer src, int srcOffset, int srcSize, byte @NotNull [] dict, int level) {
         ZstdCompressCtx ctx = new ZstdCompressCtx();
         try {
             ctx.setLevel(level);
@@ -338,7 +340,7 @@ public class Zstd {
      * @return  the number of bytes written into buffer 'dst' or an error code if
      *          it fails (which can be tested using ZSTD_isError())
      */
-    public static long compressFastDict(byte[] dst, int dstOffset, byte[] src, int srcOffset, int length, ZstdDictCompress dict) {
+    public static long compressFastDict(byte @NotNull [] dst, int dstOffset, byte @NotNull [] src, int srcOffset, int length, @NotNull ZstdDictCompress dict) {
         ZstdCompressCtx ctx = new ZstdCompressCtx();
         try {
             ctx.loadDict(dict);
@@ -364,7 +366,7 @@ public class Zstd {
      * @return  the number of bytes written into buffer 'dst' or an error code if
      *          it fails (which can be tested using ZSTD_isError())
      */
-    public static long compressFastDict(byte[] dst, int dstOffset, byte[] src, int srcOffset, ZstdDictCompress dict) {
+    public static long compressFastDict(byte @NotNull [] dst, int dstOffset, byte @NotNull [] src, int srcOffset, @NotNull ZstdDictCompress dict) {
         ZstdCompressCtx ctx = new ZstdCompressCtx();
         try {
             ctx.loadDict(dict);
@@ -375,7 +377,7 @@ public class Zstd {
         }
     }
 
-    public static long compress(byte[] dst, byte[] src, ZstdDictCompress dict) {
+    public static long compress(byte @NotNull [] dst, byte @NotNull [] src, @NotNull ZstdDictCompress dict) {
         ZstdCompressCtx ctx = new ZstdCompressCtx();
         try {
             ctx.loadDict(dict);
@@ -403,7 +405,7 @@ public class Zstd {
      * @return  the number of bytes written into buffer 'dst' or an error code if
      *          it fails (which can be tested using ZSTD_isError())
      */
-    public static long compressDirectByteBufferFastDict(ByteBuffer dst, int dstOffset, int dstSize, ByteBuffer src, int srcOffset, int srcSize, ZstdDictCompress dict) {
+    public static long compressDirectByteBufferFastDict(@NotNull ByteBuffer dst, int dstOffset, int dstSize, @NotNull ByteBuffer src, int srcOffset, int srcSize, @NotNull ZstdDictCompress dict) {
         ZstdCompressCtx ctx = new ZstdCompressCtx();
         try {
             ctx.loadDict(dict);
@@ -425,7 +427,7 @@ public class Zstd {
      *          or an errorCode if it fails (which can be tested using ZSTD_isError())
      *
      */
-    public static long decompress(byte[] dst, byte[] src) {
+    public static long decompress(byte @NotNull [] dst, byte @NotNull [] src) {
         ZstdDecompressCtx ctx = new ZstdDecompressCtx();
         try {
             return (long) ctx.decompress(dst, src);
@@ -434,7 +436,7 @@ public class Zstd {
         }
     }
 
-    public static int decompress(byte[] dst, ByteBuffer srcBuf) {
+    public static int decompress(byte @NotNull [] dst, @NotNull ByteBuffer srcBuf) {
         ZstdDecompressCtx ctx = new ZstdDecompressCtx();
         try {
             return ctx.decompress(dst, srcBuf);
@@ -458,7 +460,7 @@ public class Zstd {
      *          or an errorCode if it fails (which can be tested using ZSTD_isError())
      *
      */
-    public static long decompressByteArray(byte[] dst, int dstOffset, int dstSize, byte[] src, int srcOffset, int srcSize) {
+    public static long decompressByteArray(byte @NotNull [] dst, int dstOffset, int dstSize, byte @NotNull [] src, int srcOffset, int srcSize) {
         ZstdDecompressCtx ctx = new ZstdDecompressCtx();
         try {
             return (long) ctx.decompressByteArray(dst, dstOffset, dstSize, src, srcOffset, srcSize);
@@ -483,7 +485,7 @@ public class Zstd {
      *          or an errorCode if it fails (which can be tested using ZSTD_isError())
      *
      */
-    public static long decompressDirectByteBuffer(ByteBuffer dst, int dstOffset, int dstSize, ByteBuffer src, int srcOffset, int srcSize) {
+    public static long decompressDirectByteBuffer(@NotNull ByteBuffer dst, int dstOffset, int dstSize, @NotNull ByteBuffer src, int srcOffset, int srcSize) {
         ZstdDecompressCtx ctx = new ZstdDecompressCtx();
         try {
             return (long) ctx.decompressDirectByteBuffer(dst, dstOffset, dstSize, src, srcOffset, srcSize);
@@ -523,7 +525,7 @@ public class Zstd {
      *          or an errorCode if it fails (which can be tested using ZSTD_isError())
      *
      */
-    public static long decompressUsingDict(byte[] dst, int dstOffset, byte[] src, int srcOffset, int length, byte[] dict) {
+    public static long decompressUsingDict(byte @NotNull [] dst, int dstOffset, byte @NotNull [] src, int srcOffset, int length, byte @NotNull [] dict) {
         ZstdDecompressCtx ctx = new ZstdDecompressCtx();
         try {
             ctx.loadDict(dict);
@@ -549,7 +551,7 @@ public class Zstd {
      *          or an errorCode if it fails (which can be tested using ZSTD_isError())
      *
      */
-    public static long decompressDirectByteBufferUsingDict(ByteBuffer dst, int dstOffset, int dstSize, ByteBuffer src, int srcOffset, int srcSize, byte[] dict) {
+    public static long decompressDirectByteBufferUsingDict(@NotNull ByteBuffer dst, int dstOffset, int dstSize, @NotNull ByteBuffer src, int srcOffset, int srcSize, byte @NotNull [] dict) {
         ZstdDecompressCtx ctx = new ZstdDecompressCtx();
         try {
             ctx.loadDict(dict);
@@ -574,7 +576,7 @@ public class Zstd {
      *          or an errorCode if it fails (which can be tested using ZSTD_isError())
      *
      */
-    public static long decompressFastDict(byte[] dst, int dstOffset, byte[] src, int srcOffset, int length, ZstdDictDecompress dict) {
+    public static long decompressFastDict(byte @NotNull [] dst, int dstOffset, byte @NotNull [] src, int srcOffset, int length, @NotNull ZstdDictDecompress dict) {
         ZstdDecompressCtx ctx = new ZstdDecompressCtx();
         try {
             ctx.loadDict(dict);
@@ -600,7 +602,7 @@ public class Zstd {
      *          or an errorCode if it fails (which can be tested using ZSTD_isError())
      *
      */
-    public static long decompressDirectByteBufferFastDict(ByteBuffer dst, int dstOffset, int dstSize, ByteBuffer src, int srcOffset, int srcSize, ZstdDictDecompress dict) {
+    public static long decompressDirectByteBufferFastDict(@NotNull ByteBuffer dst, int dstOffset, int dstSize, @NotNull ByteBuffer src, int srcOffset, int srcSize, @NotNull ZstdDictDecompress dict) {
         ZstdDecompressCtx ctx = new ZstdDecompressCtx();
         try {
             ctx.loadDict(dict);
@@ -611,10 +613,10 @@ public class Zstd {
     }
 
     /* Advance API */
-    public static native int loadDictDecompress(long stream, byte[] dict, int dict_size);
-    public static native int loadFastDictDecompress(long stream, ZstdDictDecompress dict);
-    public static native int loadDictCompress(long stream, byte[] dict, int dict_size);
-    public static native int loadFastDictCompress(long stream, ZstdDictCompress dict);
+    public static native int loadDictDecompress(long stream, byte @NotNull [] dict, int dict_size);
+    public static native int loadFastDictDecompress(long stream, @NotNull ZstdDictDecompress dict);
+    public static native int loadDictCompress(long stream, byte @NotNull [] dict, int dict_size);
+    public static native int loadFastDictCompress(long stream, @NotNull ZstdDictCompress dict);
     public static native void registerSequenceProducer(long stream, long seqProdState, long seqProdFunction);
     static native long getBuiltinSequenceProducer(); // Used in tests
     static native void generateSequences(long stream, long outSeqs, long outSeqsSize, long src, long srcSize);
@@ -651,7 +653,7 @@ public class Zstd {
      * @return the number of bytes of the compressed frame
      * @throws ZstdException if there is an error decoding the frame
      */
-    public static long findFrameCompressedSize(byte[] src, int srcPosition, int srcSize) {
+    public static long findFrameCompressedSize(byte @NotNull [] src, int srcPosition, int srcSize) {
         if (srcPosition < 0 || srcPosition >= src.length) {
             throw new ArrayIndexOutOfBoundsException(srcPosition);
         }
@@ -667,7 +669,7 @@ public class Zstd {
         return size;
     }
 
-    private static native long findFrameCompressedSize0(byte[] src, int srcPosition, int srcSize);
+    private static native long findFrameCompressedSize0(byte @NotNull [] src, int srcPosition, int srcSize);
 
     /**
      * Return the compressed size of a frame within a buffer.
@@ -677,7 +679,7 @@ public class Zstd {
      * @return the number of bytes of the compressed frame
      *         negative if there is an error decoding the frame header
      */
-    public static long findFrameCompressedSize(byte[] src, int srcPosition) {
+    public static long findFrameCompressedSize(byte @NotNull [] src, int srcPosition) {
         return findFrameCompressedSize(src, srcPosition, src.length - srcPosition);
     }
 
@@ -688,7 +690,7 @@ public class Zstd {
      * @return the number of bytes of the compressed frame
      *         negative if there is an error decoding the frame header
      */
-    public static long findFrameCompressedSize(byte[] src) {
+    public static long findFrameCompressedSize(byte @NotNull [] src) {
         return findFrameCompressedSize(src, 0);
     }
 
@@ -701,7 +703,7 @@ public class Zstd {
      * @return the number of bytes of the compressed frame
      *         negative if there is an error decoding the frame header
      */
-    public static long findFrameCompressedSize(ByteBuffer srcBuf) {
+    public static long findFrameCompressedSize(@NotNull ByteBuffer srcBuf) {
         return findDirectByteBufferFrameCompressedSize(srcBuf, srcBuf.position(), srcBuf.limit() - srcBuf.position());
     }
 
@@ -714,7 +716,7 @@ public class Zstd {
      * @return the number of bytes of the compressed frame
      *         negative if there is an error decoding the frame header
      */
-    public static native long findDirectByteBufferFrameCompressedSize(ByteBuffer src, int srcPosition, int srcSize);
+    public static native long findDirectByteBufferFrameCompressedSize(@NotNull ByteBuffer src, int srcPosition, int srcSize);
 
     /**
      * Return the original size of a compressed buffer (if known)
@@ -727,7 +729,7 @@ public class Zstd {
      *         0 if the original size is not known,
      *         negative if there is an error decoding the frame header
      */
-    public static long getFrameContentSize(byte[] src, int srcPosition, int srcSize, boolean magicless) {
+    public static long getFrameContentSize(byte @NotNull [] src, int srcPosition, int srcSize, boolean magicless) {
         if (srcPosition >= src.length) {
             throw new ArrayIndexOutOfBoundsException(srcPosition);
         }
@@ -737,7 +739,7 @@ public class Zstd {
         return getFrameContentSize0(src, srcPosition, srcSize, magicless);
     }
 
-    private static native long getFrameContentSize0(byte[] src, int srcPosition, int srcSize, boolean magicless);
+    private static native long getFrameContentSize0(byte @NotNull [] src, int srcPosition, int srcSize, boolean magicless);
 
     /**
      * Return the original size of a compressed buffer (if known)
@@ -752,7 +754,7 @@ public class Zstd {
      * Use `getFrameContentSize` to also return error codes from zstd
      */
     @Deprecated
-    public static long decompressedSize(byte[] src, int srcPosition, int srcSize, boolean magicless) {
+    public static long decompressedSize(byte @NotNull [] src, int srcPosition, int srcSize, boolean magicless) {
         if (srcPosition >= src.length) {
             throw new ArrayIndexOutOfBoundsException(srcPosition);
         }
@@ -762,7 +764,7 @@ public class Zstd {
         return decompressedSize0(src, srcPosition, srcSize, magicless);
     }
 
-    private static native long decompressedSize0(byte[] src, int srcPosition, int srcSize, boolean magicless);
+    private static native long decompressedSize0(byte @NotNull [] src, int srcPosition, int srcSize, boolean magicless);
 
     /**
      * Return the original size of a compressed buffer (if known)
@@ -774,7 +776,7 @@ public class Zstd {
      *         0 if the original size is not known,
      *         negative if there is an error decoding the frame header
      */
-    public static long getFrameContentSize(byte[] src, int srcPosition, int srcSize) {
+    public static long getFrameContentSize(byte @NotNull [] src, int srcPosition, int srcSize) {
         return getFrameContentSize(src, srcPosition, srcSize, false);
     }
 
@@ -790,7 +792,7 @@ public class Zstd {
      * Use `getFrameContentSize` to also return error codes from zstd
      */
     @Deprecated
-    public static long decompressedSize(byte[] src, int srcPosition, int srcSize) {
+    public static long decompressedSize(byte @NotNull [] src, int srcPosition, int srcSize) {
         return decompressedSize(src, srcPosition, srcSize, false);
     }
 
@@ -803,7 +805,7 @@ public class Zstd {
      *         0 if the original size is not known,
      *         negative if there is an error decoding the frame header
      */
-    public static long getFrameContentSize(byte[] src, int srcPosition) {
+    public static long getFrameContentSize(byte @NotNull [] src, int srcPosition) {
         return getFrameContentSize(src, srcPosition, src.length - srcPosition);
     }
 
@@ -818,7 +820,7 @@ public class Zstd {
      * Use `getFrameContentSize` to also return error codes from zstd
      */
     @Deprecated
-    public static long decompressedSize(byte[] src, int srcPosition) {
+    public static long decompressedSize(byte @NotNull [] src, int srcPosition) {
         return decompressedSize(src, srcPosition, src.length - srcPosition);
     }
 
@@ -830,7 +832,7 @@ public class Zstd {
      *         0 if the original size is not known,
      *         negative if there is an error decoding the frame header
      */
-    public static long getFrameContentSize(byte[] src) {
+    public static long getFrameContentSize(byte @NotNull [] src) {
         return getFrameContentSize(src, 0);
     }
 
@@ -844,7 +846,7 @@ public class Zstd {
      * Use `getFrameContentSize` to also return error codes from zstd
      */
     @Deprecated
-    public static long decompressedSize(byte[] src) {
+    public static long decompressedSize(byte @NotNull [] src) {
         return decompressedSize(src, 0);
     }
 
@@ -861,7 +863,7 @@ public class Zstd {
      * Use `getDirectByteBufferFrameContentSize` to also return error codes from zstd
      */
     @Deprecated
-    public static native long decompressedDirectByteBufferSize(ByteBuffer src, int srcPosition, int srcSize, boolean magicless);
+    public static native long decompressedDirectByteBufferSize(@NotNull ByteBuffer src, int srcPosition, int srcSize, boolean magicless);
 
     /**
      * Return the original size of a compressed buffer (if known)
@@ -874,7 +876,7 @@ public class Zstd {
      *         0 if the original size is not known
      *         negative if there is an error decoding the frame header
      */
-    public static native long getDirectByteBufferFrameContentSize(ByteBuffer src, int srcPosition, int srcSize, boolean magicless);
+    public static native long getDirectByteBufferFrameContentSize(@NotNull ByteBuffer src, int srcPosition, int srcSize, boolean magicless);
 
     /**
      * Return the original size of a compressed buffer (if known)
@@ -888,7 +890,7 @@ public class Zstd {
      * Use `getDirectByteBufferFrameContentSize` that return also the errors
      */
     @Deprecated
-    public static long decompressedDirectByteBufferSize(ByteBuffer src, int srcPosition, int srcSize) {
+    public static long decompressedDirectByteBufferSize(@NotNull ByteBuffer src, int srcPosition, int srcSize) {
         return decompressedDirectByteBufferSize(src, srcPosition, srcSize, false);
     }
 
@@ -902,7 +904,7 @@ public class Zstd {
      *         0 if the original size is not known
      *         negative if there is an error decoding the frame header
      */
-    public static long getDirectByteBufferFrameContentSize(ByteBuffer src, int srcPosition, int srcSize) {
+    public static long getDirectByteBufferFrameContentSize(@NotNull ByteBuffer src, int srcPosition, int srcSize) {
         return getDirectByteBufferFrameContentSize(src, srcPosition, srcSize, false);
     }
 
@@ -922,7 +924,7 @@ public class Zstd {
      */
 
     public static native boolean isError(long code);
-    public static native String  getErrorName(long code);
+    public static native @NotNull String  getErrorName(long code);
     public static native long    getErrorCode(long code);
 
 
@@ -960,7 +962,7 @@ public class Zstd {
      * @return the number of bytes into buffer 'dictBuffer' or an error code if
      *          it fails (which can be tested using ZSTD_isError())
      */
-    public static long trainFromBuffer(byte[][] samples, byte[] dictBuffer, boolean legacy) {
+    public static long trainFromBuffer(byte @NotNull [][] samples, byte @NotNull [] dictBuffer, boolean legacy) {
         return trainFromBuffer(samples, dictBuffer, legacy, defaultCompressionLevel());
     }
 
@@ -974,7 +976,7 @@ public class Zstd {
      * @return the number of bytes into buffer 'dictBuffer' or an error code if
      *          it fails (which can be tested using ZSTD_isError())
      */
-    public static long trainFromBuffer(byte[][] samples, byte[] dictBuffer, boolean legacy, int compressionLevel) {
+    public static long trainFromBuffer(byte @NotNull [][] samples, byte @NotNull [] dictBuffer, boolean legacy, int compressionLevel) {
         Objects.requireNonNull(samples, "samples");
         Objects.requireNonNull(dictBuffer, "dictBuffer");
         for (byte[] sample : samples) {
@@ -985,7 +987,7 @@ public class Zstd {
         }
         return trainFromBuffer0(samples, dictBuffer, legacy, compressionLevel);
     }
-    private static native long trainFromBuffer0(byte[][] samples, byte[] dictBuffer, boolean legacy, int compressionLevel);
+    private static native long trainFromBuffer0(byte @NotNull [][] samples, byte @NotNull [] dictBuffer, boolean legacy, int compressionLevel);
 
     /**
      * Creates a new dictionary to tune a kind of samples
@@ -997,7 +999,7 @@ public class Zstd {
      * @return the number of bytes into buffer 'dictBuffer' or an error code if
      *          it fails (which can be tested using ZSTD_isError())
      */
-    public static long trainFromBufferDirect(ByteBuffer samples, int[] sampleSizes, ByteBuffer dictBuffer, boolean legacy) {
+    public static long trainFromBufferDirect(@NotNull ByteBuffer samples, int @NotNull [] sampleSizes, @NotNull ByteBuffer dictBuffer, boolean legacy) {
 	return trainFromBufferDirect(samples, sampleSizes, dictBuffer, legacy, defaultCompressionLevel());
     }
 
@@ -1012,7 +1014,7 @@ public class Zstd {
      * @return the number of bytes into buffer 'dictBuffer' or an error code if
      *          it fails (which can be tested using ZSTD_isError())
      */
-    public static long trainFromBufferDirect(ByteBuffer samples, int[] sampleSizes, ByteBuffer dictBuffer, boolean legacy, int compressionLevel) {
+    public static long trainFromBufferDirect(@NotNull ByteBuffer samples, int @NotNull [] sampleSizes, @NotNull ByteBuffer dictBuffer, boolean legacy, int compressionLevel) {
         Objects.requireNonNull(samples, "samples");
         Objects.requireNonNull(sampleSizes, "sampleSizes");
         Objects.requireNonNull(dictBuffer, "dictBuffer");
@@ -1023,7 +1025,7 @@ public class Zstd {
     }
 
 
-    private static native long trainFromBufferDirect0(ByteBuffer samples, int[] sampleSizes, ByteBuffer dictBuffer, boolean legacy, int compressionLevel);
+    private static native long trainFromBufferDirect0(@NotNull ByteBuffer samples, int @NotNull [] sampleSizes, @NotNull ByteBuffer dictBuffer, boolean legacy, int compressionLevel);
 
     /**
      * Get DictId from a compressed frame
@@ -1031,7 +1033,7 @@ public class Zstd {
      * @param src compressed frame
      * @return DictId or 0 if not available
      */
-    public static native long getDictIdFromFrame(byte[] src);
+    public static native long getDictIdFromFrame(byte @NotNull [] src);
 
     /**
      * Get DictId from a compressed ByteBuffer frame
@@ -1039,7 +1041,7 @@ public class Zstd {
      * @param src compressed frame
      * @return DictId or 0 if not available
      */
-    public static native long getDictIdFromFrameBuffer(ByteBuffer src);
+    public static native long getDictIdFromFrameBuffer(@NotNull ByteBuffer src);
 
     /**
      * Get DictId of a dictionary
@@ -1047,9 +1049,9 @@ public class Zstd {
      * @param dict dictionary
      * @return DictId or 0 if not available
      */
-    public static native long getDictIdFromDict(byte[] dict);
+    public static native long getDictIdFromDict(byte @NotNull [] dict);
 
-    private static native long getDictIdFromDictDirect(ByteBuffer dict, int offset, int length);
+    private static native long getDictIdFromDictDirect(@NotNull ByteBuffer dict, int offset, int length);
 
     /**
      * Get DictId of a dictionary
@@ -1057,7 +1059,7 @@ public class Zstd {
      * @param dict dictionary as Direct ByteBuffer
      * @return DictId or 0 if not available
      */
-    public static long getDictIdFromDictDirect(ByteBuffer dict) {
+    public static long getDictIdFromDictDirect(@NotNull ByteBuffer dict) {
 	int length = dict.limit() - dict.position();
         if (!dict.isDirect()) {
             throw new IllegalArgumentException("dict must be a direct buffer");
@@ -1079,7 +1081,7 @@ public class Zstd {
      * @return the number of bytes into buffer 'dictBuffer' or an error code if
      *          it fails (which can be tested using ZSTD_isError())
      */
-    public static long trainFromBuffer(byte[][] samples, byte[] dictBuffer) {
+    public static long trainFromBuffer(byte @NotNull [][] samples, byte @NotNull [] dictBuffer) {
         return trainFromBuffer(samples, dictBuffer, false);
     }
 
@@ -1092,7 +1094,7 @@ public class Zstd {
      * @return the number of bytes into buffer 'dictBuffer' or an error code if
      *          it fails (which can be tested using ZSTD_isError())
      */
-    public static long trainFromBufferDirect(ByteBuffer samples, int[] sampleSizes, ByteBuffer dictBuffer) {
+    public static long trainFromBufferDirect(@NotNull ByteBuffer samples, int @NotNull [] sampleSizes, @NotNull ByteBuffer dictBuffer) {
         return trainFromBufferDirect(samples, sampleSizes, dictBuffer, false);
     }
 
@@ -1124,7 +1126,7 @@ public class Zstd {
      * @param src the source buffer
      * @return byte array with the compressed data
      */
-    public static byte[] compress(byte[] src) {
+    public static byte @NotNull [] compress(byte @NotNull [] src) {
         return compress(src, defaultCompressionLevel());
     }
 
@@ -1135,7 +1137,7 @@ public class Zstd {
      * @param level compression level
      * @return byte array with the compressed data
      */
-    public static byte[] compress(byte[] src, int level) {
+    public static byte @NotNull [] compress(byte @NotNull [] src, int level) {
         ZstdCompressCtx ctx = new ZstdCompressCtx();
         try {
             ctx.setLevel(level);
@@ -1163,7 +1165,7 @@ public class Zstd {
      * @return the size of the compressed data
      */
 
-    public static int compress(ByteBuffer dstBuf, ByteBuffer srcBuf) {
+    public static int compress(@NotNull ByteBuffer dstBuf, @NotNull ByteBuffer srcBuf) {
         return compress(dstBuf, srcBuf, defaultCompressionLevel());
     }
 
@@ -1185,7 +1187,7 @@ public class Zstd {
      * @param level compression level
      * @return the size of the compressed data
      */
-    public static int compress(ByteBuffer dstBuf, ByteBuffer srcBuf, int level, boolean checksumFlag) {
+    public static int compress(@NotNull ByteBuffer dstBuf, @NotNull ByteBuffer srcBuf, int level, boolean checksumFlag) {
         ZstdCompressCtx ctx = new ZstdCompressCtx();
         try {
             ctx.setLevel(level);
@@ -1222,7 +1224,7 @@ public class Zstd {
         */
     }
 
-    public static int compress(ByteBuffer dstBuf, ByteBuffer srcBuf, int level) {
+    public static int compress(@NotNull ByteBuffer dstBuf, @NotNull ByteBuffer srcBuf, int level) {
         return compress(dstBuf, srcBuf, level, false);
     }
 
@@ -1237,7 +1239,7 @@ public class Zstd {
      * @param level compression level
      * @return A newly allocated direct ByteBuffer containing the compressed data.
      */
-    public static ByteBuffer compress(ByteBuffer srcBuf, int level) {
+    public static @NotNull ByteBuffer compress(@NotNull ByteBuffer srcBuf, int level) {
         ZstdCompressCtx ctx = new ZstdCompressCtx();
         try {
             ctx.setLevel(level);
@@ -1254,7 +1256,7 @@ public class Zstd {
      * @param dict dictionary to use
      * @return byte array with the compressed data
      */
-    public static byte[] compress(byte[] src, ZstdDictCompress dict) {
+    public static byte @NotNull [] compress(byte @NotNull [] src, @NotNull ZstdDictCompress dict) {
         ZstdCompressCtx ctx = new ZstdCompressCtx();
         try {
             ctx.loadDict(dict);
@@ -1272,7 +1274,7 @@ public class Zstd {
      * Use compress(dst, src, dict, level) instead
      */
     @Deprecated
-    public static long compressUsingDict(byte[] dst, byte[] src, byte[] dict, int level) {
+    public static long compressUsingDict(byte @NotNull [] dst, byte @NotNull [] src, byte @NotNull [] dict, int level) {
         return compressUsingDict(dst, 0, src, 0, src.length, dict, level);
     }
 
@@ -1285,7 +1287,7 @@ public class Zstd {
      * @return  compressed byte array
      */
 
-    public static byte[] compressUsingDict(byte[] src, byte[] dict, int level) {
+    public static byte @NotNull [] compressUsingDict(byte @NotNull [] src, byte @NotNull [] dict, int level) {
         ZstdCompressCtx ctx = new ZstdCompressCtx();
         try {
             ctx.loadDict(dict);
@@ -1310,7 +1312,7 @@ public class Zstd {
      * @return  the number of bytes written into buffer 'dst' or an error code if
      *          it fails (which can be tested using ZSTD_isError())
      */
-    public static long compress(byte[] dst, byte[] src, byte[] dict, int level) {
+    public static long compress(byte @NotNull [] dst, byte @NotNull [] src, byte @NotNull [] dict, int level) {
         return compressUsingDict(dst, 0, src, 0, src.length, dict, level);
     }
 
@@ -1327,7 +1329,7 @@ public class Zstd {
      * @param level compression level
      * @return  the number of bytes written into buffer 'dstBuff'
      */
-    public static int compress(ByteBuffer dstBuff, ByteBuffer srcBuff, byte[] dict, int level) {
+    public static int compress(@NotNull ByteBuffer dstBuff, @NotNull ByteBuffer srcBuff, byte @NotNull [] dict, int level) {
         ZstdCompressCtx ctx = new ZstdCompressCtx();
         try {
             ctx.loadDict(dict);
@@ -1350,7 +1352,7 @@ public class Zstd {
      * @param level compression level
      * @return  compressed direct byte buffer
      */
-    public static ByteBuffer compress(ByteBuffer srcBuff, byte[] dict, int level) {
+    public static @NotNull ByteBuffer compress(@NotNull ByteBuffer srcBuff, byte @NotNull [] dict, int level) {
         ZstdCompressCtx ctx = new ZstdCompressCtx();
         try {
             ctx.loadDict(dict);
@@ -1373,7 +1375,7 @@ public class Zstd {
      * @param dict the dictionary buffer
      * @return  the number of bytes written into buffer 'dstBuff'
      */
-    public static int compress(ByteBuffer dstBuff, ByteBuffer srcBuff, ZstdDictCompress dict) {
+    public static int compress(@NotNull ByteBuffer dstBuff, @NotNull ByteBuffer srcBuff, @NotNull ZstdDictCompress dict) {
         ZstdCompressCtx ctx = new ZstdCompressCtx();
         try {
             ctx.loadDict(dict);
@@ -1395,7 +1397,7 @@ public class Zstd {
      * @param dict the dictionary buffer
      * @return  compressed direct byte buffer
      */
-    public static ByteBuffer compress(ByteBuffer srcBuff, ZstdDictCompress dict) {
+    public static @NotNull ByteBuffer compress(@NotNull ByteBuffer srcBuff, @NotNull ZstdDictCompress dict) {
         ZstdCompressCtx ctx = new ZstdCompressCtx();
         try {
             ctx.loadDict(dict);
@@ -1415,7 +1417,7 @@ public class Zstd {
      *                  If originalSize is smaller than the uncompressed size, {@link ZstdException} will be thrown.
      * @return byte array with the decompressed data
      */
-    public static byte[] decompress(byte[] src, int originalSize) {
+    public static byte @NotNull [] decompress(byte @NotNull [] src, int originalSize) {
         ZstdDecompressCtx ctx = new ZstdDecompressCtx();
         try {
             return ctx.decompress(src, originalSize);
@@ -1434,7 +1436,7 @@ public class Zstd {
      * @param src the source buffer
      * @return byte array with the decompressed data
      */
-    public static byte[] decompress(byte[] src) {
+    public static byte @NotNull [] decompress(byte @NotNull [] src) {
         List<FrameData> frames = new ArrayList<>();
 
         int contentSize = calculateContentSizeAndFrames(src, frames);
@@ -1461,7 +1463,7 @@ public class Zstd {
         return decompressedData;
     }
 
-    private static int calculateContentSizeAndFrames(byte[] src, List<FrameData> frames) {
+    private static int calculateContentSizeAndFrames(byte @NotNull [] src, @NotNull List<FrameData> frames) {
         long contentSize = 0;
 
         int srcPosition = 0;
@@ -1498,7 +1500,7 @@ public class Zstd {
      *                  If originalSize is smaller than the uncompressed size, {@link ZstdException} will be thrown.
      * @return byte array with the decompressed data
      */
-    public static byte[] decompressFrame(byte[] src, int srcOffset, int srcSize, int originalSize) {
+    public static byte @NotNull [] decompressFrame(byte @NotNull [] src, int srcOffset, int srcSize, int originalSize) {
         ZstdDecompressCtx ctx = new ZstdDecompressCtx();
         try {
             return ctx.decompress(src, srcOffset, srcSize, originalSize);
@@ -1514,7 +1516,7 @@ public class Zstd {
      * @param srcOffset the start offset of 'src'
      * @return byte array with the decompressed data
      */
-    public static byte[] decompressFrame(byte[] src, int srcOffset) {
+    public static byte @NotNull [] decompressFrame(byte @NotNull [] src, int srcOffset) {
         int compressedSize = (int) findFrameCompressedSize(src, srcOffset);
         long contentSize = getFrameContentSize(src, srcOffset, compressedSize);
         if (Zstd.isError(contentSize)) {
@@ -1538,7 +1540,7 @@ public class Zstd {
      * @param src the source buffer
      * @return byte array with the decompressed data
      */
-    public static byte[] decompressFrame(byte[] src) {
+    public static byte @NotNull [] decompressFrame(byte @NotNull [] src) {
         return decompressFrame(src, 0);
     }
 
@@ -1559,7 +1561,7 @@ public class Zstd {
      *               </p>
      * @return the size of the decompressed data.
      */
-    public static int decompress(ByteBuffer dstBuf, ByteBuffer srcBuf) {
+    public static int decompress(@NotNull ByteBuffer dstBuf, @NotNull ByteBuffer srcBuf) {
         ZstdDecompressCtx ctx = new ZstdDecompressCtx();
         try {
             return ctx.decompress(dstBuf, srcBuf);
@@ -1568,7 +1570,7 @@ public class Zstd {
         }
     }
 
-    public static int decompress(ByteBuffer dstBuf, byte[] src) {
+    public static int decompress(@NotNull ByteBuffer dstBuf, byte @NotNull [] src) {
         ZstdDecompressCtx ctx = new ZstdDecompressCtx();
         try {
             return ctx.decompress(dstBuf, src);
@@ -1591,7 +1593,7 @@ public class Zstd {
      *          reading.  Note that this is different behavior from the other decompress() overload which takes as a parameter
      *          the destination ByteBuffer.
      */
-    public static ByteBuffer decompress(ByteBuffer srcBuf, int originalSize) {
+    public static @NotNull ByteBuffer decompress(@NotNull ByteBuffer srcBuf, int originalSize) {
         ZstdDecompressCtx ctx = new ZstdDecompressCtx();
         try {
             return ctx.decompress(srcBuf, originalSize);
@@ -1608,7 +1610,7 @@ public class Zstd {
      * @param originalSize the maximum size of the uncompressed data
      * @return byte array with the decompressed data
      */
-    public static byte[] decompress(byte[] src, ZstdDictDecompress dict, int originalSize) {
+    public static byte @NotNull [] decompress(byte @NotNull [] src, @NotNull ZstdDictDecompress dict, int originalSize) {
         ZstdDecompressCtx ctx = new ZstdDecompressCtx();
         try {
             ctx.loadDict(dict);
@@ -1625,7 +1627,7 @@ public class Zstd {
      * Use decompress(dst, src, dict) instead
      */
     @Deprecated
-    public static long decompressUsingDict(byte[] dst, byte[] src, byte[] dict) {
+    public static long decompressUsingDict(byte @NotNull [] dst, byte @NotNull [] src, byte @NotNull [] dict) {
         return decompressUsingDict(dst, 0, src, 0, src.length, dict);
     }
 
@@ -1640,7 +1642,7 @@ public class Zstd {
      * @return the number of bytes decompressed into destination buffer (originalSize)
      *          or an errorCode if it fails (which can be tested using ZSTD_isError())
      */
-    public static long decompress(byte[] dst, byte[] src, byte[] dict) {
+    public static long decompress(byte @NotNull [] dst, byte @NotNull [] src, byte @NotNull [] dict) {
         return decompressUsingDict(dst, 0, src, 0, src.length, dict);
     }
 
@@ -1650,7 +1652,7 @@ public class Zstd {
      * @param originalSize the maximum size of the uncompressed data
      * @return byte array with the decompressed data
      */
-    public static byte[] decompress(byte[] src, byte[] dict, int originalSize) {
+    public static byte @NotNull [] decompress(byte @NotNull [] src, byte @NotNull [] dict, int originalSize) {
         ZstdDecompressCtx ctx = new ZstdDecompressCtx();
         try {
             ctx.loadDict(dict);
@@ -1672,7 +1674,7 @@ public class Zstd {
      * Use `getDirectByteBufferFrameContentSize` that return also the errors
      */
     @Deprecated
-    public static long decompressedSize(ByteBuffer srcBuf) {
+    public static long decompressedSize(@NotNull ByteBuffer srcBuf) {
         return decompressedDirectByteBufferSize(srcBuf, srcBuf.position(), srcBuf.limit() - srcBuf.position());
     }
 
@@ -1686,7 +1688,7 @@ public class Zstd {
      *         0 if the original size is not known
      *         negative if there is an error decoding the frame header
      */
-    public static long getFrameContentSize(ByteBuffer srcBuf) {
+    public static long getFrameContentSize(@NotNull ByteBuffer srcBuf) {
         return getDirectByteBufferFrameContentSize(srcBuf, srcBuf.position(), srcBuf.limit() - srcBuf.position());
     }
 
@@ -1708,7 +1710,7 @@ public class Zstd {
      * @param dict   the dictionary buffer to use for compression
      * @return the size of the decompressed data.
      */
-    public static int decompress(ByteBuffer dstBuff, ByteBuffer srcBuff, byte[] dict) {
+    public static int decompress(@NotNull ByteBuffer dstBuff, @NotNull ByteBuffer srcBuff, byte @NotNull [] dict) {
         ZstdDecompressCtx ctx = new ZstdDecompressCtx();
         try {
             ctx.loadDict(dict);
@@ -1733,7 +1735,7 @@ public class Zstd {
      *          reading.  Note that this is different behavior from the other decompress() overload which takes as a parameter
      *          the destination ByteBuffer.
      */
-    public static ByteBuffer decompress(ByteBuffer srcBuff, byte[] dict, int originalSize) {
+    public static @NotNull ByteBuffer decompress(@NotNull ByteBuffer srcBuff, byte @NotNull [] dict, int originalSize) {
         ZstdDecompressCtx ctx = new ZstdDecompressCtx();
         try {
             ctx.loadDict(dict);
@@ -1761,7 +1763,7 @@ public class Zstd {
      * @param dict   the dictionary buffer to use for compression
      * @return the size of the decompressed data.
      */
-    public static int decompress(ByteBuffer dstBuff, ByteBuffer srcBuff, ZstdDictDecompress dict) {
+    public static int decompress(@NotNull ByteBuffer dstBuff, @NotNull ByteBuffer srcBuff, @NotNull ZstdDictDecompress dict) {
         ZstdDecompressCtx ctx = new ZstdDecompressCtx();
         try {
             ctx.loadDict(dict);
@@ -1786,7 +1788,7 @@ public class Zstd {
      *          reading. Note that this is different behavior from the other decompress() overload which takes as a parameter
      *          the destination ByteBuffer.
      */
-    public static ByteBuffer decompress(ByteBuffer srcBuff, ZstdDictDecompress dict, int originalSize) {
+    public static @NotNull ByteBuffer decompress(@NotNull ByteBuffer srcBuff, @NotNull ZstdDictDecompress dict, int originalSize) {
         ZstdDecompressCtx ctx = new ZstdDecompressCtx();
         try {
             ctx.loadDict(dict);
@@ -1796,8 +1798,10 @@ public class Zstd {
         }
     }
 
-    static ByteBuffer getArrayBackedBuffer(BufferPool bufferPool, int size) throws ZstdIOException {
+    static @NotNull ByteBuffer getArrayBackedBuffer(@NotNull BufferPool bufferPool, int size) throws ZstdIOException {
         ByteBuffer buffer = bufferPool.get(size);
+        // TODO(nullability): BufferPool.get() has no @NotNull/@Nullable annotation; known impls (NoPool, RecyclingBufferPool)
+        // never return null so IntelliJ flags this as dead code, but a third-party BufferPool implementation still could
         if (buffer == null) {
             throw new ZstdIOException(Zstd.errMemoryAllocation(), "Cannot get ByteBuffer of size " + size + " from the BufferPool");
         }
@@ -1812,7 +1816,7 @@ public class Zstd {
         final long contentSize;
         final long compressedSize;
 
-        FrameData(byte[] src, int srcPosition) {
+        FrameData(byte @NotNull [] src, int srcPosition) {
             compressedSize = findFrameCompressedSize(src, srcPosition);
             contentSize = getFrameContentSize(src, srcPosition, (int) compressedSize);
 

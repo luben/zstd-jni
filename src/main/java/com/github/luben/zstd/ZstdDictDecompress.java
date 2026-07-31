@@ -1,7 +1,11 @@
 package com.github.luben.zstd;
 
-import java.nio.ByteBuffer;
 import com.github.luben.zstd.util.Native;
+
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import java.nio.ByteBuffer;
 
 public class ZstdDictDecompress extends SharedDictBase {
 
@@ -13,16 +17,16 @@ public class ZstdDictDecompress extends SharedDictBase {
 
     private ByteBuffer sharedDict = null;
 
-    private native void init(byte[] dict, int dict_offset, int dict_size);
+    private native void init(byte @NotNull [] dict, int dict_offset, int dict_size);
 
-    private native void initDirect(ByteBuffer dict, int dict_offset, int dict_size, int byReference);
+    private native void initDirect(@NotNull ByteBuffer dict, int dict_offset, int dict_size, int byReference);
 
     private native void free();
 
     /**
      * Get the byte buffer that backs this dict, if any, or null if not backed by a byte buffer.
      */
-    public ByteBuffer getByReferenceBuffer() {
+    public @Nullable ByteBuffer getByReferenceBuffer() {
 	return sharedDict;
     }
 
@@ -31,7 +35,7 @@ public class ZstdDictDecompress extends SharedDictBase {
      *
      * @param dict buffer containing dictionary to load/parse with exact length
      */
-    public ZstdDictDecompress(byte[] dict) {
+    public ZstdDictDecompress(byte @NotNull [] dict) {
         this(dict, 0, dict.length);
     }
 
@@ -42,7 +46,7 @@ public class ZstdDictDecompress extends SharedDictBase {
      * @param offset the offset into the buffer to read from
      * @param length number of bytes to use from the buffer
      */
-    public ZstdDictDecompress(byte[] dict, int offset, int length) {
+    public ZstdDictDecompress(byte @NotNull [] dict, int offset, int length) {
 
         init(dict, offset, length);
 
@@ -60,7 +64,7 @@ public class ZstdDictDecompress extends SharedDictBase {
      *
      * @param dict   Direct ByteBuffer containing dictionary using position and limit to define range in buffer.
      */
-    public ZstdDictDecompress(ByteBuffer dict) {
+    public ZstdDictDecompress(@NotNull ByteBuffer dict) {
 	this(dict, false);
     }
 
@@ -71,7 +75,7 @@ public class ZstdDictDecompress extends SharedDictBase {
      * @param dict   Direct ByteBuffer containing dictionary using position and limit to define range in buffer.
      * @param byReference tell the native part to use the byte buffer directly and not copy the data when true.
      */
-    public ZstdDictDecompress(ByteBuffer dict, boolean byReference) {
+    public ZstdDictDecompress(@NotNull ByteBuffer dict, boolean byReference) {
 
 	int length = dict.limit() - dict.position();
         if (!dict.isDirect()) {

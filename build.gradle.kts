@@ -1,5 +1,3 @@
-import java.io.File
-
 plugins {
     alias(libs.plugins.android.library)
 }
@@ -63,6 +61,7 @@ repositories {
 }
 
 dependencies {
+    compileOnly(libs.jetbrains.annotations)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.test.ext.junit)

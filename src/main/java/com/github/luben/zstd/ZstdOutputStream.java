@@ -1,25 +1,24 @@
 package com.github.luben.zstd;
 
-import java.io.OutputStream;
+import org.jetbrains.annotations.NotNull;
+
 import java.io.FilterOutputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer;
-
-import com.github.luben.zstd.util.Native;
+import java.io.OutputStream;
 
 /**
  * OutputStream filter that compresses the data using Zstd compression
  */
 public class ZstdOutputStream extends FilterOutputStream{
 
-    private ZstdOutputStreamNoFinalizer inner;
+    private @NotNull ZstdOutputStreamNoFinalizer inner;
 
     /**
      *  @deprecated
      *  Use ZstdOutputStream() or ZstdOutputStream(level) and set the other params with the setters
      **/
     @Deprecated
-    public ZstdOutputStream(OutputStream outStream, int level, boolean closeFrameOnFlush, boolean useChecksums) throws IOException {
+    public ZstdOutputStream(@NotNull OutputStream outStream, int level, boolean closeFrameOnFlush, boolean useChecksums) throws IOException {
         super(outStream);
         inner = new ZstdOutputStreamNoFinalizer(outStream, level);
         inner.setCloseFrameOnFlush(closeFrameOnFlush);
@@ -31,7 +30,7 @@ public class ZstdOutputStream extends FilterOutputStream{
      *  Use ZstdOutputStream() or ZstdOutputStream(level) and set the other params with the setters
      **/
     @Deprecated
-    public ZstdOutputStream(OutputStream outStream, int level, boolean closeFrameOnFlush) throws IOException {
+    public ZstdOutputStream(@NotNull OutputStream outStream, int level, boolean closeFrameOnFlush) throws IOException {
         super(outStream);
         inner = new ZstdOutputStreamNoFinalizer(outStream, level);
         inner.setCloseFrameOnFlush(closeFrameOnFlush);
@@ -42,7 +41,7 @@ public class ZstdOutputStream extends FilterOutputStream{
      * @param outStream the stream to wrap
      * @param level the compression level
      */
-    public ZstdOutputStream(OutputStream outStream, int level) throws IOException {
+    public ZstdOutputStream(@NotNull OutputStream outStream, int level) throws IOException {
         this(outStream, NoPool.INSTANCE);
         inner.setLevel(level);
     }
@@ -51,7 +50,7 @@ public class ZstdOutputStream extends FilterOutputStream{
      * create a new compressing OutputStream
      * @param outStream the stream to wrap
      */
-    public ZstdOutputStream(OutputStream outStream) throws IOException {
+    public ZstdOutputStream(@NotNull OutputStream outStream) throws IOException {
         this(outStream, NoPool.INSTANCE);
     }
 
@@ -60,7 +59,7 @@ public class ZstdOutputStream extends FilterOutputStream{
      * @param outStream the stream to wrap
      * @param bufferPool the pool to fetch and return buffers
      */
-    public ZstdOutputStream(OutputStream outStream, BufferPool bufferPool, int level) throws IOException {
+    public ZstdOutputStream(@NotNull OutputStream outStream, @NotNull BufferPool bufferPool, int level) throws IOException {
         this(outStream, bufferPool);
         inner.setLevel(level);
     }
@@ -70,7 +69,7 @@ public class ZstdOutputStream extends FilterOutputStream{
      * @param outStream the stream to wrap
      * @param bufferPool the pool to fetch and return buffers
      */
-    public ZstdOutputStream(OutputStream outStream, BufferPool bufferPool) throws IOException {
+    public ZstdOutputStream(@NotNull OutputStream outStream, @NotNull BufferPool bufferPool) throws IOException {
         super(outStream);
         inner = new ZstdOutputStreamNoFinalizer(outStream, bufferPool);
     }
@@ -103,7 +102,7 @@ public class ZstdOutputStream extends FilterOutputStream{
      *
      * Default: false
      */
-    public ZstdOutputStream setChecksum(boolean useChecksums) throws IOException {
+    public @NotNull ZstdOutputStream setChecksum(boolean useChecksums) throws IOException {
         inner.setChecksum(useChecksums);
         return this;
     }
@@ -113,7 +112,7 @@ public class ZstdOutputStream extends FilterOutputStream{
      *
      * Default: {@link Zstd#defaultCompressionLevel()}
      */
-    public ZstdOutputStream setLevel(int level) throws IOException {
+    public @NotNull ZstdOutputStream setLevel(int level) throws IOException {
         inner.setLevel(level);
         return this;
     }
@@ -123,7 +122,7 @@ public class ZstdOutputStream extends FilterOutputStream{
      *
      * Values for windowLog outside the range 10-27 will disable and reset LDM
      */
-    public ZstdOutputStream setLong(int windowLog) throws IOException {
+    public @NotNull ZstdOutputStream setLong(int windowLog) throws IOException {
         inner.setLong(windowLog);
         return this;
     }
@@ -133,7 +132,7 @@ public class ZstdOutputStream extends FilterOutputStream{
      *
      * Default: no worker threads.
      */
-    public ZstdOutputStream setWorkers(int n) throws IOException {
+    public @NotNull ZstdOutputStream setWorkers(int n) throws IOException {
         inner.setWorkers(n);
         return this;
     }
@@ -144,7 +143,7 @@ public class ZstdOutputStream extends FilterOutputStream{
      * 
      * See https://facebook.github.io/zstd/zstd_manual.html#Chapter5 for more information.
      */
-    public ZstdOutputStream setOverlapLog(int overlapLog) throws IOException {
+    public @NotNull ZstdOutputStream setOverlapLog(int overlapLog) throws IOException {
         inner.setOverlapLog(overlapLog);
         return this;
     }
@@ -155,7 +154,7 @@ public class ZstdOutputStream extends FilterOutputStream{
      *
      * See https://facebook.github.io/zstd/zstd_manual.html#Chapter5 for more information.
      */
-    public ZstdOutputStream setJobSize(int jobSize) throws IOException {
+    public @NotNull ZstdOutputStream setJobSize(int jobSize) throws IOException {
         inner.setJobSize(jobSize);
         return this;
     }
@@ -165,7 +164,7 @@ public class ZstdOutputStream extends FilterOutputStream{
      *
      * See https://facebook.github.io/zstd/zstd_manual.html#Chapter5 for more information.
      */
-    public ZstdOutputStream setTargetLength(int targetLength) throws IOException {
+    public @NotNull ZstdOutputStream setTargetLength(int targetLength) throws IOException {
         inner.setTargetLength(targetLength);
         return this;
     }
@@ -175,7 +174,7 @@ public class ZstdOutputStream extends FilterOutputStream{
      *
      * See https://facebook.github.io/zstd/zstd_manual.html#Chapter5 for more information.
      */
-    public ZstdOutputStream setMinMatch(int minMatch) throws IOException {
+    public @NotNull ZstdOutputStream setMinMatch(int minMatch) throws IOException {
         inner.setMinMatch(minMatch);
         return this;
     }
@@ -186,7 +185,7 @@ public class ZstdOutputStream extends FilterOutputStream{
      * 
      * See https://facebook.github.io/zstd/zstd_manual.html#Chapter5 for more information.
      */
-    public ZstdOutputStream setSearchLog(int searchLog) throws IOException {
+    public @NotNull ZstdOutputStream setSearchLog(int searchLog) throws IOException {
         inner.setSearchLog(searchLog);
         return this;
     }
@@ -197,7 +196,7 @@ public class ZstdOutputStream extends FilterOutputStream{
      * 
      * See https://facebook.github.io/zstd/zstd_manual.html#Chapter5 for more information.
      */
-    public ZstdOutputStream setChainLog(int chainLog) throws IOException {
+    public @NotNull ZstdOutputStream setChainLog(int chainLog) throws IOException {
         inner.setChainLog(chainLog);
         return this;
     }
@@ -207,7 +206,7 @@ public class ZstdOutputStream extends FilterOutputStream{
      *
      * See https://facebook.github.io/zstd/zstd_manual.html#Chapter5 for more information.
      */
-    public ZstdOutputStream setHashLog(int hashLog) throws IOException {
+    public @NotNull ZstdOutputStream setHashLog(int hashLog) throws IOException {
         inner.setHashLog(hashLog);
         return this;
     }
@@ -217,7 +216,7 @@ public class ZstdOutputStream extends FilterOutputStream{
      *
      * See https://facebook.github.io/zstd/zstd_manual.html#Chapter5 for more information.
      */
-    public ZstdOutputStream setWindowLog(int windowLog) throws IOException {
+    public @NotNull ZstdOutputStream setWindowLog(int windowLog) throws IOException {
         inner.setWindowLog(windowLog);
         return this;
     }
@@ -227,7 +226,7 @@ public class ZstdOutputStream extends FilterOutputStream{
      * 
      * See https://facebook.github.io/zstd/zstd_manual.html#Chapter5 for more information.
      */
-    public ZstdOutputStream setStrategy(int strategy) throws IOException {
+    public @NotNull ZstdOutputStream setStrategy(int strategy) throws IOException {
         inner.setStrategy(strategy);
         return this;
     }
@@ -242,22 +241,22 @@ public class ZstdOutputStream extends FilterOutputStream{
      *
      * Default: false.
      */
-    public ZstdOutputStream setCloseFrameOnFlush(boolean closeOnFlush) {
+    public @NotNull ZstdOutputStream setCloseFrameOnFlush(boolean closeOnFlush) {
         inner.setCloseFrameOnFlush(closeOnFlush);
         return this;
     }
 
-    public ZstdOutputStream setDict(byte[] dict) throws IOException {
+    public @NotNull ZstdOutputStream setDict(byte @NotNull [] dict) throws IOException {
         inner.setDict(dict);
         return this;
     }
 
-    public ZstdOutputStream setDict(ZstdDictCompress dict) throws IOException {
+    public @NotNull ZstdOutputStream setDict(@NotNull ZstdDictCompress dict) throws IOException {
         inner.setDict(dict);
         return this;
     }
 
-    public void write(byte[] src, int offset, int len) throws IOException {
+    public void write(byte @NotNull [] src, int offset, int len) throws IOException {
         inner.write(src, offset, len);
     }
 

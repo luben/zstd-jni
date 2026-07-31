@@ -1,10 +1,12 @@
 package com.github.luben.zstd.util;
 
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.UnsatisfiedLinkError;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -12,15 +14,16 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public enum Native {
     ;
 
-    private static final String nativePathOverride = "ZstdNativePath";
-    private static final String tempFolderOverride = "ZstdTempFolder";
-    private static final String libnameShort = "zstd-jni-" + ZstdVersion.VERSION;
-    private static final String libname = "lib" + libnameShort;
-    private static final String errorMsg = "Unsupported OS/arch, cannot find " +
+    private static final @NotNull String nativePathOverride = "ZstdNativePath";
+    private static final @NotNull String tempFolderOverride = "ZstdTempFolder";
+    private static final @NotNull String libnameShort = "zstd-jni-" + ZstdVersion.VERSION;
+    private static final @NotNull String libname = "lib" + libnameShort;
+    private static final @NotNull String errorMsg = "Unsupported OS/arch, cannot find " +
         resourceName() + " or load " + libnameShort + " from system libraries. Please " +
         "try building from source the jar or providing " + libname + " in your system.";
 
-    private static String osName() {
+    private static @NotNull String osName() {
+        // TODO(nullability): System.getProperty("os.name") is @Nullable if the property is unset, but toLowerCase() is called unchecked
         String os = System.getProperty("os.name").toLowerCase().replace(' ', '_');
         if (os.startsWith("win")){
             return "win";
@@ -31,7 +34,7 @@ public enum Native {
         }
     }
 
-    private static String libExtension() {
+    private static @NotNull String libExtension() {
         if (osName().contains("os_x") || osName().contains("darwin")) {
             return "dylib";
          } else if (osName().contains("win")) {
@@ -41,16 +44,17 @@ public enum Native {
         }
     }
 
-    private static String resourceName() {
+    private static @NotNull String resourceName() {
         String os = osName();
         String arch = System.getProperty("os.arch");
+        // TODO(nullability): System.getProperty("os.arch") is @Nullable if the property is unset, but equals() is called unchecked
         if (os.equals("darwin") && arch.equals("amd64")) {
             arch = "x86_64";
         }
         return "/" + os + "/" + arch + "/" + libname + "." + libExtension();
     }
 
-    private static AtomicBoolean loaded = new AtomicBoolean(false);
+    private static @NotNull AtomicBoolean loaded = new AtomicBoolean(false);
 
     /**
      * Tell the library to assume the native library is already loaded.
@@ -66,18 +70,18 @@ public enum Native {
         return loaded.get();
     }
 
-    private static void loadLibrary(final String libName) {
+    private static void loadLibrary(final @NotNull String libName) {
         AccessController.doPrivileged(new PrivilegedAction<Void>() {
-          public Void run() {
+          public @Nullable Void run() {
             System.loadLibrary(libName);
             return null;
           }
         });
     }
 
-    private static void loadLibraryFile(final String libFileName) {
+    private static void loadLibraryFile(final @NotNull String libFileName) {
         AccessController.doPrivileged(new PrivilegedAction<Void>() {
-          public Void run() {
+          public @Nullable Void run() {
             System.load(libFileName);
             return null;
           }
@@ -93,7 +97,7 @@ public enum Native {
         }
     }
 
-    public static synchronized void load(final File tempFolder) {
+    public static synchronized void load(final @Nullable File tempFolder) {
         if (loaded.get()) {
             return;
         }

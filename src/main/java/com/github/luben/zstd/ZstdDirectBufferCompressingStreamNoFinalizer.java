@@ -2,6 +2,9 @@ package com.github.luben.zstd;
 
 import com.github.luben.zstd.util.Native;
 
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
 import java.io.Closeable;
 import java.io.Flushable;
 import java.io.IOException;
@@ -13,7 +16,8 @@ public class ZstdDirectBufferCompressingStreamNoFinalizer implements Closeable, 
         Native.load();
     }
 
-    private ByteBuffer target;
+    // TODO(nullability): nulled in close() but dereferenced without a null-check elsewhere (use-after-close risk)
+    private @Nullable ByteBuffer target;
     private final long stream;
 
     /**
@@ -22,11 +26,11 @@ public class ZstdDirectBufferCompressingStreamNoFinalizer implements Closeable, 
      * @param toFlush buffer that has to be flushed (or most cases, you want to call {@link ByteBuffer#flip()} first)
      * @return the new buffer to use, for most cases the same as the one passed in, after a call to {@link ByteBuffer#clear()}.
      */
-    protected ByteBuffer flushBuffer(ByteBuffer toFlush) throws IOException {
+    protected @NotNull ByteBuffer flushBuffer(@NotNull ByteBuffer toFlush) throws IOException {
         return toFlush;
     }
 
-    public ZstdDirectBufferCompressingStreamNoFinalizer(ByteBuffer target, int level) throws IOException {
+    public ZstdDirectBufferCompressingStreamNoFinalizer(@NotNull ByteBuffer target, int level) throws IOException {
         if (!target.isDirect()) {
             throw new IllegalArgumentException("Target buffer should be a direct buffer");
         }
@@ -42,21 +46,21 @@ public class ZstdDirectBufferCompressingStreamNoFinalizer implements Closeable, 
     private boolean closed = false;
     private boolean initialized = false;
     private int level = Zstd.defaultCompressionLevel();
-    private byte[] dict = null;
-    private ZstdDictCompress fastDict = null;
+    private byte @Nullable [] dict = null;
+    private @Nullable ZstdDictCompress fastDict = null;
 
     /* JNI methods */
     private static native long recommendedCOutSize();
     private static native long createCStream();
     private static native long  freeCStream(long ctx);
     private native long initCStream(long ctx, int level);
-    private native long initCStreamWithDict(long ctx, byte[] dict, int dict_size, int level);
-    private native long initCStreamWithFastDict(long ctx, ZstdDictCompress dict);
-    private native long compressDirectByteBuffer(long ctx, ByteBuffer dst, int dstOffset, int dstSize, ByteBuffer src, int srcOffset, int srcSize);
-    private native long flushStream(long ctx, ByteBuffer dst, int dstOffset, int dstSize);
-    private native long endStream(long ctx, ByteBuffer dst, int dstOffset, int dstSize);
+    private native long initCStreamWithDict(long ctx, byte @NotNull [] dict, int dict_size, int level);
+    private native long initCStreamWithFastDict(long ctx, @NotNull ZstdDictCompress dict);
+    private native long compressDirectByteBuffer(long ctx, @NotNull ByteBuffer dst, int dstOffset, int dstSize, @NotNull ByteBuffer src, int srcOffset, int srcSize);
+    private native long flushStream(long ctx, @NotNull ByteBuffer dst, int dstOffset, int dstSize);
+    private native long endStream(long ctx, @NotNull ByteBuffer dst, int dstOffset, int dstSize);
 
-    public ZstdDirectBufferCompressingStreamNoFinalizer setDict(byte[] dict) {
+    public @NotNull ZstdDirectBufferCompressingStreamNoFinalizer setDict(byte @NotNull [] dict) {
         if (initialized) {
             throw new IllegalStateException("Change of parameter on initialized stream");
         }
@@ -65,7 +69,7 @@ public class ZstdDirectBufferCompressingStreamNoFinalizer implements Closeable, 
         return this;
     }
 
-    public ZstdDirectBufferCompressingStreamNoFinalizer setDict(ZstdDictCompress dict) {
+    public @NotNull ZstdDirectBufferCompressingStreamNoFinalizer setDict(@NotNull ZstdDictCompress dict) {
         if (initialized) {
             throw new IllegalStateException("Change of parameter on initialized stream");
         }
@@ -74,7 +78,7 @@ public class ZstdDirectBufferCompressingStreamNoFinalizer implements Closeable, 
         return this;
     }
 
-    public void compress(ByteBuffer source) throws IOException {
+    public void compress(@NotNull ByteBuffer source) throws IOException {
         if (!source.isDirect()) {
             throw new IllegalArgumentException("Source buffer should be a direct buffer");
         }
@@ -102,6 +106,7 @@ public class ZstdDirectBufferCompressingStreamNoFinalizer implements Closeable, 
             initialized = true;
         }
         while (source.hasRemaining()) {
+            // TODO(nullability): target is @Nullable (see field) and dereferenced here without a null-check
             if (!target.hasRemaining()) {
                 target = flushBuffer(target);
                 if (!target.isDirect()) {
@@ -128,6 +133,7 @@ public class ZstdDirectBufferCompressingStreamNoFinalizer implements Closeable, 
         if (initialized) {
             long needed;
             do {
+                // TODO(nullability): target is @Nullable but flushStream's dst parameter is @NotNull; same use-after-close risk noted on the field
                 needed = flushStream(stream, target, target.position(), target.remaining());
                 if (Zstd.isError(needed)) {
                     throw new ZstdIOException(needed);
@@ -153,6 +159,7 @@ public class ZstdDirectBufferCompressingStreamNoFinalizer implements Closeable, 
                 if (initialized) {
                     long needed;
                     do {
+                        // TODO(nullability): target is @Nullable but endStream's dst parameter is @NotNull; same use-after-close risk noted on the field
                         needed = endStream(stream, target, target.position(), target.remaining());
                         if (Zstd.isError(needed)) {
                             throw new ZstdIOException(needed);

@@ -1,12 +1,14 @@
 package com.github.luben.zstd;
 
-import java.io.OutputStream;
+import com.github.luben.zstd.util.Native;
+
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
 import java.io.FilterOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.ByteBuffer;
-import java.lang.IndexOutOfBoundsException;
-
-import com.github.luben.zstd.util.Native;
 
 /**
  * OutputStream filter that compresses the data using Zstd compression.
@@ -24,25 +26,25 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
     // Source and Destination positions
     private long srcPos = 0;
     private long dstPos = 0;
-    private final BufferPool bufferPool;
-    private final ByteBuffer dstByteBuffer;
-    private final byte[] dst;
+    private final @NotNull BufferPool bufferPool;
+    private final @NotNull ByteBuffer dstByteBuffer;
+    private final byte @NotNull [] dst;
     private boolean isClosed = false;
     private static final int dstSize = (int) recommendedCOutSize();
     private boolean closeFrameOnFlush = false;
     private boolean frameClosed = true;
     private boolean frameStarted = false;
     // keep the active dict from GC
-    private ZstdDictCompress active_dict;
+    private @Nullable ZstdDictCompress active_dict;
 
     /* JNI methods */
     public static native long recommendedCOutSize();
     private static native long createCStream();
     private static native int  freeCStream(long ctx);
     private native int resetCStream(long ctx);
-    private native int compressStream(long ctx, byte[] dst, int dst_size, byte[] src, int src_size);
-    private native int flushStream(long ctx, byte[] dst, int dst_size);
-    private native int endStream(long ctx, byte[] dst, int dst_size);
+    private native int compressStream(long ctx, byte @NotNull [] dst, int dst_size, byte @NotNull [] src, int src_size);
+    private native int flushStream(long ctx, byte @NotNull [] dst, int dst_size);
+    private native int endStream(long ctx, byte @NotNull [] dst, int dst_size);
 
 
     /**
@@ -50,7 +52,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
      * @param outStream the stream to wrap
      * @param level the compression level
      */
-    public ZstdOutputStreamNoFinalizer(OutputStream outStream, int level) throws IOException {
+    public ZstdOutputStreamNoFinalizer(@NotNull OutputStream outStream, int level) throws IOException {
         this(outStream, NoPool.INSTANCE);
         Zstd.setCompressionLevel(this.stream, level);
     }
@@ -59,7 +61,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
      * create a new compressing OutputStream
      * @param outStream the stream to wrap
      */
-    public ZstdOutputStreamNoFinalizer(OutputStream outStream) throws IOException {
+    public ZstdOutputStreamNoFinalizer(@NotNull OutputStream outStream) throws IOException {
         this(outStream, NoPool.INSTANCE);
     }
 
@@ -68,7 +70,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
      * @param outStream the stream to wrap
      * @param bufferPool the pool to fetch and return buffers
      */
-    public ZstdOutputStreamNoFinalizer(OutputStream outStream, BufferPool bufferPool, int level) throws IOException {
+    public ZstdOutputStreamNoFinalizer(@NotNull OutputStream outStream, @NotNull BufferPool bufferPool, int level) throws IOException {
         this(outStream, bufferPool);
         Zstd.setCompressionLevel(this.stream, level);
     }
@@ -78,7 +80,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
      * @param outStream the stream to wrap
      * @param bufferPool the pool to fetch and return buffers
      */
-    public ZstdOutputStreamNoFinalizer(OutputStream outStream, BufferPool bufferPool) throws IOException {
+    public ZstdOutputStreamNoFinalizer(@NotNull OutputStream outStream, @NotNull BufferPool bufferPool) throws IOException {
         super(outStream);
         // create compression context
         this.stream = createCStream();
@@ -92,7 +94,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
      *
      * Default: false
      */
-    public synchronized ZstdOutputStreamNoFinalizer setChecksum(boolean useChecksums) throws IOException {
+    public synchronized @NotNull ZstdOutputStreamNoFinalizer setChecksum(boolean useChecksums) throws IOException {
         if (!frameClosed) {
             throw new IllegalStateException("Change of parameter on initialized stream");
         }
@@ -108,7 +110,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
      *
      * Default: {@link Zstd#defaultCompressionLevel()}
      */
-    public synchronized ZstdOutputStreamNoFinalizer setLevel(int level) throws IOException {
+    public synchronized @NotNull ZstdOutputStreamNoFinalizer setLevel(int level) throws IOException {
         if (!frameClosed) {
             throw new IllegalStateException("Change of parameter on initialized stream");
         }
@@ -124,7 +126,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
      *
      * Values for windowLog outside the range 10-27 will disable and reset LDM
      */
-    public synchronized ZstdOutputStreamNoFinalizer setLong(int windowLog) throws IOException {
+    public synchronized @NotNull ZstdOutputStreamNoFinalizer setLong(int windowLog) throws IOException {
         if (!frameClosed) {
             throw new IllegalStateException("Change of parameter on initialized stream");
         }
@@ -140,7 +142,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
      *
      * Default: no worker threads.
      */
-    public synchronized ZstdOutputStreamNoFinalizer setWorkers(int n) throws IOException {
+    public synchronized @NotNull ZstdOutputStreamNoFinalizer setWorkers(int n) throws IOException {
         if (!frameClosed) {
             throw new IllegalStateException("Change of parameter on initialized stream");
         }
@@ -157,7 +159,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
      * 
      * See https://facebook.github.io/zstd/zstd_manual.html#Chapter5 for more information.
      */
-    public synchronized ZstdOutputStreamNoFinalizer setOverlapLog(int overlapLog) throws IOException {
+    public synchronized @NotNull ZstdOutputStreamNoFinalizer setOverlapLog(int overlapLog) throws IOException {
         if (!frameClosed) {
             throw new IllegalStateException("Change of parameter on initialized stream");
         }
@@ -174,7 +176,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
      *
      * See https://facebook.github.io/zstd/zstd_manual.html#Chapter5 for more information.
      */
-    public synchronized ZstdOutputStreamNoFinalizer setJobSize(int jobSize) throws IOException {
+    public synchronized @NotNull ZstdOutputStreamNoFinalizer setJobSize(int jobSize) throws IOException {
         if (!frameClosed) {
             throw new IllegalStateException("Change of parameter on initialized stream");
         }
@@ -190,7 +192,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
      *
      * See https://facebook.github.io/zstd/zstd_manual.html#Chapter5 for more information.
      */
-    public synchronized ZstdOutputStreamNoFinalizer setTargetLength(int targetLength) throws IOException {
+    public synchronized @NotNull ZstdOutputStreamNoFinalizer setTargetLength(int targetLength) throws IOException {
         if (!frameClosed) {
             throw new IllegalStateException("Change of parameter on initialized stream");
         }
@@ -206,7 +208,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
      *
      * See https://facebook.github.io/zstd/zstd_manual.html#Chapter5 for more information.
      */
-    public synchronized ZstdOutputStreamNoFinalizer setMinMatch(int minMatch) throws IOException {
+    public synchronized @NotNull ZstdOutputStreamNoFinalizer setMinMatch(int minMatch) throws IOException {
         if (!frameClosed) {
             throw new IllegalStateException("Change of parameter on initialized stream");
         }
@@ -223,7 +225,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
      * 
      * See https://facebook.github.io/zstd/zstd_manual.html#Chapter5 for more information.
      */
-    public synchronized ZstdOutputStreamNoFinalizer setSearchLog(int searchLog) throws IOException {
+    public synchronized @NotNull ZstdOutputStreamNoFinalizer setSearchLog(int searchLog) throws IOException {
         if (!frameClosed) {
             throw new IllegalStateException("Change of parameter on initialized stream");
         }
@@ -240,7 +242,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
      * 
      * See https://facebook.github.io/zstd/zstd_manual.html#Chapter5 for more information.
      */
-    public synchronized ZstdOutputStreamNoFinalizer setChainLog(int chainLog) throws IOException {
+    public synchronized @NotNull ZstdOutputStreamNoFinalizer setChainLog(int chainLog) throws IOException {
         if (!frameClosed) {
             throw new IllegalStateException("Change of parameter on initialized stream");
         }
@@ -256,7 +258,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
      *
      * See https://facebook.github.io/zstd/zstd_manual.html#Chapter5 for more information.
      */
-    public synchronized ZstdOutputStreamNoFinalizer setHashLog(int hashLog) throws IOException {
+    public synchronized @NotNull ZstdOutputStreamNoFinalizer setHashLog(int hashLog) throws IOException {
         if (!frameClosed) {
             throw new IllegalStateException("Change of parameter on initialized stream");
         }
@@ -272,7 +274,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
      *
      * See https://facebook.github.io/zstd/zstd_manual.html#Chapter5 for more information.
      */
-    public synchronized ZstdOutputStreamNoFinalizer setWindowLog(int windowLog) throws IOException {
+    public synchronized @NotNull ZstdOutputStreamNoFinalizer setWindowLog(int windowLog) throws IOException {
         if (!frameClosed) {
             throw new IllegalStateException("Change of parameter on initialized stream");
         }
@@ -288,7 +290,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
      * 
      * See https://facebook.github.io/zstd/zstd_manual.html#Chapter5 for more information.
      */
-    public synchronized ZstdOutputStreamNoFinalizer setStrategy(int strategy) throws IOException {
+    public synchronized @NotNull ZstdOutputStreamNoFinalizer setStrategy(int strategy) throws IOException {
         if (!frameClosed) {
             throw new IllegalStateException("Change of parameter on initialized stream");
         }
@@ -308,7 +310,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
      *
      * Default: false.
      */
-    public synchronized ZstdOutputStreamNoFinalizer setCloseFrameOnFlush(boolean closeOnFlush) {
+    public synchronized @NotNull ZstdOutputStreamNoFinalizer setCloseFrameOnFlush(boolean closeOnFlush) {
         if (!frameClosed) {
             throw new IllegalStateException("Change of parameter on initialized stream");
         }
@@ -316,7 +318,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
         return this;
     }
 
-    public synchronized ZstdOutputStreamNoFinalizer setDict(byte[] dict) throws IOException {
+    public synchronized @NotNull ZstdOutputStreamNoFinalizer setDict(byte @NotNull [] dict) throws IOException {
         if (!frameClosed) {
             throw new IllegalStateException("Change of parameter on initialized stream");
         }
@@ -327,7 +329,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
         return this;
     }
 
-    public synchronized ZstdOutputStreamNoFinalizer setDict(ZstdDictCompress dict) throws IOException {
+    public synchronized @NotNull ZstdOutputStreamNoFinalizer setDict(@NotNull ZstdDictCompress dict) throws IOException {
         if (!frameClosed) {
             throw new IllegalStateException("Change of parameter on initialized stream");
         }
@@ -340,7 +342,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
         return this;
     }
 
-    public synchronized void write(byte[] src, int offset, int len) throws IOException {
+    public synchronized void write(byte @NotNull [] src, int offset, int len) throws IOException {
         if (offset < 0 || len < 0 || len > src.length - offset) {
            throw new IndexOutOfBoundsException("Requested length " + len
                       + " from offset " + offset + " in buffer of size " + src.length);

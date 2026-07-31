@@ -1,5 +1,7 @@
 package com.github.luben.zstd;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.nio.ByteBuffer;
 
 /**
@@ -12,12 +14,13 @@ public interface BufferPool {
      * @param capacity the desired size of the buffer
      * @return a heap buffer with size at least the `capacity` and arrayOffset of 0
      */
+    @NotNull
     ByteBuffer get(int capacity);
 
     /**
      * Return a buffer to the pool.
      * @param buffer the buffer to return
      */
-    void release(ByteBuffer buffer);
+    void release(@NotNull ByteBuffer buffer);
 
 }

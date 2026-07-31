@@ -1,5 +1,7 @@
 package com.github.luben.zstd;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.lang.ref.SoftReference;
 import java.nio.ByteBuffer;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -11,6 +13,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  * buffer sizes used by the Zstd classes.
  */
 public class RecyclingBufferPool implements BufferPool {
+    @NotNull
     public static final BufferPool INSTANCE = new RecyclingBufferPool();
 
     private static final int buffSize = Math.max(Math.max(
@@ -18,6 +21,7 @@ public class RecyclingBufferPool implements BufferPool {
                     (int) ZstdInputStreamNoFinalizer.recommendedDInSize()),
             (int) ZstdInputStreamNoFinalizer.recommendedDOutSize());
 
+    @NotNull
     private final ConcurrentLinkedQueue<SoftReference<ByteBuffer>> pool;
 
     private RecyclingBufferPool() {
@@ -25,6 +29,7 @@ public class RecyclingBufferPool implements BufferPool {
     }
 
     @Override
+    @NotNull
     public ByteBuffer get(int capacity) {
         if (capacity > buffSize) {
             throw new RuntimeException(
@@ -49,7 +54,7 @@ public class RecyclingBufferPool implements BufferPool {
     }
 
     @Override
-    public void release(ByteBuffer buffer) {
+    public void release(@NotNull ByteBuffer buffer) {
         if (buffer.capacity() >= buffSize) {
             buffer.clear();
             pool.add(new SoftReference<>(buffer));

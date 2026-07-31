@@ -1,6 +1,7 @@
 package com.github.luben.zstd;
 
 import com.github.luben.zstd.util.Native;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -17,17 +18,17 @@ public class ZstdDirectBufferDecompressingStream implements Closeable {
      * @param toRefill current buffer
      * @return either the current buffer (but refilled and flipped if there was new content) or a new buffer.
      */
-    protected ByteBuffer refill(ByteBuffer toRefill) {
+    protected @NotNull ByteBuffer refill(@NotNull ByteBuffer toRefill) {
         return toRefill;
     }
 
     private ZstdDirectBufferDecompressingStreamNoFinalizer inner;
     private boolean finalize = true;
 
-    public ZstdDirectBufferDecompressingStream(ByteBuffer source) {
+    public ZstdDirectBufferDecompressingStream(@NotNull ByteBuffer source) {
         inner = new ZstdDirectBufferDecompressingStreamNoFinalizer(source) {
                 @Override
-                protected ByteBuffer refill(ByteBuffer toRefill) {
+                protected @NotNull ByteBuffer refill(@NotNull ByteBuffer toRefill) {
                     return ZstdDirectBufferDecompressingStream.this.refill(toRefill);
                 }
             };
@@ -52,23 +53,23 @@ public class ZstdDirectBufferDecompressingStream implements Closeable {
         return ZstdDirectBufferDecompressingStreamNoFinalizer.recommendedTargetBufferSize();
     }
 
-    public synchronized ZstdDirectBufferDecompressingStream setDict(byte[] dict) throws IOException {
+    public synchronized @NotNull ZstdDirectBufferDecompressingStream setDict(byte @NotNull [] dict) throws IOException {
         inner.setDict(dict);
         return this;
     }
 
-    public synchronized ZstdDirectBufferDecompressingStream setDict(ZstdDictDecompress dict) throws IOException {
+    public synchronized @NotNull ZstdDirectBufferDecompressingStream setDict(@NotNull ZstdDictDecompress dict) throws IOException {
         inner.setDict(dict);
         return this;
     }
 
-    public ZstdDirectBufferDecompressingStream setLongMax(int windowLogMax) throws IOException {
+    public @NotNull ZstdDirectBufferDecompressingStream setLongMax(int windowLogMax) throws IOException {
         inner.setLongMax(windowLogMax);
         return this;
     }
 
 
-    public synchronized int read(ByteBuffer target) throws IOException {
+    public synchronized int read(@NotNull ByteBuffer target) throws IOException {
         return inner.read(target);
     }
 
