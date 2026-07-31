@@ -9,7 +9,6 @@ import java.nio.ByteBuffer;
 
 public abstract class BaseZstdBufferDecompressingStreamNoFinalizer implements Closeable {
     protected long stream;
-    // TODO(nullability): nulled in close() but dereferenced without a null-check elsewhere (use-after-close risk)
     protected @Nullable ByteBuffer source;
     protected boolean closed = false;
     private boolean finishedFrame = false;
@@ -41,8 +40,8 @@ public abstract class BaseZstdBufferDecompressingStreamNoFinalizer implements Cl
      * @return false if all data is processed and no more data is available from the {@link #source}
      */
     public boolean hasRemaining() {
-        // TODO(nullability): source is @Nullable (see field) and dereferenced here without a null-check
-        return !streamEnd && (source.hasRemaining() || !finishedFrame);
+        ByteBuffer source = this.source;
+        return source != null && !streamEnd && (source.hasRemaining() || !finishedFrame);
     }
 
     public @NotNull BaseZstdBufferDecompressingStreamNoFinalizer setDict(byte @NotNull [] dict) throws IOException {
@@ -91,7 +90,10 @@ public abstract class BaseZstdBufferDecompressingStreamNoFinalizer implements Cl
             return 0;
         }
 
-        // TODO(nullability): source is @Nullable but decompressStream's src parameter is @NotNull; same use-after-close risk as hasRemaining()
+        ByteBuffer source = this.source;
+        if (source == null) {
+            throw new IOException("Stream closed");
+        }
         long remaining = decompressStream(stream, target, target.position(), target.remaining(), source, source.position(), source.remaining());
         if (Zstd.isError(remaining)) {
             throw new ZstdIOException(remaining);
@@ -102,6 +104,7 @@ public abstract class BaseZstdBufferDecompressingStreamNoFinalizer implements Cl
 
         if (!source.hasRemaining()) {
             source = refill(source);
+            this.source = source;
             if (!isDirectBufferRequired && source.isDirect()) {
                 throw new IllegalArgumentException("Source buffer should be a non-direct buffer");
             }

@@ -414,10 +414,10 @@ public class ZstdCompressCtx extends AutoCloseBase {
     /**
      * Load compression dictionary to be used for subsequently compressed frames.
      *
-     * @param dict the dictionary or `null` to remove loaded dictionary
+     * @param dict the dictionary
      */
     @NotNull
-    public ZstdCompressCtx loadDict(ZstdDictCompress dict) {
+    public ZstdCompressCtx loadDict(@Nullable ZstdDictCompress dict) {
         ensureOpen();
         acquireSharedLock();
         if (dict != null) {
@@ -438,7 +438,7 @@ public class ZstdCompressCtx extends AutoCloseBase {
         }
         return this;
     }
-    private native long loadCDictFast0(long ptr, ZstdDictCompress dict);
+    private native long loadCDictFast0(long ptr, @Nullable ZstdDictCompress dict);
 
     /**
      * Load compression dictionary to be used for subsequently compressed frames.

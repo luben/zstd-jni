@@ -58,10 +58,10 @@ public class ZstdDecompressCtx extends AutoCloseBase {
     /**
      * Load decompression dictionary
      *
-     * @param dict the dictionary or `null` to remove loaded dictionary
+     * @param dict the dictionary
      */
     @NotNull
-    public ZstdDecompressCtx loadDict(ZstdDictDecompress dict) {
+    public ZstdDecompressCtx loadDict(@Nullable ZstdDictDecompress dict) {
         ensureOpen();
         acquireSharedLock();
         if (dict != null) {
@@ -83,7 +83,7 @@ public class ZstdDecompressCtx extends AutoCloseBase {
         return this;
     }
 
-    private static native long loadDDictFast0(long nativePtr, ZstdDictDecompress dict);
+    private static native long loadDDictFast0(long nativePtr, @Nullable ZstdDictDecompress dict);
 
     /**
      * Load decompression dictionary.
