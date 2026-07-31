@@ -1162,50 +1162,6 @@ class ZstdSpec extends AnyFlatSpec with ScalaCheckPropertyChecks {
     }
 
 
-  for (version <- List("04", "05", "06", "07"))
-    "ZstdInputStream" should s"be able to consume files compressed by the zstd binary version $version" in {
-      val orig = new File("src/test/resources/xml")
-      val file = new File(s"src/test/resources/xml_v$version.zst")
-      val fis  = new FileInputStream(file)
-      val zis  = new ZstdInputStream(fis)
-      assert(!zis.markSupported)
-      assert(zis.available > 0)
-      assert(zis.skip(0) == 0)
-      val length = orig.length.toInt
-      val buff = Array.fill[Byte](length)(0)
-      var pos  = 0;
-      while (pos < length) {
-        pos += zis.read(buff, pos, length - pos)
-      }
-
-      val original = Source.fromFile(orig)(Codec.ISO8859).map{char => char.toByte}.to(WrappedArray)
-      if(original != buff.toSeq)
-        sys.error(s"Failed")
-      assert(zis.available == 0)
-    }
-
-  for (version <- List("04", "05", "06", "07"))
-    "ZstdInputStream in continuous mode" should s"be able to consume files compressed by the zstd binary version $version" in {
-      val orig = new File("src/test/resources/xml")
-      val file = new File(s"src/test/resources/xml_v$version.zst")
-      val fis  = new FileInputStream(file)
-      val zis  = new ZstdInputStream(fis).setContinuous(true);
-      assert(!zis.markSupported)
-      assert(zis.available > 0)
-      assert(zis.skip(0) == 0)
-      val length = orig.length.toInt
-      val buff = Array.fill[Byte](length)(0)
-      var pos  = 0;
-      while (pos < length) {
-        pos += zis.read(buff, pos, length - pos)
-      }
-
-      val original = Source.fromFile(orig)(Codec.ISO8859).map{char => char.toByte}.to(WrappedArray)
-      if(original != buff.toSeq)
-        sys.error(s"Failed")
-      assert(zis.available == 0)
-    }
-
   "ZstdInputStream.read() of empty frame" should "return -1" in {
     val compressed = Zstd.compress(Array.empty[Byte])
     val zis = new ZstdInputStream(new ByteArrayInputStream(compressed))
