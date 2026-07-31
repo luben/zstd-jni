@@ -1,0 +1,60 @@
+name: Tag Release
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - version
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Read and validate version
+        id: ver
+        run: |
+          # Strip all whitespace (the file ends with a newline).
+          # Fail fast if the result is empty or does not look like a version
+          # string — prevents creating a malformed tag if the file is corrupted
+          # or a whitespace-only edit lands without a real version change.
+          VERSION=$(tr -d '[:space:]' < version)
+          if [[ -z "$VERSION" ]]; then
+            echo "version file is empty — skipping tag creation"
+            exit 1
+          fi
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+-[0-9]+$ ]]; then
+            echo "Unexpected version format '${VERSION}' — skipping tag creation"
+            exit 1
+          fi
+          echo "tag=v${VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Check whether tag already exists
+        id: check
+        run: |
+          if git rev-parse --verify "refs/tags/${{ steps.ver.outputs.tag }}" \
+              > /dev/null 2>&1; then
+            echo "${{ steps.ver.outputs.tag }} already exists — nothing to do"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create and push tag
+        if: steps.check.outputs.skip == 'false'
+        run: |
+          git config user.name  "github-actions[bot]"
+          # 41898282 is the numeric user ID of the github-actions[bot] account;
+          # without it the tag is attributed to an unresolvable identity in the
+          # GitHub UI. See https://github.com/orgs/community/discussions/119597
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag "${{ steps.ver.outputs.tag }}" "${{ github.sha }}"
+          git push origin "${{ steps.ver.outputs.tag }}"
+          echo "Tagged ${{ github.sha }} as ${{ steps.ver.outputs.tag }}"
