@@ -520,6 +520,63 @@ public class ZstdCompressCtx extends AutoCloseBase {
 
     /**
      * Compress as much of the <code>src</code> {@link ByteBuffer} into the <code>dst</code> {@link
+     * ByteBuffer} as possible. Both buffers may be direct or array-backed heap buffers. The
+     * destination buffer must be writable.
+     *
+     * @param dst destination of compressed data
+     * @param src buffer to compress
+     * @param endOp directive for handling the end of the stream
+     * @return true if all state has been flushed from internal buffers
+     * @throws IllegalArgumentException if either buffer is unsupported or the destination is read-only
+     */
+    public boolean compressByteBufferStream(@NotNull ByteBuffer dst, @NotNull ByteBuffer src, @NotNull EndDirective endOp) {
+        ensureOpen();
+        if (dst.isReadOnly()) {
+            throw new IllegalArgumentException("dst must be writable");
+        }
+        if (!dst.isDirect() && !dst.hasArray()) {
+            throw new IllegalArgumentException("dst must be a direct or array-backed buffer");
+        }
+        if (!src.isDirect() && !src.hasArray()) {
+            throw new IllegalArgumentException("src must be a direct or array-backed buffer");
+        }
+
+        acquireSharedLock();
+        try {
+            final long result;
+            if (dst.isDirect()) {
+                if (src.isDirect()) {
+                    result = compressDirectByteBufferStream0(nativePtr, dst, dst.position(), dst.limit(), src,
+                            src.position(), src.limit(), endOp.value());
+                } else {
+                    result = compressByteArrayToDirectByteBufferStream0(nativePtr, dst, dst.position(), dst.limit(),
+                            src.array(), src.arrayOffset(), src.position(), src.limit(), endOp.value());
+                }
+            } else if (src.isDirect()) {
+                result = compressDirectByteBufferToByteArrayStream0(nativePtr, dst.array(), dst.arrayOffset(),
+                        dst.position(), dst.limit(), src, src.position(), src.limit(), endOp.value());
+            } else {
+                result = compressByteArrayStream0(nativePtr, dst.array(), dst.arrayOffset(), dst.position(), dst.limit(),
+                        src.array(), src.arrayOffset(), src.position(), src.limit(), endOp.value());
+            }
+            return updateStreamPositions(result, dst, src);
+        } finally {
+            releaseSharedLock();
+        }
+    }
+
+    private static native long compressByteArrayToDirectByteBufferStream0(long ptr, @NotNull ByteBuffer dst,
+            int dstOffset, int dstSize, byte @NotNull [] src, int srcArrayOffset, int srcOffset, int srcSize, int endOp);
+
+    private static native long compressDirectByteBufferToByteArrayStream0(long ptr, byte @NotNull [] dst,
+            int dstArrayOffset, int dstOffset, int dstSize, @NotNull ByteBuffer src, int srcOffset, int srcSize, int endOp);
+
+    private static native long compressByteArrayStream0(long ptr, byte @NotNull [] dst, int dstArrayOffset,
+            int dstOffset, int dstSize,
+            byte @NotNull [] src, int srcArrayOffset, int srcOffset, int srcSize, int endOp);
+
+    /**
+     * Compress as much of the <code>src</code> {@link ByteBuffer} into the <code>dst</code> {@link
      * ByteBuffer} as possible.
      *
      * @param dst destination of compressed data
@@ -532,13 +589,7 @@ public class ZstdCompressCtx extends AutoCloseBase {
         acquireSharedLock();
         try {
             long result = compressDirectByteBufferStream0(nativePtr, dst, dst.position(), dst.limit(), src, src.position(), src.limit(), endOp.value());
-            if ((result & 0x80000000L) != 0) {
-                long code = -(result & 0xFF);
-                throw new ZstdException(code, Zstd.getErrorName(code));
-            }
-            src.position((int)(result & 0x7FFFFFFF));
-            dst.position((int)(result >>> 32) & 0x7FFFFFFF);
-            return (result >>> 63) == 1;
+            return updateStreamPositions(result, dst, src);
         } finally {
             releaseSharedLock();
         }
@@ -551,7 +602,18 @@ public class ZstdCompressCtx extends AutoCloseBase {
      * bit is set if an error occurred. If an error occurred, the lowest 31 bits encode a zstd error
      * code. Otherwise, the lowest 31 bits are the new position of the source buffer.
      */
-    private static native long compressDirectByteBufferStream0(long ptr, @NotNull ByteBuffer dst, int dstOffset, int dstSize, @NotNull ByteBuffer src, int srcSize, int srcOffset, int endOp);
+    private static native long compressDirectByteBufferStream0(long ptr, @NotNull ByteBuffer dst, int dstOffset, int dstSize,
+            @NotNull ByteBuffer src, int srcOffset, int srcSize, int endOp);
+
+    private static boolean updateStreamPositions(long result, @NotNull ByteBuffer dst, @NotNull ByteBuffer src) {
+        if ((result & 0x80000000L) != 0) {
+            long code = -(result & 0xFF);
+            throw new ZstdException(code, Zstd.getErrorName(code));
+        }
+        src.position((int)(result & 0x7FFFFFFF));
+        dst.position((int)(result >>> 32) & 0x7FFFFFFF);
+        return (result >>> 63) == 1;
+    }
 
     /**
      * Compresses buffer 'srcBuff' into buffer 'dstBuff' reusing this ZstdCompressCtx.
