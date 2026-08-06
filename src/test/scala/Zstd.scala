@@ -1395,7 +1395,7 @@ class ZstdSpec extends AnyFlatSpec with ScalaCheckPropertyChecks {
           val compressedBuffer = ByteBuffer.allocateDirect(Zstd.compressBound(size).toInt)
           while (inputBuffer.hasRemaining) {
             compressedBuffer.limit(compressedBuffer.position() + 1)
-            cctx.compressDirectByteBufferStream(compressedBuffer, inputBuffer, EndDirective.CONTINUE)
+            cctx.compressByteBufferStream(compressedBuffer, inputBuffer, EndDirective.CONTINUE)
           }
 
           var frameProgression = cctx.getFrameProgression()
@@ -1403,7 +1403,7 @@ class ZstdSpec extends AnyFlatSpec with ScalaCheckPropertyChecks {
           assert(frameProgression.getFlushed() == compressedBuffer.position())
 
           compressedBuffer.limit(compressedBuffer.capacity())
-          val done = cctx.compressDirectByteBufferStream(compressedBuffer, inputBuffer, EndDirective.END)
+          val done = cctx.compressByteBufferStream(compressedBuffer, inputBuffer, EndDirective.END)
           assert(done)
 
           frameProgression = cctx.getFrameProgression()
@@ -1426,6 +1426,101 @@ class ZstdSpec extends AnyFlatSpec with ScalaCheckPropertyChecks {
           val comparison = inputBuffer.compareTo(decompressedBuffer)
           assert(comparison == 0 && Zstd.decompressedSize(compressedBuffer) == size && Zstd.getFrameContentSize(compressedBuffer) == size && Zstd.findFrameCompressedSize(compressedBuffer) == (compressedBuffer.limit() - compressedBuffer.position()))
         }
+      }
+    }.get
+  }
+
+  Seq(
+    (false, true, "a heap source and direct destination"),
+    (true, false, "a direct source and heap destination"),
+    (false, false, "heap source and destination")
+  ).foreach { case (sourceDirect, destinationDirect, description) =>
+    it should s"roundtrip with $description" in {
+      Using.Manager { use =>
+        val cctx = use(new ZstdCompressCtx())
+        val dctx = use(new ZstdDecompressCtx())
+        forAll { input: Array[Byte] =>
+          {
+            val size = input.length
+            val sourceStorage = if (sourceDirect) ByteBuffer.allocateDirect(size + 16) else ByteBuffer.allocate(size + 16)
+            sourceStorage.position(5)
+            val writableInput = sourceStorage.slice()
+            writableInput.position(3)
+            writableInput.put(input)
+            val sourceLimit = writableInput.position()
+            val sourceStart = 3
+            writableInput.position(sourceStart)
+            val inputBuffer = if (sourceDirect) writableInput.asReadOnlyBuffer() else writableInput
+
+            cctx.reset()
+            cctx.setPledgedSrcSize(size)
+            val compressedCapacity = Zstd.compressBound(size).toInt + 16
+            val compressedStorage = if (destinationDirect)
+              ByteBuffer.allocateDirect(compressedCapacity)
+            else
+              ByteBuffer.allocate(compressedCapacity)
+            compressedStorage.position(5)
+            val compressedBuffer = compressedStorage.slice()
+            compressedBuffer.position(4)
+            val compressedStart = compressedBuffer.position()
+
+            inputBuffer.limit(sourceStart + size / 2)
+            while (inputBuffer.hasRemaining) {
+              compressedBuffer.limit(compressedBuffer.position() + 1)
+              cctx.compressByteBufferStream(compressedBuffer, inputBuffer, EndDirective.CONTINUE)
+            }
+
+            if (size > 1) {
+              compressedBuffer.limit(compressedBuffer.capacity())
+              assert(cctx.compressByteBufferStream(compressedBuffer, inputBuffer, EndDirective.FLUSH))
+            }
+
+            inputBuffer.limit(sourceLimit)
+            while (inputBuffer.hasRemaining) {
+              compressedBuffer.limit(compressedBuffer.position() + 1)
+              cctx.compressByteBufferStream(compressedBuffer, inputBuffer, EndDirective.CONTINUE)
+            }
+
+            compressedBuffer.limit(compressedBuffer.capacity())
+            assert(cctx.compressByteBufferStream(compressedBuffer, inputBuffer, EndDirective.END))
+            assert(inputBuffer.position() == sourceLimit)
+
+            val compressedEnd = compressedBuffer.position()
+            val compressed = new Array[Byte](compressedEnd - compressedStart)
+            compressedBuffer.position(compressedStart)
+            compressedBuffer.limit(compressedEnd)
+            compressedBuffer.get(compressed)
+            val compressedFrame = ByteBuffer.allocateDirect(compressed.length)
+            compressedFrame.put(compressed)
+            compressedFrame.flip()
+
+            val decompressedBuffer = ByteBuffer.allocateDirect(size)
+            dctx.reset()
+            while (compressedFrame.hasRemaining) {
+              dctx.decompressDirectByteBufferStream(decompressedBuffer, compressedFrame)
+            }
+
+            val decompressed = new Array[Byte](size)
+            decompressedBuffer.flip()
+            decompressedBuffer.get(decompressed)
+            assert(decompressed.toSeq == input.toSeq)
+          }
+        }
+      }.get
+    }
+  }
+
+  "streaming compression with ByteBuffers" should "reject unsupported buffers" in {
+    Using.Manager { use =>
+      val cctx = use(new ZstdCompressCtx())
+      assertThrows[IllegalArgumentException] {
+        cctx.compressByteBufferStream(ByteBuffer.allocate(64).asReadOnlyBuffer(), ByteBuffer.allocate(1), EndDirective.CONTINUE)
+      }
+      assertThrows[IllegalArgumentException] {
+        cctx.compressByteBufferStream(ByteBuffer.allocateDirect(64).asReadOnlyBuffer(), ByteBuffer.allocate(1), EndDirective.CONTINUE)
+      }
+      assertThrows[IllegalArgumentException] {
+        cctx.compressByteBufferStream(ByteBuffer.allocateDirect(64), ByteBuffer.allocate(1).asReadOnlyBuffer(), EndDirective.CONTINUE)
       }
     }.get
   }
