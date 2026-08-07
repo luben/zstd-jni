@@ -40,9 +40,9 @@ Status and availability
 
 **Zstd** is production ready with a stable format.
 
-**Zstd-jni** is tracking the release branch of **Zstd** (master) with
-*without* compatibility support for the legacy formats. The last version that
-was released with support for the legacy formats (since version 0.4) is `1.5.7-12`.
+**Zstd-jni** is tracking the release branch of **Zstd** (master) *without*
+compatibility support for the legacy formats. The last version that was
+released with support for the legacy formats (0.4 - 0.7) is `1.5.7-12`.
 
 **Zstd-jni** version uses the base **Zstd** version with **Zstd-jni** release
 appended with a dash, e.g. "1.2.0-2" is the second **Zstd-jni** release based
@@ -104,9 +104,9 @@ sbt dependency:
     libraryDependencies += "com.github.luben" % "zstd-jni" % "VERSION"
 
 Single architecture classified jars are also published. The classifier name is
-following the "$OS_$ARCH" convention, but there is also a "cloud" classifier
-that packs binaries just for *linux-amd64*, *linux-aarch64* (for deployment),
-and *darwin-aarch64* (to help local development).
+following the "$OS_$ARCH" convention. There is also a "cloud" classifier that
+packs binaries just for *linux-amd64*, *linux-aarch64* (for deployment), and
+*darwin-aarch64* (to help local development).
 
 They can be used like:
 
