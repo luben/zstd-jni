@@ -120,8 +120,8 @@ class ZstdPerfSpec extends AnyFlatSpec  {
     if (Zstd.isError(dictSize)) {
       throw new RuntimeException(Zstd.getErrorName(dictSize));
     }
-    val c_zdict = new ZstdDictCompress(dictBuf, 0, dictSize.toInt, level)
-    val d_zdict = new ZstdDictDecompress(dictBuf, 0, dictSize.toInt)
+    var c_zdict = new ZstdDictCompress(dictBuf, 0, dictSize.toInt, level)
+    var d_zdict = new ZstdDictDecompress(dictBuf, 0, dictSize.toInt)
 
     c_ctx.loadDict(c_zdict);
     d_ctx.loadDict(d_zdict);
@@ -154,6 +154,12 @@ class ZstdPerfSpec extends AnyFlatSpec  {
     }
     report(name, compressedSize, input.size, cycles, nsc, nsd)
     assert (inputBuffer.compareTo(outputBuffer) == 0)
+    // make sure we can unload the dicts
+    c_zdict = null
+    d_zdict = null
+    c_ctx.loadDict(c_zdict)
+    d_ctx.loadDict(d_zdict)
+
   }
 
   def benchLDM(name: String, input: Array[Byte], level: Int = 1): Unit = {
