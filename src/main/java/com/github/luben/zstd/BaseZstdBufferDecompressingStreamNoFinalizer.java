@@ -40,8 +40,7 @@ public abstract class BaseZstdBufferDecompressingStreamNoFinalizer implements Cl
      * @return false if all data is processed and no more data is available from the {@link #source}
      */
     public boolean hasRemaining() {
-        ByteBuffer source = this.source;
-        return source != null && !streamEnd && (source.hasRemaining() || !finishedFrame);
+        return this.source != null && !streamEnd && (this.source.hasRemaining() || !finishedFrame);
     }
 
     public @NotNull BaseZstdBufferDecompressingStreamNoFinalizer setDict(byte @NotNull [] dict) throws IOException {
