@@ -60,12 +60,13 @@ public class ZstdDecompressCtx extends AutoCloseBase {
      *
      * @param dict the dictionary or `null` to remove loaded dictionary
      */
-    // TODO(nullability): javadoc says null clears dict, but dict.acquireSharedLock() below would NPE on null
     @NotNull
     public ZstdDecompressCtx loadDict(ZstdDictDecompress dict) {
         ensureOpen();
         acquireSharedLock();
-        dict.acquireSharedLock();
+        if (dict != null) {
+            dict.acquireSharedLock();
+        }
         try {
             long result = loadDDictFast0(nativePtr, dict);
             if (Zstd.isError(result)) {
@@ -74,13 +75,14 @@ public class ZstdDecompressCtx extends AutoCloseBase {
             // keep a reference to the dictionary so it's not garbage collected
             decompression_dict = dict;
         } finally {
-            dict.releaseSharedLock();
+            if (dict != null) {
+                dict.releaseSharedLock();
+            }
             releaseSharedLock();
         }
         return this;
     }
 
-    // TODO(nullability): dict nullability mirrors loadDict(ZstdDictDecompress); see TODO there
     private static native long loadDDictFast0(long nativePtr, ZstdDictDecompress dict);
 
     /**
