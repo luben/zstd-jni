@@ -65,10 +65,13 @@ abstract class AutoCloseBase implements Closeable {
             if (sharedLock == SHARED_LOCK_CLOSED) {
                 return;
             }
-            if (!SHARED_LOCK_UPDATER.compareAndSet(this, 0, SHARED_LOCK_CLOSED)) {
-                throw new IllegalStateException("Attempt to close while in use");
+            if (sharedLock > 0) {
+                if (SHARED_LOCK_UPDATER.compareAndSet(this, sharedLock, sharedLock - 1)) {
+                    if (sharedLock == 0) {
+                        doClose();
+                    }
+                }
             }
-            doClose();
         }
     }
 }

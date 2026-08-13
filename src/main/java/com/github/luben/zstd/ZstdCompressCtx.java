@@ -428,12 +428,12 @@ public class ZstdCompressCtx extends AutoCloseBase {
             if (Zstd.isError(result)) {
                 throw new ZstdException(result);
             }
+            if (compression_dict != null) {
+                compression_dict.releaseSharedLock();
+            }
             // keep a reference to the dictionary so it's not garbage collected
             compression_dict = dict;
         } finally {
-            if (dict != null) {
-                dict.releaseSharedLock();
-            }
             releaseSharedLock();
         }
         return this;
@@ -454,7 +454,10 @@ public class ZstdCompressCtx extends AutoCloseBase {
             if (Zstd.isError(result)) {
                 throw new ZstdException(result);
             }
-            compression_dict = null;
+            if (compression_dict != null) {
+                compression_dict.releaseSharedLock();
+                compression_dict = null;
+            }
         } finally {
             releaseSharedLock();
         }
@@ -490,6 +493,10 @@ public class ZstdCompressCtx extends AutoCloseBase {
             long result = reset0(nativePtr);
             if (Zstd.isError(result)) {
                 throw new ZstdException(result);
+            }
+            if (compression_dict != null) {
+                compression_dict.releaseSharedLock();
+                compression_dict = null;
             }
         } finally {
             releaseSharedLock();
