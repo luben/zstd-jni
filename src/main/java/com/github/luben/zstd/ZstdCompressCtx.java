@@ -49,6 +49,10 @@ public class ZstdCompressCtx extends AutoCloseBase {
                 seqprod = null;
             }
         }
+        if (compression_dict != null) {
+            compression_dict.releaseSharedLock();
+            compression_dict = null;
+        }
     }
 
     private void ensureOpen() {

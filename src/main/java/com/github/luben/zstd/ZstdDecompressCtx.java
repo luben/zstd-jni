@@ -40,6 +40,10 @@ public class ZstdDecompressCtx extends AutoCloseBase {
             free(nativePtr);
             nativePtr = 0;
         }
+        if (decompression_dict != null) {
+            decompression_dict.releaseSharedLock();
+            decompression_dict = null;
+        }
     }
 
     /**
