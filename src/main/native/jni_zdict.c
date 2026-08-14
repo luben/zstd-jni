@@ -67,8 +67,9 @@ E1: return size;
 JNIEXPORT jlong Java_com_github_luben_zstd_Zstd_trainFromBufferDirect0
   (JNIEnv *env, jclass obj, jobject samples, jintArray sampleSizes, jobject dictBuffer, jboolean legacy, jint compressionLevel) {
 
-    size_t size = -ZSTD_error_memory_allocation;;
+    size_t size = -ZSTD_error_memory_allocation;
     void *samples_buffer = (*env)->GetDirectBufferAddress(env, samples);
+    size_t samples_capacity = (*env)->GetDirectBufferCapacity(env, samples);
     void *dict_buff = (*env)->GetDirectBufferAddress(env, dictBuffer);
     size_t dict_capacity = (*env)->GetDirectBufferCapacity(env, dictBuffer);
     if (samples_buffer == NULL || dict_buff == NULL || dict_capacity < 0) {
@@ -85,10 +86,17 @@ JNIEXPORT jlong Java_com_github_luben_zstd_Zstd_trainFromBufferDirect0
     }
     jint *sample_sizes_array = (*env)->GetPrimitiveArrayCritical(env, sampleSizes, NULL);
     if (sample_sizes_array == NULL) goto E2;
+    size_t total_samples_size = 0;
     for (int i = 0; i < num_samples; i++) {
+        if (sample_sizes_array[i] < 0) {
+            (*env)->ReleasePrimitiveArrayCritical(env, sampleSizes, sample_sizes_array, JNI_ABORT);
+            goto E2;
+        }
+        total_samples_size += (size_t) sample_sizes_array[i];
         samples_sizes[i] = sample_sizes_array[i];
     }
     (*env)->ReleasePrimitiveArrayCritical(env, sampleSizes, sample_sizes_array, JNI_ABORT);
+    if (total_samples_size > samples_capacity) goto E2;
 
     if (legacy == JNI_TRUE) {
         ZDICT_legacy_params_t params;
