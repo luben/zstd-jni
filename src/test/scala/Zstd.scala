@@ -1029,7 +1029,7 @@ class ZstdSpec extends AnyFlatSpec with ScalaCheckPropertyChecks {
 
   "Zstd" should s"do not cause a segmentation fault in loadFastDictDecompress()" in {
     val zin = new ZstdInputStreamNoFinalizer(new ByteArrayInputStream(Array[Byte]()))
-    assertThrows[NullPointerException] {
+    assertThrows[ZstdIOException] {
       zin.setDict(null.asInstanceOf[ZstdDictDecompress])
     }
     // Avoid:
