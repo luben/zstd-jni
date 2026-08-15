@@ -55,7 +55,9 @@ public class ZstdDictCompress extends SharedDictBase {
         if (dict.length - offset < 0) {
             throw new IllegalArgumentException("Dictionary buffer is too short");
         }
-
+        if (offset < 0 || length < 0 || length > dict.length - offset) {
+            throw new IllegalArgumentException("Invalid offset/length for dictionary buffer");
+        }
         init(dict, offset, length, level);
 
         if (0 == nativePtr) {

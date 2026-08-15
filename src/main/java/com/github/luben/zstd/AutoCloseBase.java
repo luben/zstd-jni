@@ -62,18 +62,14 @@ abstract class AutoCloseBase implements Closeable {
         // the second could happen through finalization or cleaning (when Cleaner is used). When updated to Java 9+,
         // synchronization block could be replaced with try { ... } finally { Reference.reachabilityFence(this); }
         synchronized (this) {
-            while (true) {
-                int sharedLock = this.sharedLock;
-                if (sharedLock == SHARED_LOCK_CLOSED) {
-                    return;
-                }
-                if (SHARED_LOCK_UPDATER.compareAndSet(this, sharedLock, sharedLock - 1)) {
-                    if (sharedLock <= 1) {
-                        doClose();
-                        return;
-                    }
-                }
+            if (sharedLock == SHARED_LOCK_CLOSED) {
+                return;
             }
+            if (!SHARED_LOCK_UPDATER.compareAndSet(this, 0, SHARED_LOCK_CLOSED)) {
+                    throw new IllegalStateException("Attempt to close while in use");
+            }
+            doClose();
         }
     }
+
 }

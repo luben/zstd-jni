@@ -47,10 +47,9 @@ public class ZstdDictDecompress extends SharedDictBase {
      * @param length number of bytes to use from the buffer
      */
     public ZstdDictDecompress(byte @NotNull [] dict, int offset, int length) {
-        if (offset < 0 || length < 0 || offset > dict.length - length) {
+        if (offset < 0 || length < 0 || length > dict.length - offset) {
             throw new IllegalArgumentException("Invalid offset/length for dictionary buffer");
         }
-
         init(dict, offset, length);
 
         if (nativePtr == 0L) {
