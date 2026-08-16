@@ -117,7 +117,7 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_findDirectByteBufferFram
   (JNIEnv *env, jclass obj, jobject src_buf, jint src_offset, jint src_size) {
     size_t size = -ZSTD_error_memory_allocation;
     jsize src_cap = (*env)->GetDirectBufferCapacity(env, src_buf);
-    if (src_offset < 0 || src_size < 0 || (int64_t) src_offset > (int64_t) src_cap - (int64_t) src_size)
+    if (src_offset < 0 || src_size < 0 || src_offset > src_cap - src_size)
         return -ZSTD_error_GENERIC;
     char *src_buf_ptr = (char*)(*env)->GetDirectBufferAddress(env, src_buf);
     if (src_buf_ptr == NULL) goto E1;
@@ -196,7 +196,7 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_decompressedDirectByteBu
   (JNIEnv *env, jclass obj, jobject src_buf, jint src_offset, jint src_size, jboolean magicless) {
     size_t size = -ZSTD_error_memory_allocation;
     jsize src_cap = (*env)->GetDirectBufferCapacity(env, src_buf);
-    if (src_offset < 0 || src_size < 0 || (int64_t) src_offset + (int64_t) src_size > (int64_t) src_cap)
+    if (src_offset < 0 || src_size < 0 || src_offset > src_cap - src_size)
         return -ZSTD_error_GENERIC;
     char *src_buf_ptr = (char*)(*env)->GetDirectBufferAddress(env, src_buf);
     if (src_buf_ptr == NULL) goto E1;
@@ -214,7 +214,7 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_Zstd_getDirectByteBufferFrame
   (JNIEnv *env, jclass obj, jobject src_buf, jint src_offset, jint src_size, jboolean magicless) {
     size_t size = -ZSTD_error_memory_allocation;
     jsize src_cap = (*env)->GetDirectBufferCapacity(env, src_buf);
-    if (src_offset < 0 || src_size < 0 || (int64_t) src_offset + (int64_t) src_size > (int64_t) src_cap)
+    if (src_offset < 0 || src_size < 0 || src_offset > src_cap - src_size)
         return -ZSTD_error_GENERIC;
     char *src_buf_ptr = (char*)(*env)->GetDirectBufferAddress(env, src_buf);
     if (src_buf_ptr == NULL) goto E1;
