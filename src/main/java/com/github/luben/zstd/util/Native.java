@@ -110,9 +110,9 @@ public enum Native {
             return;
         }
 
-        // try to load the shared library directly from the JAR
+        // try to load the shared library directly from the JAR or system path
         try {
-            loadLibrary(libname);
+            loadLibrary(libnameShort);
             loaded.set(true);
             return;
         } catch (Throwable e) {
@@ -121,17 +121,8 @@ public enum Native {
 
         InputStream is = Native.class.getResourceAsStream(resourceName);
         if (is == null) {
-            // fallback to loading the zstd-jni from the system library path.
-            // It also covers loading on Android.
-            try {
-                loadLibrary(libnameShort);
-                loaded.set(true);
-                return;
-            } catch (UnsatisfiedLinkError e) {
-                UnsatisfiedLinkError err = new UnsatisfiedLinkError(e.getMessage() + "\n" + errorMsg);
-                err.setStackTrace(e.getStackTrace());
-                throw err;
-            }
+            UnsatisfiedLinkError err = new UnsatisfiedLinkError("Failed to open resource " + resourceName + " as stream:\n" + errorMsg);
+            throw err;
         }
         File tempLib = null;
         FileOutputStream out = null;
@@ -159,19 +150,12 @@ public enum Native {
             try {
                 loadLibraryFile(tempLib.getAbsolutePath());
             } catch (UnsatisfiedLinkError e) {
-                // fall-back to loading the zstd-jni from the system library path
-                try {
-                    loadLibrary(libnameShort);
-                } catch (UnsatisfiedLinkError e1) {
-                    // display error in case problem with loading from temp folder
-                    // and from system library path - concatenate both messages
-                    UnsatisfiedLinkError err = new UnsatisfiedLinkError(
-                            e.getMessage() + "\n" +
-                            e1.getMessage() + "\n"+
-                            errorMsg);
-                    err.setStackTrace(e1.getStackTrace());
-                    throw err;
-                }
+                // display error in case problem with loading from temp folder
+                UnsatisfiedLinkError err = new UnsatisfiedLinkError(
+                        e.getMessage() + "\n" +
+                        errorMsg);
+                err.setStackTrace(e.getStackTrace());
+                throw err;
             }
             loaded.set(true);
         } catch (IOException e) {
