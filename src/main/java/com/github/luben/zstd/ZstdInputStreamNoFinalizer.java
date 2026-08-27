@@ -46,9 +46,9 @@ public class ZstdInputStreamNoFinalizer extends FilterInputStream {
     public static native long recommendedDInSize();
     public static native long recommendedDOutSize();
     private static native long createDStream();
-    private static native int  freeDStream(long stream);
+    private static native long  freeDStream(long stream);
     private native int  initDStream(long stream);
-    private native int  decompressStream(long stream, byte @NotNull [] dst, int dst_size, byte @NotNull [] src, int src_size);
+    private native long  decompressStream(long stream, byte @NotNull [] dst, int dst_size, byte @NotNull [] src, int src_size);
 
     /**
      * create a new decompressing InputStream
@@ -93,7 +93,7 @@ public class ZstdInputStreamNoFinalizer extends FilterInputStream {
         if (isClosed) {
             throw new IOException("Stream closed");
         }
-        int size = Zstd.loadDictDecompress(stream, dict, dict.length);
+        long size = Zstd.loadDictDecompress(stream, dict, dict.length);
         if (Zstd.isError(size)) {
             throw new ZstdIOException(size);
         }
@@ -107,7 +107,7 @@ public class ZstdInputStreamNoFinalizer extends FilterInputStream {
         if (dict != null) {
             dict.acquireSharedLock();
         }
-        int size = Zstd.loadFastDictDecompress(stream, dict);
+        long size = Zstd.loadFastDictDecompress(stream, dict);
         if (Zstd.isError(size)) {
             if (dict != null) {
                 dict.releaseSharedLock();
@@ -127,7 +127,7 @@ public class ZstdInputStreamNoFinalizer extends FilterInputStream {
         if (isClosed) {
             throw new IOException("Stream closed");
         }
-        int size = Zstd.setDecompressionLongMax(stream, windowLogMax);
+        long size = Zstd.setDecompressionLongMax(stream, windowLogMax);
         if (Zstd.isError(size)) {
             throw new ZstdIOException(size);
         }
@@ -138,7 +138,7 @@ public class ZstdInputStreamNoFinalizer extends FilterInputStream {
         if (isClosed) {
             throw new IOException("Stream closed");
         }
-        int size = Zstd.setRefMultipleDDicts(stream, useMultiple);
+        long size = Zstd.setRefMultipleDDicts(stream, useMultiple);
         if (Zstd.isError(size)) {
             throw new ZstdIOException(size);
         }
@@ -203,7 +203,7 @@ public class ZstdInputStreamNoFinalizer extends FilterInputStream {
             }
 
             lastDstPos = dstPos;
-            int size = decompressStream(stream, dst, dstSize, src, (int) srcSize);
+            long size = decompressStream(stream, dst, dstSize, src, (int) srcSize);
 
             if (Zstd.isError(size)) {
                 throw new ZstdIOException(size);

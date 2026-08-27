@@ -40,11 +40,11 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
     /* JNI methods */
     public static native long recommendedCOutSize();
     private static native long createCStream();
-    private static native int  freeCStream(long ctx);
-    private native int resetCStream(long ctx);
-    private native int compressStream(long ctx, byte @NotNull [] dst, int dst_size, byte @NotNull [] src, int src_size);
-    private native int flushStream(long ctx, byte @NotNull [] dst, int dst_size);
-    private native int endStream(long ctx, byte @NotNull [] dst, int dst_size);
+    private static native long  freeCStream(long ctx);
+    private native long resetCStream(long ctx);
+    private native long compressStream(long ctx, byte @NotNull [] dst, int dst_size, byte @NotNull [] src, int src_size);
+    private native long flushStream(long ctx, byte @NotNull [] dst, int dst_size);
+    private native long endStream(long ctx, byte @NotNull [] dst, int dst_size);
 
 
     /**
@@ -101,7 +101,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
         if (!frameClosed) {
             throw new IllegalStateException("Change of parameter on initialized stream");
         }
-        int size = Zstd.setCompressionChecksums(stream, useChecksums);
+        long size = Zstd.setCompressionChecksums(stream, useChecksums);
         if (Zstd.isError(size)) {
             throw new ZstdIOException(size);
         }
@@ -120,7 +120,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
         if (!frameClosed) {
             throw new IllegalStateException("Change of parameter on initialized stream");
         }
-        int size = Zstd.setCompressionLevel(stream, level);
+        long size = Zstd.setCompressionLevel(stream, level);
         if (Zstd.isError(size)) {
             throw new ZstdIOException(size);
         }
@@ -158,7 +158,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
         if (!frameClosed) {
             throw new IllegalStateException("Change of parameter on initialized stream");
         }
-        int size = Zstd.setCompressionWorkers(stream, n);
+        long size = Zstd.setCompressionWorkers(stream, n);
         if (Zstd.isError(size)) {
             throw new ZstdIOException(size);
         }
@@ -178,7 +178,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
         if (!frameClosed) {
             throw new IllegalStateException("Change of parameter on initialized stream");
         }
-        int size = Zstd.setCompressionOverlapLog(stream, overlapLog);
+        long size = Zstd.setCompressionOverlapLog(stream, overlapLog);
         if (Zstd.isError(size)) {
             throw new ZstdIOException(size);
         }
@@ -198,7 +198,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
         if (!frameClosed) {
             throw new IllegalStateException("Change of parameter on initialized stream");
         }
-        int size = Zstd.setCompressionJobSize(stream, jobSize);
+        long size = Zstd.setCompressionJobSize(stream, jobSize);
         if (Zstd.isError(size)) {
             throw new ZstdIOException(size);
         }
@@ -217,7 +217,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
         if (!frameClosed) {
             throw new IllegalStateException("Change of parameter on initialized stream");
         }
-        int size = Zstd.setCompressionTargetLength(stream, targetLength);
+        long size = Zstd.setCompressionTargetLength(stream, targetLength);
         if (Zstd.isError(size)) {
             throw new ZstdIOException(size);
         }
@@ -236,7 +236,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
         if (!frameClosed) {
             throw new IllegalStateException("Change of parameter on initialized stream");
         }
-        int size = Zstd.setCompressionMinMatch(stream, minMatch);
+        long size = Zstd.setCompressionMinMatch(stream, minMatch);
         if (Zstd.isError(size)) {
             throw new ZstdIOException(size);
         }
@@ -256,7 +256,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
         if (!frameClosed) {
             throw new IllegalStateException("Change of parameter on initialized stream");
         }
-        int size = Zstd.setCompressionSearchLog(stream, searchLog);
+        long size = Zstd.setCompressionSearchLog(stream, searchLog);
         if (Zstd.isError(size)) {
             throw new ZstdIOException(size);
         }
@@ -276,7 +276,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
         if (!frameClosed) {
             throw new IllegalStateException("Change of parameter on initialized stream");
         }
-        int size = Zstd.setCompressionChainLog(stream, chainLog);
+        long size = Zstd.setCompressionChainLog(stream, chainLog);
         if (Zstd.isError(size)) {
             throw new ZstdIOException(size);
         }
@@ -295,7 +295,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
         if (!frameClosed) {
             throw new IllegalStateException("Change of parameter on initialized stream");
         }
-        int size = Zstd.setCompressionHashLog(stream, hashLog);
+        long size = Zstd.setCompressionHashLog(stream, hashLog);
         if (Zstd.isError(size)) {
             throw new ZstdIOException(size);
         }
@@ -314,7 +314,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
         if (!frameClosed) {
             throw new IllegalStateException("Change of parameter on initialized stream");
         }
-        int size = Zstd.setCompressionWindowLog(stream, windowLog);
+        long size = Zstd.setCompressionWindowLog(stream, windowLog);
         if (Zstd.isError(size)) {
             throw new ZstdIOException(size);
         }
@@ -333,7 +333,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
         if (!frameClosed) {
             throw new IllegalStateException("Change of parameter on initialized stream");
         }
-        int size = Zstd.setCompressionStrategy(stream, strategy);
+        long size = Zstd.setCompressionStrategy(stream, strategy);
         if (Zstd.isError(size)) {
             throw new ZstdIOException(size);
         }
@@ -364,7 +364,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
         if (!frameClosed) {
             throw new IllegalStateException("Change of parameter on initialized stream");
         }
-        int size = Zstd.loadDictCompress(stream, dict, dict.length);
+        long size = Zstd.loadDictCompress(stream, dict, dict.length);
         if (Zstd.isError(size)) {
             throw new ZstdIOException(size);
         }
@@ -381,7 +381,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
         if (dict != null) {
             dict.acquireSharedLock();
         }
-        int size = Zstd.loadFastDictCompress(stream, dict);
+        long size = Zstd.loadFastDictCompress(stream, dict);
         if (Zstd.isError(size)) {
             if (dict != null) {
                 dict.releaseSharedLock();
@@ -406,7 +406,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
             throw new IOException("StreamClosed");
         }
         if (frameClosed) {
-            int size = resetCStream(this.stream);
+            long size = resetCStream(this.stream);
             if (Zstd.isError(size)) {
                 throw new ZstdIOException(size);
             }
@@ -416,7 +416,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
         int srcSize = offset + len;
         srcPos = offset;
         while (srcPos < srcSize) {
-            int size = compressStream(stream, dst, dstSize, src, srcSize);
+            long size = compressStream(stream, dst, dstSize, src, srcSize);
             if (Zstd.isError(size)) {
                 throw new ZstdIOException(size);
             }
@@ -442,7 +442,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
         if (!frameClosed) {
             if (closeFrameOnFlush) {
                 // compress the remaining output and close the frame
-                int size;
+                long size;
                 do {
                     size = endStream(stream, dst, dstSize);
                     if (Zstd.isError(size)) {
@@ -453,7 +453,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
                 frameClosed = true;
             } else {
                 // compress the remaining input
-                int size;
+                long size;
                 do {
                     size = flushStream(stream, dst, dstSize);
                     if (Zstd.isError(size)) {
@@ -481,7 +481,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
             return;
         }
         try {
-            int size;
+            long size;
             // Closing the stream withouth before writing anything
             // should still produce valid zstd frame. So reset the
             // stream to start a frame if no frame was ever started.
