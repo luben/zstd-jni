@@ -101,7 +101,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
         if (!frameClosed) {
             throw new IllegalStateException("Change of parameter on initialized stream");
         }
-        long size = Zstd.setCompressionChecksums(stream, useChecksums);
+        int size = Zstd.setCompressionChecksums(stream, useChecksums);
         if (Zstd.isError(size)) {
             throw new ZstdIOException(size);
         }
@@ -120,7 +120,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
         if (!frameClosed) {
             throw new IllegalStateException("Change of parameter on initialized stream");
         }
-        long size = Zstd.setCompressionLevel(stream, level);
+        int size = Zstd.setCompressionLevel(stream, level);
         if (Zstd.isError(size)) {
             throw new ZstdIOException(size);
         }
@@ -158,7 +158,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
         if (!frameClosed) {
             throw new IllegalStateException("Change of parameter on initialized stream");
         }
-        long size = Zstd.setCompressionWorkers(stream, n);
+        int size = Zstd.setCompressionWorkers(stream, n);
         if (Zstd.isError(size)) {
             throw new ZstdIOException(size);
         }
@@ -178,7 +178,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
         if (!frameClosed) {
             throw new IllegalStateException("Change of parameter on initialized stream");
         }
-        long size = Zstd.setCompressionOverlapLog(stream, overlapLog);
+        int size = Zstd.setCompressionOverlapLog(stream, overlapLog);
         if (Zstd.isError(size)) {
             throw new ZstdIOException(size);
         }
@@ -198,7 +198,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
         if (!frameClosed) {
             throw new IllegalStateException("Change of parameter on initialized stream");
         }
-        long size = Zstd.setCompressionJobSize(stream, jobSize);
+        int size = Zstd.setCompressionJobSize(stream, jobSize);
         if (Zstd.isError(size)) {
             throw new ZstdIOException(size);
         }
@@ -217,7 +217,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
         if (!frameClosed) {
             throw new IllegalStateException("Change of parameter on initialized stream");
         }
-        long size = Zstd.setCompressionTargetLength(stream, targetLength);
+        int size = Zstd.setCompressionTargetLength(stream, targetLength);
         if (Zstd.isError(size)) {
             throw new ZstdIOException(size);
         }
@@ -236,7 +236,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
         if (!frameClosed) {
             throw new IllegalStateException("Change of parameter on initialized stream");
         }
-        long size = Zstd.setCompressionMinMatch(stream, minMatch);
+        int size = Zstd.setCompressionMinMatch(stream, minMatch);
         if (Zstd.isError(size)) {
             throw new ZstdIOException(size);
         }
@@ -256,7 +256,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
         if (!frameClosed) {
             throw new IllegalStateException("Change of parameter on initialized stream");
         }
-        long size = Zstd.setCompressionSearchLog(stream, searchLog);
+        int size = Zstd.setCompressionSearchLog(stream, searchLog);
         if (Zstd.isError(size)) {
             throw new ZstdIOException(size);
         }
@@ -276,7 +276,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
         if (!frameClosed) {
             throw new IllegalStateException("Change of parameter on initialized stream");
         }
-        long size = Zstd.setCompressionChainLog(stream, chainLog);
+        int size = Zstd.setCompressionChainLog(stream, chainLog);
         if (Zstd.isError(size)) {
             throw new ZstdIOException(size);
         }
@@ -295,7 +295,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
         if (!frameClosed) {
             throw new IllegalStateException("Change of parameter on initialized stream");
         }
-        long size = Zstd.setCompressionHashLog(stream, hashLog);
+        int size = Zstd.setCompressionHashLog(stream, hashLog);
         if (Zstd.isError(size)) {
             throw new ZstdIOException(size);
         }
@@ -314,7 +314,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
         if (!frameClosed) {
             throw new IllegalStateException("Change of parameter on initialized stream");
         }
-        long size = Zstd.setCompressionWindowLog(stream, windowLog);
+        int size = Zstd.setCompressionWindowLog(stream, windowLog);
         if (Zstd.isError(size)) {
             throw new ZstdIOException(size);
         }
@@ -333,7 +333,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
         if (!frameClosed) {
             throw new IllegalStateException("Change of parameter on initialized stream");
         }
-        long size = Zstd.setCompressionStrategy(stream, strategy);
+        int size = Zstd.setCompressionStrategy(stream, strategy);
         if (Zstd.isError(size)) {
             throw new ZstdIOException(size);
         }
@@ -364,7 +364,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
         if (!frameClosed) {
             throw new IllegalStateException("Change of parameter on initialized stream");
         }
-        long size = Zstd.loadDictCompress(stream, dict, dict.length);
+        int size = Zstd.loadDictCompress(stream, dict, dict.length);
         if (Zstd.isError(size)) {
             throw new ZstdIOException(size);
         }
@@ -381,7 +381,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
         if (dict != null) {
             dict.acquireSharedLock();
         }
-        long size = Zstd.loadFastDictCompress(stream, dict);
+        int size = Zstd.loadFastDictCompress(stream, dict);
         if (Zstd.isError(size)) {
             if (dict != null) {
                 dict.releaseSharedLock();

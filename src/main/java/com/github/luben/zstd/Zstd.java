@@ -613,32 +613,32 @@ public class Zstd {
     }
 
     /* Advance API */
-    public static native long loadDictDecompress(long stream, byte @NotNull [] dict, int dict_size);
-    public static native long loadFastDictDecompress(long stream, @NotNull ZstdDictDecompress dict);
-    public static native long loadDictCompress(long stream, byte @NotNull [] dict, int dict_size);
-    public static native long loadFastDictCompress(long stream, @NotNull ZstdDictCompress dict);
+    public static native int loadDictDecompress(long stream, byte @NotNull [] dict, int dict_size);
+    public static native int loadFastDictDecompress(long stream, @NotNull ZstdDictDecompress dict);
+    public static native int loadDictCompress(long stream, byte @NotNull [] dict, int dict_size);
+    public static native int loadFastDictCompress(long stream, @NotNull ZstdDictCompress dict);
     public static native void registerSequenceProducer(long stream, long seqProdState, long seqProdFunction);
-    public static native long setCompressionChecksums(long stream, boolean useChecksums);
-    public static native long setCompressionMagicless(long stream, boolean useMagicless);
-    public static native long setCompressionLevel(long stream, int level);
+    public static native int setCompressionChecksums(long stream, boolean useChecksums);
+    public static native int setCompressionMagicless(long stream, boolean useMagicless);
+    public static native int setCompressionLevel(long stream, int level);
     public static native int setCompressionLong(long stream, int windowLog);
-    public static native long setCompressionWorkers(long stream, int workers);
-    public static native long setCompressionOverlapLog(long stream, int overlapLog);
-    public static native long setCompressionJobSize(long stream, int jobSize);
-    public static native long setCompressionTargetLength(long stream, int targetLength);
-    public static native long setCompressionMinMatch(long stream, int minMatch);
-    public static native long setCompressionSearchLog(long stream, int searchLog);
-    public static native long setCompressionChainLog(long stream, int chainLog);
-    public static native long setCompressionHashLog(long stream, int hashLog);
-    public static native long setCompressionWindowLog(long stream, int windowLog);
-    public static native long setCompressionStrategy(long stream, int strategy);
-    public static native long setDecompressionLongMax(long stream, int windowLogMax);
-    public static native long setDecompressionMagicless(long stream, boolean useMagicless);
-    public static native long setRefMultipleDDicts(long stream, boolean useMultiple);
-    public static native long setValidateSequences(long stream, int validateSequences);
-    public static native long setSequenceProducerFallback(long stream, boolean fallbackFlag);
-    public static native long setSearchForExternalRepcodes(long stream, int searchRepcodes);
-    public static native long setEnableLongDistanceMatching(long stream, int enableLDM);
+    public static native int setCompressionWorkers(long stream, int workers);
+    public static native int setCompressionOverlapLog(long stream, int overlapLog);
+    public static native int setCompressionJobSize(long stream, int jobSize);
+    public static native int setCompressionTargetLength(long stream, int targetLength);
+    public static native int setCompressionMinMatch(long stream, int minMatch);
+    public static native int setCompressionSearchLog(long stream, int searchLog);
+    public static native int setCompressionChainLog(long stream, int chainLog);
+    public static native int setCompressionHashLog(long stream, int hashLog);
+    public static native int setCompressionWindowLog(long stream, int windowLog);
+    public static native int setCompressionStrategy(long stream, int strategy);
+    public static native int setDecompressionLongMax(long stream, int windowLogMax);
+    public static native int setDecompressionMagicless(long stream, boolean useMagicless);
+    public static native int setRefMultipleDDicts(long stream, boolean useMultiple);
+    public static native int setValidateSequences(long stream, int validateSequences);
+    public static native int setSequenceProducerFallback(long stream, boolean fallbackFlag);
+    public static native int setSearchForExternalRepcodes(long stream, int searchRepcodes);
+    public static native int setEnableLongDistanceMatching(long stream, int enableLDM);
 
     /* Utility methods */
     /**

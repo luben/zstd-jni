@@ -93,7 +93,7 @@ public class ZstdInputStreamNoFinalizer extends FilterInputStream {
         if (isClosed) {
             throw new IOException("Stream closed");
         }
-        long size = Zstd.loadDictDecompress(stream, dict, dict.length);
+        int size = Zstd.loadDictDecompress(stream, dict, dict.length);
         if (Zstd.isError(size)) {
             throw new ZstdIOException(size);
         }
@@ -107,7 +107,7 @@ public class ZstdInputStreamNoFinalizer extends FilterInputStream {
         if (dict != null) {
             dict.acquireSharedLock();
         }
-        long size = Zstd.loadFastDictDecompress(stream, dict);
+        int size = Zstd.loadFastDictDecompress(stream, dict);
         if (Zstd.isError(size)) {
             if (dict != null) {
                 dict.releaseSharedLock();
@@ -127,7 +127,7 @@ public class ZstdInputStreamNoFinalizer extends FilterInputStream {
         if (isClosed) {
             throw new IOException("Stream closed");
         }
-        long size = Zstd.setDecompressionLongMax(stream, windowLogMax);
+        int size = Zstd.setDecompressionLongMax(stream, windowLogMax);
         if (Zstd.isError(size)) {
             throw new ZstdIOException(size);
         }
@@ -138,7 +138,7 @@ public class ZstdInputStreamNoFinalizer extends FilterInputStream {
         if (isClosed) {
             throw new IOException("Stream closed");
         }
-        long size = Zstd.setRefMultipleDDicts(stream, useMultiple);
+        int size = Zstd.setRefMultipleDDicts(stream, useMultiple);
         if (Zstd.isError(size)) {
             throw new ZstdIOException(size);
         }
