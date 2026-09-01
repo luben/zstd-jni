@@ -145,6 +145,192 @@ Compile / sourceGenerators += Def.task {
   Seq(file)
 }
 
+// ---------------------------------------------------------------------------
+// Multi-Release JAR: the JDK 22+ implementation on top of the FFM API
+// ---------------------------------------------------------------------------
+//
+// JDK 22 is the baseline because that is where the Foreign Function & Memory
+// API was finalized (JEP 454).
+//
+// These sources are compiled with `--release 22` (the rest of the project is
+// built with `--release 8`) and land in META-INF/versions/22, where a JDK 22+
+// runtime picks them over their same-named counterparts in the jar root.
+
+val ffmRelease = "22"
+
+lazy val ffmSourceDir = settingKey[File]("Source directory of the JDK 22+ (FFM) implementation")
+lazy val ffmClassDir  = settingKey[File]("Where the versioned classes are written, inside the jar content root")
+lazy val ffmCompile   = taskKey[Seq[File]](s"Compile the FFM sources into META-INF/versions/$ffmRelease")
+lazy val ffmApiCheck  = taskKey[Unit]("Fail if a versioned class alters the public API of the class it overrides")
+
+ffmSourceDir := (Compile / sourceDirectory).value / s"java$ffmRelease"
+
+// Deliberately inside Compile/classDirectory: that directory *is* the jar
+// content root, so the versioned classes flow into `packageBin` and into every
+// classified jar with no extra mappings. The build already relies on this twice
+// - `jniBinPath` drops the .so at target/classes/<os>/<arch>/, and
+// ModuleInfoPlugin writes target/classes/module-info.class.
+//
+// It also keeps them inert on the ordinary compile/test classpath: as a
+// directory entry, target/classes only ever resolves
+// com/github/luben/zstd/Foo.class, never the META-INF/versions/22 copy.
+ffmClassDir := (Compile / classDirectory).value / "META-INF" / "versions" / ffmRelease
+
+ffmCompile := {
+  val log     = streams.value.log
+  val out     = ffmClassDir.value
+  val sources = (ffmSourceDir.value ** "*.java").get
+  // The FFM sources reference BufferPool, Zstd, Native, ... so the base classes
+  // have to exist first.
+  val baseClasses = (Compile / classDirectory).value
+  val _           = (Compile / compile).value
+  // Hoisted: sbt evaluates task dependencies regardless of the branch taken.
+  val depCp       = (Compile / dependencyClasspath).value.files
+
+  if (sources.isEmpty) {
+    IO.delete(out)
+    Seq.empty[File]
+  } else if (!scala.util.Properties.isJavaAtLeast(ffmRelease)) {
+    // CI still builds every job on JDK 11; skipping keeps it green rather than
+    // failing the whole build on a source set it cannot compile.
+    log.warn(s"JDK $ffmRelease+ is required to build the FFM sources, but this is " +
+             s"JDK ${sys.props.getOrElse("java.version", "?")}.")
+    log.warn(s"Skipping - the jar will NOT contain META-INF/versions/$ffmRelease and " +
+             s"JDK $ffmRelease+ runtimes will fall back to the JNI implementation.")
+    IO.delete(out)
+    Seq.empty[File]
+  } else {
+    IO.delete(out)
+    IO.createDirectory(out)
+    val cp = (depCp :+ baseClasses).mkString(java.io.File.pathSeparator)
+    val args = Seq(
+      "--release", ffmRelease,
+      "-Xlint:unchecked",
+      "-classpath", cp,
+      "-d", out.getAbsolutePath
+    ) ++ sources.map(_.getAbsolutePath)
+    log.info(s"Compiling ${sources.size} FFM sources to $out ...")
+    val compiler = javax.tools.ToolProvider.getSystemJavaCompiler
+    if (compiler == null) sys.error("No system Java compiler available (a JRE rather than a JDK?)")
+    val err = new java.io.ByteArrayOutputStream
+    val rc  = compiler.run(null, null, err, args: _*)
+    val msg = err.toString("UTF-8")
+    if (msg.nonEmpty) log.info(msg)
+    if (rc != 0) sys.error(s"Compilation of the FFM sources failed (javac exit code $rc)")
+    (out ** "*.class").get
+  }
+}
+
+// A versioned class must expose exactly the same public API as the class it
+// overrides; nothing enforces that at runtime, so enforce it at build time.
+ffmApiCheck := {
+  val log         = streams.value.log
+  val versioned   = ffmCompile.value
+  val out         = ffmClassDir.value
+  val baseClasses = (Compile / classDirectory).value
+
+  val javap = java.util.spi.ToolProvider.findFirst("javap")
+    .orElseThrow(() => new RuntimeException("javap tool not available"))
+
+  // `javap -public` prints the type declaration first, then one line per public
+  // member. Both matter here: the members are the API, the declaration says
+  // whether the type itself is public.
+  def javapLines(dir: File, fqcn: String): Seq[String] = {
+    val buf = new java.io.StringWriter
+    val pw  = new java.io.PrintWriter(buf)
+    val rc  = javap.run(pw, pw, "-public", "-cp", dir.getAbsolutePath, fqcn)
+    pw.flush()
+    if (rc != 0) sys.error(s"javap failed on $fqcn in $dir (exit code $rc):\n${buf.toString}")
+    buf.toString.linesIterator
+      .map(_.trim)
+      .filter(_.nonEmpty)
+      .filterNot(_.startsWith("Compiled from"))
+      .toSeq
+  }
+
+  // `native` is normalised away: it is a method flag javap prints, but dropping
+  // it is not a binary-compatibility change - it is precisely what this port
+  // does. Sorting compares the set of members, not their declaration order.
+  def api(dir: File, fqcn: String): Seq[String] =
+    javapLines(dir, fqcn).map(_.replace("native ", "")).sorted
+
+  def fqcnOf(cls: File): String =
+    cls.relativeTo(out).get.getPath.stripSuffix(".class").replace(java.io.File.separatorChar, '.')
+
+  // Classes that exist only in the versioned tree (helpers such as ZstdBinding)
+  // shadow nothing, so there is no API to compare them against.
+  val (overrides, additions) =
+    versioned.partition(cls => (baseClasses / cls.relativeTo(out).get.getPath).isFile)
+
+  val drift = overrides.flatMap { cls =>
+    val fqcn = fqcnOf(cls)
+    val b    = api(baseClasses, fqcn)
+    val v    = api(out, fqcn)
+    if (b == v) None
+    else Some(
+      s"$fqcn public API differs between the base and the JDK $ffmRelease version:\n" +
+      (b diff v).map("  base only: " + _).mkString("\n") +
+      (if ((b diff v).nonEmpty && (v diff b).nonEmpty) "\n" else "") +
+      (v diff b).map(s"  java$ffmRelease only: " + _).mkString("\n")
+    )
+  }
+
+  // ... but they must not be public either, or JDK 22+ would see a type that no
+  // other runtime has - which is an API difference the comparison above cannot
+  // catch, because there is no base class to compare with.
+  val leaked = additions.map(fqcnOf).filter(fqcn => javapLines(out, fqcn).headOption.exists(_.startsWith("public ")))
+    .map(fqcn => s"$fqcn exists only in the JDK $ffmRelease tree and is public; " +
+                 "versioned-only classes must be package-private.")
+
+  val problems = drift ++ leaked
+  if (problems.nonEmpty) sys.error(problems.mkString("\n\n"))
+  else if (versioned.nonEmpty)
+    log.info(s"FFM API check: ${overrides.size} overriding classes match the base API" +
+             (if (additions.nonEmpty) s", ${additions.size} versioned-only helper classes" else "") + ".")
+}
+
+Compile / packageBin := (Compile / packageBin).dependsOn(ffmApiCheck).value
+
+// Run the existing test suite against the FFM classes by prepending the
+// versioned directory to the test classpath, so its classes shadow the base
+// ones by fully-qualified name:  ./sbt -Dzstd.ffm=true test
+lazy val ffmTest = settingKey[Boolean]("Run the test suite against the FFM classes instead of the JNI ones")
+
+// Present and not explicitly "false", so `-Dzstd.ffm`, `-Dzstd.ffm=true` and
+// `-Dzstd.ffm=1` all select the FFM path and only `-Dzstd.ffm=false` opts out.
+ffmTest := sys.props.get("zstd.ffm").exists(!_.equalsIgnoreCase("false"))
+
+// Mirrors sbt's own definition (concatDistinct of exportedProducts and
+// dependencyClasspath) so that the versioned directory can be put in front.
+Test / fullClasspath := {
+  val base    = ((Test / exportedProducts).value ++ (Test / dependencyClasspath).value).distinct
+  // Hoisted out of the branch: sbt evaluates task dependencies either way, so the
+  // FFM sources are compiled and API-checked on every `test` run, not only when
+  // they are the ones under test.
+  val ffm     = ffmCompile.value
+  val _       = ffmApiCheck.value
+  val ffmDir  = ffmClassDir.value
+  val log     = streams.value.log
+  if (!ffmTest.value) base
+  else if (ffm.isEmpty) sys.error(s"-Dzstd.ffm=true but no FFM classes were built (needs JDK $ffmRelease+)")
+  else {
+    log.info(s"Testing against the FFM implementation in $ffmDir")
+    Attributed.blank(ffmDir) +: base
+  }
+}
+
+// The FFM sources are deliberately not in unmanagedSourceDirectories - the base
+// compile runs with `--release 8` and would reject java.lang.foreign - so they
+// have to be added to the sources jar by hand. They go under META-INF/versions,
+// mirroring the class layout: at the root they would collide with the base
+// sources of the same name.
+Compile / packageSrc / mappings ++= {
+  val dir = ffmSourceDir.value
+  (dir ** "*.java").get.pair(Path.relativeTo(dir)).map { case (f, rel) =>
+    f -> s"META-INF/versions/$ffmRelease/${rel.replace(java.io.File.separatorChar, '/')}"
+  }
+}
+
 // Sonatype
 import xerial.sbt.Sonatype.sonatypeCentralHost
 ThisBuild / sonatypeCredentialHost := sonatypeCentralHost
@@ -163,7 +349,13 @@ licenses := Seq("BSD 2-Clause License" -> url("https://opensource.org/licenses/B
 description := "JNI bindings for Zstd native library that provides fast and high " +
                 "compression lossless algorithm for Java and all JVM languages."
 
+// Without this the JVM ignores META-INF/versions/ entirely and every runtime
+// gets the JNI implementation from the jar root.
+val multiReleaseAttribute =
+  Package.ManifestAttributes(new java.util.jar.Attributes.Name("Multi-Release") -> "true")
+
 Compile / packageBin / packageOptions ++= Seq(
+  multiReleaseAttribute,
   Package.ManifestAttributes(new java.util.jar.Attributes.Name("Bnd-LastModified") -> s"${java.lang.System.currentTimeMillis()}"),
   Package.ManifestAttributes(new java.util.jar.Attributes.Name("Bundle-Name") -> "zstd-jni"),
   Package.ManifestAttributes(new java.util.jar.Attributes.Name("Bundle-SymbolicName") -> "com.github.luben.zstd-jni"),
@@ -397,3 +589,23 @@ Cloud / packageBin / mappings := {
 }
 addArtifact(Artifact(nameValue, "cloud"), Cloud / packageBin)
 
+
+// Every one of these configs gets its own `packageBin / packageOptions` from
+// Defaults.compileSettings, so it never delegates to the Compile-scoped manifest
+// above and Multi-Release has to be set on each of them explicitly.
+//
+// The dependency on ffmApiCheck is what makes their *contents* right: their
+// `mappings` is the plain `classes` file list with no link to `compile`, and
+// `classes` is a lazy val that snapshots target/classes the first time any of
+// them forces it. Without the edge, that snapshot can be taken before the
+// versioned classes have been written, and the jar ships the Multi-Release
+// manifest attribute with no META-INF/versions/22 behind it.
+Seq(
+  Linux_amd64, Linux_i386, Linux_aarch64, Linux_arm, Linux_ppc64le, Linux_ppc64,
+  Linux_mips64, Linux_loongarch64, Linux_s390x, Linux_riscv64, Aix_ppc64,
+  Darwin_x86_64, Darwin_aarch64, FreeBSD_amd64, FreeBSD_i386,
+  Win_x86, Win_amd64, Win_aarch64, Cloud
+).flatMap(c => Seq(
+  c / packageBin / packageOptions += multiReleaseAttribute,
+  c / packageBin := (c / packageBin).dependsOn(ffmApiCheck).value
+))

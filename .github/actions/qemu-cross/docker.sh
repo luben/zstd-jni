@@ -6,4 +6,4 @@ docker run --rm \
     --name qemu-cross-${PLATFORM_NAME} \
     --mount type=bind,source=${HOST_WORKSPACE_DIR},target=/github_workspace \
     --workdir /github_workspace \
-    ${PLATFORM_NAME}/eclipse-temurin:11-jdk-focal ./.github/actions/qemu-cross/build.sh
+    ${PLATFORM_NAME}/eclipse-temurin:25-jdk-noble ./.github/actions/qemu-cross/build.sh
