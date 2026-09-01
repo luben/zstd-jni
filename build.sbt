@@ -174,6 +174,9 @@ ffmSourceDir := (Compile / sourceDirectory).value / s"java$ffmRelease"
 // It also keeps them inert on the ordinary compile/test classpath: as a
 // directory entry, target/classes only ever resolves
 // com/github/luben/zstd/Foo.class, never the META-INF/versions/22 copy.
+//
+// The exception is tooling that walks the directory instead of resolving through
+// it - see the jacoco{Excludes,InstrumentationExcludes} note further down.
 ffmClassDir := (Compile / classDirectory).value / "META-INF" / "versions" / ffmRelease
 
 ffmCompile := {
@@ -300,10 +303,16 @@ lazy val ffmTest = settingKey[Boolean]("Run the test suite against the FFM class
 // `-Dzstd.ffm=1` all select the FFM path and only `-Dzstd.ffm=false` opts out.
 ffmTest := sys.props.get("zstd.ffm").exists(!_.equalsIgnoreCase("false"))
 
-// Mirrors sbt's own definition (concatDistinct of exportedProducts and
-// dependencyClasspath) so that the versioned directory can be put in front.
+// `.value` on the key being defined reads the *previous* definition of it, not
+// this one - the same self-reference `+=` and `~=` are built on. It has to be
+// done that way rather than by rebuilding the classpath from exportedProducts ++
+// dependencyClasspath: sbt-jacoco defines `Test / fullClasspath` as its own
+// self-referencing wrapper that offline-instruments the classes and swaps
+// target/classes for the instrumented copy, and since build.sbt is applied after
+// plugin settings, a from-scratch definition here would drop that wrapper and
+// leave `sbt jacoco` reporting 0% for everything.
 Test / fullClasspath := {
-  val base    = ((Test / exportedProducts).value ++ (Test / dependencyClasspath).value).distinct
+  val base    = (Test / fullClasspath).value
   // Hoisted out of the branch: sbt evaluates task dependencies either way, so the
   // FFM sources are compiled and API-checked on every `test` run, not only when
   // they are the ones under test.
@@ -437,7 +446,26 @@ jacocoReportSettings := JacocoReportSettings(
   JacocoThresholds(),
   Seq(JacocoReportFormats.XML, JacocoReportFormats.HTML),
   "utf-8")
-jacocoInstrumentationExcludes := Seq("module-info")
+
+// Jacoco walks Compile/classDirectory as a *directory tree*, not as a classpath
+// entry, so it also picks up the META-INF/versions/<n> copies. Both files carry
+// the same class name, and feeding two of those to one CoverageBuilder fails with
+// "Can't add different class with same name".
+//
+// Its filters match on the path relative to classDirectory with the separators
+// turned into dots, so the versioned copy is
+// "META-INF.versions.22.com.github.luben.zstd.Foo" while the base one stays
+// "com.github.luben.zstd.Foo" - which is what lets us drop only the former.
+//
+// Dropping it is also what we want on the merits: `sbt jacoco` exercises the JNI
+// path, where the versioned classes are never loaded, so they would otherwise
+// land in the report as 0%-covered duplicates of classes that *are* covered.
+// Measuring the FFM path needs its own exec file and its own bundle.
+// Deliberately not pinned to ffmRelease: it must keep covering any future
+// META-INF/versions/<n> directory the build grows.
+val versionedClasses = "META-INF.versions.*"
+jacocoExcludes := Seq(versionedClasses)
+jacocoInstrumentationExcludes := Seq("module-info", versionedClasses)
 
 // Android .aar
 val aarTask = taskKey[File]("aar Task")
