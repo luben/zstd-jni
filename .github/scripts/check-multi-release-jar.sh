@@ -28,7 +28,13 @@ readonly BASE_MAJOR=52
 
 readonly prefix=META-INF/versions/$FFM_RELEASE/
 
-jars=("$@")
+# Guarded rather than plain `jars=("$@")`: macOS ships bash 3.2, where `set -u`
+# rejects "$@" when there are no positional parameters.
+jars=()
+if [ $# -gt 0 ]; then
+    jars=("$@")
+fi
+
 if [ ${#jars[@]} -eq 0 ]; then
     # The sources jar carries META-INF/versions/22/*.java, not classes, and the
     # javadoc jar carries neither; neither is a multi-release artifact.
