@@ -1,5 +1,10 @@
 name: "CI qemu cross"
 on: [push, pull_request]
+# The most expensive job in the repo, and until now the only workflow without a
+# concurrency group - so a push superseded by another one kept its s390x run.
+concurrency:
+    group: ${{ github.workflow }}-${{ github.ref }}
+    cancel-in-progress: true
 jobs:
     qemu-cross:
         strategy:

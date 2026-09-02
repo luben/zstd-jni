@@ -304,39 +304,18 @@ ffmApiCheck := {
 
 Compile / packageBin := (Compile / packageBin).dependsOn(ffmApiCheck).value
 
-// Run the existing test suite against the FFM classes by prepending the
-// versioned directory to the test classpath, so its classes shadow the base
-// ones by fully-qualified name:  ./sbt -Dzstd.ffm=true test
-lazy val ffmTest = settingKey[Boolean]("Run the test suite against the FFM classes instead of the JNI ones")
-
-// Present and not explicitly "false", so `-Dzstd.ffm`, `-Dzstd.ffm=true` and
-// `-Dzstd.ffm=1` all select the FFM path and only `-Dzstd.ffm=false` opts out.
-ffmTest := sys.props.get("zstd.ffm").exists(!_.equalsIgnoreCase("false"))
-
-// `.value` on the key being defined reads the *previous* definition of it, not
-// this one - the same self-reference `+=` and `~=` are built on. It has to be
-// done that way rather than by rebuilding the classpath from exportedProducts ++
-// dependencyClasspath: sbt-jacoco defines `Test / fullClasspath` as its own
-// self-referencing wrapper that offline-instruments the classes and swaps
-// target/classes for the instrumented copy, and since build.sbt is applied after
-// plugin settings, a from-scratch definition here would drop that wrapper and
-// leave `sbt jacoco` reporting 0% for everything.
-Test / fullClasspath := {
-  val base    = (Test / fullClasspath).value
-  // Hoisted out of the branch: sbt evaluates task dependencies either way, so the
-  // FFM sources are compiled and API-checked on every `test` run, not only when
-  // they are the ones under test.
-  val ffm     = ffmCompile.value
-  val _       = ffmApiCheck.value
-  val ffmDir  = ffmClassDir.value
-  val log     = streams.value.log
-  if (!ffmTest.value) base
-  else if (ffm.isEmpty) sys.error(s"-Dzstd.ffm=true but no FFM classes were built (needs JDK $ffmRelease+)")
-  else {
-    log.info(s"Testing against the FFM implementation in $ffmDir")
-    Attributed.blank(ffmDir) +: base
-  }
-}
+// `sbt test` runs against target/classes, which is the JNI implementation and
+// only ever that: a directory entry on the classpath resolves
+// com/github/luben/zstd/Foo.class and never the META-INF/versions/22 copy next
+// to it. Multi-Release dispatch is a jar feature, so the FFM implementation is
+// tested by running the same suite against the packaged jar under a JDK 22+
+// runtime - see .github/scripts/run-tests-from-jar.sh.
+//
+// The FFM sources are still compiled and API-checked on every `test`, so a
+// mistake in them fails the ordinary local build rather than waiting for the
+// packaging step. (`ffmCompile` depends on `Compile / compile`, so this has to
+// hang off `Test / test` rather than off `compile`, or it would cycle.)
+Test / test := (Test / test).dependsOn(ffmApiCheck).value
 
 // The FFM sources are deliberately not in unmanagedSourceDirectories - the base
 // compile runs with `--release 8` and would reject java.lang.foreign - so they
