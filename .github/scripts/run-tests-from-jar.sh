@@ -36,11 +36,12 @@ fi
 javaHome=$1
 shift
 
-# On the msys2 runners JAVA_HOME is a Windows path and argument mangling would
-# rewrite the classpath we pass; both have to be turned off.
+# On the msys2 runners JAVA_HOME is a Windows path, which bash cannot execute out
+# of. Argument mangling has to be turned off too, but only around the java call at
+# the bottom - doing it here would break the ./sbt call in between, which hands its
+# launcher jar to java as a POSIX path and depends on msys2 rewriting it.
 if command -v cygpath >/dev/null 2>&1; then
     javaHome=$(cygpath -u "$javaHome")
-    export MSYS2_ARG_CONV_EXCL='*'
 fi
 readonly javaHome
 readonly java=$javaHome/bin/java
@@ -48,7 +49,7 @@ readonly java=$javaHome/bin/java
 readonly jar=target/zstd-jni-$(cat version).jar
 readonly classpathFile=target/test-classpath.txt
 
-[ -x "$java" ] || { echo "no java at $java" >&2; exit 1; }
+[ -x "$java" ] || [ -x "$java.exe" ] || { echo "no java at $java" >&2; exit 1; }
 [ -f "${JAR:=$jar}" ] || { echo "no jar at $JAR; run \`sbt package\` first" >&2; exit 1; }
 
 # The dependency classpath is a build-time fact, so it is exported once and
@@ -86,14 +87,30 @@ if tr "$sep" '\n' <<<"$cp" | grep -q -E "$baseClasses"; then
     exit 1
 fi
 
+release=$("$java" -XshowSettings:properties -version 2>&1 \
+          | sed -n 's/^ *java\.specification\.version = \([0-9][0-9]*\).*/\1/p')
+
+# Built as one array that is never empty, and never expanded when it could be:
+# macOS ships bash 3.2, where `set -u` rejects "${arr[@]}" and "$@" if there is
+# nothing in them. bash only stopped doing that in 4.4.
+cmd=("$java")
+
 # JEP 472: restricted methods warn on 24 and are to be blocked in a later release.
 # Both implementations need this - System.load for JNI, the downcalls for FFM -
 # and JDKs below 22 reject the flag outright.
-release=$("$java" -XshowSettings:properties -version 2>&1 \
-          | sed -n 's/^ *java\.specification\.version = \([0-9][0-9]*\).*/\1/p')
-opts=()
-[ -n "$release" ] && [ "$release" -ge 22 ] && opts+=(--enable-native-access=ALL-UNNAMED)
+if [ -n "$release" ] && [ "$release" -ge 22 ]; then
+    cmd+=(--enable-native-access=ALL-UNNAMED)
+fi
+if [ $# -gt 0 ]; then
+    cmd+=("$@")
+fi
+cmd+=(-cp "$cp" org.scalatest.tools.Runner -R target/test-classes -o)
 
 echo "running the suite on JDK ${release:-?} against $JAR ${*:+with $*}"
-exec "$java" "${opts[@]}" "$@" -cp "$cp" org.scalatest.tools.Runner \
-    -R target/test-classes -o
+
+# Now, and not before: msys2 rewrites anything in an argument that looks like a
+# POSIX path, which would mangle the ';'-separated list of C:\... entries below.
+# Everything that needed the rewriting - ./sbt above - has already run.
+export MSYS2_ARG_CONV_EXCL='*'
+
+exec "${cmd[@]}"
