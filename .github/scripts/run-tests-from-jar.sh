@@ -65,7 +65,9 @@ fi
 # File.pathSeparator is ';' on Windows, where the entries are also backslashed
 # C:\... paths that no amount of $PWD matching will recognise.
 sep=:
-grep -q ';' "$classpathFile" && sep=';'
+if grep -q ';' "$classpathFile"; then
+    sep=';'
+fi
 readonly sep
 
 # Drop the base classes: the whole point is that they come from the jar now.
