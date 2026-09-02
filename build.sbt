@@ -638,12 +638,23 @@ addArtifact(Artifact(nameValue, "cloud"), Cloud / packageBin)
 // them forces it. Without the edge, that snapshot can be taken before the
 // versioned classes have been written, and the jar ships the Multi-Release
 // manifest attribute with no META-INF/versions/22 behind it.
-Seq(
+val classifiedConfigs = Seq(
   Linux_amd64, Linux_i386, Linux_aarch64, Linux_arm, Linux_ppc64le, Linux_ppc64,
   Linux_mips64, Linux_loongarch64, Linux_s390x, Linux_riscv64, Aix_ppc64,
   Darwin_x86_64, Darwin_aarch64, FreeBSD_amd64, FreeBSD_i386,
   Win_x86, Win_amd64, Win_aarch64, Cloud
-).flatMap(c => Seq(
+)
+
+classifiedConfigs.flatMap(c => Seq(
   c / packageBin / packageOptions += multiReleaseAttribute,
   c / packageBin := (c / packageBin).dependsOn(ffmApiCheck).value
 ))
+
+// So CI can multi-release-check every published jar, not just the main one.
+// Deliberately not `packagedArtifacts`: that would also run aarTask, which needs
+// the Android SDK. The classified jars whose native library was built elsewhere
+// come out without it, which does not affect what the check looks at.
+lazy val packageClassified = taskKey[Seq[File]]("Package every classified jar")
+packageClassified := packageBin.all(
+  ScopeFilter(configurations = inConfigurations(classifiedConfigs: _*))
+).value

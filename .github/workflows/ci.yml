@@ -224,3 +224,30 @@ jobs:
 
         - name: Build AAR
           run: ./sbt aarTask
+
+    multi-release-jar:
+        # The other FFM tests put the versioned *directory* on the classpath, which
+        # says nothing about whether the packaged jars resolve correctly. This job
+        # builds them and checks that they do - every classified jar too, since
+        # build.sbt sets the Multi-Release attribute per config. Separate from
+        # `linux` because it is a property of the artifacts, not of a platform.
+        runs-on: ubuntu-latest
+        steps:
+        - uses: actions/checkout@v7
+        - uses: actions/setup-java@v5
+          with:
+            # Must be 22+, or ffmCompile skips and there are no versioned classes
+            # to check at all.
+            java-version: 25
+            distribution: zulu
+
+        - name: Install sbt-java-module-info
+          run: pushd ./sbt-java-module-info; ./sbt publishLocal; popd
+
+        # The classified jars whose native library is built on another platform
+        # come out without it; the check only looks at classes and the manifest.
+        - name: Package
+          run: ./sbt package packageClassified
+
+        - name: Verify multi-release dispatch
+          run: ./.github/scripts/check-multi-release-jar.sh
