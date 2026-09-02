@@ -3,7 +3,12 @@
 set -e
 
 apt-get update
-apt-get install -y gcc
+# curl is what the sbt bootstrap script uses to fetch its launcher jar. The old
+# 11-jdk-focal image shipped it; eclipse-temurin:25-jdk-noble installs neither
+# curl nor wget (its wget is a transient build dep, purged in the same layer).
+# Without one of them download_url() is a silent no-op and sbt dies with
+# "Could not download and verify the launcher".
+apt-get install -y gcc curl
 
 pushd sbt-java-module-info
 ./sbt publishLocal
