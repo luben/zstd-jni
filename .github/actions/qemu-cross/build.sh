@@ -14,10 +14,12 @@ pushd sbt-java-module-info
 ./sbt publishLocal
 popd
 
-# The same suite against both implementations. -Dzstd.ffm=true makes sbt prepend
-# target/classes/META-INF/versions/22 to the test classpath, so the versioned
-# classes shadow their base counterparts. It has to be a second sbt process: the
-# property is read while build.sbt is evaluated, and a JNI library can only be
-# System.load-ed by one classloader per JVM.
-./sbt -v test
-./sbt -v -Dzstd.ffm=true test
+./sbt -v Test/compile package
+
+# Both implementations out of the one packaged jar, exactly as on the other
+# platforms - the check first, because it is what rules out a green FFM run that
+# only resolved to the base class. The image ships JDK 25 alone, so unlike the
+# native runners there is no JDK 11 leg here; the 8-21 floor is covered there.
+./.github/scripts/check-multi-release-jar.sh "target/zstd-jni-$(cat version).jar"
+./.github/scripts/run-tests-from-jar.sh "$JAVA_HOME"
+./.github/scripts/run-tests-from-jar.sh "$JAVA_HOME" -Djdk.util.jar.enableMultiRelease=false

@@ -3,23 +3,37 @@ on: [push, pull_request]
 concurrency:
     group: ${{ github.workflow }}-${{ github.ref }}
     cancel-in-progress: true
+
+# Every platform builds and packages once, on JDK 25 - the version the released
+# jars are built with - and then runs the suite three times against that one jar,
+# changing only the JVM underneath it:
+#
+#   JDK 25, jar as shipped                        -> FFM  (META-INF/versions/22)
+#   JDK 25, -Djdk.util.jar.enableMultiRelease=false -> JNI  (a shaded fat jar that
+#                                                            lost the attribute)
+#   JDK 11, jar as shipped                        -> JNI  (the 8-21 floor)
+#
+# check-multi-release-jar.sh runs first and is what makes the FFM run meaningful:
+# without it a jar built with no versioned classes would resolve to the base copy
+# and pass. This replaces the old arrangement, where a second JDK 11 matrix leg
+# rebuilt everything and the FFM leg prepended META-INF/versions/22 to the test
+# classpath as a directory - which cannot exercise Multi-Release dispatch at all,
+# because a directory entry only ever resolves the base name.
 jobs:
     linux:
-        strategy:
-            fail-fast: false
-            matrix:
-                # Each architecture runs the suite twice: JDK 25 covers JNI and FFM,
-                # the JDK 11 leg is the `--release 8` floor check and ships nothing.
-                include: [
-                    { os: ubuntu-latest, target: linux/amd64, java: 25, deploy: true  },
-                    { os: ubuntu-latest, target: linux/amd64, java: 11, deploy: false }
-                ]
-        runs-on: ${{ matrix.os }}
+        runs-on: ubuntu-latest
         steps:
         - uses: actions/checkout@v7
-        - uses: actions/setup-java@v5
+        - id: jdk11
+          uses: actions/setup-java@v5
           with:
-            java-version: ${{ matrix.java }}
+            java-version: 11
+            distribution: zulu
+        # Last one wins for JAVA_HOME, so this is what sbt builds with.
+        - id: jdk25
+          uses: actions/setup-java@v5
+          with:
+            java-version: 25
             distribution: zulu
 
         - name: Install sbt-java-module-info
@@ -32,49 +46,63 @@ jobs:
           run: echo "nativeJniVersion=`cat version`" >> $GITHUB_ENV
 
         - name: Inspect
-          run: ldd target/classes/${{ matrix.target }}/libzstd-jni-${nativeJniVersion}.so
+          run: ldd target/classes/linux/amd64/libzstd-jni-${nativeJniVersion}.so
 
-        - name: Test (JNI)
+        # Coverage has to come off target/classes: sbt-jacoco instruments that
+        # directory offline, so it cannot be collected from a jar run. It is
+        # therefore JNI-only, and collected on this platform alone.
+        - name: Test and collect coverage (JNI)
           run: ./sbt jacoco
 
-        # The same suite against the FFM implementation: -Dzstd.ffm=true makes sbt
-        # prepend target/classes/META-INF/versions/22 to the test classpath, so the
-        # versioned classes shadow their base counterparts and everything not yet
-        # ported still resolves to the JNI one - the same mix a real MR jar gives.
-        # It has to be a second sbt process: the property is read while build.sbt is
-        # evaluated, and a JNI library can only be System.load-ed by one classloader
-        # per JVM.
-        - name: Test (FFM)
-          if: ${{ matrix.java == 25 }}
-          run: ./sbt -Dzstd.ffm=true test
+        # packageClassified only here - the classified jars are the published
+        # artifacts and every one of them has to carry the manifest attribute,
+        # but that is a property of the build, not of the platform.
+        - name: Package
+          run: ./sbt Test/compile package packageClassified
+
+        - name: Verify multi-release dispatch
+          run: ./.github/scripts/check-multi-release-jar.sh
+
+        - name: Test from jar (JDK 25, FFM)
+          run: ./.github/scripts/run-tests-from-jar.sh "${{ steps.jdk25.outputs.path }}"
+
+        - name: Test from jar (JDK 25, JNI)
+          run: ./.github/scripts/run-tests-from-jar.sh "${{ steps.jdk25.outputs.path }}" -Djdk.util.jar.enableMultiRelease=false
+
+        - name: Test from jar (JDK 11, JNI)
+          run: ./.github/scripts/run-tests-from-jar.sh "${{ steps.jdk11.outputs.path }}"
 
         - name: Upload coverage
           uses: codecov/codecov-action@v7
 
         - name: Deploy
-          if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && matrix.deploy }}
+          if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
           env:
             AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
             AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
             AWS_DEFAULT_REGION: "us-east-1"
-          run: aws s3 cp --recursive target/classes/${{ matrix.target }} s3://zstd-jni/github/${{ matrix.target }}
+          run: aws s3 cp --recursive target/classes/linux/amd64 s3://zstd-jni/github/linux/amd64
 
     macos:
         strategy:
             fail-fast: false
             matrix:
                 include: [
-                  { os: macos-15-intel, host_arch: x86_64,  java: 25, deploy: true,  target_arch: x86_64  },
-                  { os: macos-15-intel, host_arch: x86_64,  java: 11, deploy: false, target_arch: x86_64  },
-                  { os: macos-latest,   host_arch: aarch64, java: 25, deploy: true,  target_arch: aarch64 },
-                  { os: macos-latest,   host_arch: aarch64, java: 11, deploy: false, target_arch: aarch64 }
+                  { os: macos-15-intel, host_arch: x86_64,  target_arch: x86_64  },
+                  { os: macos-latest,   host_arch: aarch64, target_arch: aarch64 }
                 ]
         runs-on: ${{ matrix.os }}
         steps:
         - uses: actions/checkout@v7
-        - uses: actions/setup-java@v5
+        - id: jdk11
+          uses: actions/setup-java@v5
           with:
-            java-version: ${{ matrix.java }}
+            java-version: 11
+            distribution: zulu
+        - id: jdk25
+          uses: actions/setup-java@v5
+          with:
+            java-version: 25
             distribution: zulu
         - uses: maxim-lobanov/setup-xcode@v1
           with:
@@ -92,27 +120,29 @@ jobs:
         - name: Env
           run: echo "nativeJniVersion=`cat version`" >> $GITHUB_ENV
 
-        - name: Inspect classes
-          run: ls -al target/classes/darwin
-
         - name: Inspect
           run: otool -L target/classes/darwin/${{ matrix.target_arch }}/libzstd-jni-${nativeJniVersion}.dylib
 
         - name: Symbols
           run: nm -m target/classes/darwin/${{ matrix.target_arch }}/libzstd-jni-${nativeJniVersion}.dylib
 
-        - name: Test (JNI)
-          run: ./sbt test
+        - name: Package
+          run: ./sbt Test/compile package
 
-        - name: Test (FFM)
-          if: ${{ matrix.java == 25 }}
-          run: ./sbt -Dzstd.ffm=true test
+        - name: Verify multi-release dispatch
+          run: ./.github/scripts/check-multi-release-jar.sh target/zstd-jni-$(cat version).jar
 
-        - name: Upload coverage
-          uses: codecov/codecov-action@v7
+        - name: Test from jar (JDK 25, FFM)
+          run: ./.github/scripts/run-tests-from-jar.sh "${{ steps.jdk25.outputs.path }}"
+
+        - name: Test from jar (JDK 25, JNI)
+          run: ./.github/scripts/run-tests-from-jar.sh "${{ steps.jdk25.outputs.path }}" -Djdk.util.jar.enableMultiRelease=false
+
+        - name: Test from jar (JDK 11, JNI)
+          run: ./.github/scripts/run-tests-from-jar.sh "${{ steps.jdk11.outputs.path }}"
 
         - name: Deploy
-          if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && matrix.deploy }}
+          if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
           env:
             AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
             AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -120,19 +150,6 @@ jobs:
           run: aws s3 cp --recursive target/classes/darwin/${{ matrix.host_arch }} s3://zstd-jni/github/darwin/${{ matrix.target_arch }}
 
     windows:
-        strategy:
-            fail-fast: false
-            matrix:
-                # win/x86 is 11-only: the Windows 32-bit x86 port was removed in
-                # JDK 24 (JEP 479) and Zulu shipped its last win_i686 build for 11,
-                # so there is no JVM on that platform that can run the FFM path.
-                # It is therefore also the leg that deploys win/x86, even though it
-                # is a JDK 11 leg - hence the explicit `deploy` flag.
-                include: [
-                    { msystem: MINGW64, arch: x86_64, java_arch: x64, java: 25, deploy: true,  target: 'win\amd64', s3_path: win/amd64 },
-                    { msystem: MINGW64, arch: x86_64, java_arch: x64, java: 11, deploy: false, target: 'win\amd64', s3_path: win/amd64 },
-                    { msystem: MINGW32, arch: i686,   java_arch: x86, java: 11, deploy: true,  target: 'win\x86',   s3_path: win/x86 }
-                ]
         runs-on: windows-latest
         defaults:
             run:
@@ -141,15 +158,78 @@ jobs:
         - uses: actions/checkout@v7
         - uses: msys2/setup-msys2@v2
           with:
-            msystem: ${{ matrix.msystem }}
-            install: git base-devel mingw-w64-${{ matrix.arch }}-toolchain
+            msystem: MINGW64
+            install: git base-devel mingw-w64-x86_64-toolchain
+            path-type: inherit
+            update: true
+        - id: jdk11
+          uses: actions/setup-java@v5
+          with:
+            java-version: 11
+            distribution: zulu
+            architecture: x64
+        - id: jdk25
+          uses: actions/setup-java@v5
+          with:
+            java-version: 25
+            distribution: zulu
+            architecture: x64
+
+        - name: Check Java version
+          run: java -version
+
+        - name: Install sbt-java-module-info
+          run: cd ./sbt-java-module-info; ./sbt publishLocal
+
+        - name: Compile
+          run: ./sbt compile
+
+        - name: Package
+          run: ./sbt Test/compile package
+
+        - name: Verify multi-release dispatch
+          run: ./.github/scripts/check-multi-release-jar.sh target/zstd-jni-$(cat version).jar
+
+        - name: Test from jar (JDK 25, FFM)
+          run: ./.github/scripts/run-tests-from-jar.sh "${{ steps.jdk25.outputs.path }}"
+
+        - name: Test from jar (JDK 25, JNI)
+          run: ./.github/scripts/run-tests-from-jar.sh "${{ steps.jdk25.outputs.path }}" -Djdk.util.jar.enableMultiRelease=false
+
+        - name: Test from jar (JDK 11, JNI)
+          run: ./.github/scripts/run-tests-from-jar.sh "${{ steps.jdk11.outputs.path }}"
+
+        - name: Deploy
+          if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
+          shell: cmd
+          env:
+            AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+            AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+            AWS_DEFAULT_REGION: "us-east-1"
+          run: 'aws s3 cp --recursive target\classes\win\amd64 s3://zstd-jni/github/win/amd64'
+
+    windows-x86:
+        # The odd one out, and structurally so: JEP 479 removed the Windows 32-bit
+        # x86 port in JDK 24 and Zulu's last win_i686 build is 11, so there is no
+        # JVM here that can run the FFM path. It builds on 11, ships no versioned
+        # classes, and gets the plain JNI run only.
+        runs-on: windows-latest
+        defaults:
+            run:
+                shell: msys2 {0}
+        steps:
+        - uses: actions/checkout@v7
+        - uses: msys2/setup-msys2@v2
+          with:
+            msystem: MINGW32
+            install: git base-devel mingw-w64-i686-toolchain
             path-type: inherit
             update: true
         - uses: actions/setup-java@v5
           with:
-            java-version: ${{ matrix.java }}
+            java-version: 11
             distribution: zulu
-            architecture: ${{ matrix.java_arch }}
+            architecture: x86
 
         - name: Check Java version
           run: java -version
@@ -163,21 +243,14 @@ jobs:
         - name: Test (JNI)
           run: ./sbt test
 
-        - name: Test (FFM)
-          if: ${{ matrix.java == 25 }}
-          run: ./sbt -Dzstd.ffm=true test
-
-        - name: Upload coverage
-          uses: codecov/codecov-action@v7
-
         - name: Deploy
-          if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && matrix.deploy }}
+          if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
           shell: cmd
           env:
             AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
             AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
             AWS_DEFAULT_REGION: "us-east-1"
-          run: 'aws s3 cp --recursive target\classes\${{ matrix.target }} s3://zstd-jni/github/${{ matrix.s3_path }}'
+          run: 'aws s3 cp --recursive target\classes\win\x86 s3://zstd-jni/github/win/x86'
 
     windows-cross:
         runs-on: windows-latest
@@ -224,30 +297,3 @@ jobs:
 
         - name: Build AAR
           run: ./sbt aarTask
-
-    multi-release-jar:
-        # The other FFM tests put the versioned *directory* on the classpath, which
-        # says nothing about whether the packaged jars resolve correctly. This job
-        # builds them and checks that they do - every classified jar too, since
-        # build.sbt sets the Multi-Release attribute per config. Separate from
-        # `linux` because it is a property of the artifacts, not of a platform.
-        runs-on: ubuntu-latest
-        steps:
-        - uses: actions/checkout@v7
-        - uses: actions/setup-java@v5
-          with:
-            # Must be 22+, or ffmCompile skips and there are no versioned classes
-            # to check at all.
-            java-version: 25
-            distribution: zulu
-
-        - name: Install sbt-java-module-info
-          run: pushd ./sbt-java-module-info; ./sbt publishLocal; popd
-
-        # The classified jars whose native library is built on another platform
-        # come out without it; the check only looks at classes and the manifest.
-        - name: Package
-          run: ./sbt package packageClassified
-
-        - name: Verify multi-release dispatch
-          run: ./.github/scripts/check-multi-release-jar.sh
