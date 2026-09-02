@@ -82,6 +82,16 @@ jniGccFlags := (
   if (System.getProperty("os.name").toLowerCase startsWith "win")
     jniGccFlags.value.filterNot(_ == "-fPIC") ++
       Seq("-D_JNI_IMPLEMENTATION_", "-Wl,--kill-at",
+        // The FFM implementation looks the ZSTD_* symbols up in this library, so
+        // they have to be in the DLL's export table. On PE the version script
+        // below cannot put them there: ld only auto-exports every global symbol
+        // when the DLL would otherwise export nothing, and JNIEXPORT is
+        // __declspec(dllexport) here, so the Java_* functions already switch
+        // that off. --version-script can only filter the auto-exported set.
+        // zstd's own DLL switch is the way to add them: it makes ZSTDLIB_API and
+        // ZSTDLIB_STATIC_API expand to __declspec(dllexport), which exports
+        // libzstd's public and static API and nothing else.
+        "-DZSTD_DLL_EXPORT=1",
         "-static-libgcc", "-Wl,--version-script=" + PWD + "/libzstd-jni.so.map")
   else if (System.getProperty("os.name").toLowerCase startsWith "mac") {
    // For intel, target the latest version that supported 32bit binaries
