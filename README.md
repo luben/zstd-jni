@@ -97,7 +97,10 @@ Compile and test:
 
 *Note*: `./sbt test` covers the JNI implementation only. The JDK 22+ one built on the Foreign Function
 & Memory API ships in `META-INF/versions/22`, and Multi-Release dispatch only happens from a jar, so
-testing it means packaging first — see `.github/scripts/RunTestsFromJar.java`.
+testing it means packaging first and then choosing the runtime:
+```
+ $ ./sbt testFromJarSetup testFromJar
+```
 
 If you want to publish it to you local ivy2 repository:
 ```

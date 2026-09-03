@@ -5,25 +5,22 @@ concurrency:
     cancel-in-progress: true
 
 # Every platform builds and packages once, on JDK 25 - the version the released
-# jars are built with - and then runs the suite three times against that one jar,
+# jars are built with - then runs the suite three times against that one jar,
 # changing only the JVM underneath it:
 #
-#   JDK 25, jar as shipped                        -> FFM  (META-INF/versions/22)
-#   JDK 25, -Djdk.util.jar.enableMultiRelease=false -> JNI  (a shaded fat jar that
-#                                                            lost the attribute)
-#   JDK 11, jar as shipped                        -> JNI  (the 8-21 floor)
+#   JDK 25, jar as shipped                          -> FFM (META-INF/versions/22)
+#   JDK 25, -Djdk.util.jar.enableMultiRelease=false -> JNI (a shaded fat jar that
+#                                                           lost the attribute)
+#   JDK 11, jar as shipped                          -> JNI (the 8-21 floor)
 #
 # What makes the FFM run meaningful is that `packageBin` verifies the dispatch as
-# it writes each jar (verifyMultiRelease in build.sbt): without that, a jar built
-# with no versioned classes would resolve to the base copy and pass green. There
-# is deliberately no separate CI step for it - the guarantee belongs to the build,
-# so it also covers `publishSigned` and every local `sbt package`.
+# it writes each jar (verifyMultiRelease in build.sbt): without it, a jar with no
+# versioned classes would resolve to the base copy and pass green. Deliberately
+# not a CI step - in the build it also covers publishSigned and `sbt package`.
 #
-# `sbt testFromJarSetup` packages the jar and writes the classpath the runs below
-# need. This replaces the old arrangement, where a second JDK 11 matrix leg
-# rebuilt everything and the FFM leg prepended META-INF/versions/22 to the test
-# classpath as a directory - which cannot exercise Multi-Release dispatch at all,
-# because a directory entry only ever resolves the base name.
+# `sbt testFromJarSetup` builds that jar and the test classes; `testFromJar` then
+# re-checks the jar's dispatch and launches the given JDK against it, taking
+# nothing from the compile graph - so the native library is built once per job.
 jobs:
     linux:
         runs-on: ubuntu-latest
@@ -44,35 +41,34 @@ jobs:
         - name: Install sbt-java-module-info
           run: pushd ./sbt-java-module-info; ./sbt publishLocal; popd
 
-        - name: Compile
-          run: ./sbt compile
+        # Coverage has to come off target/classes: sbt-jacoco instruments that
+        # directory offline, so it cannot be collected from a jar run - hence
+        # JNI-only, and on this platform alone.
+        - name: Test and collect coverage (JNI)
+          run: ./sbt jacoco
 
+        # packageClassified only here: every published jar has to carry the
+        # manifest attribute, but that is a property of the build, not the platform.
+        - name: Package
+          run: ./sbt testFromJarSetup packageClassified
+
+        # After packaging, not before: `package` compiles, and sbt-jni rebuilds the
+        # native library on every sbt command, so an earlier `./sbt compile` step
+        # just to have something to inspect costs a full gcc+LTO run.
         - name: Env
           run: echo "nativeJniVersion=`cat version`" >> $GITHUB_ENV
 
         - name: Inspect
           run: ldd target/classes/linux/amd64/libzstd-jni-${nativeJniVersion}.so
 
-        # Coverage has to come off target/classes: sbt-jacoco instruments that
-        # directory offline, so it cannot be collected from a jar run. It is
-        # therefore JNI-only, and collected on this platform alone.
-        - name: Test and collect coverage (JNI)
-          run: ./sbt jacoco
-
-        # packageClassified only here - the classified jars are the published
-        # artifacts and every one of them has to carry the manifest attribute,
-        # but that is a property of the build, not of the platform.
-        - name: Package
-          run: ./sbt packageClassified testFromJarSetup
-
         - name: Test from jar (JDK 25, FFM)
-          run: java .github/scripts/RunTestsFromJar.java "${{ steps.jdk25.outputs.path }}"
+          run: ./sbt "testFromJar ${{ steps.jdk25.outputs.path }}"
 
         - name: Test from jar (JDK 25, JNI)
-          run: java .github/scripts/RunTestsFromJar.java "${{ steps.jdk25.outputs.path }}" -Djdk.util.jar.enableMultiRelease=false
+          run: ./sbt "testFromJar ${{ steps.jdk25.outputs.path }} -Djdk.util.jar.enableMultiRelease=false"
 
         - name: Test from jar (JDK 11, JNI)
-          run: java .github/scripts/RunTestsFromJar.java "${{ steps.jdk11.outputs.path }}"
+          run: ./sbt "testFromJar ${{ steps.jdk11.outputs.path }}"
 
         - name: Upload coverage
           uses: codecov/codecov-action@v7
@@ -116,9 +112,10 @@ jobs:
         - name: Install sbt-java-module-info
           run: pushd ./sbt-java-module-info; ./sbt publishLocal; popd
 
-        - name: Compile
-          run: ./sbt compile
+        - name: Package
+          run: ./sbt testFromJarSetup
 
+        # After packaging, not before - see the linux job for why.
         - name: Env
           run: echo "nativeJniVersion=`cat version`" >> $GITHUB_ENV
 
@@ -128,17 +125,14 @@ jobs:
         - name: Symbols
           run: nm -m target/classes/darwin/${{ matrix.target_arch }}/libzstd-jni-${nativeJniVersion}.dylib
 
-        - name: Package
-          run: ./sbt testFromJarSetup
-
         - name: Test from jar (JDK 25, FFM)
-          run: java .github/scripts/RunTestsFromJar.java "${{ steps.jdk25.outputs.path }}"
+          run: ./sbt "testFromJar ${{ steps.jdk25.outputs.path }}"
 
         - name: Test from jar (JDK 25, JNI)
-          run: java .github/scripts/RunTestsFromJar.java "${{ steps.jdk25.outputs.path }}" -Djdk.util.jar.enableMultiRelease=false
+          run: ./sbt "testFromJar ${{ steps.jdk25.outputs.path }} -Djdk.util.jar.enableMultiRelease=false"
 
         - name: Test from jar (JDK 11, JNI)
-          run: java .github/scripts/RunTestsFromJar.java "${{ steps.jdk11.outputs.path }}"
+          run: ./sbt "testFromJar ${{ steps.jdk11.outputs.path }}"
 
         - name: Deploy
           if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
@@ -180,20 +174,17 @@ jobs:
         - name: Install sbt-java-module-info
           run: cd ./sbt-java-module-info; ./sbt publishLocal
 
-        - name: Compile
-          run: ./sbt compile
-
         - name: Package
           run: ./sbt testFromJarSetup
 
         - name: Test from jar (JDK 25, FFM)
-          run: java .github/scripts/RunTestsFromJar.java "${{ steps.jdk25.outputs.path }}"
+          run: ./sbt "testFromJar ${{ steps.jdk25.outputs.path }}"
 
         - name: Test from jar (JDK 25, JNI)
-          run: java .github/scripts/RunTestsFromJar.java "${{ steps.jdk25.outputs.path }}" -Djdk.util.jar.enableMultiRelease=false
+          run: ./sbt "testFromJar ${{ steps.jdk25.outputs.path }} -Djdk.util.jar.enableMultiRelease=false"
 
         - name: Test from jar (JDK 11, JNI)
-          run: java .github/scripts/RunTestsFromJar.java "${{ steps.jdk11.outputs.path }}"
+          run: ./sbt "testFromJar ${{ steps.jdk11.outputs.path }}"
 
         - name: Deploy
           if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
@@ -205,10 +196,10 @@ jobs:
           run: 'aws s3 cp --recursive target\classes\win\amd64 s3://zstd-jni/github/win/amd64'
 
     windows-x86:
-        # The odd one out, and structurally so: JEP 479 removed the Windows 32-bit
-        # x86 port in JDK 24 and Zulu's last win_i686 build is 11, so there is no
-        # JVM here that can run the FFM path. It builds on 11, ships no versioned
-        # classes, and gets the plain JNI run only.
+        # The structural exception: JEP 479 removed the Windows 32-bit x86 port in
+        # JDK 24 and Zulu's last win_i686 build is 11, so no JVM here can run the
+        # FFM path. It builds on 11, ships no versioned classes, and is also the
+        # only job left that compiles the project from source on a JDK below 22.
         runs-on: windows-latest
         defaults:
             run:
@@ -263,9 +254,9 @@ jobs:
             update: true
 
         - name: Compile
-          # -DZSTD_DLL_EXPORT=1 puts the ZSTD_* symbols in the DLL export table,
-          # where the FFM implementation looks them up - see the Windows branch of
-          # jniGccFlags in build.sbt for why the version script cannot do it here.
+          # -DZSTD_DLL_EXPORT=1 puts the ZSTD_* symbols in the DLL export table, where
+          # the FFM implementation looks them up. Keep in step with the Windows branch
+          # of jniGccFlags in build.sbt, which explains why --version-script cannot.
           run: /opt/aarch64-w64-mingw32/bin/aarch64-w64-mingw32-clang -shared -D_JNI_IMPLEMENTATION_ -Wl,--kill-at -DZSTD_DLL_EXPORT=1 -O3 -DZSTD_MULTITHREAD=1 -I./src/windows/include -I./jni -I./src/main/native -I./src/main/native/common -std=c99 -o libzstd-jni-$(cat version).dll ./src/main/native/*.c ./src/main/native/common/*.c ./src/main/native/compress/*.c ./src/main/native/decompress/*.[cS] ./src/main/native/dictBuilder/*.c
 
         - name: Deploy
