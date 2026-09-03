@@ -54,6 +54,27 @@ The Java classes cannot be renamed/minimized/relocated. JVM linking the native
 library depends on the class name that is trying to link the native part, so
 changing the class names will lead to failed linking at runtime.
 
+Foreign Function & Memory API
+-----------------------------
+
+Some classes are being ported from JNI to the Foreign Function & Memory API
+([JEP 454](https://openjdk.org/jeps/454)). The ported versions are compiled
+for JDK 22 and shipped inside the same Jar under `META-INF/versions/22`,
+which makes it a Multi-Release Jar: a JDK 22+ runtime loads them, anything
+older keeps loading the JNI implementation from the Jar root. The public API
+and the behaviour are identical either way, so there is nothing to configure
+and nothing to change in your code.
+
+If you need to force the JNI implementation on a JDK 22+ runtime, start the
+JVM with:
+
+    -Djdk.util.jar.enableMultiRelease=false
+
+Note that this disables Multi-Release dispatch for *every* Jar on the
+classpath, not just this one, so it is an escape hatch rather than a supported
+configuration. Repackaging into a fat Jar has the same effect whenever the
+`Multi-Release: true` manifest attribute is not carried over.
+
 Building and dependencies
 -------------------------
 
