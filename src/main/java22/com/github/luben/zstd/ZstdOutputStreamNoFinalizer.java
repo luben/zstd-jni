@@ -8,12 +8,7 @@ import org.jetbrains.annotations.Nullable;
 import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.lang.foreign.FunctionDescriptor;
-import java.lang.foreign.Linker;
 import java.lang.foreign.MemorySegment;
-import java.lang.foreign.SymbolLookup;
-import java.lang.foreign.ValueLayout;
-import java.lang.invoke.MethodHandle;
 import java.nio.ByteBuffer;
 
 /**
@@ -25,80 +20,6 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
 
     static {
         Native.load();
-    }
-
-    /* ---------------------------------------------------------------------
-     * libzstd bindings
-     *
-     * Hand-written, verified against `jextract` output for zstd.h. They are
-     * fields of this class rather than of a shared binding class because this
-     * is currently the only FFM implementation; they move out when a second
-     * class needs them.
-     */
-
-    private static final Linker LINKER = Linker.nativeLinker();
-
-    /* Native.load() above has already loaded the JNI library, which exports the
-     * ZSTD_* symbols, so the loader lookup finds them. defaultLookup() covers a
-     * libzstd that was linked into the process some other way. */
-    private static final SymbolLookup LOOKUP =
-            SymbolLookup.loaderLookup().or(LINKER.defaultLookup());
-
-    /* size_t, not C `long`: the two differ on Windows. Every platform that has
-     * an FFM Linker at all is 64-bit, so this is always an OfLong. */
-    private static final ValueLayout.OfLong C_SIZE_T =
-            (ValueLayout.OfLong) LINKER.canonicalLayouts().get("size_t");
-
-    /* ZSTD_EndDirective */
-    private static final int ZSTD_E_CONTINUE = 0;
-    private static final int ZSTD_E_FLUSH    = 1;
-    private static final int ZSTD_E_END      = 2;
-
-    /* ZSTD_ResetDirective */
-    private static final int ZSTD_RESET_SESSION_ONLY = 1;
-
-    private static final MethodHandle ZSTD_CStreamOutSize =
-            downcall("ZSTD_CStreamOutSize", FunctionDescriptor.of(C_SIZE_T));
-    private static final MethodHandle ZSTD_createCStream =
-            downcall("ZSTD_createCStream", FunctionDescriptor.of(ValueLayout.ADDRESS));
-    private static final MethodHandle ZSTD_freeCStream =
-            downcall("ZSTD_freeCStream", FunctionDescriptor.of(C_SIZE_T, ValueLayout.ADDRESS));
-    private static final MethodHandle ZSTD_CCtx_reset =
-            downcall("ZSTD_CCtx_reset", FunctionDescriptor.of(C_SIZE_T, ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
-
-    /* The _simpleArgs variant of ZSTD_compressStream2 takes the buffers as plain
-     * arguments instead of through ZSTD_inBuffer / ZSTD_outBuffer. That matters:
-     * a heap byte[] can be handed to a pointer *argument* under
-     * Linker.Option.critical - the FFM analogue of GetPrimitiveArrayCritical,
-     * which is exactly what the JNI implementation uses - but its address can
-     * never be stored into an off-heap struct. Going through the structs would
-     * force a persistent off-heap staging buffer and a copy of every byte in
-     * each direction. zstd documents this entry point as being for exactly this
-     * purpose: "helpful for binders from dynamic languages which have troubles
-     * handling structures containing memory pointers".
-     *
-     * It is ZSTDLIB_STATIC_API, as are ZSTD_getFrameProgression and
-     * ZSTD_getDictID_* which jni_fast_zstd.c and jni_zstd.c already call. libzstd
-     * is vendored in src/main/native, so the symbol cannot drift underneath us.
-     */
-    private static final MethodHandle ZSTD_compressStream2_simpleArgs =
-            downcallCritical("ZSTD_compressStream2_simpleArgs", FunctionDescriptor.of(C_SIZE_T,
-                    ValueLayout.ADDRESS,                                       // ZSTD_CCtx* cctx
-                    ValueLayout.ADDRESS, C_SIZE_T, ValueLayout.ADDRESS,        // dst, dstCapacity, dstPos
-                    ValueLayout.ADDRESS, C_SIZE_T, ValueLayout.ADDRESS,        // src, srcSize, srcPos
-                    ValueLayout.JAVA_INT));                                    // ZSTD_EndDirective endOp
-
-    private static MethodHandle downcall(@NotNull String name, @NotNull FunctionDescriptor descriptor) {
-        return LINKER.downcallHandle(symbol(name), descriptor);
-    }
-
-    private static MethodHandle downcallCritical(@NotNull String name, @NotNull FunctionDescriptor descriptor) {
-        return LINKER.downcallHandle(symbol(name), descriptor, Linker.Option.critical(true));
-    }
-
-    private static @NotNull MemorySegment symbol(@NotNull String name) {
-        return LOOKUP.find(name)
-                .orElseThrow(() -> new UnsatisfiedLinkError("Cannot find the symbol " + name));
     }
 
     /* Opaque pointer to Zstd context object */
@@ -136,35 +57,11 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
     private @Nullable MemorySegment lastSrcSegment;
 
     public static long recommendedCOutSize() {
-        try {
-            return (long) ZSTD_CStreamOutSize.invokeExact();
-        } catch (Throwable t) {
-            throw new AssertionError("Call to ZSTD_CStreamOutSize failed", t);
-        }
-    }
-
-    private static @NotNull MemorySegment createCStream() {
-        try {
-            return (MemorySegment) ZSTD_createCStream.invokeExact();
-        } catch (Throwable t) {
-            throw new AssertionError("Call to ZSTD_createCStream failed", t);
-        }
-    }
-
-    private static long freeCStream(@NotNull MemorySegment ctx) {
-        try {
-            return (long) ZSTD_freeCStream.invokeExact(ctx);
-        } catch (Throwable t) {
-            throw new AssertionError("Call to ZSTD_freeCStream failed", t);
-        }
+        return ZstdBinding.cStreamOutSize();
     }
 
     private long resetCStream() {
-        try {
-            return (long) ZSTD_CCtx_reset.invokeExact(cstream, ZSTD_RESET_SESSION_ONLY);
-        } catch (Throwable t) {
-            throw new AssertionError("Call to ZSTD_CCtx_reset failed", t);
-        }
+        return ZstdBinding.resetCCtx(cstream, ZstdBinding.ZSTD_RESET_SESSION_ONLY);
     }
 
     /* The output always starts at 0 and spans the whole `dst` array, as it does
@@ -173,15 +70,11 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
     private long compressStream2(@NotNull MemorySegment src, long srcSize, long srcPosition, int endOp) {
         dstPosArray[0] = 0;
         srcPosArray[0] = srcPosition;
-        try {
-            return (long) ZSTD_compressStream2_simpleArgs.invokeExact(
-                    cstream,
-                    dstSegment, (long) dstSize, dstPos,
-                    src, srcSize, srcPos,
-                    endOp);
-        } catch (Throwable t) {
-            throw new AssertionError("Call to ZSTD_compressStream2_simpleArgs failed", t);
-        }
+        return ZstdBinding.compressStream2(
+                cstream,
+                dstSegment, dstSize, dstPos,
+                src, srcSize, srcPos,
+                endOp);
     }
 
     /* endStream / flushStream in the JNI build: an empty input, so libzstd only
@@ -236,7 +129,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
     public ZstdOutputStreamNoFinalizer(@NotNull OutputStream outStream, @NotNull BufferPool bufferPool) throws IOException {
         super(outStream);
         // create compression context
-        this.cstream = createCStream();
+        this.cstream = ZstdBinding.createCStream();
         this.stream = cstream.address();
         this.bufferPool = bufferPool;
         this.dstByteBuffer = Zstd.getArrayBackedBuffer(bufferPool, dstSize);
@@ -574,7 +467,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
         MemorySegment srcSegment = segmentOf(src);
         long srcPosition = offset;
         while (srcPosition < srcSize) {
-            long size = compressStream2(srcSegment, srcSize, srcPosition, ZSTD_E_CONTINUE);
+            long size = compressStream2(srcSegment, srcSize, srcPosition, ZstdBinding.ZSTD_E_CONTINUE);
             if (Zstd.isError(size)) {
                 throw new ZstdIOException(size);
             }
@@ -604,7 +497,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
                 // compress the remaining output and close the frame
                 long size;
                 do {
-                    size = drainStream(ZSTD_E_END);
+                    size = drainStream(ZstdBinding.ZSTD_E_END);
                     if (Zstd.isError(size)) {
                         throw new ZstdIOException(size);
                     }
@@ -615,7 +508,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
                 // compress the remaining input
                 long size;
                 do {
-                    size = drainStream(ZSTD_E_FLUSH);
+                    size = drainStream(ZstdBinding.ZSTD_E_FLUSH);
                     if (Zstd.isError(size)) {
                         throw new ZstdIOException(size);
                     }
@@ -655,7 +548,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
             // compress the remaining input and close the frame
             if (!frameClosed) {
                 do {
-                    size = drainStream(ZSTD_E_END);
+                    size = drainStream(ZstdBinding.ZSTD_E_END);
                     if (Zstd.isError(size)) {
                         throw new ZstdIOException(size);
                     }
@@ -673,7 +566,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
             }
             isClosed = true;
             bufferPool.release(dstByteBuffer);
-            freeCStream(cstream);
+            ZstdBinding.freeCStream(cstream);
             // do not keep the caller's last source array alive past close()
             lastSrcArray = null;
             lastSrcSegment = null;
