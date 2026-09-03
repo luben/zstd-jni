@@ -14,12 +14,13 @@ pushd sbt-java-module-info
 ./sbt publishLocal
 popd
 
-./sbt -v Test/compile package
+# Packages the jar - which is where the Multi-Release dispatch check runs, so a
+# green FFM run below cannot mean "resolved to the base class because there was
+# nothing else to resolve to" - and writes the classpath the runs need.
+./sbt -v testFromJarSetup
 
 # Both implementations out of the one packaged jar, exactly as on the other
-# platforms - the check first, because it is what rules out a green FFM run that
-# only resolved to the base class. The image ships JDK 25 alone, so unlike the
-# native runners there is no JDK 11 leg here; the 8-21 floor is covered there.
-./.github/scripts/check-multi-release-jar.sh "target/zstd-jni-$(cat version).jar"
-./.github/scripts/run-tests-from-jar.sh "$JAVA_HOME"
-./.github/scripts/run-tests-from-jar.sh "$JAVA_HOME" -Djdk.util.jar.enableMultiRelease=false
+# platforms. The image ships JDK 25 alone, so unlike the native runners there is
+# no JDK 11 leg here; the 8-21 floor is covered there.
+java .github/scripts/RunTestsFromJar.java "$JAVA_HOME"
+java .github/scripts/RunTestsFromJar.java "$JAVA_HOME" -Djdk.util.jar.enableMultiRelease=false

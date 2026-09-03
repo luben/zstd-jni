@@ -13,9 +13,14 @@ concurrency:
 #                                                            lost the attribute)
 #   JDK 11, jar as shipped                        -> JNI  (the 8-21 floor)
 #
-# check-multi-release-jar.sh runs first and is what makes the FFM run meaningful:
-# without it a jar built with no versioned classes would resolve to the base copy
-# and pass. This replaces the old arrangement, where a second JDK 11 matrix leg
+# What makes the FFM run meaningful is that `packageBin` verifies the dispatch as
+# it writes each jar (verifyMultiRelease in build.sbt): without that, a jar built
+# with no versioned classes would resolve to the base copy and pass green. There
+# is deliberately no separate CI step for it - the guarantee belongs to the build,
+# so it also covers `publishSigned` and every local `sbt package`.
+#
+# `sbt testFromJarSetup` packages the jar and writes the classpath the runs below
+# need. This replaces the old arrangement, where a second JDK 11 matrix leg
 # rebuilt everything and the FFM leg prepended META-INF/versions/22 to the test
 # classpath as a directory - which cannot exercise Multi-Release dispatch at all,
 # because a directory entry only ever resolves the base name.
@@ -58,19 +63,16 @@ jobs:
         # artifacts and every one of them has to carry the manifest attribute,
         # but that is a property of the build, not of the platform.
         - name: Package
-          run: ./sbt Test/compile package packageClassified
-
-        - name: Verify multi-release dispatch
-          run: ./.github/scripts/check-multi-release-jar.sh
+          run: ./sbt packageClassified testFromJarSetup
 
         - name: Test from jar (JDK 25, FFM)
-          run: ./.github/scripts/run-tests-from-jar.sh "${{ steps.jdk25.outputs.path }}"
+          run: java .github/scripts/RunTestsFromJar.java "${{ steps.jdk25.outputs.path }}"
 
         - name: Test from jar (JDK 25, JNI)
-          run: ./.github/scripts/run-tests-from-jar.sh "${{ steps.jdk25.outputs.path }}" -Djdk.util.jar.enableMultiRelease=false
+          run: java .github/scripts/RunTestsFromJar.java "${{ steps.jdk25.outputs.path }}" -Djdk.util.jar.enableMultiRelease=false
 
         - name: Test from jar (JDK 11, JNI)
-          run: ./.github/scripts/run-tests-from-jar.sh "${{ steps.jdk11.outputs.path }}"
+          run: java .github/scripts/RunTestsFromJar.java "${{ steps.jdk11.outputs.path }}"
 
         - name: Upload coverage
           uses: codecov/codecov-action@v7
@@ -127,19 +129,16 @@ jobs:
           run: nm -m target/classes/darwin/${{ matrix.target_arch }}/libzstd-jni-${nativeJniVersion}.dylib
 
         - name: Package
-          run: ./sbt Test/compile package
-
-        - name: Verify multi-release dispatch
-          run: ./.github/scripts/check-multi-release-jar.sh target/zstd-jni-$(cat version).jar
+          run: ./sbt testFromJarSetup
 
         - name: Test from jar (JDK 25, FFM)
-          run: ./.github/scripts/run-tests-from-jar.sh "${{ steps.jdk25.outputs.path }}"
+          run: java .github/scripts/RunTestsFromJar.java "${{ steps.jdk25.outputs.path }}"
 
         - name: Test from jar (JDK 25, JNI)
-          run: ./.github/scripts/run-tests-from-jar.sh "${{ steps.jdk25.outputs.path }}" -Djdk.util.jar.enableMultiRelease=false
+          run: java .github/scripts/RunTestsFromJar.java "${{ steps.jdk25.outputs.path }}" -Djdk.util.jar.enableMultiRelease=false
 
         - name: Test from jar (JDK 11, JNI)
-          run: ./.github/scripts/run-tests-from-jar.sh "${{ steps.jdk11.outputs.path }}"
+          run: java .github/scripts/RunTestsFromJar.java "${{ steps.jdk11.outputs.path }}"
 
         - name: Deploy
           if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
@@ -185,19 +184,16 @@ jobs:
           run: ./sbt compile
 
         - name: Package
-          run: ./sbt Test/compile package
-
-        - name: Verify multi-release dispatch
-          run: ./.github/scripts/check-multi-release-jar.sh target/zstd-jni-$(cat version).jar
+          run: ./sbt testFromJarSetup
 
         - name: Test from jar (JDK 25, FFM)
-          run: ./.github/scripts/run-tests-from-jar.sh "${{ steps.jdk25.outputs.path }}"
+          run: java .github/scripts/RunTestsFromJar.java "${{ steps.jdk25.outputs.path }}"
 
         - name: Test from jar (JDK 25, JNI)
-          run: ./.github/scripts/run-tests-from-jar.sh "${{ steps.jdk25.outputs.path }}" -Djdk.util.jar.enableMultiRelease=false
+          run: java .github/scripts/RunTestsFromJar.java "${{ steps.jdk25.outputs.path }}" -Djdk.util.jar.enableMultiRelease=false
 
         - name: Test from jar (JDK 11, JNI)
-          run: ./.github/scripts/run-tests-from-jar.sh "${{ steps.jdk11.outputs.path }}"
+          run: java .github/scripts/RunTestsFromJar.java "${{ steps.jdk11.outputs.path }}"
 
         - name: Deploy
           if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
