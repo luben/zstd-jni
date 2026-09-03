@@ -316,10 +316,14 @@ ffmApiCheck := {
 // This runs from `packageBin` rather than from a CI script so that it cannot be
 // skipped: every jar this build produces, published or not, is checked as it is
 // written.
+//
+// Only release 22 is asked. Asking release 8 as well looks appealing but is
+// vacuous: "the base copy wins below 22" can only be checked against a list of
+// base copies read from the same jar, so it asserts the JDK's own resolution
+// rather than anything about the artifact. Whether a versioned class is a
+// legitimate override or a versioned-only helper is `ffmApiCheck`'s question,
+// and it already answers it against the class files.
 def verifyMultiRelease(jar: File, log: Logger): Unit = {
-  import java.util.jar.JarFile
-  import java.util.zip.ZipFile
-
   val prefix = s"META-INF/versions/$ffmRelease/"
 
   // Below 22 `ffmCompile` skips and says so, so an empty jar is expected rather
@@ -330,65 +334,40 @@ def verifyMultiRelease(jar: File, log: Logger): Unit = {
     return
   }
 
-  // One pass over the raw entry names: which classes live under
-  // META-INF/versions/22, and which of those also have a base copy at the root.
-  // module-info is excluded - the JDK versions it by its own rules.
-  val (versioned, rootNames) = {
-    val zip = new ZipFile(jar)
-    try {
-      val v = scala.collection.mutable.ListBuffer.empty[String]
-      val r = scala.collection.mutable.HashSet.empty[String]
-      val en = zip.entries()
+  // One handle answers both questions: entries() lists the jar as it is on disk,
+  // getJarEntry() applies release-22 resolution to it.
+  val jf = new java.util.jar.JarFile(
+    jar, true, java.util.zip.ZipFile.OPEN_READ, java.lang.Runtime.Version.parse(ffmRelease))
+  try {
+    // module-info is excluded - the JDK versions it by its own rules.
+    val versioned = {
+      val b  = List.newBuilder[String]
+      val en = jf.entries()
       while (en.hasMoreElements) {
         val n = en.nextElement().getName
-        if (n.endsWith(".class") && !n.endsWith("module-info.class")) {
-          if (n.startsWith(prefix)) v += n.substring(prefix.length) else r += n
-        }
+        if (n.startsWith(prefix) && n.endsWith(".class") && !n.endsWith("module-info.class"))
+          b += n.substring(prefix.length)
       }
-      (v.toList.sorted, r.toSet)
-    } finally zip.close()
-  }
+      b.result().sorted
+    }
 
-  if (versioned.isEmpty)
-    sys.error(s"${jar.getName} has no $prefix*.class entries, so JDK $ffmRelease+ would load the " +
-              "JNI implementation from the jar root. Was it packaged before ffmCompile ran?")
-
-  val atFfm  = new JarFile(jar, true, ZipFile.OPEN_READ, java.lang.Runtime.Version.parse(ffmRelease))
-  val atBase = new JarFile(jar, true, ZipFile.OPEN_READ, java.lang.Runtime.Version.parse("8"))
-  try {
-    def resolves(jf: JarFile, name: String): Option[String] =
-      Option(jf.getJarEntry(name)).map(_.getRealName)
+    if (versioned.isEmpty)
+      sys.error(s"${jar.getName} has no $prefix*.class entries, so JDK $ffmRelease+ would load the " +
+                "JNI implementation from the jar root. Was it packaged before ffmCompile ran?")
 
     val problems = versioned.flatMap { name =>
-      // On 22 the versioned copy has to win, for every class ...
-      val onFfm = resolves(atFfm, name)
-      val ffmProblem =
-        if (onFfm.contains(prefix + name)) None
-        else Some(s"  $name on $ffmRelease resolves to ${onFfm.getOrElse("<absent>")}, expected $prefix$name")
-
-      // ... and on 8 the base copy has to, or nothing at all: a versioned-only
-      // helper such as ZstdBinding must be invisible to a pre-22 runtime.
-      val onBase   = resolves(atBase, name)
-      val expected = if (rootNames.contains(name)) Some(name) else None
-      val baseProblem =
-        if (onBase == expected) None
-        else Some(s"  $name on 8 resolves to ${onBase.getOrElse("<absent>")}, " +
-                  s"expected ${expected.getOrElse("<absent>")}")
-
-      ffmProblem ++ baseProblem
+      val got = Option(jf.getJarEntry(name)).map(_.getRealName)
+      if (got.contains(prefix + name)) None
+      else Some(s"  $name resolves to ${got.getOrElse("<absent>")}, expected $prefix$name")
     }
 
     if (problems.nonEmpty)
       sys.error(s"${jar.getName} does not dispatch as a Multi-Release JAR - is `Multi-Release: true` " +
                 s"in its manifest?\n" + problems.mkString("\n"))
 
-    val overrides = versioned.count(rootNames.contains)
-    log.info(s"Multi-Release check: ${jar.getName} - ${versioned.size} class(es) resolve to $prefix on " +
-             s"$ffmRelease, $overrides of them back to the jar root on 8.")
-  } finally {
-    atFfm.close()
-    atBase.close()
-  }
+    log.info(s"Multi-Release check: ${jar.getName} - ${versioned.size} class(es) resolve to $prefix " +
+             s"on $ffmRelease.")
+  } finally jf.close()
 }
 
 // Two tasks write into target/classes without going through `compile`:
