@@ -302,14 +302,117 @@ ffmApiCheck := {
              (if (additions.nonEmpty) s", ${additions.size} versioned-only helper classes" else "") + ".")
 }
 
-Compile / packageBin := (Compile / packageBin).dependsOn(ffmApiCheck).value
+// Writing classes into META-INF/versions/22 does not by itself make a jar
+// dispatch to them. A lost `Multi-Release: true`, entries at the wrong path, or
+// a jar packaged on a JDK below 22 all produce an artifact that quietly loads
+// the JNI implementation on every runtime - and passes every test, because the
+// tests do not care which implementation answers.
+//
+// java.util.jar.JarFile(file, verify, mode, Runtime.Version) applies the JDK's
+// own resolution, manifest attribute included, and getRealName() reports the
+// physical entry it chose. That is the same question a consumer's class loader
+// asks, answered in-process against the finished artifact.
+//
+// This runs from `packageBin` rather than from a CI script so that it cannot be
+// skipped: every jar this build produces, published or not, is checked as it is
+// written.
+def verifyMultiRelease(jar: File, log: Logger): Unit = {
+  import java.util.jar.JarFile
+  import java.util.zip.ZipFile
+
+  val prefix = s"META-INF/versions/$ffmRelease/"
+
+  // Below 22 `ffmCompile` skips and says so, so an empty jar is expected rather
+  // than broken. Everything that publishes builds on a current JDK.
+  if (!scala.util.Properties.isJavaAtLeast(ffmRelease)) {
+    log.warn(s"${jar.getName}: built on JDK ${sys.props.getOrElse("java.version", "?")}, " +
+             s"so it carries no META-INF/versions/$ffmRelease and every runtime will get the JNI classes.")
+    return
+  }
+
+  // One pass over the raw entry names: which classes live under
+  // META-INF/versions/22, and which of those also have a base copy at the root.
+  // module-info is excluded - the JDK versions it by its own rules.
+  val (versioned, rootNames) = {
+    val zip = new ZipFile(jar)
+    try {
+      val v = scala.collection.mutable.ListBuffer.empty[String]
+      val r = scala.collection.mutable.HashSet.empty[String]
+      val en = zip.entries()
+      while (en.hasMoreElements) {
+        val n = en.nextElement().getName
+        if (n.endsWith(".class") && !n.endsWith("module-info.class")) {
+          if (n.startsWith(prefix)) v += n.substring(prefix.length) else r += n
+        }
+      }
+      (v.toList.sorted, r.toSet)
+    } finally zip.close()
+  }
+
+  if (versioned.isEmpty)
+    sys.error(s"${jar.getName} has no $prefix*.class entries, so JDK $ffmRelease+ would load the " +
+              "JNI implementation from the jar root. Was it packaged before ffmCompile ran?")
+
+  val atFfm  = new JarFile(jar, true, ZipFile.OPEN_READ, java.lang.Runtime.Version.parse(ffmRelease))
+  val atBase = new JarFile(jar, true, ZipFile.OPEN_READ, java.lang.Runtime.Version.parse("8"))
+  try {
+    def resolves(jf: JarFile, name: String): Option[String] =
+      Option(jf.getJarEntry(name)).map(_.getRealName)
+
+    val problems = versioned.flatMap { name =>
+      // On 22 the versioned copy has to win, for every class ...
+      val onFfm = resolves(atFfm, name)
+      val ffmProblem =
+        if (onFfm.contains(prefix + name)) None
+        else Some(s"  $name on $ffmRelease resolves to ${onFfm.getOrElse("<absent>")}, expected $prefix$name")
+
+      // ... and on 8 the base copy has to, or nothing at all: a versioned-only
+      // helper such as ZstdBinding must be invisible to a pre-22 runtime.
+      val onBase   = resolves(atBase, name)
+      val expected = if (rootNames.contains(name)) Some(name) else None
+      val baseProblem =
+        if (onBase == expected) None
+        else Some(s"  $name on 8 resolves to ${onBase.getOrElse("<absent>")}, " +
+                  s"expected ${expected.getOrElse("<absent>")}")
+
+      ffmProblem ++ baseProblem
+    }
+
+    if (problems.nonEmpty)
+      sys.error(s"${jar.getName} does not dispatch as a Multi-Release JAR - is `Multi-Release: true` " +
+                s"in its manifest?\n" + problems.mkString("\n"))
+
+    val overrides = versioned.count(rootNames.contains)
+    log.info(s"Multi-Release check: ${jar.getName} - ${versioned.size} class(es) resolve to $prefix on " +
+             s"$ffmRelease, $overrides of them back to the jar root on 8.")
+  } finally {
+    atFfm.close()
+    atBase.close()
+  }
+}
+
+// Two tasks write into target/classes without going through `compile`:
+// `jniCompile` drops the native library at <os>/<arch>/, and ffmCompile (behind
+// ffmApiCheck) writes META-INF/versions/22. `mappings` reads that directory, and
+// as a *sibling* dependency of packageBin it is free to run before either of
+// them - which produces a jar that is quietly missing the .so, the versioned
+// classes, or both, and no packaging step complains. The edge therefore belongs
+// on `mappings` rather than on `packageBin`.
+Compile / packageBin / mappings :=
+  (Compile / packageBin / mappings).dependsOn(jniCompile, ffmApiCheck).value
+
+Compile / packageBin := {
+  val jar = (Compile / packageBin).value
+  verifyMultiRelease(jar, streams.value.log)
+  jar
+}
 
 // `sbt test` runs against target/classes, which is the JNI implementation and
 // only ever that: a directory entry on the classpath resolves
 // com/github/luben/zstd/Foo.class and never the META-INF/versions/22 copy next
 // to it. Multi-Release dispatch is a jar feature, so the FFM implementation is
 // tested by running the same suite against the packaged jar under a JDK 22+
-// runtime - see .github/scripts/run-tests-from-jar.sh.
+// runtime - see `testFromJarSetup` below and .github/scripts/RunTestsFromJar.java.
 //
 // The FFM sources are still compiled and API-checked on every `test`, so a
 // mistake in them fails the ordinary local build rather than waiting for the
@@ -611,12 +714,14 @@ addArtifact(Artifact(nameValue, "cloud"), Cloud / packageBin)
 // Defaults.compileSettings, so it never delegates to the Compile-scoped manifest
 // above and Multi-Release has to be set on each of them explicitly.
 //
-// The dependency on ffmApiCheck is what makes their *contents* right: their
-// `mappings` is the plain `classes` file list with no link to `compile`, and
-// `classes` is a lazy val that snapshots target/classes the first time any of
-// them forces it. Without the edge, that snapshot can be taken before the
-// versioned classes have been written, and the jar ships the Multi-Release
-// manifest attribute with no META-INF/versions/22 behind it.
+// The dependency on jniCompile and ffmApiCheck is what makes their *contents*
+// right, and it is on `mappings` for the reason given above the Compile-scoped
+// one: their `mappings` names the native library by literal path and takes the
+// class list from `classes`, a lazy val that snapshots target/classes the first
+// time any config forces it - and sbt silently drops a mapping whose source file
+// does not exist. Without the edge the snapshot can be taken before either
+// writer has run, and the jar ships the Multi-Release manifest attribute with no
+// META-INF/versions/22 behind it, or no .so, or neither.
 val classifiedConfigs = Seq(
   Linux_amd64, Linux_i386, Linux_aarch64, Linux_arm, Linux_ppc64le, Linux_ppc64,
   Linux_mips64, Linux_loongarch64, Linux_s390x, Linux_riscv64, Aix_ppc64,
@@ -626,8 +731,64 @@ val classifiedConfigs = Seq(
 
 classifiedConfigs.flatMap(c => Seq(
   c / packageBin / packageOptions += multiReleaseAttribute,
-  c / packageBin := (c / packageBin).dependsOn(ffmApiCheck).value
+  c / packageBin / mappings := (c / packageBin / mappings).dependsOn(jniCompile, ffmApiCheck).value,
+  c / packageBin := {
+    val jar = (c / packageBin).value
+    verifyMultiRelease(jar, streams.value.log)
+    jar
+  }
 ))
+
+// Everything .github/scripts/RunTestsFromJar.java needs to run the suite against
+// the packaged jar under an arbitrary JVM. It has to come from sbt because only
+// sbt knows the dependency classpath - and it has to be *written* by sbt rather
+// than scraped off `export Test/fullClasspath`, which meant parsing log output
+// for the one line that looked like a path list.
+//
+// A properties file rather than a bare path list: Properties.store escapes the
+// backslashes in Windows paths and Properties.load puts them back, so the same
+// file works on every platform with no separator sniffing and no cygpath.
+lazy val testFromJarSetup = taskKey[File]("Package the jar and write what RunTestsFromJar.java needs")
+
+testFromJarSetup := {
+  val log = streams.value.log
+  val jar = (Compile / packageBin).value
+  val out = target.value / "test-from-jar.properties"
+
+  // The base classes must not be on the classpath: the whole point is that they
+  // come out of the jar now. sbt-jacoco's own Test/fullClasspath wrapper swaps
+  // target/classes for target/jacoco/instrumented-classes, so both spellings
+  // have to go, or a `jacoco` run earlier in the same session would put the JNI
+  // implementation back in front of the jar - green, and meaningless.
+  val baseClasses = Set(
+    (Compile / classDirectory).value,
+    target.value / "jacoco" / "instrumented-classes"
+  ).map(_.getCanonicalFile)
+
+  val entries = (Test / fullClasspath).value.files
+    .map(_.getCanonicalFile)
+    .filterNot(baseClasses.contains)
+
+  // Backstop for the filter, asked semantically rather than by path shape: no
+  // surviving directory may hold a compiled com.github.luben.zstd class.
+  val leaked = entries.filter(e => (e / "com" / "github" / "luben" / "zstd" / "Zstd.class").isFile)
+  if (leaked.nonEmpty)
+    sys.error("these classpath entries would shadow the jar's own classes:\n" +
+              leaked.map("  " + _).mkString("\n"))
+
+  val props = new java.util.Properties
+  props.setProperty("jar", jar.getPath)
+  props.setProperty("testClasses", (Test / classDirectory).value.getPath)
+  props.setProperty("classpath", entries.map(_.getPath).mkString(java.io.File.pathSeparator))
+
+  IO.createDirectory(out.getParentFile)
+  val w = new java.io.FileOutputStream(out)
+  try props.store(w, "Written by `sbt testFromJarSetup`; consumed by .github/scripts/RunTestsFromJar.java")
+  finally w.close()
+
+  log.info(s"Wrote $out (${entries.size} classpath entries)")
+  out
+}
 
 // So CI can multi-release-check every published jar, not just the main one.
 // Deliberately not `packagedArtifacts`: that would also run aarTask, which needs
