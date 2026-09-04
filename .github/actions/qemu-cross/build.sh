@@ -12,10 +12,7 @@ pushd sbt-java-module-info
 ./sbt publishLocal
 popd
 
-# Both implementations out of the one packaged jar. The image ships JDK 25 alone,
-# so there is no JDK 11 leg here; the 8-21 floor is covered on the native runners.
-# One sbt invocation, unlike the native runners: booting it under emulation costs
-# minutes.
+# Both implementations (JNI and FFM) out of the one packaged jar.
 ./sbt -v testFromJarSetup \
          "testFromJar $JAVA_HOME" \
          "testFromJar $JAVA_HOME -Djdk.util.jar.enableMultiRelease=false"

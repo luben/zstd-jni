@@ -272,6 +272,15 @@ jacocoReportSettings := JacocoReportSettings(
   Seq(JacocoReportFormats.XML, JacocoReportFormats.HTML),
   "utf-8")
 
+// Jacoco walks Compile/classDirectory as a directory tree, not a classpath entry, so it
+// sees the META-INF/versions/<n> copies too, and two same-named classes in one
+// CoverageBuilder fails with "Can't add different class with same name". Filters match the
+// path relative to classDirectory with separators as dots. Right on the merits too: `sbt
+// jacoco` exercises the JNI path, so those copies would only add 0%-covered duplicates.
+val versionedClasses = s"META-INF.versions.$ffmRelease.*"
+jacocoExcludes := Seq(versionedClasses)
+jacocoInstrumentationExcludes := Seq("module-info", versionedClasses)
+
 // Android .aar
 val aarTask = taskKey[File]("aar Task")
 aarTask := {
@@ -458,8 +467,9 @@ packageClassified := packageBin.all(
 
 // Multi-Release JAR: on JDK 22+ the classes in META-INF/versions/22 win over their
 // same-named copies in the jar root. 22 is where the FFM API was finalized (JEP 454);
-// these sources compile with `--release 22`, the rest of the project with 8.
-val ffmRelease = "22"
+// these sources compile with `--release 22`, the rest of the project with 8. `lazy` so
+// settings above this line can read it - a strict forward reference is silently null.
+lazy val ffmRelease = "22"
 
 lazy val ffmSourceDir = settingKey[File]("Source directory of the JDK 22+ (FFM) implementation")
 lazy val ffmClassDir  = settingKey[File]("Where the versioned classes are written, inside the jar content root")
@@ -515,23 +525,8 @@ ffmCompile := {
   }
 }
 
-// Jacoco walks Compile/classDirectory as a directory tree, not a classpath entry, so it
-// sees the META-INF/versions/<n> copies too, and two same-named classes in one
-// CoverageBuilder fails with "Can't add different class with same name". Filters match the
-// path relative to classDirectory with separators as dots. Right on the merits too: `sbt
-// jacoco` exercises the JNI path, so those copies would only add 0%-covered duplicates.
-// (Here rather than with the other jacoco settings: reading ffmRelease above its definition
-// would give "META-INF.versions.null.*" - a forward reference is null, not an error.)
-val versionedClasses = s"META-INF.versions.$ffmRelease.*"
-jacocoExcludes := Seq(versionedClasses)
-jacocoInstrumentationExcludes := Seq("module-info", versionedClasses)
-
-// It takes nothing from the compile graph - jar path and test classes are settings, the
-// dependency jars come from `update` - because sbt caches task results per command, so an
-// edge to `packageBin` or `Test / fullClasspath` would re-run jniCompile, a full gcc+LTO
-// build of libzstd, once per run. `testFromJarSetup` does that once. It re-checks the jar
-// with verifyMultiRelease so a green FFM run cannot mean "resolved to the base class because
-// there was nothing else". Java home defaults to JAVA_HOME, then to the JDK running sbt.
+// Builds everything testFromJar reads off disk, so that testFromJar itself needs no edge
+// into the compile graph.
 lazy val testFromJarSetup = taskKey[Unit]("Package the jar and compile the tests, ready for testFromJar")
 
 // Runs the suite against the packaged jar, the only thing that exercises Multi-Release
@@ -543,7 +538,11 @@ lazy val testFromJarSetup = taskKey[Unit]("Package the jar and compile the tests
 //   testFromJar <jdk8-21>                                         -> JNI
 //
 // Same artifact every time, only the runtime differs. It forks its own JVM because sbt runs
-// `Test / test` in-process, pinned to whatever JDK built the jar.
+// `Test / test` in-process, pinned to whatever JDK built the jar. Java home defaults to
+// JAVA_HOME, then to the JDK running sbt.
+//
+// No edge into the compile graph on purpose: sbt caches per command, so a `dependsOn` on
+// packageBin would rebuild libzstd (gcc+LTO) every run - testFromJarSetup does it once.
 lazy val testFromJar = inputKey[Unit]("Run the test suite against the packaged jar under the given JDK")
 
 // One task rather than two commands: sbt would rebuild the native library for each
@@ -564,15 +563,12 @@ testFromJar := {
     sys.error(s"$jar or $testClasses is missing - run `sbt testFromJarSetup` first")
   verifyMultiRelease(jar, log)
 
-  // The dependency jars plus the test classes, and no other product directory: the point is
-  // that com.github.luben.zstd comes out of the jar now. Taking the external classpath rather
-  // than filtering the full one also sidesteps sbt-jacoco, whose Test/fullClasspath swaps
-  // target/classes for target/jacoco/instrumented-classes and would put the JNI
-  // implementation back in front of the jar - green, and meaningless.
-  //
-  // The test classes must be on -cp, not only on scalatest's -R runpath: the suite is itself
-  // in package com.github.luben.zstd and calls package-private members, and from the runpath
-  // it lands in a different runtime package from the jar's copy - IllegalAccessError.
+  // Dependency jars plus the test classes, no product directory: com.github.luben.zstd has to
+  // come out of the jar. Not a filtered `fullClasspath` - under sbt-jacoco that hands back
+  // target/jacoco/instrumented-classes, putting the JNI classes in front of the jar again.
+  // The test classes go on -cp as well as on scalatest's -R: from the runpath alone they load
+  // into a different runtime package than the jar's copy, and the suite's package-private
+  // calls into com.github.luben.zstd throw IllegalAccessError.
   val entries = (testClasses +: (Test / externalDependencyClasspath).value.files).map(_.getCanonicalFile)
 
   // Backstop, asked semantically rather than by path shape.
@@ -593,8 +589,8 @@ testFromJar := {
 
   val cmd =
     javaBin.getPath ::
-    // JEP 472: restricted methods warn on 24 and will be blocked later. Both paths need it -
-    // System.load for JNI, the downcalls for FFM - and JDKs below 22 reject the flag.
+    // JEP 472: restricted methods warn on 24 and will be blocked later. Both implementations
+    // need it - System.load for JNI, the downcalls for FFM - and JDKs below 22 reject it.
     (if (release >= 22) List("--enable-native-access=ALL-UNNAMED") else Nil) :::
     jvmOpts :::
     // The jar goes first; the base classes are already out of what follows.
@@ -631,7 +627,7 @@ def featureVersion(javaBin: File): Int = {
 //   2. a JDK 22 loads those, not the jar-root copy    getJarEntry().getRealName()
 //   3. their public API matches that jar-root copy    javap --multi-release 8 vs 22
 //
-// (2) is the JDK's own resolution, manifest attribute included - the same question a
+// Is the JDK's own resolution, manifest attribute included - the same question a
 // consumer's class loader asks. Runs from packageBin, so every jar this build writes
 // is checked, published or not.
 def verifyMultiRelease(jar: File, log: Logger): Unit = {

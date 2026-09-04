@@ -5,8 +5,11 @@ concurrency:
     cancel-in-progress: true
 
 # One jar per platform, built on JDK 25, run under three JVMs - only the runtime
-# differs, never the artifact: JDK 25 -> FFM, JDK 25 with
-# -Djdk.util.jar.enableMultiRelease=false -> JNI, JDK 11 -> JNI (the 8-21 floor).
+# differs, never the artifact:
+#
+# - JDK 25 -> FFM
+# - JDK 25 with -Djdk.util.jar.enableMultiRelease=false -> JNI
+# - JDK 11 -> JNI (the 8-21 floor)
 #
 # The FFM run only means something because build.sbt's verifyMultiRelease rejects a
 # jar that would resolve to the base copy. testFromJar takes nothing from the compile
