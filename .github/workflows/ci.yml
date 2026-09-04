@@ -4,23 +4,13 @@ concurrency:
     group: ${{ github.workflow }}-${{ github.ref }}
     cancel-in-progress: true
 
-# Every platform builds and packages once, on JDK 25 - the version the released
-# jars are built with - then runs the suite three times against that one jar,
-# changing only the JVM underneath it:
+# One jar per platform, built on JDK 25, run under three JVMs - only the runtime
+# differs, never the artifact: JDK 25 -> FFM, JDK 25 with
+# -Djdk.util.jar.enableMultiRelease=false -> JNI, JDK 11 -> JNI (the 8-21 floor).
 #
-#   JDK 25, jar as shipped                          -> FFM (META-INF/versions/22)
-#   JDK 25, -Djdk.util.jar.enableMultiRelease=false -> JNI (a shaded fat jar that
-#                                                           lost the attribute)
-#   JDK 11, jar as shipped                          -> JNI (the 8-21 floor)
-#
-# What makes the FFM run meaningful is that `packageBin` verifies the dispatch as
-# it writes each jar (verifyMultiRelease in build.sbt): without it, a jar with no
-# versioned classes would resolve to the base copy and pass green. Deliberately
-# not a CI step - in the build it also covers publishSigned and `sbt package`.
-#
-# `sbt testFromJarSetup` builds that jar and the test classes; `testFromJar` then
-# re-checks the jar's dispatch and launches the given JDK against it, taking
-# nothing from the compile graph - so the native library is built once per job.
+# The FFM run only means something because build.sbt's verifyMultiRelease rejects a
+# jar that would resolve to the base copy. testFromJar takes nothing from the compile
+# graph, so testFromJarSetup builds the native library once per job.
 jobs:
     linux:
         runs-on: ubuntu-latest
@@ -254,9 +244,8 @@ jobs:
             update: true
 
         - name: Compile
-          # -DZSTD_DLL_EXPORT=1 puts the ZSTD_* symbols in the DLL export table, where
-          # the FFM implementation looks them up. Keep in step with the Windows branch
-          # of jniGccFlags in build.sbt, which explains why --version-script cannot.
+          # -DZSTD_DLL_EXPORT=1 exports the ZSTD_* symbols the FFM code looks up.
+          # Keep in step with the Windows branch of jniGccFlags in build.sbt.
           run: /opt/aarch64-w64-mingw32/bin/aarch64-w64-mingw32-clang -shared -D_JNI_IMPLEMENTATION_ -Wl,--kill-at -DZSTD_DLL_EXPORT=1 -O3 -DZSTD_MULTITHREAD=1 -I./src/windows/include -I./jni -I./src/main/native -I./src/main/native/common -std=c99 -o libzstd-jni-$(cat version).dll ./src/main/native/*.c ./src/main/native/common/*.c ./src/main/native/compress/*.c ./src/main/native/decompress/*.[cS] ./src/main/native/dictBuilder/*.c
 
         - name: Deploy
