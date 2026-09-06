@@ -8,16 +8,31 @@ concurrency:
 jobs:
     qemu-cross:
         strategy:
+            # One slow guest should not cancel the others.
+            fail-fast: false
             matrix:
                 include: [
-                    { platform: s390x }
+                    { platform: linux/s390x, image: "s390x/eclipse-temurin:25-jdk-noble", runner: ubuntu-latest },
+                    # 32-bit: no specialized ABI linker, so FFM falls back to
+                    # libffi's FallbackLinker with a 4-byte size_t - the only
+                    # place ZstdBinding's size_t adaptation is exercised. A distro
+                    # JDK, as Temurin and Zulu ship no 32-bit build past 21.
+                    # Both entries cover the same thing, at different cost: x86-32
+                    # is native on an x86_64 runner but interpreter-only (Zero),
+                    # HotSpot's port having gone in JEP 503, while arm32 keeps a
+                    # JIT and is native on an arm64 host that allows AArch32.
+                    # Keep whichever turns out cheaper.
+                    { platform: linux/386,    image: "i386/debian:trixie",    runner: ubuntu-latest },
+                    { platform: linux/arm/v7, image: "arm32v7/debian:trixie", runner: ubuntu-24.04-arm }
                 ]
-        runs-on: ubuntu-latest
+        runs-on: ${{ matrix.runner }}
         steps:
         - uses: actions/checkout@v7
+        # Falls back to emulation for any guest the host cannot run directly.
         - uses: docker/setup-qemu-action@v4
 
-        - name: qemu ${{ matrix.platform }} build and test
+        - name: ${{ matrix.platform }} build and test
           uses: ./.github/actions/qemu-cross
           with:
             platform: ${{ matrix.platform }}
+            image: ${{ matrix.image }}
