@@ -13,6 +13,7 @@ import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
+import java.nio.ByteOrder;
 
 /**
  * libzstd downcall bindings shared by the FFM implementations.
@@ -76,10 +77,18 @@ final class ZstdBinding {
 
     private static ValueLayout cSizeT() {
         MemoryLayout sizeT = LINKER.canonicalLayouts().get("size_t");
-        if (sizeT instanceof ValueLayout.OfLong || sizeT instanceof ValueLayout.OfInt) {
-            return (ValueLayout) sizeT;
+        if (!(sizeT instanceof ValueLayout.OfLong || sizeT instanceof ValueLayout.OfInt)) {
+            throw new UnsupportedOperationException("Unexpected size_t layout " + sizeT);
         }
-        throw new UnsupportedOperationException("Unexpected size_t layout " + sizeT);
+        if (sizeT.byteSize() == 4 && ByteOrder.nativeOrder() != ByteOrder.LITTLE_ENDIAN) {
+            /* No such JDK 22+ exists - Debian's 32-bit builds are i386, armhf and
+             * armel - but sizeTSlot() would silently read the wrong four bytes. */
+            throw new UnsupportedOperationException(
+                    "The zstd-jni FFM implementation does not support a big-endian platform with a"
+                            + " 4-byte size_t. Start the JVM with -Djdk.util.jar.enableMultiRelease=false"
+                            + " to use the JNI implementation instead.");
+        }
+        return (ValueLayout) sizeT;
     }
 
     /**
@@ -162,69 +171,23 @@ final class ZstdBinding {
     }
 
     /**
-     * A {@code size_t*} in/out parameter, backed by a heap array rather than
-     * native memory: under {@link Linker.Option#critical} a heap segment is a legal
-     * pointer argument, so a caller needs no {@code Arena}. The array has to be as
-     * wide as the platform's size_t - libzstd writes exactly that many bytes - so
-     * the width lives here and callers see only {@code long}.
+     * Wraps a one-element array as a {@code size_t*} in/out parameter. A heap
+     * array rather than native memory: under {@link Linker.Option#critical} a heap
+     * segment is a legal pointer argument, so a caller needs no {@code Arena}.
      * <p>
-     * Exactly one subclass is ever loaded in a given JVM, which keeps
-     * {@link #get} and {@link #set} monomorphic.
+     * The slot is a {@code long[1]} on every platform, so the caller reads and
+     * writes it as a plain {@code long} and no width logic reaches the call sites.
+     * Where size_t is 4 bytes libzstd writes only the low half of the slot, which
+     * on a little-endian machine is where {@code long} keeps its low 32 bits - so
+     * a value written as a {@code long} arrives correctly and a result read back
+     * as one is the 4 bytes libzstd wrote above the zeroes the caller left. That
+     * holds because every value passed through here - a position or a length - is
+     * far inside int range. {@link #cSizeT} rejects the big-endian case, where the
+     * low half would be the wrong four bytes.
      */
-    abstract static class SizeTRef {
-
-        /** The array, as a pointer argument. Built once; the array is final. */
-        final @NotNull MemorySegment segment;
-
-        private SizeTRef(@NotNull MemorySegment segment) {
-            this.segment = segment;
-        }
-
-        abstract long get();
-
-        abstract void set(long value);
-
-        private static final class Wide extends SizeTRef {
-            private final long[] cell;
-
-            private Wide(long[] cell) {
-                super(MemorySegment.ofArray(cell));
-                this.cell = cell;
-            }
-
-            long get() {
-                return cell[0];
-            }
-
-            void set(long value) {
-                cell[0] = value;
-            }
-        }
-
-        private static final class Narrow extends SizeTRef {
-            private final int[] cell;
-
-            private Narrow(int[] cell) {
-                super(MemorySegment.ofArray(cell));
-                this.cell = cell;
-            }
-
-            /* Unsigned, as in `adapt`: a position never exceeds int range, but a
-             * size_t is unsigned and sign extension here would be a silent trap. */
-            long get() {
-                return Integer.toUnsignedLong(cell[0]);
-            }
-
-            void set(long value) {
-                cell[0] = (int) value;
-            }
-        }
-    }
-
-    static @NotNull SizeTRef newSizeTRef() {
-        return SIZE_T_IS_64_BIT
-                ? new SizeTRef.Wide(new long[1])
-                : new SizeTRef.Narrow(new int[1]);
+    static @NotNull MemorySegment sizeTSlot(long @NotNull [] cell) {
+        MemorySegment segment = MemorySegment.ofArray(cell);
+        return SIZE_T_IS_64_BIT ? segment : segment.asSlice(0, 4);
     }
 
     static long cStreamOutSize() {
