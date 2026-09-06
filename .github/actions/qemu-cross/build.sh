@@ -8,6 +8,13 @@ apt-get update
 # ends in "Could not download and verify the launcher".
 apt-get install -y gcc curl
 
+# The plain distro images ship no JDK. It has to be 22+ or ffmCompile skips.
+if ! command -v javac > /dev/null; then
+    apt-get install -y openjdk-25-jdk-headless
+    JAVA_HOME=$(dirname "$(dirname "$(readlink -f "$(command -v javac)")")")
+    export JAVA_HOME
+fi
+
 pushd sbt-java-module-info
 ./sbt publishLocal
 popd
