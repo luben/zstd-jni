@@ -13,6 +13,9 @@ if ! command -v javac > /dev/null; then
     apt-get install -y openjdk-25-jdk-headless
     JAVA_HOME=$(dirname "$(dirname "$(readlink -f "$(command -v javac)")")")
     export JAVA_HOME
+    # A Zero build, so no C2 and sbt's default -XX:MaxInlineLevel is rejected
+    # outright. Same defaults minus that flag.
+    export JVM_OPTS="-Xms512m -Xss2m"
 fi
 
 pushd sbt-java-module-info
