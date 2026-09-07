@@ -13,7 +13,6 @@ import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
-import java.nio.ByteOrder;
 
 /**
  * libzstd downcall bindings shared by the FFM implementations.
@@ -77,37 +76,36 @@ final class ZstdBinding {
 
     private static ValueLayout cSizeT() {
         MemoryLayout sizeT = LINKER.canonicalLayouts().get("size_t");
-        if (!(sizeT instanceof ValueLayout.OfLong || sizeT instanceof ValueLayout.OfInt)) {
-            throw new UnsupportedOperationException("Unexpected size_t layout " + sizeT);
+        if (sizeT instanceof ValueLayout.OfLong || sizeT instanceof ValueLayout.OfInt) {
+            return (ValueLayout) sizeT;
         }
-        if (sizeT.byteSize() == 4 && ByteOrder.nativeOrder() != ByteOrder.LITTLE_ENDIAN) {
-            /* No such JDK 22+ exists - Debian's 32-bit builds are i386, armhf and
-             * armel - but sizeTSlot() would silently read the wrong four bytes. */
-            throw new UnsupportedOperationException(
-                    "The zstd-jni FFM implementation does not support a big-endian platform with a"
-                            + " 4-byte size_t. Start the JVM with -Djdk.util.jar.enableMultiRelease=false"
-                            + " to use the JNI implementation instead.");
-        }
-        return (ValueLayout) sizeT;
+        throw new UnsupportedOperationException("Unexpected size_t layout " + sizeT);
     }
 
     /**
-     * Retypes a downcall handle to {@code javaType}, which spells every size_t as
-     * {@code long}. A no-op where size_t is 64-bit; where it is 32-bit the handle
-     * takes and returns {@code int} instead, so each size_t argument gets a l2i
-     * narrowing (all of them are array lengths or offsets, well inside int range)
-     * and the return is widened <em>unsigned</em>. Zero extension is what the JNI
-     * build's {@code (jlong) size_t} does, and it is what keeps a negated
-     * {@code ZSTD_error_*} code round-tripping through {@code Zstd.isError}, which
-     * casts back to size_t on the far side.
+     * Makes a downcall handle match {@code javaType}, which types every size_t as
+     * {@code long}. A no-op where size_t is 64-bit. Where it is 32-bit the handle
+     * really takes and returns {@code int}, and two steps, in this order, fix that:
+     * <ol>
+     * <li><b>The return value</b> is widened by {@code filterReturnValue}, using
+     *     {@code Integer.toUnsignedLong}. Unsigned because that is what the JNI
+     *     build's {@code (jlong) size_t} produces, so {@code Zstd.isError} sees the
+     *     same value in both builds. This has to happen first, because - despite
+     *     the name - {@code explicitCastArguments} converts the return value as
+     *     well, and it would use the plain {@code (long) anInt} widening, which
+     *     sign-extends.</li>
+     * <li><b>The arguments</b> are narrowed to {@code int} by
+     *     {@code explicitCastArguments}, which by then finds the return type
+     *     already right and leaves it alone. Narrowing is safe here because every
+     *     size_t argument is a length or an offset. It is also why the call is not
+     *     {@code asType}, which refuses a narrowing primitive cast.</li>
+     * </ol>
      */
     private static MethodHandle adapt(@NotNull MethodHandle handle, @NotNull MethodType javaType) {
         MethodHandle adapted = handle;
         if (adapted.type().returnType() == int.class && javaType.returnType() == long.class) {
             adapted = MethodHandles.filterReturnValue(adapted, INT_TO_UNSIGNED_LONG);
         }
-        /* explicitCastArguments, not asType: only the former permits the narrowing
-         * primitive casts the size_t arguments need. */
         return MethodHandles.explicitCastArguments(adapted, javaType);
     }
 
@@ -120,16 +118,24 @@ final class ZstdBinding {
     static final int ZSTD_RESET_SESSION_ONLY = 1;
 
     private static final MethodHandle ZSTD_CStreamOutSize =
-            downcall("ZSTD_CStreamOutSize", FunctionDescriptor.of(C_SIZE_T),
+            downcall(
+                    "ZSTD_CStreamOutSize",
+                    FunctionDescriptor.of(C_SIZE_T),
                     MethodType.methodType(long.class));
     private static final MethodHandle ZSTD_createCStream =
-            downcall("ZSTD_createCStream", FunctionDescriptor.of(ValueLayout.ADDRESS),
+            downcall(
+                    "ZSTD_createCStream",
+                    FunctionDescriptor.of(ValueLayout.ADDRESS),
                     MethodType.methodType(MemorySegment.class));
     private static final MethodHandle ZSTD_freeCStream =
-            downcall("ZSTD_freeCStream", FunctionDescriptor.of(C_SIZE_T, ValueLayout.ADDRESS),
+            downcall(
+                    "ZSTD_freeCStream",
+                    FunctionDescriptor.of(C_SIZE_T, ValueLayout.ADDRESS),
                     MethodType.methodType(long.class, MemorySegment.class));
     private static final MethodHandle ZSTD_CCtx_reset =
-            downcall("ZSTD_CCtx_reset", FunctionDescriptor.of(C_SIZE_T, ValueLayout.ADDRESS, ValueLayout.JAVA_INT),
+            downcall(
+                    "ZSTD_CCtx_reset",
+                    FunctionDescriptor.of(C_SIZE_T, ValueLayout.ADDRESS, ValueLayout.JAVA_INT),
                     MethodType.methodType(long.class, MemorySegment.class, int.class));
 
     /* Not plain ZSTD_compressStream2, which takes ZSTD_inBuffer / ZSTD_outBuffer:
@@ -155,12 +161,14 @@ final class ZstdBinding {
                             MemorySegment.class, long.class, MemorySegment.class,
                             int.class));
 
-    private static MethodHandle downcall(@NotNull String name, @NotNull FunctionDescriptor descriptor,
+    private static MethodHandle downcall(@NotNull String name,
+                                         @NotNull FunctionDescriptor descriptor,
                                          @NotNull MethodType javaType) {
         return adapt(LINKER.downcallHandle(symbol(name), descriptor), javaType);
     }
 
-    private static MethodHandle downcallCritical(@NotNull String name, @NotNull FunctionDescriptor descriptor,
+    private static MethodHandle downcallCritical(@NotNull String name,
+                                                 @NotNull FunctionDescriptor descriptor,
                                                  @NotNull MethodType javaType) {
         return adapt(LINKER.downcallHandle(symbol(name), descriptor, Linker.Option.critical(true)), javaType);
     }
@@ -171,23 +179,64 @@ final class ZstdBinding {
     }
 
     /**
-     * Wraps a one-element array as a {@code size_t*} in/out parameter. A heap
-     * array rather than native memory: under {@link Linker.Option#critical} a heap
-     * segment is a legal pointer argument, so a caller needs no {@code Arena}.
-     * <p>
-     * The slot is a {@code long[1]} on every platform, so the caller reads and
-     * writes it as a plain {@code long} and no width logic reaches the call sites.
-     * Where size_t is 4 bytes libzstd writes only the low half of the slot, which
-     * on a little-endian machine is where {@code long} keeps its low 32 bits - so
-     * a value written as a {@code long} arrives correctly and a result read back
-     * as one is the 4 bytes libzstd wrote above the zeroes the caller left. That
-     * holds because every value passed through here - a position or a length - is
-     * far inside int range. {@link #cSizeT} rejects the big-endian case, where the
-     * low half would be the wrong four bytes.
+     * A {@code size_t*} in/out parameter: a one-element array as wide as the
+     * platform's size_t, because that is how many bytes libzstd writes into it.
+     * The width stays here - callers only ever see {@code long}.
      */
-    static @NotNull MemorySegment sizeTSlot(long @NotNull [] cell) {
-        MemorySegment segment = MemorySegment.ofArray(cell);
-        return SIZE_T_IS_64_BIT ? segment : segment.asSlice(0, 4);
+    abstract static class SizeTRef {
+
+        /** The array, as a pointer argument. Built once; the array is final. */
+        final @NotNull MemorySegment segment;
+
+        private SizeTRef(@NotNull MemorySegment segment) {
+            this.segment = segment;
+        }
+
+        abstract long get();
+
+        abstract void set(long value);
+
+        private static final class Wide extends SizeTRef {
+            private final long[] cell;
+
+            private Wide(long[] cell) {
+                super(MemorySegment.ofArray(cell));
+                this.cell = cell;
+            }
+
+            long get() {
+                return cell[0];
+            }
+
+            void set(long value) {
+                cell[0] = value;
+            }
+        }
+
+        private static final class Narrow extends SizeTRef {
+            private final int[] cell;
+
+            private Narrow(int[] cell) {
+                super(MemorySegment.ofArray(cell));
+                this.cell = cell;
+            }
+
+            /* size_t is unsigned, so widen it as unsigned - as `adapt` does with
+             * the return values. */
+            long get() {
+                return Integer.toUnsignedLong(cell[0]);
+            }
+
+            void set(long value) {
+                cell[0] = (int) value;
+            }
+        }
+    }
+
+    static @NotNull SizeTRef newSizeTRef() {
+        return SIZE_T_IS_64_BIT
+                ? new SizeTRef.Wide(new long[1])
+                : new SizeTRef.Narrow(new int[1]);
     }
 
     static long cStreamOutSize() {
