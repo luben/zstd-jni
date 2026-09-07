@@ -15,14 +15,14 @@ import java.nio.ByteBuffer;
  * OutputStream filter that compresses the data using Zstd compression.
  *
  */
-
 public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
 
     static {
         Native.load();
     }
 
-    /* Opaque pointer to Zstd context object */
+    /* Opaque pointer to Zstd context object. Kept only for the Zstd.setCompression*
+     * natives, which are still JNI and take a long. */
     private final long stream;
     /* The same pointer, as a downcall argument */
     private final @NotNull MemorySegment cstream;
@@ -37,14 +37,14 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
     // keep the active dict from GC
     private @Nullable ZstdDictCompress active_dict;
 
-    /* `dst` as a pointer argument. The array is final, so this is built once. */
+    /* libzstd takes `dst` as a plain pointer, and a downcall can only pass a byte[]
+     * as one by wrapping it in a MemorySegment. The wrapper is an allocation (see
+     * segmentOf below), but `dst` never changes, so it is built once here. */
     private final @NotNull MemorySegment dstSegment;
 
     /* The two size_t* in/out parameters. Heap arrays rather than off-heap slots:
      * under Linker.Option.critical a heap segment is a legal pointer argument, so
-     * this stream needs no native memory and therefore no Arena at all. Reading
-     * and writing the positions through the arrays is also cheaper than going
-     * through the segments. */
+     * this stream needs no native memory and therefore no Arena at all. */
     private final @NotNull ZstdBinding.SizeTRef dstPos = ZstdBinding.newSizeTRef();
     private final @NotNull ZstdBinding.SizeTRef srcPos = ZstdBinding.newSizeTRef();
 
@@ -81,6 +81,9 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
         return compressStream2(MemorySegment.NULL, 0L, 0L, endOp);
     }
 
+    /* Keyed on array identity, not equality: a segment is bound to one specific
+     * array object. A hit is a field load and a reference compare; a miss costs
+     * what wrapping without a cache would have cost anyway. */
     private @NotNull MemorySegment segmentOf(byte @NotNull [] src) {
         MemorySegment cached = lastSrcSegment;
         if (src != lastSrcArray || cached == null) {
