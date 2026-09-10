@@ -42,15 +42,20 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
      * segmentOf below), but `dst` never changes, so it is built once here. */
     private final @NotNull MemorySegment dstSegment;
 
-    /* The two size_t* in/out parameters. Heap arrays rather than off-heap slots:
-     * under Linker.Option.critical a heap segment is a legal pointer argument, so
-     * this stream needs no native memory and therefore no Arena at all. */
+    /* The two size_t* in/out parameters: libzstd writes back through them how much
+     * it produced and how far it got through the input. C passes `&dstPos`, and Java
+     * cannot take the address of a field, so each value lives in a one-element array -
+     * an object whose single element has an address the downcall can hand over and
+     * libzstd can write through. Heap arrays rather than off-heap slots: under
+     * Linker.Option.critical a heap segment is a legal pointer argument, so this
+     * stream needs no native memory and therefore no Arena at all. */
     private final @NotNull ZstdBinding.SizeTRef dstPos = ZstdBinding.newSizeTRef();
     private final @NotNull ZstdBinding.SizeTRef srcPos = ZstdBinding.newSizeTRef();
 
-    /* MemorySegment.ofArray allocates, and write() is called once per chunk - at
-     * a 1-byte chunk size that is one wrapper per byte. Streams are almost always
-     * fed from the same array repeatedly, so cache the last one. */
+    /* The smaller the chunks a caller feeds, the more write() calls it makes - and
+     * the likelier every one of them hands over the same source array. Wrapping it
+     * fresh each time would allocate a MemorySegment per call for an identical
+     * result, so keep the last wrapper and reuse it while the array is unchanged. */
     private byte @Nullable [] lastSrcArray;
     private @Nullable MemorySegment lastSrcSegment;
 
