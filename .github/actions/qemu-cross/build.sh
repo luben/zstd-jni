@@ -13,8 +13,12 @@ if ! command -v javac > /dev/null; then
     apt-get install -y openjdk-25-jdk-headless
     JAVA_HOME=$(dirname "$(dirname "$(readlink -f "$(command -v javac)")")")
     export JAVA_HOME
-    # A Zero build, so no C2 and sbt's default -XX:MaxInlineLevel is rejected
-    # outright. Same defaults minus that flag.
+    # Only the 32-bit guests land here (see the matrix in ci-qemu-cross.yml:
+    # the others carry their own JDK), and Debian's 32-bit builds are Zero -
+    # interpreter only, no JIT, so no compiler flags exist at all and the
+    # -XX:MaxInlineLevel=18 in sbt's default_jvm_opts_common is rejected as an
+    # unrecognized VM option before the launcher starts. Same defaults, minus
+    # that flag; JVM_OPTS replaces them wholesale rather than adding to them.
     export JVM_OPTS="-Xms512m -Xss2m"
 fi
 
