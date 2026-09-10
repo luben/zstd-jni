@@ -160,7 +160,12 @@ Android support
 ---------------
 
 Zstd-jni is usable in Android applications by importing the sources in Android
-Studio. I guess using git submodules will also work.
+Studio. I guess using git submodules will also work. Import *src/main/java*
+rather than *src/main* as a whole: *src/main/java22* holds an alternative
+implementation of a few classes built on the Java 22 `java.lang.foreign` API,
+which the published jar ships under `META-INF/versions/22` for JDK 22+ runtimes
+only. It duplicates class names from *src/main/java* and does not compile on
+Android.
 
 Android archive (*zstd-jni.aar*) is also published on maven central that
 support Android 5.0 and above. You will need to add the repository in your

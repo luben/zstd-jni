@@ -565,17 +565,18 @@ testFromJar := {
 
   // Dependency jars plus the test classes, no product directory: com.github.luben.zstd has to
   // come out of the jar. Not a filtered `fullClasspath` - under sbt-jacoco that hands back
-  // target/jacoco/instrumented-classes, putting the JNI classes in front of the jar again.
-  // The test classes go on -cp as well as on scalatest's -R: from the runpath alone they load
-  // into a different runtime package than the jar's copy, and the suite's package-private
-  // calls into com.github.luben.zstd throw IllegalAccessError.
+  // target/jacoco/instrumented-classes, JNI classes in front of the jar again. The test classes
+  // go on -cp as well as on scalatest's -R: from the runpath alone they land in a different
+  // runtime package than the jar's copy and package-private calls throw IllegalAccessError.
   val entries = (testClasses +: (Test / externalDependencyClasspath).value.files).map(_.getCanonicalFile)
 
-  // Backstop, asked semantically rather than by path shape.
-  val leaked = entries.filter(e => (e / "com" / "github" / "luben" / "zstd" / "Zstd.class").isFile)
-  if (leaked.nonEmpty)
+  // Nothing off target/ may shadow the zstd classes packaged in the jar - a class that wins over
+  // the jar is loaded straight off the directory, so no Multi-Release dispatch happens and both
+  // invocations end up testing the same implementation instead of one each.
+  val shadowing = entries.filter(e => (e / "com" / "github" / "luben" / "zstd" / "Zstd.class").isFile)
+  if (shadowing.nonEmpty)
     sys.error("these classpath entries would shadow the jar's own classes:\n" +
-              leaked.map("  " + _).mkString("\n"))
+              shadowing.map("  " + _).mkString("\n"))
 
   // A leading non-flag argument is the java home.
   val (homeArg, jvmOpts) = args.toList match {
