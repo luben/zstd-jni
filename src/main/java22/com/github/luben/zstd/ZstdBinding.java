@@ -161,6 +161,45 @@ final class ZstdBinding {
                             MemorySegment.class, long.class, MemorySegment.class,
                             int.class));
 
+    private static final MethodHandle ZSTD_DStreamInSize =
+            downcall(
+                    "ZSTD_DStreamInSize",
+                    FunctionDescriptor.of(C_SIZE_T),
+                    MethodType.methodType(long.class));
+    private static final MethodHandle ZSTD_DStreamOutSize =
+            downcall(
+                    "ZSTD_DStreamOutSize",
+                    FunctionDescriptor.of(C_SIZE_T),
+                    MethodType.methodType(long.class));
+    private static final MethodHandle ZSTD_createDStream =
+            downcall(
+                    "ZSTD_createDStream",
+                    FunctionDescriptor.of(ValueLayout.ADDRESS),
+                    MethodType.methodType(MemorySegment.class));
+    /* ZSTD_freeDStream's counterpart, and the one the JNI implementation calls:
+     * a ZSTD_DStream is a ZSTD_DCtx, and both functions free it the same way. */
+    private static final MethodHandle ZSTD_freeDCtx =
+            downcall(
+                    "ZSTD_freeDCtx",
+                    FunctionDescriptor.of(C_SIZE_T, ValueLayout.ADDRESS),
+                    MethodType.methodType(long.class, MemorySegment.class));
+
+    /* The decompression twin of ZSTD_compressStream2_simpleArgs, chosen for the
+     * same reason: no ZSTD_inBuffer / ZSTD_outBuffer means every pointer argument
+     * can be a heap byte[] under Linker.Option.critical. */
+    private static final MethodHandle ZSTD_decompressStream_simpleArgs =
+            downcallCritical(
+                    "ZSTD_decompressStream_simpleArgs",
+                    FunctionDescriptor.of(
+                            C_SIZE_T,
+                            ValueLayout.ADDRESS,                                       // ZSTD_DCtx* dctx
+                            ValueLayout.ADDRESS, C_SIZE_T, ValueLayout.ADDRESS,        // dst, dstCapacity, dstPos
+                            ValueLayout.ADDRESS, C_SIZE_T, ValueLayout.ADDRESS),       // src, srcSize, srcPos
+                    MethodType.methodType(long.class,
+                            MemorySegment.class,
+                            MemorySegment.class, long.class, MemorySegment.class,
+                            MemorySegment.class, long.class, MemorySegment.class));
+
     private static MethodHandle downcall(@NotNull String name,
                                          @NotNull FunctionDescriptor descriptor,
                                          @NotNull MethodType javaType) {
@@ -291,6 +330,59 @@ final class ZstdBinding {
                     endOp);
         } catch (Throwable t) {
             throw new AssertionError("Call to ZSTD_compressStream2_simpleArgs failed", t);
+        }
+    }
+
+    static long dStreamInSize() {
+        try {
+            return (long) ZSTD_DStreamInSize.invokeExact();
+        } catch (Throwable t) {
+            throw new AssertionError("Call to ZSTD_DStreamInSize failed", t);
+        }
+    }
+
+    static long dStreamOutSize() {
+        try {
+            return (long) ZSTD_DStreamOutSize.invokeExact();
+        } catch (Throwable t) {
+            throw new AssertionError("Call to ZSTD_DStreamOutSize failed", t);
+        }
+    }
+
+    static @NotNull MemorySegment createDStream() {
+        try {
+            return (MemorySegment) ZSTD_createDStream.invokeExact();
+        } catch (Throwable t) {
+            throw new AssertionError("Call to ZSTD_createDStream failed", t);
+        }
+    }
+
+    static long freeDCtx(@NotNull MemorySegment dctx) {
+        try {
+            return (long) ZSTD_freeDCtx.invokeExact(dctx);
+        } catch (Throwable t) {
+            throw new AssertionError("Call to ZSTD_freeDCtx failed", t);
+        }
+    }
+
+    /**
+     * Like {@link #compressStream2}, `dstCapacity` is an absolute end offset
+     * rather than a length - libzstd gets the whole destination array and writes
+     * from `dstPos` up to `dstCapacity`, as it does in the JNI implementation.
+     * `srcSize` really is a length there: it is how many bytes the last upstream
+     * read put at the front of the source buffer. Both position segments are
+     * in/out.
+     */
+    static long decompressStream(@NotNull MemorySegment dctx,
+                                 @NotNull MemorySegment dst, long dstCapacity, @NotNull MemorySegment dstPos,
+                                 @NotNull MemorySegment src, long srcSize, @NotNull MemorySegment srcPos) {
+        try {
+            return (long) ZSTD_decompressStream_simpleArgs.invokeExact(
+                    dctx,
+                    dst, dstCapacity, dstPos,
+                    src, srcSize, srcPos);
+        } catch (Throwable t) {
+            throw new AssertionError("Call to ZSTD_decompressStream_simpleArgs failed", t);
         }
     }
 }
