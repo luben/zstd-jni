@@ -117,6 +117,10 @@ final class ZstdBinding {
     /* ZSTD_ResetDirective */
     static final int ZSTD_RESET_SESSION_ONLY = 1;
 
+    /* ZSTD_ErrorCode */
+    static final int ZSTD_ERROR_DST_SIZE_TOO_SMALL = 70;
+    static final int ZSTD_ERROR_SRC_SIZE_WRONG     = 72;
+
     private static final MethodHandle ZSTD_CStreamOutSize =
             downcall(
                     "ZSTD_CStreamOutSize",
@@ -176,6 +180,11 @@ final class ZstdBinding {
                     "ZSTD_createDStream",
                     FunctionDescriptor.of(ValueLayout.ADDRESS),
                     MethodType.methodType(MemorySegment.class));
+    private static final MethodHandle ZSTD_initDStream =
+            downcall(
+                    "ZSTD_initDStream",
+                    FunctionDescriptor.of(C_SIZE_T, ValueLayout.ADDRESS),
+                    MethodType.methodType(long.class, MemorySegment.class));
     /* ZSTD_freeDStream's counterpart, and the one the JNI implementation calls:
      * a ZSTD_DStream is a ZSTD_DCtx, and both functions free it the same way. */
     private static final MethodHandle ZSTD_freeDCtx =
@@ -357,6 +366,14 @@ final class ZstdBinding {
         }
     }
 
+    static long initDStream(@NotNull MemorySegment dctx) {
+        try {
+            return (long) ZSTD_initDStream.invokeExact(dctx);
+        } catch (Throwable t) {
+            throw new AssertionError("Call to ZSTD_initDStream failed", t);
+        }
+    }
+
     static long freeDCtx(@NotNull MemorySegment dctx) {
         try {
             return (long) ZSTD_freeDCtx.invokeExact(dctx);
@@ -366,12 +383,10 @@ final class ZstdBinding {
     }
 
     /**
-     * Like {@link #compressStream2}, `dstCapacity` is an absolute end offset
-     * rather than a length - libzstd gets the whole destination array and writes
-     * from `dstPos` up to `dstCapacity`, as it does in the JNI implementation.
-     * `srcSize` really is a length there: it is how many bytes the last upstream
-     * read put at the front of the source buffer. Both position segments are
-     * in/out.
+     * `dstCapacity` and `srcSize` are measured from the start of the segments handed
+     * over, not from where libzstd begins - so every caller, all of which pass a whole
+     * array or buffer, passes absolute end offsets rather than lengths, as the JNI
+     * implementation does. Both position segments are in/out.
      */
     static long decompressStream(@NotNull MemorySegment dctx,
                                  @NotNull MemorySegment dst, long dstCapacity, @NotNull MemorySegment dstPos,

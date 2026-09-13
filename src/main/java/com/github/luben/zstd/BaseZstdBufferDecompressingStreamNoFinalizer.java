@@ -18,12 +18,17 @@ public abstract class BaseZstdBufferDecompressingStreamNoFinalizer implements Cl
     private @Nullable ZstdDictDecompress active_dict;
     /**
      * This field is set by the native call to represent the number of bytes consumed from {@link #source} buffer.
+     * <p>
+     * Package-private, not private, so the JDK 22+ subclasses can set it themselves - they have no native code to
+     * do it for them. Not {@code protected}, which would make it public API of this class.
      */
-    private int consumed;
+    int consumed;
     /**
      * This field is set by the native call to represent the number of bytes produced into the target buffer.
+     * <p>
+     * See the note on {@link #consumed} for why this is package-private.
      */
-    private int produced;
+    int produced;
 
     BaseZstdBufferDecompressingStreamNoFinalizer(@NotNull ByteBuffer source) {
         this.source = source;
