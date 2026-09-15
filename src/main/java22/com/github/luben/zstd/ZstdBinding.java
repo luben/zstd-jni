@@ -117,7 +117,11 @@ final class ZstdBinding {
     /* ZSTD_ResetDirective */
     static final int ZSTD_RESET_SESSION_ONLY = 1;
 
+    /* ZSTD_cParameter */
+    static final int ZSTD_C_COMPRESSION_LEVEL = 100;
+
     /* ZSTD_ErrorCode */
+    static final int ZSTD_ERROR_DICTIONARY_WRONG   = 32;
     static final int ZSTD_ERROR_DST_SIZE_TOO_SMALL = 70;
     static final int ZSTD_ERROR_SRC_SIZE_WRONG     = 72;
 
@@ -141,6 +145,32 @@ final class ZstdBinding {
                     "ZSTD_CCtx_reset",
                     FunctionDescriptor.of(C_SIZE_T, ValueLayout.ADDRESS, ValueLayout.JAVA_INT),
                     MethodType.methodType(long.class, MemorySegment.class, int.class));
+    private static final MethodHandle ZSTD_initCStream =
+            downcall(
+                    "ZSTD_initCStream",
+                    FunctionDescriptor.of(C_SIZE_T, ValueLayout.ADDRESS, ValueLayout.JAVA_INT),
+                    MethodType.methodType(long.class, MemorySegment.class, int.class));
+    private static final MethodHandle ZSTD_CCtx_setParameter =
+            downcall(
+                    "ZSTD_CCtx_setParameter",
+                    FunctionDescriptor.of(
+                            C_SIZE_T,
+                            ValueLayout.ADDRESS,                                       // ZSTD_CCtx* cctx
+                            ValueLayout.JAVA_INT,                                      // ZSTD_cParameter param
+                            ValueLayout.JAVA_INT),                                     // int value
+                    MethodType.methodType(long.class, MemorySegment.class, int.class, int.class));
+    /* critical: the dictionary is a caller-supplied heap byte[]. libzstd copies it
+     * (ZSTD_dlm_byCopy is the default), so nothing retains the pointer past the call. */
+    private static final MethodHandle ZSTD_CCtx_loadDictionary =
+            downcallCritical(
+                    "ZSTD_CCtx_loadDictionary",
+                    FunctionDescriptor.of(C_SIZE_T, ValueLayout.ADDRESS, ValueLayout.ADDRESS, C_SIZE_T),
+                    MethodType.methodType(long.class, MemorySegment.class, MemorySegment.class, long.class));
+    private static final MethodHandle ZSTD_CCtx_refCDict =
+            downcall(
+                    "ZSTD_CCtx_refCDict",
+                    FunctionDescriptor.of(C_SIZE_T, ValueLayout.ADDRESS, ValueLayout.ADDRESS),
+                    MethodType.methodType(long.class, MemorySegment.class, MemorySegment.class));
 
     /* Not plain ZSTD_compressStream2, which takes ZSTD_inBuffer / ZSTD_outBuffer:
      * under Linker.Option.critical - the FFM analogue of the JNI implementation's
@@ -320,10 +350,46 @@ final class ZstdBinding {
         }
     }
 
+    static long initCStream(@NotNull MemorySegment cctx, int level) {
+        try {
+            return (long) ZSTD_initCStream.invokeExact(cctx, level);
+        } catch (Throwable t) {
+            throw new AssertionError("Call to ZSTD_initCStream failed", t);
+        }
+    }
+
+    /** @param param one of the ZSTD_C_* values */
+    static long setCCtxParameter(@NotNull MemorySegment cctx, int param, int value) {
+        try {
+            return (long) ZSTD_CCtx_setParameter.invokeExact(cctx, param, value);
+        } catch (Throwable t) {
+            throw new AssertionError("Call to ZSTD_CCtx_setParameter failed", t);
+        }
+    }
+
+    /** `dictSize` is a plain length: the dictionary always starts at the segment's base. */
+    static long loadDictionary(@NotNull MemorySegment cctx, @NotNull MemorySegment dict, long dictSize) {
+        try {
+            return (long) ZSTD_CCtx_loadDictionary.invokeExact(cctx, dict, dictSize);
+        } catch (Throwable t) {
+            throw new AssertionError("Call to ZSTD_CCtx_loadDictionary failed", t);
+        }
+    }
+
+    static long refCDict(@NotNull MemorySegment cctx, @NotNull MemorySegment cdict) {
+        try {
+            return (long) ZSTD_CCtx_refCDict.invokeExact(cctx, cdict);
+        } catch (Throwable t) {
+            throw new AssertionError("Call to ZSTD_CCtx_refCDict failed", t);
+        }
+    }
+
     /**
-     * `srcSize` is an absolute end offset rather than a length, matching the way
-     * the JNI implementation calls this: libzstd is handed the whole array and
-     * reads from `srcPos` up to `srcSize`. Both position segments are in/out.
+     * `dstCapacity` and `srcSize` are measured from the start of the segments handed
+     * over, not from where libzstd begins at `dstPos` / `srcPos` - so a caller that
+     * passes a whole array with a non-zero start position passes an absolute end
+     * offset rather than a length, as the JNI implementation does. Both position
+     * segments are in/out.
      *
      * @param endOp one of the ZSTD_E_* values
      */
