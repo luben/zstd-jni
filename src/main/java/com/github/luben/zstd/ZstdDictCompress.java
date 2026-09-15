@@ -113,6 +113,14 @@ public class ZstdDictCompress extends SharedDictBase {
         return level;
     }
 
+    /**
+     * The raw {@code ZSTD_CDict*}. Package-private: it lets the JDK 22+ (FFM) variants pass the pointer to
+     * {@code ZSTD_CCtx_refCDict} directly, the way the JNI code reads it off this object with {@code GetLongField}.
+     */
+    long nativePtr() {
+        return nativePtr;
+    }
+
     @Override
     void  doClose() {
         if (nativePtr != 0) {
