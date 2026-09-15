@@ -752,10 +752,10 @@ public class Zstd {
      */
     @Deprecated
     public static long decompressedSize(byte @NotNull [] src, int srcPosition, int srcSize, boolean magicless) {
-        if (srcPosition >= src.length) {
+        if (srcPosition < 0 || srcPosition >= src.length) {
             throw new ArrayIndexOutOfBoundsException(srcPosition);
         }
-        if (srcSize > src.length - srcPosition) {
+        if (srcSize < 0 || srcSize > src.length - srcPosition) {
             throw new ArrayIndexOutOfBoundsException(srcPosition + srcSize);
         }
         return decompressedSize0(src, srcPosition, srcSize, magicless);
