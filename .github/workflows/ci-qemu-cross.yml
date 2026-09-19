@@ -12,14 +12,14 @@ jobs:
             fail-fast: false
             matrix:
                 include: [
-                    { platform: linux/s390x, image: "s390x/eclipse-temurin:25-jdk-noble" },
+                    { platform: linux/s390x, image: "s390x/eclipse-temurin:25-jdk-noble", build_script: "build-s390x.sh" },
                     # 32-bit: no specialized ABI linker, so FFM falls back to
                     # libffi's FallbackLinker with a 4-byte size_t - the only
                     # place ZstdBinding's size_t adaptation is exercised. A distro
                     # JDK, as Temurin and Zulu ship no 32-bit build past 21, and
                     # a slow one: Debian's 32-bit builds are Zero, so no JIT.
                     # Runs natively on the x86_64 runner despite the workflow name.
-                    { platform: linux/386, image: "i386/debian:trixie" }
+                    { platform: linux/386, image: "i386/debian:trixie", build_script: "build-i386.sh" }
                 ]
         runs-on: ubuntu-latest
         steps:
@@ -31,3 +31,4 @@ jobs:
           with:
             platform: ${{ matrix.platform }}
             image: ${{ matrix.image }}
+            build-script: ${{ matrix.build_script }}
