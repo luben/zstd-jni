@@ -383,10 +383,14 @@ final class ZstdBinding {
     }
 
     /**
-     * `dstCapacity` and `srcSize` are measured from the start of the segments handed
-     * over, not from where libzstd begins - so every caller, all of which pass a whole
-     * array or buffer, passes absolute end offsets rather than lengths, as the JNI
-     * implementation does. Both position segments are in/out.
+     * `dstCapacity` and `srcSize` bound the segment from its start, not from where
+     * libzstd begins at `dstPos`/`srcPos`, so every caller hands over a whole array or
+     * buffer and an absolute end offset - a length only when the position starts at 0.
+     * Both position segments are in/out. The names are libzstd's (zstd.h:2614-2615).
+     *
+     * <p>The convention is ZstdInputStreamNoFinalizer's C (jni_inputstream_zstd.c:83-84).
+     * The two buffer-decompressing streams' C instead shifts the pointer and passes a
+     * length with `pos = 0`, reaching the same span the other way round.
      */
     static long decompressStream(@NotNull MemorySegment dctx,
                                  @NotNull MemorySegment dst, long dstCapacity, @NotNull MemorySegment dstPos,
