@@ -61,9 +61,11 @@ public class ZstdDirectBufferCompressingStreamNoFinalizer implements Closeable, 
     /* The target is a field that flushBuffer normally hands back unchanged, and a caller
      * compressing in chunks normally reuses one source buffer - so wrapping either fresh
      * on every call builds a MemorySegment per call for an identical result. Keep the
-     * last wrapper for each and reuse it while the buffer is the same object, as
-     * ZstdInputStreamNoFinalizer does for the caller's destination array. Two slots, not
-     * one: target and source alternate within a single call.
+     * last wrapper for each and reuse it while the buffer is the same object.
+     *
+     * Two slots where ZstdOutputStreamNoFinalizer needs one: its destination is the
+     * stream's own pooled array, wrapped once in the constructor, so only the caller's
+     * source varies. Here flushBuffer may swap the target, so both sides can.
      *
      * Cleared in close(), so neither buffer is pinned past it. */
     private @Nullable ByteBuffer lastTarget;
