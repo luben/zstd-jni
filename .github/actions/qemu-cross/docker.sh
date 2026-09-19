@@ -6,4 +6,4 @@ docker run --rm \
     --name qemu-cross-${PLATFORM_NAME//\//-} \
     --mount type=bind,source=${HOST_WORKSPACE_DIR},target=/github_workspace \
     --workdir /github_workspace \
-    ${IMAGE_NAME} ./.github/actions/qemu-cross/build.sh
+    ${IMAGE_NAME} ./.github/actions/qemu-cross/${BUILD_SCRIPT}

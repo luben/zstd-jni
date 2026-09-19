@@ -7,6 +7,9 @@ inputs:
   image:
     description: 'guest image; needs a JDK 22+ on PATH or apt-installable openjdk-25'
     required: true
+  build-script:
+    description: 'architecture-specific build script from this action directory'
+    required: true
 runs:
   using: 'composite'
   steps:
@@ -15,4 +18,5 @@ runs:
       env:
         PLATFORM_NAME: ${{ inputs.platform }}
         IMAGE_NAME: ${{ inputs.image }}
+        BUILD_SCRIPT: ${{ inputs.build-script }}
         HOST_WORKSPACE_DIR: ${{ github.workspace }}
