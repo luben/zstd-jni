@@ -63,10 +63,12 @@ public class ZstdDirectBufferDecompressingStreamNoFinalizer extends BaseZstdBuff
         return ZstdBinding.initDStream(dstream);
     }
 
-    /* The whole buffer is passed, with dstCapacity/srcSize as absolute end offsets and
-     * the position slots pre-set - the same span the C reaches as ptr + offset with a
-     * length, and the convention ZstdInputStreamNoFinalizer uses. One wrapper per
-     * buffer; a slice would need two. */
+    /* Destination and source are both passed whole, with dstCapacity/srcSize as
+     * absolute end offsets and the position slots pre-set - the same span the C reaches
+     * as ptr + offset with a length, and the convention ZstdInputStreamNoFinalizer uses.
+     * Consistency is the only reason here: readInternal always passes position/remaining,
+     * so a plain ofBuffer(buffer) is already that window and would work with relative
+     * offsets, without the duplicate() that widening to the full capacity costs. */
     @Override
     long decompressStream(long stream, @NotNull ByteBuffer dst, int dstOffset, int dstSize,
                           @NotNull ByteBuffer src, int srcOffset, int srcSize) {

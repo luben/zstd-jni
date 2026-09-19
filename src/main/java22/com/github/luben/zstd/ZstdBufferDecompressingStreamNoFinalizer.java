@@ -61,10 +61,12 @@ public class ZstdBufferDecompressingStreamNoFinalizer extends BaseZstdBufferDeco
         return ZstdBinding.initDStream(dstream);
     }
 
-    /* The whole array is passed, with dstCapacity/srcSize as absolute end offsets and
-     * the position slots pre-set - the same span the C reaches as ptr + offset with a
-     * length, and the convention ZstdInputStreamNoFinalizer uses. One wrapper per
-     * buffer; a slice would need two. */
+    /* Destination and source are both passed whole: the entire backing byte[], which
+     * for a sliced buffer is wider than the buffer itself - hence the arrayOffset()
+     * correction below. dstCapacity/srcSize are absolute end offsets and the position
+     * slots are pre-set, the same span the C reaches as ptr + offset with a length, and
+     * the convention ZstdInputStreamNoFinalizer uses. One wrapper per array; a slice
+     * would need a second. */
     @Override
     long decompressStream(long stream, @NotNull ByteBuffer dst, int dstBufPos, int dstSize,
                           @NotNull ByteBuffer src, int srcBufPos, int srcSize) {
