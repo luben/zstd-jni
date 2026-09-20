@@ -1525,6 +1525,28 @@ class ZstdSpec extends AnyFlatSpec with ScalaCheckPropertyChecks {
     }.get
   }
 
+  it should "report a zstd error code when a direct buffer is required but not given" in {
+    Using.Manager { use =>
+      val cctx = use(new ZstdCompressCtx())
+      // Unlike compressByteBufferStream, this entry point validates nothing itself, so a
+      // heap buffer reaches the bounds checks - where a buffer that is not direct has a
+      // capacity of -1 and fails every size comparison. Both codes are negative: this
+      // path negates the code itself, where the ZstdException(result) constructor used
+      // elsewhere reports the positive value Zstd.err*() returns.
+      val dstError = intercept[ZstdException] {
+        cctx.compressDirectByteBufferStream(ByteBuffer.allocate(64), ByteBuffer.allocateDirect(16), EndDirective.END)
+      }
+      assert(dstError.getErrorCode() == -Zstd.errDstSizeTooSmall())
+      assert(dstError.getMessage().contains("Destination buffer is too small"))
+
+      val srcError = intercept[ZstdException] {
+        cctx.compressDirectByteBufferStream(ByteBuffer.allocateDirect(64), ByteBuffer.allocate(16), EndDirective.END)
+      }
+      assert(srcError.getErrorCode() == -Zstd.errSrcSizeWrong())
+      assert(srcError.getMessage().contains("Src size is incorrect"))
+    }.get
+  }
+
   "magicless frames" should "be magicless and roundtrip" in {
     Using.Manager { use =>
       val cctx = use(new ZstdCompressCtx())
