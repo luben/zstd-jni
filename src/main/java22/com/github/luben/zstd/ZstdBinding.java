@@ -4,7 +4,6 @@ import com.github.luben.zstd.util.Native;
 
 import org.jetbrains.annotations.NotNull;
 
-import java.lang.foreign.Arena;
 import java.lang.foreign.FunctionDescriptor;
 import java.lang.foreign.Linker;
 import java.lang.foreign.MemoryLayout;
@@ -215,9 +214,12 @@ final class ZstdBinding {
                             MemorySegment.class, long.class,
                             MemorySegment.class, long.class));
 
-    /* ZSTD_frameProgression, returned by value. Built from the linker's own layouts
-     * rather than from ValueLayout.JAVA_LONG / JAVA_INT so it carries the platform's
-     * alignment; the field offsets are the same either way. */
+    /* ZSTD_frameProgression, returned by value. C_LONG_LONG rather than
+     * ValueLayout.JAVA_LONG for the reason C_SIZE_T exists: a descriptor has to describe
+     * the platform's C type, and while `long long` is 8 bytes everywhere, the i386 ABI
+     * aligns it to 4 where JAVA_LONG would claim 8. JAVA_INT needs no such care - `int`
+     * is 4 bytes, 4-aligned, everywhere. Offsets come out 0/8/16/24/32/36 and the size
+     * 40 either way. */
     private static final MemoryLayout ZSTD_frameProgression = MemoryLayout.structLayout(
             C_LONG_LONG.withName("ingested"),
             C_LONG_LONG.withName("consumed"),
@@ -237,10 +239,13 @@ final class ZstdBinding {
     private static final long FP_CURRENT_JOB_ID    = offsetIn(ZSTD_frameProgression, "currentJobID");
     private static final long FP_NB_ACTIVE_WORKERS = offsetIn(ZSTD_frameProgression, "nbActiveWorkers");
 
-    /* Not critical(true): the return buffer must be a real address, so the allocator
-     * below hands over an off-heap one. */
+    /* critical: the buffer for a by-value struct return is passed as a hidden pointer,
+     * and critical(true) lets that be a heap segment - so the result lands straight in a
+     * Java array and no Arena is needed. What the option costs is that no GC can run
+     * until the call returns, which suits only calls that are short and never re-enter
+     * Java; this one copies six counters out of the context. */
     private static final MethodHandle ZSTD_getFrameProgression =
-            downcall(
+            downcallCritical(
                     "ZSTD_getFrameProgression",
                     FunctionDescriptor.of(ZSTD_frameProgression, ValueLayout.ADDRESS),
                     MethodType.methodType(MemorySegment.class, SegmentAllocator.class, MemorySegment.class));
@@ -526,31 +531,56 @@ final class ZstdBinding {
     }
 
     /**
-     * Builds the {@link ZstdFrameProgression} here rather than returning the struct,
-     * which is what the JNI implementation's {@code NewObject} does at the same point.
+     * The buffer {@code ZSTD_getFrameProgression} writes its result into.
+     * <p>
+     * A struct returned by value goes through a hidden pointer to memory the caller owns,
+     * which FFM asks for as a {@link SegmentAllocator} first parameter on the handle: the
+     * linker calls it once per downcall, for one buffer of the struct's size. Nothing else
+     * calls it and the buffer is dead once the fields are copied out, so both arguments
+     * are ignored and the same cell is returned every time.
+     * <p>
+     * A heap array rather than an {@code Arena}, for the reason the {@code size_t*}
+     * out-params are: under {@code critical(true)} the callee gets a real address for the
+     * duration of the call, and an arena here cost a {@code malloc}/{@code free} pair per
+     * call. {@code long[]} for the alignment a {@code byte[]} segment cannot give, with
+     * its length derived so it cannot under-allocate if libzstd ever adds a field.
      */
-    static @NotNull ZstdFrameProgression frameProgression(@NotNull MemorySegment cctx) {
-        /* A by-value struct return needs somewhere for the callee to write it, and FFM
-         * asks for that as a SegmentAllocator. It has to be off-heap - the callee gets a
-         * plain pointer - so this is the one call in the binding that needs an Arena.
-         * Confined and not shared: the segment never leaves this method, and
-         * ofShared().close() costs a global thread handshake (~27 us). */
-        try (Arena arena = Arena.ofConfined()) {
-            MemorySegment progression;
-            try {
-                progression = (MemorySegment) ZSTD_getFrameProgression.invokeExact(
-                        (SegmentAllocator) arena, cctx);
-            } catch (Throwable t) {
-                throw new AssertionError("Call to ZSTD_getFrameProgression failed", t);
-            }
-            return new ZstdFrameProgression(
-                    progression.get(C_LONG_LONG, FP_INGESTED),
-                    progression.get(C_LONG_LONG, FP_CONSUMED),
-                    progression.get(C_LONG_LONG, FP_PRODUCED),
-                    progression.get(C_LONG_LONG, FP_FLUSHED),
-                    progression.get(ValueLayout.JAVA_INT, FP_CURRENT_JOB_ID),
-                    progression.get(ValueLayout.JAVA_INT, FP_NB_ACTIVE_WORKERS));
+    static final class FrameProgressionBuffer implements SegmentAllocator {
+        private final @NotNull MemorySegment cell =
+                MemorySegment.ofArray(new long[(int) Math.ceilDiv(ZSTD_frameProgression.byteSize(), Long.BYTES)]);
+
+        @Override
+        public @NotNull MemorySegment allocate(long byteSize, long byteAlignment) {
+            // Always the layout's own size and alignment, and asked for once per call.
+            return cell;
         }
+    }
+
+    /**
+     * Builds the {@link ZstdFrameProgression} here rather than returning the struct,
+     * which is what the JNI implementation's {@code NewObject} does at the same point -
+     * minus its {@code FindClass} and {@code GetMethodID}, which the C repeats on every
+     * call. The fields are read through the layout and never out of the backing
+     * {@code long[]}: the two {@code unsigned} members share a slot, and splitting it by
+     * hand would be right only on a little-endian machine.
+     *
+     * @param into the caller's reusable cell, so that nothing is allocated per call
+     */
+    static @NotNull ZstdFrameProgression frameProgression(@NotNull MemorySegment cctx,
+                                                          @NotNull FrameProgressionBuffer into) {
+        MemorySegment progression;
+        try {
+            progression = (MemorySegment) ZSTD_getFrameProgression.invokeExact((SegmentAllocator) into, cctx);
+        } catch (Throwable t) {
+            throw new AssertionError("Call to ZSTD_getFrameProgression failed", t);
+        }
+        return new ZstdFrameProgression(
+                progression.get(C_LONG_LONG, FP_INGESTED),
+                progression.get(C_LONG_LONG, FP_CONSUMED),
+                progression.get(C_LONG_LONG, FP_PRODUCED),
+                progression.get(C_LONG_LONG, FP_FLUSHED),
+                progression.get(ValueLayout.JAVA_INT, FP_CURRENT_JOB_ID),
+                progression.get(ValueLayout.JAVA_INT, FP_NB_ACTIVE_WORKERS));
     }
 
     /**
