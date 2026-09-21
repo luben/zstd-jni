@@ -50,6 +50,14 @@ public class ZstdCompressCtx extends AutoCloseBase {
     @Nullable
     private ZstdBinding.SizeTRef srcPos = null;
 
+    /* The cell ZSTD_getFrameProgression writes its struct into, built on first use for
+     * the same reason as the two above: nothing else in the class needs it. Reused
+     * across calls, so a context polled for progression from two threads at once would
+     * race on it - as it would on the position slots, and as the class's own "one per
+     * thread, put this in a ThreadLocal" contract rules out. */
+    @Nullable
+    private ZstdBinding.FrameProgressionBuffer progression = null;
+
     /**
      * Create a context for faster compress operations
      * One such context is required for each thread - put this in a ThreadLocal.
@@ -542,7 +550,10 @@ public class ZstdCompressCtx extends AutoCloseBase {
         ensureOpen();
         acquireSharedLock();
         try {
-            return ZstdBinding.frameProgression(cctx);
+            if (progression == null) {
+                progression = new ZstdBinding.FrameProgressionBuffer();
+            }
+            return ZstdBinding.frameProgression(cctx, progression);
         } finally {
             releaseSharedLock();
         }
