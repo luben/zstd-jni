@@ -4,6 +4,7 @@ import com.github.luben.zstd.util.Native;
 
 import org.jetbrains.annotations.NotNull;
 
+import java.lang.foreign.Arena;
 import java.lang.foreign.FunctionDescriptor;
 import java.lang.foreign.Linker;
 import java.lang.foreign.MemoryLayout;
@@ -239,13 +240,16 @@ final class ZstdBinding {
     private static final long FP_CURRENT_JOB_ID    = offsetIn(ZSTD_frameProgression, "currentJobID");
     private static final long FP_NB_ACTIVE_WORKERS = offsetIn(ZSTD_frameProgression, "nbActiveWorkers");
 
-    /* critical: the buffer for a by-value struct return is passed as a hidden pointer,
-     * and critical(true) lets that be a heap segment - so the result lands straight in a
-     * Java array and no Arena is needed. What the option costs is that no GC can run
-     * until the call returns, which suits only calls that are short and never re-enter
-     * Java; this one copies six counters out of the context. */
+    /* Deliberately not critical(true), which would let the result buffer below be a heap
+     * array: Linker.Option.critical only promises that heap segments may be passed "as
+     * addresses", i.e. as pointer arguments. A struct returned by value goes to a buffer
+     * the linker takes from a SegmentAllocator, and nothing says that may be on the heap.
+     * It happens to work on linux/x86-64 and does not elsewhere - macos/aarch64 throws,
+     * and the i386 FallbackLinker silently writes the struct somewhere else and leaves
+     * the array zeroed.
+     */
     private static final MethodHandle ZSTD_getFrameProgression =
-            downcallCritical(
+            downcall(
                     "ZSTD_getFrameProgression",
                     FunctionDescriptor.of(ZSTD_frameProgression, ValueLayout.ADDRESS),
                     MethodType.methodType(MemorySegment.class, SegmentAllocator.class, MemorySegment.class));
@@ -539,15 +543,14 @@ final class ZstdBinding {
      * calls it and the buffer is dead once the fields are copied out, so both arguments
      * are ignored and the same cell is returned every time.
      * <p>
-     * A heap array rather than an {@code Arena}, for the reason the {@code size_t*}
-     * out-params are: under {@code critical(true)} the callee gets a real address for the
-     * duration of the call, and an arena here cost a {@code malloc}/{@code free} pair per
-     * call. {@code long[]} for the alignment a {@code byte[]} segment cannot give, with
-     * its length derived so it cannot under-allocate if libzstd ever adds a field.
+     * The cell has to be off-heap - see the comment on the handle - but it does not have
+     * to be new each time, which is the whole cost an {@code Arena} carries here: a
+     * {@code malloc}/{@code free} pair per call. One automatic arena per buffer instead,
+     * so there is nothing to close, no shared-arena thread handshake, and no confinement
+     * to the thread that happened to ask first; the memory goes when this object does.
      */
     static final class FrameProgressionBuffer implements SegmentAllocator {
-        private final @NotNull MemorySegment cell =
-                MemorySegment.ofArray(new long[(int) Math.ceilDiv(ZSTD_frameProgression.byteSize(), Long.BYTES)]);
+        private final @NotNull MemorySegment cell = Arena.ofAuto().allocate(ZSTD_frameProgression);
 
         @Override
         public @NotNull MemorySegment allocate(long byteSize, long byteAlignment) {
@@ -560,9 +563,9 @@ final class ZstdBinding {
      * Builds the {@link ZstdFrameProgression} here rather than returning the struct,
      * which is what the JNI implementation's {@code NewObject} does at the same point -
      * minus its {@code FindClass} and {@code GetMethodID}, which the C repeats on every
-     * call. The fields are read through the layout and never out of the backing
-     * {@code long[]}: the two {@code unsigned} members share a slot, and splitting it by
-     * hand would be right only on a little-endian machine.
+     * call. The fields are read through the layout, which carries the platform's byte
+     * order: the two {@code unsigned} members share one slot, so separating them by hand
+     * would be right only on a little-endian machine.
      *
      * @param into the caller's reusable cell, so that nothing is allocated per call
      */
