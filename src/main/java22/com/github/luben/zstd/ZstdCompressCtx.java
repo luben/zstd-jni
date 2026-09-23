@@ -31,13 +31,9 @@ public class ZstdCompressCtx extends AutoCloseBase {
 
     private long seqprod_state = 0;
 
-    /* Where the four streaming calls leave the new buffer positions. The C packed them
-     * into the return value - `(1<<31)|errcode` on error, else `(dstPos<<32)|srcPos`
-     * with bit 63 set when everything was flushed - because a JNI function has one
-     * jlong to say it all in. Those methods are Java now and updateStreamPositions,
-     * the protocol's only decoder, is in this same class, so they hand back libzstd's
-     * own result and write the positions to these two fields. Both are buffer-relative,
-     * as the C's `out.pos` / `in.pos` are. */
+    /* Streaming calls store the new destination and source buffer positions here.
+     * After a successful call, updateStreamPositions applies them to the ByteBuffers.
+     * Keeping positions in separate fields lets each call return libzstd's result directly. */
     private int streamDstPosition = 0;
     private int streamSrcPosition = 0;
 
@@ -524,15 +520,12 @@ public class ZstdCompressCtx extends AutoCloseBase {
         return this;
     }
 
-    /* jni_fast_zstd.c:343-357. The heap segment goes in under Linker.Option.critical,
-     * as the C's GetPrimitiveArrayCritical does: ZSTD_CCtx_loadDictionary copies the
-     * dictionary (ZSTD_dlm_byCopy), so nothing retains the pointer past the call, and
-     * the C's matching release is JNI_ABORT because libzstd takes it as const. Line for
-     * line the same but for the -ZSTD_error_memory_allocation the C returns when
-     * GetPrimitiveArrayCritical fails, which has no analogue - wrapping an array cannot
-     * fail. A zero-length dict reaches libzstd as a zero-length segment rather than as
-     * the C's real pointer with size 0; both mean "invalidate the dictionary" and were
-     * checked to produce identical frames. */
+    /* Replaces jni_fast_zstd.c:343-357. The critical downcall passes the heap array
+     * directly to libzstd, which copies its contents without modifying the array or
+     * retaining its pointer. A null or empty dictionary removes the current dictionary;
+     * the empty-array case was checked to produce the same frames as JNI.
+     * JNI could return a memory-allocation error when acquiring the array pointer;
+     * MemorySegment.ofArray needs no equivalent error check. */
     private long loadCDict0(byte @Nullable [] dict) {
         if (dict == null) {
             // remove dictionary
@@ -676,18 +669,13 @@ public class ZstdCompressCtx extends AutoCloseBase {
         }
     }
 
-    /* The two Zstd.* calls inside the branch are JNI methods and stay that way: an
-     * exception is not a hot path, and they are the C's own ZSTD_getErrorCode and
-     * ZSTD_getErrorName. The test around them is not, which is why it is the binding's. */
+    /* Check for errors in Java on every call. Only the error path uses JNI to
+     * decode the error and look up its message. */
     private boolean updateStreamPositions(long result, @NotNull ByteBuffer dst, @NotNull ByteBuffer src) {
         if (ZstdBinding.isError(result)) {
-            /* The base copy reads the error code straight out of the packed value, whose
-             * low bits the C had already filled with ZSTD_getErrorCode(result) - a small
-             * positive enum. Here `result` is libzstd's own return, which is
-             * (size_t) -enum, so the ZSTD_getErrorCode call the C made has to be made
-             * too; masking this value with 0xFF directly would yield 256 - enum. The
-             * -(x & 0xFF) around it is the base copy's, unchanged, and produces the same
-             * negative code Zstd.getErrorName and ZstdException are given there. */
+            /* Decode libzstd's result before masking: its low byte alone is not the
+             * error code. Keep the JNI implementation's mask and negation so the
+             * exception receives the same negative code. */
             long code = -(Zstd.getErrorCode(result) & 0xFF);
             throw new ZstdException(code, Zstd.getErrorName(code));
         }
@@ -714,35 +702,28 @@ public class ZstdCompressCtx extends AutoCloseBase {
         return arrayOffset <= capacity && size <= capacity - arrayOffset;
     }
 
-    /* The C's GetDirectBufferAddress: the buffer's whole window, ignoring its position
-     * and limit. ofBuffer spans [position, limit), so the span is widened on a
-     * duplicate rather than on the caller's buffer. */
+    /* Cover the buffer's full capacity so buffer positions can be used as offsets.
+     * Clear a duplicate to leave the caller's position and limit unchanged.
+     * No data is copied or erased. */
     private static @NotNull MemorySegment directSegment(@NotNull ByteBuffer buffer) {
         return MemorySegment.ofBuffer(buffer.duplicate().clear());
     }
 
-    /* The C's GetDirectBufferCapacity, including its -1 for a buffer that is not
-     * direct. That -1 is load-bearing rather than defensive: compressDirectByteBufferStream
-     * is public and checks nothing, so a heap buffer reaches the capacity comparisons
-     * below and every non-negative size fails against -1. It is also why the C's two
-     * GetDirectBufferAddress NULL guards are dropped here as they were in steps 3 and 4
-     * - nothing can now get past this and still be non-direct. */
+    /* Match JNI's GetDirectBufferCapacity: return -1 for heap buffers.
+     * The size checks below then reject them, ensuring only direct buffers
+     * reach directSegment without needing a separate address check. */
     private static int directCapacity(@NotNull ByteBuffer buffer) {
         return buffer.isDirect() ? buffer.capacity() : -1;
     }
 
-    /* jni_fast_zstd.c:406-423, compress_buffer_stream. `shift` is the C's pointer
-     * arithmetic on an array base (`(char *) buff + array_offset`): a heap segment is
-     * handed over whole and the offsets are moved instead, so the slots hold
-     * array-absolute positions and the buffer-relative ones are recovered on the way
-     * out. Zero for a direct buffer, whose segment already starts where C's pointer
-     * does. `dstSize` / `srcSize` are absolute end offsets, as `out.size` / `in.size`
-     * are in the C.
+    /* Replaces jni_fast_zstd.c:406-423, compress_buffer_stream.
+     * Heap segments cover the whole backing array. Add each buffer's array offset
+     * (shift) before the native call, then subtract it from the returned positions.
+     * Direct buffers use shift 0. dstSize and srcSize are end offsets, not byte counts.
      *
-     * Folding the shift into the offsets is why every caller passing a non-zero one must
-     * have run isValidArrayStreamBuffer first: `shift + size` is int arithmetic where the
-     * C's is pointer arithmetic, and that check is what bounds it by the array's length.
-     * Without it the sum could wrap negative and reach libzstd as a huge size_t. */
+     * Callers must validate heap-buffer ranges with isValidArrayStreamBuffer first.
+     * This keeps shift + size within the array and prevents integer overflow,
+     * which could otherwise pass a huge size_t value to libzstd. */
     private long compressBufferStream(@NotNull MemorySegment dst, int dstShift, int dstOffset, int dstSize,
                                       @NotNull MemorySegment src, int srcShift, int srcOffset, int srcSize,
                                       int endOp) {
@@ -797,13 +778,10 @@ public class ZstdCompressCtx extends AutoCloseBase {
                                     MemorySegment.ofArray(src), srcArrayOffset, srcOffset, srcSize, endOp);
     }
 
-    /* jni_fast_zstd.c:481-502, compress_direct_buffer_to_byte_array_stream. The mirror of
-     * the method above, and the one place the C's two array releases differ: this one is
-     * ReleasePrimitiveArrayCritical mode 0, not JNI_ABORT, because dst is the destination
-     * and a copying GetPrimitiveArrayCritical would otherwise discard everything libzstd
-     * wrote. Neither mode has an analogue here - critical(true) hands over the array
-     * itself, heap base plus offset, pinned rather than staged - so the writes land in
-     * the caller's byte[] and there is nothing to copy back. */
+    /* Replaces jni_fast_zstd.c:481-502, compress_direct_buffer_to_byte_array_stream.
+     * JNI released the destination array with mode 0 to preserve writes if a temporary
+     * copy was used. Here, critical(true) lets libzstd write directly into the caller's
+     * array, so no copy-back step is needed. */
     private long compressDirectByteBufferToByteArrayStream0(byte @NotNull [] dst, int dstArrayOffset,
             int dstOffset, int dstSize, @NotNull ByteBuffer src, int srcOffset, int srcSize, int endOp) {
         long result = validateCompressStreamBounds(dstOffset, dstSize, srcOffset, srcSize);
@@ -816,20 +794,13 @@ public class ZstdCompressCtx extends AutoCloseBase {
                                     directSegment(src), 0, srcOffset, srcSize, endOp);
     }
 
-    /* jni_fast_zstd.c:504-529, compress_byte_array_stream. The C takes the slower
-     * GetByteArrayElements here - on HotSpot a copy of both whole arrays in and the
-     * destination back out, on every call - to avoid nesting two critical regions.
-     * Linker.Option.critical has no such restriction: several heap segments may be
-     * pinned for one downcall, so this path is copy-free like the other three, and the
-     * two -ZSTD_error_memory_allocation returns go with the copies, since wrapping an
-     * array cannot fail where allocating a copy of one can.
+    /* Replaces jni_fast_zstd.c:504-529, compress_byte_array_stream.
+     * JNI uses GetByteArrayElements, which may copy both arrays. A critical downcall
+     * can access both arrays directly, avoiding copies and their allocation-error checks.
      *
-     * One consequence beyond speed: the C's copies mean libzstd reads a snapshot, so two
-     * heap buffers over the same array with *overlapping* windows behave differently
-     * there than here, where both segments are the live array. Not a contract being
-     * broken - GetByteArrayElements is free to pin instead of copy and this C ignores its
-     * isCopy out-param, so a JVM that pins already behaves the way this does. Buffers
-     * that merely share an array without overlapping are unaffected either way. */
+     * If source and destination overlap in the same array, writes can affect unread
+     * input. Results may therefore differ from JNI when it copies the arrays.
+     * JNI never guaranteed those copies. Sharing an array without overlap is unaffected. */
     private long compressByteArrayStream0(byte @NotNull [] dst, int dstArrayOffset, int dstOffset, int dstSize,
             byte @NotNull [] src, int srcArrayOffset, int srcOffset, int srcSize, int endOp) {
         long result = validateCompressStreamBounds(dstOffset, dstSize, srcOffset, srcSize);
@@ -885,19 +856,12 @@ public class ZstdCompressCtx extends AutoCloseBase {
         }
     }
 
-    /* jni_fast_zstd.c:586-608. Unlike the streaming entry points this one has no
-     * position slots to shift, so each segment is cut to the span libzstd is given -
-     * the C's `buff + offset` with a length. Plain capacity() rather than
-     * directCapacity(): compressDirectByteBuffer rejects a non-direct buffer itself,
-     * so the C's -1 case is dead here.
+    /* Replaces jni_fast_zstd.c:586-608. Slice each segment to the requested offset
+     * and length, matching the pointers and lengths passed by JNI.
      *
-     * So are all five checks below, and they are kept only because the C has them: the
-     * caller's two Objects.checkFromIndexSize calls reject a negative offset or size and
-     * bound offset + size by limit(), which is at most capacity(). One consequence is
-     * that the C's `dst_offset + dst_size` overflow - jint arithmetic there, int
-     * arithmetic here, wrapping negative in both and passing the comparison in both - is
-     * reproduced rather than fixed, and only what follows differs: the C goes on to write
-     * past the end of the buffer where asSlice throws. */
+     * The public caller already checks that both buffers are direct and that the
+     * ranges fit within their limits. Plain capacity() is therefore sufficient;
+     * the checks below are redundant but retained to match the C implementation. */
     private long compressDirectByteBuffer0(@NotNull ByteBuffer dst, int dstOffset, int dstSize,
             @NotNull ByteBuffer src, int srcOffset, int srcSize) {
         if (0 > dstOffset) return -ZstdBinding.ZSTD_ERROR_DST_SIZE_TOO_SMALL;
@@ -949,21 +913,15 @@ public class ZstdCompressCtx extends AutoCloseBase {
         }
     }
 
-    /* jni_fast_zstd.c:615-639. Both arrays go in under Linker.Option.critical, which is
-     * what the C's two GetPrimitiveArrayCritical calls do; the goto unwinding and the
-     * -ZSTD_error_memory_allocation they could return have no analogue, since a heap
-     * segment cannot fail to be acquired.
+    /* Replaces jni_fast_zstd.c:615-639. The critical downcall accesses both arrays
+     * directly, with each segment sliced to the requested range. No JNI array
+     * acquisition, release, or acquisition-error handling is needed.
      *
-     * The bounds checks run src before dst, the opposite of compressDirectByteBuffer0
-     * above. That is the C's own inconsistency between its two one-shot functions, and
-     * each method here follows the one it ports: the order decides which code wins when
-     * both sides are invalid, so settling on one would change the JNI-visible contract.
-     * As there, the checks are dead - the caller's Objects.checkFromIndexSize calls bound
-     * the same offsets against the same array lengths.
+     * The public caller already validates both ranges. Keep these redundant checks
+     * in the original C order, including checking the source end before the destination.
      *
-     * ZSTD_CCtx_reset moves out of the critical region the C holds while calling it;
-     * critical(true) scopes to one downcall, not to a region, and the reset touches only
-     * the context, whose return both builds ignore. */
+     * Reset runs as a separate downcall because it only touches the context.
+     * Its result is ignored, as in JNI. */
     private long compressByteArray0(byte @NotNull [] dst, int dstOffset, int dstSize,
             byte @NotNull [] src, int srcOffset, int srcSize) {
         if (0 > dstOffset) return -ZstdBinding.ZSTD_ERROR_DST_SIZE_TOO_SMALL;

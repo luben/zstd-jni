@@ -394,29 +394,16 @@ final class ZstdBinding {
     }
 
     /**
-     * {@code ZSTD_isError}, without the JNI transition {@link Zstd#isError} costs. Meant
-     * for tests the FFM classes make on every call, where the JNI classes make none: the
-     * C did this test in C and packed the answer into its return value.
+     * Checks native results in Java, avoiding an extra JNI call to {@link Zstd#isError}.
+     * These checks replace error checks previously performed inside the JNI C code.
      * <p>
-     * libzstd reports an error as {@code (size_t) (0 - code)}, so every error return has
-     * the top bit of the size_t set, and a success return is a byte count that cannot
-     * approach it. The real predicate is narrower - {@code code > (size_t) -ZSTD_error_maxCode}
-     * (error_private.h:52), the top 120 values only - so the two disagree solely on
-     * returns that would have to be at least 2^63 bytes to arise. `maxCode` itself is
-     * deliberately not transcribed: zstd_errors.h:97 warns it changes between versions,
-     * and a stale copy would misclassify new error codes silently instead of failing to
-     * link.
+     * Tests the sign bit of the native {@code size_t}: zstd errors set it, while the
+     * successful results handled here do not. This is broader than {@code ZSTD_isError},
+     * but avoids hard-coding its version-dependent error-code limit.
      * <p>
-     * The width has to be branched on because {@code adapt} widens a 32-bit size_t return
-     * with {@code Integer.toUnsignedLong}, which leaves an error as a *positive* long
-     * with only its low word set. {@code SIZE_T_IS_64_BIT} is a constant, so the branch
-     * folds away. Codes this class returns itself, such as
-     * {@code -ZSTD_ERROR_DST_SIZE_TOO_SMALL}, are negative Java longs and satisfy either
-     * arm.
-     * <p>
-     * Only tests a port introduces should use this. Lines carried over from a base class
-     * keep {@link Zstd#isError}, so that the two copies of a method stay diffable and the
-     * versioned one does not quietly change behaviour the port does not own.
+     * On 32-bit platforms, cast back to {@code int} because {@code adapt} zero-extends
+     * native results to {@code long}. Use only for checks introduced by the FFM port;
+     * existing calls to {@link Zstd#isError} stay unchanged.
      */
     static boolean isError(long result) {
         return SIZE_T_IS_64_BIT ? result < 0 : (int) result < 0;
