@@ -445,7 +445,7 @@ val classifiedConfigs = Seq(
 // edge on `mappings`, not `packageBin`. The classified configs need it too: their `classes`
 // list is a lazy val snapshotting target/classes the first time any config forces it.
 (Compile +: classifiedConfigs).flatMap(c => Seq(
-  c / packageBin / mappings := (c / packageBin / mappings).dependsOn(ffmCompile).value,
+  c / packageBin / mappings := (c / packageBin / mappings).dependsOn(jniCompile, ffmCompile).value,
   c / packageBin := {
     val jar = (c / packageBin).value
     verifyMultiRelease(jar, streams.value.log)
