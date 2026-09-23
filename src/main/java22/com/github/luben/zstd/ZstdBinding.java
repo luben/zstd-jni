@@ -321,6 +321,43 @@ final class ZstdBinding {
                             MemorySegment.class, long.class, MemorySegment.class,
                             MemorySegment.class, long.class, MemorySegment.class));
 
+    private static final MethodHandle ZSTD_createDCtx =
+            downcall(
+                    "ZSTD_createDCtx",
+                    FunctionDescriptor.of(ValueLayout.ADDRESS),
+                    MethodType.methodType(MemorySegment.class));
+    private static final MethodHandle ZSTD_DCtx_reset =
+            downcall(
+                    "ZSTD_DCtx_reset",
+                    FunctionDescriptor.of(C_SIZE_T, ValueLayout.ADDRESS, ValueLayout.JAVA_INT),
+                    MethodType.methodType(long.class, MemorySegment.class, int.class));
+    /* critical: the dictionary is a caller-supplied heap byte[], copied by libzstd
+     * (ZSTD_dlm_byCopy), as with ZSTD_CCtx_loadDictionary. */
+    private static final MethodHandle ZSTD_DCtx_loadDictionary =
+            downcallCritical(
+                    "ZSTD_DCtx_loadDictionary",
+                    FunctionDescriptor.of(C_SIZE_T, ValueLayout.ADDRESS, ValueLayout.ADDRESS, C_SIZE_T),
+                    MethodType.methodType(long.class, MemorySegment.class, MemorySegment.class, long.class));
+    private static final MethodHandle ZSTD_DCtx_refDDict =
+            downcall(
+                    "ZSTD_DCtx_refDDict",
+                    FunctionDescriptor.of(C_SIZE_T, ValueLayout.ADDRESS, ValueLayout.ADDRESS),
+                    MethodType.methodType(long.class, MemorySegment.class, MemorySegment.class));
+    /* critical: dst and src may both be heap byte[]s, passed as plain pointer
+     * arguments - the decompression twin of ZSTD_compress2. */
+    private static final MethodHandle ZSTD_decompressDCtx =
+            downcallCritical(
+                    "ZSTD_decompressDCtx",
+                    FunctionDescriptor.of(
+                            C_SIZE_T,
+                            ValueLayout.ADDRESS,                                       // ZSTD_DCtx* dctx
+                            ValueLayout.ADDRESS, C_SIZE_T,                             // dst, dstCapacity
+                            ValueLayout.ADDRESS, C_SIZE_T),                            // src, srcSize
+                    MethodType.methodType(long.class,
+                            MemorySegment.class,
+                            MemorySegment.class, long.class,
+                            MemorySegment.class, long.class));
+
     private static MethodHandle downcall(@NotNull String name,
                                          @NotNull FunctionDescriptor descriptor,
                                          @NotNull MethodType javaType) {
@@ -657,6 +694,55 @@ final class ZstdBinding {
                     src, srcSize, srcPos);
         } catch (Throwable t) {
             throw new AssertionError("Call to ZSTD_decompressStream_simpleArgs failed", t);
+        }
+    }
+
+    static @NotNull MemorySegment createDCtx() {
+        try {
+            return (MemorySegment) ZSTD_createDCtx.invokeExact();
+        } catch (Throwable t) {
+            throw new AssertionError("Call to ZSTD_createDCtx failed", t);
+        }
+    }
+
+    /** @param directive one of the ZSTD_RESET_* values */
+    static long resetDCtx(@NotNull MemorySegment dctx, int directive) {
+        try {
+            return (long) ZSTD_DCtx_reset.invokeExact(dctx, directive);
+        } catch (Throwable t) {
+            throw new AssertionError("Call to ZSTD_DCtx_reset failed", t);
+        }
+    }
+
+    /** `dictSize` is a plain length: the dictionary always starts at the segment's base. */
+    static long loadDDictionary(@NotNull MemorySegment dctx, @NotNull MemorySegment dict, long dictSize) {
+        try {
+            return (long) ZSTD_DCtx_loadDictionary.invokeExact(dctx, dict, dictSize);
+        } catch (Throwable t) {
+            throw new AssertionError("Call to ZSTD_DCtx_loadDictionary failed", t);
+        }
+    }
+
+    static long refDDict(@NotNull MemorySegment dctx, @NotNull MemorySegment ddict) {
+        try {
+            return (long) ZSTD_DCtx_refDDict.invokeExact(dctx, ddict);
+        } catch (Throwable t) {
+            throw new AssertionError("Call to ZSTD_DCtx_refDDict failed", t);
+        }
+    }
+
+    /**
+     * The one-shot counterpart of {@link #decompressStream}: no position slots, so
+     * `dstCapacity` and `srcSize` are plain lengths and each segment starts where
+     * libzstd does.
+     */
+    static long decompressDCtx(@NotNull MemorySegment dctx,
+                               @NotNull MemorySegment dst, long dstCapacity,
+                               @NotNull MemorySegment src, long srcSize) {
+        try {
+            return (long) ZSTD_decompressDCtx.invokeExact(dctx, dst, dstCapacity, src, srcSize);
+        } catch (Throwable t) {
+            throw new AssertionError("Call to ZSTD_decompressDCtx failed", t);
         }
     }
 }
