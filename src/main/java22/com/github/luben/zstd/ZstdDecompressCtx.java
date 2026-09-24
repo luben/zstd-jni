@@ -229,8 +229,10 @@ public class ZstdDecompressCtx extends AutoCloseBase {
     /* Replaces jni_fast_zstd.c:718-769. The `size` arguments are absolute end offsets:
      * both segments cover the whole buffer and libzstd starts at the position slots.
      * The NULL dst / src guards are dropped - the public caller has already
-     * dereferenced both - and so are the GetDirectBufferAddress guards, which
-     * directCapacity makes unreachable. */
+     * dereferenced both - and so are the GetDirectBufferAddress guards: directCapacity
+     * already rejects heap buffers. A zero-capacity direct buffer at address 0 is the
+     * one difference: JNI returned memory_allocation, here libzstd gets NULL with
+     * size 0, which it accepts. */
     private long decompressDirectByteBufferStream0(@NotNull ByteBuffer dst, int dstOffset, int dstSize,
             @NotNull ByteBuffer src, int srcOffset, int srcSize) {
         if (0 > dstOffset) return -ZstdBinding.ZSTD_ERROR_DST_SIZE_TOO_SMALL;
