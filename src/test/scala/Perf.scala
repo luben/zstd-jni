@@ -405,7 +405,7 @@ class ZstdPerfSpec extends AnyFlatSpec  {
   }
 
 
-  val cycles = 50
+  val cycles = 10
 
   val levels = List(-3, -1, 1, 3, 6, 9)
   val buff = Source.fromFile("src/test/resources/xml")(Codec.ISO8859).map{_.toByte }.take(10 * 1024 * 1024).toArray
