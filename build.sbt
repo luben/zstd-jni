@@ -438,14 +438,14 @@ val classifiedConfigs = Seq(
   Win_x86, Win_amd64, Win_aarch64, Cloud
 )
 
-// jniCompile (the .so at <os>/<arch>/) and ffmCompile (META-INF/versions/22) write into
+// ffmCompile (META-INF/versions/22) write into
 // target/classes without going through `compile`. `mappings` is what reads that directory
 // and, as a *sibling* of packageBin, is free to run first - and sbt drops a mapping whose
 // source file is missing without a word, so the jar comes out quietly incomplete. Hence the
 // edge on `mappings`, not `packageBin`. The classified configs need it too: their `classes`
 // list is a lazy val snapshotting target/classes the first time any config forces it.
 (Compile +: classifiedConfigs).flatMap(c => Seq(
-  c / packageBin / mappings := (c / packageBin / mappings).dependsOn(jniCompile, ffmCompile).value,
+  c / packageBin / mappings := (c / packageBin / mappings).dependsOn(ffmCompile).value,
   c / packageBin := {
     val jar = (c / packageBin).value
     verifyMultiRelease(jar, streams.value.log)
