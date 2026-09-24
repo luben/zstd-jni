@@ -512,20 +512,17 @@ static size_t compress_byte_array_stream
     if (!is_valid_array_stream_buffer(env, dst, dst_array_offset, dst_size)) return -ZSTD_error_dstSize_tooSmall;
     if (!is_valid_array_stream_buffer(env, src, src_array_offset, src_size)) return -ZSTD_error_srcSize_wrong;
 
-    /* Avoid nested critical regions when both buffers are heap arrays. */
-    jbyte *dst_buff = (*env)->GetByteArrayElements(env, dst, NULL);
-    if (dst_buff == NULL) return -ZSTD_error_memory_allocation;
-    jbyte *src_buff = (*env)->GetByteArrayElements(env, src, NULL);
-    if (src_buff == NULL) {
-        (*env)->ReleaseByteArrayElements(env, dst, dst_buff, JNI_ABORT);
-        return -ZSTD_error_memory_allocation;
-    }
+    result = -ZSTD_error_memory_allocation;
+    jbyte *dst_buff = (*env)->GetPrimitiveArrayCritical(env, dst, NULL);
+    if (dst_buff == NULL) goto E1;
+    jbyte *src_buff = (*env)->GetPrimitiveArrayCritical(env, src, NULL);
+    if (src_buff == NULL) goto E2;
 
     result = compress_buffer_stream(ptr, ((char *)dst_buff) + dst_array_offset, dst_offset, dst_size,
                                     ((char *)src_buff) + src_array_offset, src_offset, src_size, end_op);
-    (*env)->ReleaseByteArrayElements(env, src, src_buff, JNI_ABORT);
-    (*env)->ReleaseByteArrayElements(env, dst, dst_buff, 0);
-    return result;
+    (*env)->ReleasePrimitiveArrayCritical(env, src, src_buff, JNI_ABORT);
+E2: (*env)->ReleasePrimitiveArrayCritical(env, dst, dst_buff, 0);
+E1: return result;
 }
 
 /*
