@@ -137,6 +137,19 @@ jniBinPath := {
   (Compile / target).value / "classes" / os / arch
 }
 
+// The native library is compiled only if it does not exist yet at jniBinPath, unless
+// ZSTD_JNI_REBUILD is TRUE (any case) - then it is always compiled, replacing the existing one.
+// Set it after changing the C sources, the native compiler flags or CC, e.g.
+// `ZSTD_JNI_REBUILD=TRUE ./sbt compile`.
+jniCompile := Def.taskDyn {
+  val build   = jniCompile.taskValue
+  val lib     = jniBinPath.value / s"lib${jniLibraryName.value}.${jniLibSuffix.value}"
+  val rebuild = sys.env.get("ZSTD_JNI_REBUILD").exists(_.equalsIgnoreCase("true"))
+  if (lib.isFile && !rebuild)
+    Def.task(streams.value.log.info(s"Keeping $lib - set ZSTD_JNI_REBUILD=TRUE to rebuild it"))
+  else Def.task(build.value)
+}.value
+
 // Do no generate C header files - we don't have use of them.
 // There is also a compatibility problem - newer JDKs don't have `javah`
 jniGenerateHeaders := false
