@@ -107,7 +107,7 @@ jobs:
 
         # Explicit compile to create the JNI native objects
         - name: Compile
-          run ./sbt compile
+          run: ./sbt compile
 
         - name: Package
           run: ./sbt testFromJarSetup
@@ -173,7 +173,7 @@ jobs:
 
         # Explicit compile to create the JNI native objects
         - name: Compile
-          runt ./sbt compile
+          run: ./sbt compile
 
         - name: Package
           run: ./sbt testFromJarSetup
