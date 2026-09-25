@@ -12,10 +12,7 @@ pushd sbt-java-module-info
 ./sbt publishLocal
 popd
 
-# Compile the JNI object first
-./sbt compile
-
 # Exercise both implementations from the same packaged jar.
-./sbt -v testFromJarSetup \
+./sbt -v compile testFromJarSetup \
          "testFromJar $JAVA_HOME" \
          "testFromJar $JAVA_HOME -Djdk.util.jar.enableMultiRelease=false"
