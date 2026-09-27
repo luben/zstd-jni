@@ -95,16 +95,19 @@ Compile and test:
  $ ./sbt compile test package
 ```
 
+*Note*: packaging does not wait for the native library to be built, so run `compile` as a separate,
+earlier command (as above) before anything that packages the jar.
+
 *Note*: `./sbt test` covers the JNI implementation only. The JDK 22+ one built on the Foreign Function
 & Memory API ships in `META-INF/versions/22`, and Multi-Release dispatch only happens from a jar, so
 testing it means packaging first and then choosing the runtime:
 ```
- $ ./sbt testFromJarSetup testFromJar
+ $ ./sbt compile testFromJarSetup testFromJar
 ```
 
 If you want to publish it to you local ivy2 repository:
 ```
- $ ./sbt publishLocal
+ $ ./sbt compile publishLocal
 ```
 
 Binary releases
