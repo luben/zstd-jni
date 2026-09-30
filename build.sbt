@@ -80,12 +80,10 @@ jniGccFlags ++= Seq(
 // code so let's remove the flag and silence a warning
 jniGccFlags := (
   if (System.getProperty("os.name").toLowerCase startsWith "win") {
-    // lld (clang on ARM64, where MSYS2 only has the CLANGARM64 environment) rejects
-    // --version-script. Nothing is lost: with the dllexport-marked symbols below the
-    // export table is already exactly the JNI and ZSTD_* functions, and the script
-    // could only have filtered it further.
+    // clang on ARM64, where MSYS2 only has the CLANGARM64 environment uses the
+    // libzstd-jni.so.exported, on x86 we still use libzstd-jni.so.map
     val versionScript =
-      if (jniNativeCompiler.value.contains("clang")) Nil
+      if (jniNativeCompiler.value.contains("clang")) Seq("-exported_symbols_list", PWD + "/libzstd-jni.so.exported")
       else Seq("-Wl,--version-script=" + PWD + "/libzstd-jni.so.map")
     jniGccFlags.value.filterNot(_ == "-fPIC") ++
       Seq("-D_JNI_IMPLEMENTATION_", "-Wl,--kill-at",
