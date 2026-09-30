@@ -231,32 +231,69 @@ jobs:
             AWS_DEFAULT_REGION: "us-east-1"
           run: 'aws s3 cp --recursive target\classes\win\x86 s3://zstd-jni/github/win/x86'
 
-    windows-cross:
-        runs-on: windows-latest
+    windows-arm64:
+        # Native build and test on the ARM64 runner: this replaces the cross build
+        # from an x64 runner, which could not run the tests and shipped a DLL
+        # without its JNI exports for two releases (1.5.7-19 and 1.5.7-20) before
+        # anyone noticed. CLANGARM64 is the only MSYS2 environment for ARM64, so
+        # the compiler is clang/lld rather than gcc/ld; build.sbt adjusts the link
+        # flags for it (see the Windows branch of jniGccFlags).
+        runs-on: windows-11-arm
         defaults:
             run:
                 shell: msys2 {0}
+        env:
+            CC: clang
         steps:
         - uses: actions/checkout@v7
         - uses: msys2/setup-msys2@v2
           with:
-            msystem: mingw64
-            install: git base-devel mingw-w64-cross-clang
+            msystem: CLANGARM64
+            install: git base-devel mingw-w64-clang-aarch64-toolchain
             path-type: inherit
             update: true
+        # Zulu has no Windows/ARM64 build of 11 (17 is the oldest), so the JNI run
+        # on the floor JDK uses 17 here.
+        - id: jdk17
+          uses: actions/setup-java@v5
+          with:
+            java-version: 17
+            distribution: zulu
+            architecture: aarch64
+        - id: jdk25
+          uses: actions/setup-java@v5
+          with:
+            java-version: 25
+            distribution: zulu
+            architecture: aarch64
 
-        - name: Compile
-          # -DZSTD_DLL_EXPORT=1 exports the ZSTD_* symbols the FFM code looks up.
-          # Keep in step with the Windows branch of jniGccFlags in build.sbt.
-          run: /opt/aarch64-w64-mingw32/bin/aarch64-w64-mingw32-clang -shared -D_JNI_IMPLEMENTATION_ -Wl,--kill-at -DZSTD_DLL_EXPORT=1 -O3 -DZSTD_MULTITHREAD=1 -I./src/windows/include -I./jni -I./src/main/native -I./src/main/native/common -std=c99 -o libzstd-jni-$(cat version).dll ./src/main/native/*.c ./src/main/native/common/*.c ./src/main/native/compress/*.c ./src/main/native/decompress/*.[cS] ./src/main/native/dictBuilder/*.c
+        - name: Check Java version
+          run: java -version
+
+        - name: Install sbt-java-module-info
+          run: cd ./sbt-java-module-info; ./sbt publishLocal
+
+        # Explicit compile to create the JNI native objects
+        - name: Package
+          run: ./sbt compile testFromJarSetup
+
+        - name: Test from jar (JDK 25, FFM)
+          run: ./sbt "testFromJar ${{ steps.jdk25.outputs.path }}"
+
+        - name: Test from jar (JDK 25, JNI)
+          run: ./sbt "testFromJar ${{ steps.jdk25.outputs.path }} -Djdk.util.jar.enableMultiRelease=false"
+
+        - name: Test from jar (JDK 17, JNI)
+          run: ./sbt "testFromJar ${{ steps.jdk17.outputs.path }}"
 
         - name: Deploy
-          if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master'}}
+          if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
+          shell: cmd
           env:
             AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
             AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
             AWS_DEFAULT_REGION: "us-east-1"
-          run: aws s3 cp libzstd-jni-$(cat version).dll s3://zstd-jni/github/win/aarch64/libzstd-jni-$(cat version).dll
+          run: 'aws s3 cp --recursive target\classes\win\aarch64 s3://zstd-jni/github/win/aarch64'
 
     android:
         runs-on: ubuntu-latest
