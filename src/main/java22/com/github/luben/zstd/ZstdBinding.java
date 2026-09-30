@@ -138,6 +138,40 @@ final class ZstdBinding {
     static final int ZSTD_ERROR_DST_SIZE_TOO_SMALL = 70;
     static final int ZSTD_ERROR_SRC_SIZE_WRONG     = 72;
 
+    /* Copying dictionary creation accepts heap segments under critical, matching
+     * JNI's GetPrimitiveArrayCritical. By-reference creation accepts only native
+     * segments: the dictionary keeps the pointer after the downcall returns. */
+    private static final MethodHandle ZSTD_createCDict =
+            downcallCritical(
+                    "ZSTD_createCDict",
+                    FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, C_SIZE_T, ValueLayout.JAVA_INT),
+                    MethodType.methodType(MemorySegment.class, MemorySegment.class, long.class, int.class));
+    private static final MethodHandle ZSTD_createCDict_byReference =
+            downcall(
+                    "ZSTD_createCDict_byReference",
+                    FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, C_SIZE_T, ValueLayout.JAVA_INT),
+                    MethodType.methodType(MemorySegment.class, MemorySegment.class, long.class, int.class));
+    private static final MethodHandle ZSTD_freeCDict =
+            downcall(
+                    "ZSTD_freeCDict",
+                    FunctionDescriptor.of(C_SIZE_T, ValueLayout.ADDRESS),
+                    MethodType.methodType(long.class, MemorySegment.class));
+    private static final MethodHandle ZSTD_createDDict =
+            downcallCritical(
+                    "ZSTD_createDDict",
+                    FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, C_SIZE_T),
+                    MethodType.methodType(MemorySegment.class, MemorySegment.class, long.class));
+    private static final MethodHandle ZSTD_createDDict_byReference =
+            downcall(
+                    "ZSTD_createDDict_byReference",
+                    FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, C_SIZE_T),
+                    MethodType.methodType(MemorySegment.class, MemorySegment.class, long.class));
+    private static final MethodHandle ZSTD_freeDDict =
+            downcall(
+                    "ZSTD_freeDDict",
+                    FunctionDescriptor.of(C_SIZE_T, ValueLayout.ADDRESS),
+                    MethodType.methodType(long.class, MemorySegment.class));
+
     private static final MethodHandle ZSTD_CStreamOutSize =
             downcall(
                     "ZSTD_CStreamOutSize",
@@ -743,6 +777,54 @@ final class ZstdBinding {
             return (long) ZSTD_decompressDCtx.invokeExact(dctx, dst, dstCapacity, src, srcSize);
         } catch (Throwable t) {
             throw new AssertionError("Call to ZSTD_decompressDCtx failed", t);
+        }
+    }
+
+    static @NotNull MemorySegment createCDict(@NotNull MemorySegment dict, long dictSize, int level) {
+        try {
+            return (MemorySegment) ZSTD_createCDict.invokeExact(dict, dictSize, level);
+        } catch (Throwable t) {
+            throw new AssertionError("Call to ZSTD_createCDict failed", t);
+        }
+    }
+
+    static @NotNull MemorySegment createCDictByReference(@NotNull MemorySegment dict, long dictSize, int level) {
+        try {
+            return (MemorySegment) ZSTD_createCDict_byReference.invokeExact(dict, dictSize, level);
+        } catch (Throwable t) {
+            throw new AssertionError("Call to ZSTD_createCDict_byReference failed", t);
+        }
+    }
+
+    static long freeCDict(@NotNull MemorySegment dict) {
+        try {
+            return (long) ZSTD_freeCDict.invokeExact(dict);
+        } catch (Throwable t) {
+            throw new AssertionError("Call to ZSTD_freeCDict failed", t);
+        }
+    }
+
+    static @NotNull MemorySegment createDDict(@NotNull MemorySegment dict, long dictSize) {
+        try {
+            return (MemorySegment) ZSTD_createDDict.invokeExact(dict, dictSize);
+        } catch (Throwable t) {
+            throw new AssertionError("Call to ZSTD_createDDict failed", t);
+        }
+    }
+
+    static @NotNull MemorySegment createDDictByReference(@NotNull MemorySegment dict, long dictSize) {
+        try {
+            return (MemorySegment) ZSTD_createDDict_byReference.invokeExact(dict, dictSize);
+        } catch (Throwable t) {
+            throw new AssertionError("Call to ZSTD_createDDict_byReference failed", t);
+        }
+    }
+
+    static long freeDDict(@NotNull MemorySegment dict) {
+        try {
+            return (long) ZSTD_freeDDict.invokeExact(dict);
+        } catch (Throwable t) {
+            throw new AssertionError("Call to ZSTD_freeDDict failed", t);
         }
     }
 }
