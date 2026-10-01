@@ -133,10 +133,82 @@ final class ZstdBinding {
     static final int ZSTD_C_CHECKSUM_FLAG     = 201;
     static final int ZSTD_C_DICT_ID_FLAG      = 202;
 
-    /* ZSTD_ErrorCode */
+    /* ZSTD_ErrorCode values copied from the vendored src/main/native/zstd_errors.h.
+     * Unlike JNI wrappers compiled against the C enum, these Java constants do not
+     * automatically follow header changes. When upgrading the native zstd sources,
+     * recheck them with jextract and update any changed values: a mismatch would
+     * make Java error identifiers disagree with the native library.
+     * All values below are < 100, which zstd documents as stable since v1.3.1;
+     * experimental error codes >= 100 do not have that stability guarantee. */
     static final int ZSTD_ERROR_DICTIONARY_WRONG   = 32;
     static final int ZSTD_ERROR_DST_SIZE_TOO_SMALL = 70;
     static final int ZSTD_ERROR_SRC_SIZE_WRONG     = 72;
+
+    static final int ZSTD_ERROR_NO_ERROR = 0;
+    static final int ZSTD_ERROR_GENERIC = 1;
+    static final int ZSTD_ERROR_PREFIX_UNKNOWN = 10;
+    static final int ZSTD_ERROR_VERSION_UNSUPPORTED = 12;
+    static final int ZSTD_ERROR_FRAME_PARAMETER_UNSUPPORTED = 14;
+    static final int ZSTD_ERROR_FRAME_PARAMETER_WINDOW_TOO_LARGE = 16;
+    static final int ZSTD_ERROR_CORRUPTION_DETECTED = 20;
+    static final int ZSTD_ERROR_CHECKSUM_WRONG = 22;
+    static final int ZSTD_ERROR_DICTIONARY_CORRUPTED = 30;
+    static final int ZSTD_ERROR_DICTIONARY_CREATION_FAILED = 34;
+    static final int ZSTD_ERROR_PARAMETER_UNSUPPORTED = 40;
+    static final int ZSTD_ERROR_PARAMETER_OUT_OF_BOUND = 42;
+    static final int ZSTD_ERROR_TABLE_LOG_TOO_LARGE = 44;
+    static final int ZSTD_ERROR_MAX_SYMBOL_VALUE_TOO_LARGE = 46;
+    static final int ZSTD_ERROR_MAX_SYMBOL_VALUE_TOO_SMALL = 48;
+    static final int ZSTD_ERROR_STAGE_WRONG = 60;
+    static final int ZSTD_ERROR_INIT_MISSING = 62;
+    static final int ZSTD_ERROR_MEMORY_ALLOCATION = 64;
+    static final int ZSTD_ERROR_WORK_SPACE_TOO_SMALL = 66;
+    static final int ZSTD_ERROR_DST_BUFFER_NULL = 74;
+
+    /* zstd.h macros, verified against the vendored headers with jextract.
+     * Maxima follow sizeof(size_t), not the ABI of the machine running jextract. */
+    static final int ZSTD_MAGICNUMBER = 0xFD2FB528;
+    static final int ZSTD_WINDOWLOG_MIN = 10;
+    static final int ZSTD_WINDOWLOG_MAX = SIZE_T_IS_64_BIT ? 31 : 30;
+    static final int ZSTD_HASHLOG_MIN = 6;
+    static final int ZSTD_HASHLOG_MAX = Math.min(ZSTD_WINDOWLOG_MAX, 30);
+    static final int ZSTD_CHAINLOG_MIN = ZSTD_HASHLOG_MIN;
+    static final int ZSTD_CHAINLOG_MAX = SIZE_T_IS_64_BIT ? 30 : 29;
+    static final int ZSTD_SEARCHLOG_MIN = 1;
+    static final int ZSTD_SEARCHLOG_MAX = ZSTD_WINDOWLOG_MAX - 1;
+    static final int ZSTD_BLOCKSIZE_MAX = 1 << 17;
+    static final int ZSTD_CLEVEL_DEFAULT = 3;
+
+    private static final MethodHandle ZSTD_compressBound =
+            downcall(
+                    "ZSTD_compressBound",
+                    FunctionDescriptor.of(C_SIZE_T, C_SIZE_T),
+                    MethodType.methodType(long.class, long.class));
+    private static final MethodHandle ZSTD_isError =
+            downcall(
+                    "ZSTD_isError",
+                    FunctionDescriptor.of(ValueLayout.JAVA_INT, C_SIZE_T),
+                    MethodType.methodType(int.class, long.class));
+    private static final MethodHandle ZSTD_getErrorName =
+            downcall(
+                    "ZSTD_getErrorName",
+                    FunctionDescriptor.of(ValueLayout.ADDRESS, C_SIZE_T),
+                    MethodType.methodType(MemorySegment.class, long.class));
+    private static final MethodHandle ZSTD_getErrorCode =
+            downcall(
+                    "ZSTD_getErrorCode",
+                    FunctionDescriptor.of(ValueLayout.JAVA_INT, C_SIZE_T),
+                    MethodType.methodType(int.class, long.class));
+    private static final MethodHandle ZSTD_minCLevel =
+            downcall(
+                    "ZSTD_minCLevel",
+                    FunctionDescriptor.of(ValueLayout.JAVA_INT),
+                    MethodType.methodType(int.class));
+    private static final MethodHandle ZSTD_maxCLevel =
+            downcall(
+                    "ZSTD_maxCLevel",
+                    FunctionDescriptor.of(ValueLayout.JAVA_INT),
+                    MethodType.methodType(int.class));
 
     /* Copying dictionary creation accepts heap segments under critical, matching
      * JNI's GetPrimitiveArrayCritical. By-reference creation accepts only native
@@ -465,7 +537,7 @@ final class ZstdBinding {
     }
 
     /**
-     * Checks native results in Java, avoiding an extra JNI call to {@link Zstd#isError}.
+     * Checks native results in Java, avoiding an extra downcall to {@link Zstd#isError}.
      * These checks replace error checks previously performed inside the JNI C code.
      * <p>
      * Tests the sign bit of the native {@code size_t}: zstd errors set it, while the
@@ -484,6 +556,58 @@ final class ZstdBinding {
         return SIZE_T_IS_64_BIT
                 ? new SizeTRef.Wide(new long[1])
                 : new SizeTRef.Narrow(new int[1]);
+    }
+
+    static long compressBound(long srcSize) {
+        try {
+            return (long) ZSTD_compressBound.invokeExact(srcSize);
+        } catch (Throwable t) {
+            throw new AssertionError("Call to ZSTD_compressBound failed", t);
+        }
+    }
+
+    static boolean isErrorCode(long code) {
+        try {
+            return (int) ZSTD_isError.invokeExact(code) != 0;
+        } catch (Throwable t) {
+            throw new AssertionError("Call to ZSTD_isError failed", t);
+        }
+    }
+
+    static @NotNull String getErrorName(long code) {
+        try {
+            MemorySegment name = (MemorySegment) ZSTD_getErrorName.invokeExact(code);
+            // libzstd owns this NUL-terminated static string. The pointer result has
+            // zero extent; allow scanning through its terminator, without owning or
+            // freeing the library's storage. The Java String copies the bytes.
+            return name.reinterpret(Long.MAX_VALUE).getString(0);
+        } catch (Throwable t) {
+            throw new AssertionError("Call to ZSTD_getErrorName failed", t);
+        }
+    }
+
+    static long getErrorCode(long code) {
+        try {
+            return (long) (int) ZSTD_getErrorCode.invokeExact(code);
+        } catch (Throwable t) {
+            throw new AssertionError("Call to ZSTD_getErrorCode failed", t);
+        }
+    }
+
+    static int minCLevel() {
+        try {
+            return (int) ZSTD_minCLevel.invokeExact();
+        } catch (Throwable t) {
+            throw new AssertionError("Call to ZSTD_minCLevel failed", t);
+        }
+    }
+
+    static int maxCLevel() {
+        try {
+            return (int) ZSTD_maxCLevel.invokeExact();
+        } catch (Throwable t) {
+            throw new AssertionError("Call to ZSTD_maxCLevel failed", t);
+        }
     }
 
     static long cStreamOutSize() {
