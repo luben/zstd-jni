@@ -4,15 +4,17 @@ import com.github.luben.zstd.util.Native;
 
 import org.jetbrains.annotations.NotNull;
 
+import java.lang.foreign.MemorySegment;
+import java.lang.ref.Reference;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
 /**
- * Java 22 implementation. Constants, error handling and basic queries use FFM;
- * native declarations for configuration, frame inspection, unsafe operations and
- * training are retained until the following migration steps.
+ * Java 22 implementation. Constants, configuration, dictionary attachment and
+ * basic queries use FFM. Native declarations for frame inspection, unsafe
+ * operations and training remain until the next migration step.
  */
 public class Zstd {
     private static final @NotNull String maxDecompressSizeOverride = "ZstdMaxDecompressSize";
@@ -618,32 +620,159 @@ public class Zstd {
     }
 
     /* Advance API */
-    public static native int loadDictDecompress(long stream, byte @NotNull [] dict, int dict_size);
-    public static native int loadFastDictDecompress(long stream, @NotNull ZstdDictDecompress dict);
-    public static native int loadDictCompress(long stream, byte @NotNull [] dict, int dict_size);
-    public static native int loadFastDictCompress(long stream, @NotNull ZstdDictCompress dict);
-    public static native void registerSequenceProducer(long stream, long seqProdState, long seqProdFunction);
-    public static native int setCompressionChecksums(long stream, boolean useChecksums);
-    public static native int setCompressionMagicless(long stream, boolean useMagicless);
-    public static native int setCompressionLevel(long stream, int level);
-    public static native int setCompressionLong(long stream, int windowLog);
-    public static native int setCompressionWorkers(long stream, int workers);
-    public static native int setCompressionOverlapLog(long stream, int overlapLog);
-    public static native int setCompressionJobSize(long stream, int jobSize);
-    public static native int setCompressionTargetLength(long stream, int targetLength);
-    public static native int setCompressionMinMatch(long stream, int minMatch);
-    public static native int setCompressionSearchLog(long stream, int searchLog);
-    public static native int setCompressionChainLog(long stream, int chainLog);
-    public static native int setCompressionHashLog(long stream, int hashLog);
-    public static native int setCompressionWindowLog(long stream, int windowLog);
-    public static native int setCompressionStrategy(long stream, int strategy);
-    public static native int setDecompressionLongMax(long stream, int windowLogMax);
-    public static native int setDecompressionMagicless(long stream, boolean useMagicless);
-    public static native int setRefMultipleDDicts(long stream, boolean useMultiple);
-    public static native int setValidateSequences(long stream, int validateSequences);
-    public static native int setSequenceProducerFallback(long stream, boolean fallbackFlag);
-    public static native int setSearchForExternalRepcodes(long stream, int searchRepcodes);
-    public static native int setEnableLongDistanceMatching(long stream, int enableLDM);
+    public static int loadDictDecompress(long stream, byte @NotNull [] dict, int dict_size) {
+        if (dict == null) {
+            return -ZstdBinding.ZSTD_ERROR_DICTIONARY_WRONG;
+        }
+        return (int) ZstdBinding.loadDDictionary(
+                MemorySegment.ofAddress(stream), MemorySegment.ofArray(dict), dict_size);
+    }
+    public static int loadFastDictDecompress(long stream, @NotNull ZstdDictDecompress dict) {
+        if (dict == null) {
+            return -ZstdBinding.ZSTD_ERROR_DICTIONARY_WRONG;
+        }
+        long pointer = dict.nativePtr();
+        if (pointer == 0) {
+            return -ZstdBinding.ZSTD_ERROR_DICTIONARY_WRONG;
+        }
+        try {
+            return (int) ZstdBinding.refDDict(MemorySegment.ofAddress(stream), MemorySegment.ofAddress(pointer));
+        } finally {
+            // JNI kept its object argument alive through the native call as well.
+            Reference.reachabilityFence(dict);
+        }
+    }
+    public static int loadDictCompress(long stream, byte @NotNull [] dict, int dict_size) {
+        if (dict == null) {
+            return -ZstdBinding.ZSTD_ERROR_DICTIONARY_WRONG;
+        }
+        return (int) ZstdBinding.loadDictionary(
+                MemorySegment.ofAddress(stream), MemorySegment.ofArray(dict), dict_size);
+    }
+    public static int loadFastDictCompress(long stream, @NotNull ZstdDictCompress dict) {
+        if (dict == null) {
+            return -ZstdBinding.ZSTD_ERROR_DICTIONARY_WRONG;
+        }
+        long pointer = dict.nativePtr();
+        if (pointer == 0) {
+            return -ZstdBinding.ZSTD_ERROR_DICTIONARY_WRONG;
+        }
+        try {
+            return (int) ZstdBinding.refCDict(MemorySegment.ofAddress(stream), MemorySegment.ofAddress(pointer));
+        } finally {
+            // JNI kept its object argument alive through the native call as well.
+            Reference.reachabilityFence(dict);
+        }
+    }
+    public static void registerSequenceProducer(long stream, long seqProdState, long seqProdFunction) {
+        ZstdBinding.registerSequenceProducer(
+                MemorySegment.ofAddress(stream),
+                MemorySegment.ofAddress(seqProdState),
+                MemorySegment.ofAddress(seqProdFunction));
+    }
+    public static int setCompressionChecksums(long stream, boolean useChecksums) {
+        return (int) ZstdBinding.setCCtxParameter(
+                MemorySegment.ofAddress(stream),
+                ZstdBinding.ZSTD_C_CHECKSUM_FLAG,
+                useChecksums ? 1 : 0);
+    }
+    public static int setCompressionMagicless(long stream, boolean useMagicless) {
+        return (int) ZstdBinding.setCCtxParameter(
+                MemorySegment.ofAddress(stream),
+                ZstdBinding.ZSTD_C_FORMAT,
+                useMagicless ? ZstdBinding.ZSTD_F_ZSTD1_MAGICLESS : ZstdBinding.ZSTD_F_ZSTD1);
+    }
+    public static int setCompressionLevel(long stream, int level) {
+        return (int) ZstdBinding.setCCtxParameter(
+                MemorySegment.ofAddress(stream), ZstdBinding.ZSTD_C_COMPRESSION_LEVEL, level);
+    }
+    public static int setCompressionLong(long stream, int windowLog) {
+        MemorySegment cctx = MemorySegment.ofAddress(stream);
+        boolean enabled = windowLog >= ZstdBinding.ZSTD_WINDOWLOG_MIN
+                && windowLog <= ZstdBinding.ZSTD_WINDOWLOG_LIMIT_DEFAULT;
+        long result = ZstdBinding.setCCtxParameter(
+                cctx,
+                ZstdBinding.ZSTD_C_ENABLE_LONG_DISTANCE_MATCHING,
+                enabled ? ZstdBinding.ZSTD_PS_ENABLE : ZstdBinding.ZSTD_PS_DISABLE);
+        if (ZstdBinding.isErrorCode(result)) {
+            return (int) result;
+        }
+        return (int) ZstdBinding.setCCtxParameter(cctx, ZstdBinding.ZSTD_C_WINDOW_LOG, enabled ? windowLog : 0);
+    }
+    public static int setCompressionWorkers(long stream, int workers) {
+        return (int) ZstdBinding.setCCtxParameter(
+                MemorySegment.ofAddress(stream), ZstdBinding.ZSTD_C_NB_WORKERS, workers);
+    }
+    public static int setCompressionOverlapLog(long stream, int overlapLog) {
+        return (int) ZstdBinding.setCCtxParameter(
+                MemorySegment.ofAddress(stream), ZstdBinding.ZSTD_C_OVERLAP_LOG, overlapLog);
+    }
+    public static int setCompressionJobSize(long stream, int jobSize) {
+        return (int) ZstdBinding.setCCtxParameter(
+                MemorySegment.ofAddress(stream), ZstdBinding.ZSTD_C_JOB_SIZE, jobSize);
+    }
+    public static int setCompressionTargetLength(long stream, int targetLength) {
+        return (int) ZstdBinding.setCCtxParameter(
+                MemorySegment.ofAddress(stream), ZstdBinding.ZSTD_C_TARGET_LENGTH, targetLength);
+    }
+    public static int setCompressionMinMatch(long stream, int minMatch) {
+        return (int) ZstdBinding.setCCtxParameter(
+                MemorySegment.ofAddress(stream), ZstdBinding.ZSTD_C_MIN_MATCH, minMatch);
+    }
+    public static int setCompressionSearchLog(long stream, int searchLog) {
+        return (int) ZstdBinding.setCCtxParameter(
+                MemorySegment.ofAddress(stream), ZstdBinding.ZSTD_C_SEARCH_LOG, searchLog);
+    }
+    public static int setCompressionChainLog(long stream, int chainLog) {
+        return (int) ZstdBinding.setCCtxParameter(
+                MemorySegment.ofAddress(stream), ZstdBinding.ZSTD_C_CHAIN_LOG, chainLog);
+    }
+    public static int setCompressionHashLog(long stream, int hashLog) {
+        return (int) ZstdBinding.setCCtxParameter(
+                MemorySegment.ofAddress(stream), ZstdBinding.ZSTD_C_HASH_LOG, hashLog);
+    }
+    public static int setCompressionWindowLog(long stream, int windowLog) {
+        return (int) ZstdBinding.setCCtxParameter(
+                MemorySegment.ofAddress(stream), ZstdBinding.ZSTD_C_WINDOW_LOG, windowLog);
+    }
+    public static int setCompressionStrategy(long stream, int strategy) {
+        return (int) ZstdBinding.setCCtxParameter(
+                MemorySegment.ofAddress(stream), ZstdBinding.ZSTD_C_STRATEGY, strategy);
+    }
+    public static int setDecompressionLongMax(long stream, int windowLogMax) {
+        return (int) ZstdBinding.setDCtxParameter(
+                MemorySegment.ofAddress(stream), ZstdBinding.ZSTD_D_WINDOW_LOG_MAX, windowLogMax);
+    }
+    public static int setDecompressionMagicless(long stream, boolean useMagicless) {
+        return (int) ZstdBinding.setDCtxParameter(
+                MemorySegment.ofAddress(stream),
+                ZstdBinding.ZSTD_D_FORMAT,
+                useMagicless ? ZstdBinding.ZSTD_F_ZSTD1_MAGICLESS : ZstdBinding.ZSTD_F_ZSTD1);
+    }
+    public static int setRefMultipleDDicts(long stream, boolean useMultiple) {
+        return (int) ZstdBinding.setDCtxParameter(
+                MemorySegment.ofAddress(stream),
+                ZstdBinding.ZSTD_D_REF_MULTIPLE_DDICTS,
+                useMultiple ? ZstdBinding.ZSTD_RMD_REF_MULTIPLE_DDICTS : ZstdBinding.ZSTD_RMD_REF_SINGLE_DDICT);
+    }
+    public static int setValidateSequences(long stream, int validateSequences) {
+        return (int) ZstdBinding.setCCtxParameter(
+                MemorySegment.ofAddress(stream), ZstdBinding.ZSTD_C_VALIDATE_SEQUENCES, validateSequences);
+    }
+    public static int setSequenceProducerFallback(long stream, boolean fallbackFlag) {
+        return (int) ZstdBinding.setCCtxParameter(
+                MemorySegment.ofAddress(stream),
+                ZstdBinding.ZSTD_C_ENABLE_SEQ_PRODUCER_FALLBACK,
+                fallbackFlag ? 1 : 0);
+    }
+    public static int setSearchForExternalRepcodes(long stream, int searchRepcodes) {
+        return (int) ZstdBinding.setCCtxParameter(
+                MemorySegment.ofAddress(stream), ZstdBinding.ZSTD_C_SEARCH_FOR_EXTERNAL_REPCODES, searchRepcodes);
+    }
+    public static int setEnableLongDistanceMatching(long stream, int enableLDM) {
+        return (int) ZstdBinding.setCCtxParameter(
+                MemorySegment.ofAddress(stream), ZstdBinding.ZSTD_C_ENABLE_LONG_DISTANCE_MATCHING, enableLDM);
+    }
 
     /* Utility methods */
     /**
