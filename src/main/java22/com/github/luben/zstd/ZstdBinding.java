@@ -118,66 +118,74 @@ final class ZstdBinding {
         return MethodHandles.explicitCastArguments(adapted, javaType);
     }
 
+    /* Read the native header constants once during class initialization, after
+     * loading the library and initializing LINKER, LOOKUP and the handle adapter.
+     * C getters keep these values in sync with the bundled zstd and its ABI;
+     * callers use the cached fields without further native calls. */
+    private static int readConstant(@NotNull String name) {
+        String symbolName = "zstd_java_" + name;
+        try {
+            MethodHandle getter = downcall(symbolName,
+                    FunctionDescriptor.of(ValueLayout.JAVA_INT), MethodType.methodType(int.class));
+            return (int) getter.invokeExact();
+        } catch (Throwable t) {
+            throw new AssertionError("Call to " + symbolName + " failed", t);
+        }
+    }
+
     /* ZSTD_EndDirective */
-    static final int ZSTD_E_CONTINUE = 0;
-    static final int ZSTD_E_FLUSH    = 1;
-    static final int ZSTD_E_END      = 2;
+    static final int ZSTD_E_CONTINUE = readConstant("e_continue");
+    static final int ZSTD_E_FLUSH = readConstant("e_flush");
+    static final int ZSTD_E_END = readConstant("e_end");
 
     /* ZSTD_ResetDirective */
-    static final int ZSTD_RESET_SESSION_ONLY           = 1;
-    static final int ZSTD_RESET_SESSION_AND_PARAMETERS = 3;
+    static final int ZSTD_RESET_SESSION_ONLY = readConstant("reset_session_only");
+    static final int ZSTD_RESET_SESSION_AND_PARAMETERS = readConstant("reset_session_and_parameters");
 
     /* ZSTD_cParameter */
-    static final int ZSTD_C_COMPRESSION_LEVEL = 100;
-    static final int ZSTD_C_CONTENT_SIZE_FLAG = 200;
-    static final int ZSTD_C_CHECKSUM_FLAG     = 201;
-    static final int ZSTD_C_DICT_ID_FLAG      = 202;
+    static final int ZSTD_C_COMPRESSION_LEVEL = readConstant("c_compressionLevel");
+    static final int ZSTD_C_CONTENT_SIZE_FLAG = readConstant("c_contentSizeFlag");
+    static final int ZSTD_C_CHECKSUM_FLAG = readConstant("c_checksumFlag");
+    static final int ZSTD_C_DICT_ID_FLAG = readConstant("c_dictIDFlag");
 
-    /* ZSTD_ErrorCode values copied from the vendored src/main/native/zstd_errors.h.
-     * Unlike JNI wrappers compiled against the C enum, these Java constants do not
-     * automatically follow header changes. When upgrading the native zstd sources,
-     * recheck them with jextract and update any changed values: a mismatch would
-     * make Java error identifiers disagree with the native library.
-     * All values below are < 100, which zstd documents as stable since v1.3.1;
-     * experimental error codes >= 100 do not have that stability guarantee. */
-    static final int ZSTD_ERROR_DICTIONARY_WRONG   = 32;
-    static final int ZSTD_ERROR_DST_SIZE_TOO_SMALL = 70;
-    static final int ZSTD_ERROR_SRC_SIZE_WRONG     = 72;
+    /* ZSTD_ErrorCode */
+    static final int ZSTD_ERROR_DICTIONARY_WRONG = readConstant("error_dictionary_wrong");
+    static final int ZSTD_ERROR_DST_SIZE_TOO_SMALL = readConstant("error_dstSize_tooSmall");
+    static final int ZSTD_ERROR_SRC_SIZE_WRONG = readConstant("error_srcSize_wrong");
 
-    static final int ZSTD_ERROR_NO_ERROR = 0;
-    static final int ZSTD_ERROR_GENERIC = 1;
-    static final int ZSTD_ERROR_PREFIX_UNKNOWN = 10;
-    static final int ZSTD_ERROR_VERSION_UNSUPPORTED = 12;
-    static final int ZSTD_ERROR_FRAME_PARAMETER_UNSUPPORTED = 14;
-    static final int ZSTD_ERROR_FRAME_PARAMETER_WINDOW_TOO_LARGE = 16;
-    static final int ZSTD_ERROR_CORRUPTION_DETECTED = 20;
-    static final int ZSTD_ERROR_CHECKSUM_WRONG = 22;
-    static final int ZSTD_ERROR_DICTIONARY_CORRUPTED = 30;
-    static final int ZSTD_ERROR_DICTIONARY_CREATION_FAILED = 34;
-    static final int ZSTD_ERROR_PARAMETER_UNSUPPORTED = 40;
-    static final int ZSTD_ERROR_PARAMETER_OUT_OF_BOUND = 42;
-    static final int ZSTD_ERROR_TABLE_LOG_TOO_LARGE = 44;
-    static final int ZSTD_ERROR_MAX_SYMBOL_VALUE_TOO_LARGE = 46;
-    static final int ZSTD_ERROR_MAX_SYMBOL_VALUE_TOO_SMALL = 48;
-    static final int ZSTD_ERROR_STAGE_WRONG = 60;
-    static final int ZSTD_ERROR_INIT_MISSING = 62;
-    static final int ZSTD_ERROR_MEMORY_ALLOCATION = 64;
-    static final int ZSTD_ERROR_WORK_SPACE_TOO_SMALL = 66;
-    static final int ZSTD_ERROR_DST_BUFFER_NULL = 74;
+    static final int ZSTD_ERROR_NO_ERROR = readConstant("error_no_error");
+    static final int ZSTD_ERROR_GENERIC = readConstant("error_GENERIC");
+    static final int ZSTD_ERROR_PREFIX_UNKNOWN = readConstant("error_prefix_unknown");
+    static final int ZSTD_ERROR_VERSION_UNSUPPORTED = readConstant("error_version_unsupported");
+    static final int ZSTD_ERROR_FRAME_PARAMETER_UNSUPPORTED = readConstant("error_frameParameter_unsupported");
+    static final int ZSTD_ERROR_FRAME_PARAMETER_WINDOW_TOO_LARGE = readConstant("error_frameParameter_windowTooLarge");
+    static final int ZSTD_ERROR_CORRUPTION_DETECTED = readConstant("error_corruption_detected");
+    static final int ZSTD_ERROR_CHECKSUM_WRONG = readConstant("error_checksum_wrong");
+    static final int ZSTD_ERROR_DICTIONARY_CORRUPTED = readConstant("error_dictionary_corrupted");
+    static final int ZSTD_ERROR_DICTIONARY_CREATION_FAILED = readConstant("error_dictionaryCreation_failed");
+    static final int ZSTD_ERROR_PARAMETER_UNSUPPORTED = readConstant("error_parameter_unsupported");
+    static final int ZSTD_ERROR_PARAMETER_OUT_OF_BOUND = readConstant("error_parameter_outOfBound");
+    static final int ZSTD_ERROR_TABLE_LOG_TOO_LARGE = readConstant("error_tableLog_tooLarge");
+    static final int ZSTD_ERROR_MAX_SYMBOL_VALUE_TOO_LARGE = readConstant("error_maxSymbolValue_tooLarge");
+    static final int ZSTD_ERROR_MAX_SYMBOL_VALUE_TOO_SMALL = readConstant("error_maxSymbolValue_tooSmall");
+    static final int ZSTD_ERROR_STAGE_WRONG = readConstant("error_stage_wrong");
+    static final int ZSTD_ERROR_INIT_MISSING = readConstant("error_init_missing");
+    static final int ZSTD_ERROR_MEMORY_ALLOCATION = readConstant("error_memory_allocation");
+    static final int ZSTD_ERROR_WORK_SPACE_TOO_SMALL = readConstant("error_workSpace_tooSmall");
+    static final int ZSTD_ERROR_DST_BUFFER_NULL = readConstant("error_dstBuffer_null");
 
-    /* zstd.h macros, verified against the vendored headers with jextract.
-     * Maxima follow sizeof(size_t), not the ABI of the machine running jextract. */
-    static final int ZSTD_MAGICNUMBER = 0xFD2FB528;
-    static final int ZSTD_WINDOWLOG_MIN = 10;
-    static final int ZSTD_WINDOWLOG_MAX = SIZE_T_IS_64_BIT ? 31 : 30;
-    static final int ZSTD_HASHLOG_MIN = 6;
-    static final int ZSTD_HASHLOG_MAX = Math.min(ZSTD_WINDOWLOG_MAX, 30);
-    static final int ZSTD_CHAINLOG_MIN = ZSTD_HASHLOG_MIN;
-    static final int ZSTD_CHAINLOG_MAX = SIZE_T_IS_64_BIT ? 30 : 29;
-    static final int ZSTD_SEARCHLOG_MIN = 1;
-    static final int ZSTD_SEARCHLOG_MAX = ZSTD_WINDOWLOG_MAX - 1;
-    static final int ZSTD_BLOCKSIZE_MAX = 1 << 17;
-    static final int ZSTD_CLEVEL_DEFAULT = 3;
+    /* zstd.h macros, evaluated by the native compiler for the target ABI. */
+    static final int ZSTD_MAGICNUMBER = readConstant("MAGICNUMBER");
+    static final int ZSTD_WINDOWLOG_MIN = readConstant("WINDOWLOG_MIN");
+    static final int ZSTD_WINDOWLOG_MAX = readConstant("WINDOWLOG_MAX");
+    static final int ZSTD_HASHLOG_MIN = readConstant("HASHLOG_MIN");
+    static final int ZSTD_HASHLOG_MAX = readConstant("HASHLOG_MAX");
+    static final int ZSTD_CHAINLOG_MIN = readConstant("CHAINLOG_MIN");
+    static final int ZSTD_CHAINLOG_MAX = readConstant("CHAINLOG_MAX");
+    static final int ZSTD_SEARCHLOG_MIN = readConstant("SEARCHLOG_MIN");
+    static final int ZSTD_SEARCHLOG_MAX = readConstant("SEARCHLOG_MAX");
+    static final int ZSTD_BLOCKSIZE_MAX = readConstant("BLOCKSIZE_MAX");
+    static final int ZSTD_CLEVEL_DEFAULT = readConstant("CLEVEL_DEFAULT");
 
     private static final MethodHandle ZSTD_compressBound =
             downcall(
