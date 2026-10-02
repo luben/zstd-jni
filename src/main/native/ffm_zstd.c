@@ -187,3 +187,105 @@ ZSTD_JAVA_API int zstd_java_CLEVEL_DEFAULT(void) {
     return (int) ZSTD_CLEVEL_DEFAULT;
 }
 
+
+/* Configuration parameters and values. */
+ZSTD_JAVA_API int zstd_java_f_zstd1_magicless(void) {
+    return (int) ZSTD_f_zstd1_magicless;
+}
+
+ZSTD_JAVA_API int zstd_java_f_zstd1(void) {
+    return (int) ZSTD_f_zstd1;
+}
+
+ZSTD_JAVA_API int zstd_java_c_format(void) {
+    return (int) ZSTD_c_format;
+}
+
+ZSTD_JAVA_API int zstd_java_c_nbWorkers(void) {
+    return (int) ZSTD_c_nbWorkers;
+}
+
+ZSTD_JAVA_API int zstd_java_c_overlapLog(void) {
+    return (int) ZSTD_c_overlapLog;
+}
+
+ZSTD_JAVA_API int zstd_java_c_jobSize(void) {
+    return (int) ZSTD_c_jobSize;
+}
+
+ZSTD_JAVA_API int zstd_java_c_targetLength(void) {
+    return (int) ZSTD_c_targetLength;
+}
+
+ZSTD_JAVA_API int zstd_java_c_minMatch(void) {
+    return (int) ZSTD_c_minMatch;
+}
+
+ZSTD_JAVA_API int zstd_java_c_searchLog(void) {
+    return (int) ZSTD_c_searchLog;
+}
+
+ZSTD_JAVA_API int zstd_java_c_chainLog(void) {
+    return (int) ZSTD_c_chainLog;
+}
+
+ZSTD_JAVA_API int zstd_java_c_hashLog(void) {
+    return (int) ZSTD_c_hashLog;
+}
+
+ZSTD_JAVA_API int zstd_java_c_windowLog(void) {
+    return (int) ZSTD_c_windowLog;
+}
+
+ZSTD_JAVA_API int zstd_java_c_strategy(void) {
+    return (int) ZSTD_c_strategy;
+}
+
+ZSTD_JAVA_API int zstd_java_d_windowLogMax(void) {
+    return (int) ZSTD_d_windowLogMax;
+}
+
+ZSTD_JAVA_API int zstd_java_d_format(void) {
+    return (int) ZSTD_d_format;
+}
+
+ZSTD_JAVA_API int zstd_java_rmd_refMultipleDDicts(void) {
+    return (int) ZSTD_rmd_refMultipleDDicts;
+}
+
+ZSTD_JAVA_API int zstd_java_rmd_refSingleDDict(void) {
+    return (int) ZSTD_rmd_refSingleDDict;
+}
+
+ZSTD_JAVA_API int zstd_java_d_refMultipleDDicts(void) {
+    return (int) ZSTD_d_refMultipleDDicts;
+}
+
+ZSTD_JAVA_API int zstd_java_c_validateSequences(void) {
+    return (int) ZSTD_c_validateSequences;
+}
+
+ZSTD_JAVA_API int zstd_java_c_enableSeqProducerFallback(void) {
+    return (int) ZSTD_c_enableSeqProducerFallback;
+}
+
+ZSTD_JAVA_API int zstd_java_c_searchForExternalRepcodes(void) {
+    return (int) ZSTD_c_searchForExternalRepcodes;
+}
+
+ZSTD_JAVA_API int zstd_java_c_enableLongDistanceMatching(void) {
+    return (int) ZSTD_c_enableLongDistanceMatching;
+}
+
+ZSTD_JAVA_API int zstd_java_WINDOWLOG_LIMIT_DEFAULT(void) {
+    return (int) ZSTD_WINDOWLOG_LIMIT_DEFAULT;
+}
+
+ZSTD_JAVA_API int zstd_java_ps_enable(void) {
+    return (int) ZSTD_ps_enable;
+}
+
+ZSTD_JAVA_API int zstd_java_ps_disable(void) {
+    return (int) ZSTD_ps_disable;
+}
+

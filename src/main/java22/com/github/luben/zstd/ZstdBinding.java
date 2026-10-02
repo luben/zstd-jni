@@ -187,6 +187,42 @@ final class ZstdBinding {
     static final int ZSTD_BLOCKSIZE_MAX = readConstant("BLOCKSIZE_MAX");
     static final int ZSTD_CLEVEL_DEFAULT = readConstant("CLEVEL_DEFAULT");
 
+    /* Parameters and enum values used by Zstd configuration methods. */
+    static final int ZSTD_F_ZSTD1_MAGICLESS = readConstant("f_zstd1_magicless");
+    static final int ZSTD_F_ZSTD1 = readConstant("f_zstd1");
+    static final int ZSTD_C_FORMAT = readConstant("c_format");
+    static final int ZSTD_C_NB_WORKERS = readConstant("c_nbWorkers");
+    static final int ZSTD_C_OVERLAP_LOG = readConstant("c_overlapLog");
+    static final int ZSTD_C_JOB_SIZE = readConstant("c_jobSize");
+    static final int ZSTD_C_TARGET_LENGTH = readConstant("c_targetLength");
+    static final int ZSTD_C_MIN_MATCH = readConstant("c_minMatch");
+    static final int ZSTD_C_SEARCH_LOG = readConstant("c_searchLog");
+    static final int ZSTD_C_CHAIN_LOG = readConstant("c_chainLog");
+    static final int ZSTD_C_HASH_LOG = readConstant("c_hashLog");
+    static final int ZSTD_C_WINDOW_LOG = readConstant("c_windowLog");
+    static final int ZSTD_C_STRATEGY = readConstant("c_strategy");
+    static final int ZSTD_D_WINDOW_LOG_MAX = readConstant("d_windowLogMax");
+    static final int ZSTD_D_FORMAT = readConstant("d_format");
+    static final int ZSTD_RMD_REF_MULTIPLE_DDICTS = readConstant("rmd_refMultipleDDicts");
+    static final int ZSTD_RMD_REF_SINGLE_DDICT = readConstant("rmd_refSingleDDict");
+    static final int ZSTD_D_REF_MULTIPLE_DDICTS = readConstant("d_refMultipleDDicts");
+    static final int ZSTD_C_VALIDATE_SEQUENCES = readConstant("c_validateSequences");
+    static final int ZSTD_C_ENABLE_SEQ_PRODUCER_FALLBACK = readConstant("c_enableSeqProducerFallback");
+    static final int ZSTD_C_SEARCH_FOR_EXTERNAL_REPCODES = readConstant("c_searchForExternalRepcodes");
+    static final int ZSTD_C_ENABLE_LONG_DISTANCE_MATCHING = readConstant("c_enableLongDistanceMatching");
+    static final int ZSTD_WINDOWLOG_LIMIT_DEFAULT = readConstant("WINDOWLOG_LIMIT_DEFAULT");
+    static final int ZSTD_PS_ENABLE = readConstant("ps_enable");
+    static final int ZSTD_PS_DISABLE = readConstant("ps_disable");
+
+    private static final MethodHandle ZSTD_DCtx_setParameter =
+            downcall("ZSTD_DCtx_setParameter",
+                    FunctionDescriptor.of(C_SIZE_T, ValueLayout.ADDRESS, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT),
+                    MethodType.methodType(long.class, MemorySegment.class, int.class, int.class));
+    private static final MethodHandle ZSTD_registerSequenceProducer =
+            downcall("ZSTD_registerSequenceProducer",
+                    FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS),
+                    MethodType.methodType(void.class, MemorySegment.class, MemorySegment.class, MemorySegment.class));
+
     private static final MethodHandle ZSTD_compressBound =
             downcall(
                     "ZSTD_compressBound",
@@ -656,6 +692,23 @@ final class ZstdBinding {
             return (long) ZSTD_initCStream.invokeExact(cctx, level);
         } catch (Throwable t) {
             throw new AssertionError("Call to ZSTD_initCStream failed", t);
+        }
+    }
+
+    static long setDCtxParameter(@NotNull MemorySegment dctx, int param, int value) {
+        try {
+            return (long) ZSTD_DCtx_setParameter.invokeExact(dctx, param, value);
+        } catch (Throwable t) {
+            throw new AssertionError("Call to ZSTD_DCtx_setParameter failed", t);
+        }
+    }
+
+    static void registerSequenceProducer(@NotNull MemorySegment cctx, @NotNull MemorySegment state,
+                                         @NotNull MemorySegment function) {
+        try {
+            ZSTD_registerSequenceProducer.invokeExact(cctx, state, function);
+        } catch (Throwable t) {
+            throw new AssertionError("Call to ZSTD_registerSequenceProducer failed", t);
         }
     }
 
