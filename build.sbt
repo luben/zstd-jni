@@ -551,13 +551,11 @@ lazy val testFromJarSetup = taskKey[Unit]("Package the jar and compile the tests
 // packageBin would rebuild libzstd (gcc+LTO) every run - testFromJarSetup does it once.
 lazy val testFromJar = inputKey[Unit]("Run the test suite against the packaged jar under the given JDK")
 
-// One task rather than two commands: sbt would rebuild the native library for each
-// of them, and this way the whole graph - jniCompile included - runs once.
-testFromJarSetup := {
-  val _  = (Compile / packageBin).value
-  // `products`, not `compile`: it also copies the test resources into place.
-  val __ = (Test / products).value
-}
+// Test preparation can rebuild the native library in target/classes. Finish it
+// before packaging reads that file: sibling .value dependencies run in parallel
+// and can otherwise put a truncated, still-being-linked library into the jar.
+// `products`, not `compile`, also copies the test resources into place.
+testFromJarSetup := Def.sequential(Test / products, Compile / packageBin).value
 
 testFromJar := {
   val log  = streams.value.log
