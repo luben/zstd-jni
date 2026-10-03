@@ -19,8 +19,7 @@ public class ZstdDirectBufferCompressingStreamNoFinalizer implements Closeable, 
 
     private @Nullable ByteBuffer target;
 
-    /* The ZSTD_CStream as a downcall argument. No `long stream` beside it, unlike the
-     * other FFM classes: nothing here passes the pointer to a native still on JNI. */
+    /* The ZSTD_CStream as a downcall argument, and the class's only pointer state. */
     private final @NotNull MemorySegment cstream;
 
     /**

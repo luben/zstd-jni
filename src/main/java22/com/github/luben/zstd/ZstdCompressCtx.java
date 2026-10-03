@@ -18,8 +18,8 @@ public class ZstdCompressCtx extends AutoCloseBase {
     private long nativePtr = 0;
 
     /* The same ZSTD_CCtx as `nativePtr`, in the shape a downcall takes. Both are kept:
-     * the parameter setters below still go through Zstd's JNI natives, which want the
-     * raw pointer. `nativePtr` stays the closed flag, as in the JNI implementation. */
+     * many Zstd.* methods the setters below call still take the pointer as a long.
+     * `nativePtr` stays the closed flag, as in the JNI implementation. */
     @NotNull
     private MemorySegment cctx = MemorySegment.NULL;
 

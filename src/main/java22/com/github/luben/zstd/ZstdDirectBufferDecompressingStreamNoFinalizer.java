@@ -21,8 +21,9 @@ public class ZstdDirectBufferDecompressingStreamNoFinalizer extends BaseZstdBuff
     private final @NotNull ZstdBinding.SizeTRef srcPos = ZstdBinding.newSizeTRef();
 
     /* The ZSTD_DCtx as a downcall argument, assigned by createDStream(). The same
-     * pointer is in the inherited `stream` field as a long, which setDict and
-     * setLongMax hand to the Zstd.* natives still on JNI. */
+     * pointer is in the shared base class's `stream` field as a long, which its
+     * setDict and setLongMax hand to the long-based Zstd.* methods. Kept so the
+     * per-call downcalls need not rewrap that long. */
     private @NotNull MemorySegment dstream;
 
     public ZstdDirectBufferDecompressingStreamNoFinalizer(@NotNull ByteBuffer source) {
