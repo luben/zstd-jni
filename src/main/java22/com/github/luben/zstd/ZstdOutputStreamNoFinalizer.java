@@ -21,8 +21,8 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
         Native.load();
     }
 
-    /* Opaque pointer to Zstd context object. Kept only for the Zstd.setCompression*
-     * natives, which are still JNI and take a long. */
+    /* Opaque pointer to Zstd context object. Kept because many Zstd.* methods called
+     * below still take the pointer as a long. */
     private final long stream;
     /* The same pointer, as a downcall argument */
     private final @NotNull MemorySegment cstream;

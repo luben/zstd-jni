@@ -14,8 +14,8 @@ public class ZstdDictDecompress extends SharedDictBase {
         Native.load();
     }
 
-    /* Zstd.loadFastDict* still uses JNI and reads this exact long field. Keep it
-     * as the sole pointer state until Zstd itself is migrated. */
+    /* The sole pointer state, kept as a long: nativePtr() hands it to Zstd.loadFastDict*
+     * and the contexts/streams, which take or rewrap the pointer as a long. */
     private long nativePtr = 0L;
 
     private ByteBuffer sharedDict = null;

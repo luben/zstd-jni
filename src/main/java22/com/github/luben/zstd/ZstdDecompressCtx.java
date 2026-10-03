@@ -18,8 +18,8 @@ public class ZstdDecompressCtx extends AutoCloseBase {
     private long nativePtr = 0;
 
     /* The same ZSTD_DCtx as `nativePtr`, in the shape a downcall takes. Both are kept:
-     * setMagicless still goes through Zstd's JNI native, which wants the raw pointer.
-     * `nativePtr` stays the closed flag, as in the JNI implementation. */
+     * setMagicless goes through Zstd.setDecompressionMagicless, which takes the pointer
+     * as a long. `nativePtr` stays the closed flag, as in the JNI implementation. */
     @NotNull
     private MemorySegment dctx = MemorySegment.NULL;
 
