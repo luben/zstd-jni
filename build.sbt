@@ -87,7 +87,7 @@ jniGccFlags := (
       else Seq("-Wl,--version-script=" + PWD + "/libzstd-jni.so.map")
     jniGccFlags.value.filterNot(_ == "-fPIC") ++
       Seq("-D_JNI_IMPLEMENTATION_", "-Wl,--kill-at",
-        // Exports ZSTD_* for FFM's symbol lookups. jni_md.h's JNIEXPORT dllexport turns
+        // Exports ZSTD_* and ZDICT_* for FFM's symbol lookups. jni_md.h's JNIEXPORT dllexport turns
         // ld's auto-export off, and on PE the version script can only filter, not add.
         "-DZSTD_DLL_EXPORT=1",
         "-static-libgcc") ++ versionScript

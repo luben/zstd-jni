@@ -1589,6 +1589,28 @@ class ZstdSpec extends AnyFlatSpec with ScalaCheckPropertyChecks {
     }.get
   }
 
+  "magicless frames" should "report their content size from a direct buffer at an offset" in {
+    Using.Manager { use =>
+      val cctx = use(new ZstdCompressCtx())
+      cctx.setMagicless(true)
+      forAll { input: Array[Byte] =>
+        {
+          val compressed = cctx.compress(input)
+          val offset = 7
+          val direct = ByteBuffer.allocateDirect(offset + compressed.length)
+          direct.position(offset)
+          direct.put(compressed)
+          assert(input.length == Zstd.getDirectByteBufferFrameContentSize(direct, offset, compressed.length, true))
+          // position/limit are ignored and left untouched
+          assert(direct.position() == offset + compressed.length)
+
+          val heap = ByteBuffer.allocate(offset + compressed.length)
+          assert(Zstd.getDirectByteBufferFrameContentSize(heap, offset, compressed.length, true) == -1)
+        }
+      }
+    }.get
+  }
+
   "advanced compression api" should "produce the same file as binary zstd" in {
     Using.Manager { use =>
       val file = new File("src/test/resources/xml")

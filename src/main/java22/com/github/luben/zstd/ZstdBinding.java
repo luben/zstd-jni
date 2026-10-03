@@ -364,6 +364,21 @@ final class ZstdBinding {
                             MemorySegment.class,
                             MemorySegment.class, long.class,
                             MemorySegment.class, long.class));
+    /* Not critical: for callers whose JNI counterpart passes raw native addresses and
+     * pins nothing (Zstd.compressUnsafe, ZstdCompressCtx.compressDirectByteBuffer0). A critical call blocks GC for its whole
+     * duration, which JNI never did on these paths. */
+    private static final MethodHandle ZSTD_compress2_native =
+            downcall(
+                    "ZSTD_compress2",
+                    FunctionDescriptor.of(
+                            C_SIZE_T,
+                            ValueLayout.ADDRESS,                                       // ZSTD_CCtx* cctx
+                            ValueLayout.ADDRESS, C_SIZE_T,                             // dst, dstCapacity
+                            ValueLayout.ADDRESS, C_SIZE_T),                            // src, srcSize
+                    MethodType.methodType(long.class,
+                            MemorySegment.class,
+                            MemorySegment.class, long.class,
+                            MemorySegment.class, long.class));
 
     /* ZSTD_frameProgression, returned by value. C_LONG_LONG rather than
      * ValueLayout.JAVA_LONG for the reason C_SIZE_T exists: a descriptor has to describe
@@ -507,6 +522,196 @@ final class ZstdBinding {
                             MemorySegment.class,
                             MemorySegment.class, long.class,
                             MemorySegment.class, long.class));
+    /* Not critical: for ZstdDecompressCtx.decompressDirectByteBuffer0, whose JNI
+     * counterpart passes direct-buffer addresses and pins nothing. */
+    private static final MethodHandle ZSTD_decompressDCtx_native =
+            downcall(
+                    "ZSTD_decompressDCtx",
+                    FunctionDescriptor.of(
+                            C_SIZE_T,
+                            ValueLayout.ADDRESS,                                       // ZSTD_DCtx* dctx
+                            ValueLayout.ADDRESS, C_SIZE_T,                             // dst, dstCapacity
+                            ValueLayout.ADDRESS, C_SIZE_T),                            // src, srcSize
+                    MethodType.methodType(long.class,
+                            MemorySegment.class,
+                            MemorySegment.class, long.class,
+                            MemorySegment.class, long.class));
+
+    /* Verified against jextract and the vendored zdict.h, including the nested
+     * struct passed by value to the legacy trainer. */
+    private static final MemoryLayout ZDICT_PARAMS = MemoryLayout.structLayout(
+            ValueLayout.JAVA_INT.withName("compressionLevel"),
+            ValueLayout.JAVA_INT.withName("notificationLevel"),
+            ValueLayout.JAVA_INT.withName("dictID"));
+    private static final MemoryLayout ZDICT_LEGACY_PARAMS = MemoryLayout.structLayout(
+            ValueLayout.JAVA_INT.withName("selectivityLevel"),
+            ZDICT_PARAMS.withName("zParams"));
+    private static final long LEGACY_COMPRESSION_LEVEL = ZDICT_LEGACY_PARAMS.byteOffset(
+            MemoryLayout.PathElement.groupElement("zParams"),
+            MemoryLayout.PathElement.groupElement("compressionLevel"));
+
+    private static final MethodHandle ZSTD_findFrameCompressedSize =
+            downcallCritical("ZSTD_findFrameCompressedSize",
+                    FunctionDescriptor.of(C_SIZE_T, ValueLayout.ADDRESS, C_SIZE_T),
+                    MethodType.methodType(long.class, MemorySegment.class, long.class));
+    // Not critical: for direct buffers, whose JNI counterpart pins nothing.
+    private static final MethodHandle ZSTD_findFrameCompressedSize_native =
+            downcall("ZSTD_findFrameCompressedSize",
+                    FunctionDescriptor.of(C_SIZE_T, ValueLayout.ADDRESS, C_SIZE_T),
+                    MethodType.methodType(long.class, MemorySegment.class, long.class));
+    /* JNI_ZSTD_decompressedSize, ported to ffm_zstd.c. Critical for byte[] (JNI pins
+     * with GetPrimitiveArrayCritical); plain for direct buffers, which JNI does not pin. */
+    private static final MethodHandle zstd_java_decompressedSize =
+            downcallCritical("zstd_java_decompressedSize",
+                    FunctionDescriptor.of(C_SIZE_T, ValueLayout.ADDRESS, C_SIZE_T, ValueLayout.JAVA_INT),
+                    MethodType.methodType(long.class, MemorySegment.class, long.class, int.class));
+    private static final MethodHandle zstd_java_decompressedSize_native =
+            downcall("zstd_java_decompressedSize",
+                    FunctionDescriptor.of(C_SIZE_T, ValueLayout.ADDRESS, C_SIZE_T, ValueLayout.JAVA_INT),
+                    MethodType.methodType(long.class, MemorySegment.class, long.class, int.class));
+    private static final MethodHandle ZSTD_getDictID_fromFrame =
+            downcallCritical("ZSTD_getDictID_fromFrame",
+                    FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, C_SIZE_T),
+                    MethodType.methodType(long.class, MemorySegment.class, long.class));
+    // Not critical: for direct buffers, whose JNI counterpart pins nothing.
+    private static final MethodHandle ZSTD_getDictID_fromFrame_native =
+            downcall("ZSTD_getDictID_fromFrame",
+                    FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, C_SIZE_T),
+                    MethodType.methodType(long.class, MemorySegment.class, long.class));
+    private static final MethodHandle ZSTD_getDictID_fromDict =
+            downcallCritical("ZSTD_getDictID_fromDict",
+                    FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, C_SIZE_T),
+                    MethodType.methodType(long.class, MemorySegment.class, long.class));
+    private static final MethodHandle ZSTD_decompress =
+            downcall("ZSTD_decompress",
+                    FunctionDescriptor.of(C_SIZE_T, ValueLayout.ADDRESS, C_SIZE_T, ValueLayout.ADDRESS, C_SIZE_T),
+                    MethodType.methodType(long.class, MemorySegment.class, long.class, MemorySegment.class, long.class));
+    // Training may run for a long time: use ordinary calls with native buffers.
+    // This fork's default trainer has a sixth argument, compressionLevel.
+    private static final MethodHandle ZDICT_trainFromBuffer =
+            downcall("ZDICT_trainFromBuffer",
+                    FunctionDescriptor.of(C_SIZE_T, ValueLayout.ADDRESS, C_SIZE_T,
+                            ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT),
+                    MethodType.methodType(long.class, MemorySegment.class, long.class,
+                            MemorySegment.class, MemorySegment.class, int.class, int.class));
+    private static final MethodHandle ZDICT_trainFromBuffer_legacy =
+            downcall("ZDICT_trainFromBuffer_legacy",
+                    FunctionDescriptor.of(C_SIZE_T, ValueLayout.ADDRESS, C_SIZE_T,
+                            ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.JAVA_INT, ZDICT_LEGACY_PARAMS),
+                    MethodType.methodType(long.class, MemorySegment.class, long.class,
+                            MemorySegment.class, MemorySegment.class, int.class, MemorySegment.class));
+
+    static long findFrameCompressedSize(MemorySegment src, long size) {
+        try {
+            return (long) ZSTD_findFrameCompressedSize.invokeExact(src, size);
+        } catch (Throwable t) {
+            throw new AssertionError("Call to ZSTD_findFrameCompressedSize failed", t);
+        }
+    }
+
+    /** {@link #findFrameCompressedSize} without critical mode; `src` must be a native segment. */
+    static long findFrameCompressedSizeNative(MemorySegment src, long size) {
+        try {
+            return (long) ZSTD_findFrameCompressedSize_native.invokeExact(src, size);
+        } catch (Throwable t) {
+            throw new AssertionError("Call to ZSTD_findFrameCompressedSize failed", t);
+        }
+    }
+
+    static long getDictIDFromFrame(MemorySegment src, long size) {
+        try {
+            return (long) ZSTD_getDictID_fromFrame.invokeExact(src, size);
+        } catch (Throwable t) {
+            throw new AssertionError("Call to ZSTD_getDictID_fromFrame failed", t);
+        }
+    }
+
+    /** {@link #getDictIDFromFrame} without critical mode; `src` must be a native segment. */
+    static long getDictIDFromFrameNative(MemorySegment src, long size) {
+        try {
+            return (long) ZSTD_getDictID_fromFrame_native.invokeExact(src, size);
+        } catch (Throwable t) {
+            throw new AssertionError("Call to ZSTD_getDictID_fromFrame failed", t);
+        }
+    }
+
+    static long getDictIDFromDict(MemorySegment src, long size) {
+        try {
+            return (long) ZSTD_getDictID_fromDict.invokeExact(src, size);
+        } catch (Throwable t) {
+            throw new AssertionError("Call to ZSTD_getDictID_fromDict failed", t);
+        }
+    }
+
+    static long decompress(MemorySegment dst, long capacity, MemorySegment src, long size) {
+        try {
+            return (long) ZSTD_decompress.invokeExact(dst, capacity, src, size);
+        } catch (Throwable t) {
+            throw new AssertionError("Call to ZSTD_decompress failed", t);
+        }
+    }
+
+    // A negative error code stored into a C size_t: on 32-bit it zero-extends
+    // when widened to jlong. Preserve that narrowing.
+    static long asSizeT(long value) {
+        return SIZE_T_IS_64_BIT ? value : Integer.toUnsignedLong((int) value);
+    }
+
+    static long frameContentSize(MemorySegment src, long size, boolean magicless) {
+        try {
+            return (long) zstd_java_decompressedSize.invokeExact(src, size, magicless ? 1 : 0);
+        } catch (Throwable t) {
+            throw new AssertionError("Call to zstd_java_decompressedSize failed", t);
+        }
+    }
+
+    /** {@link #frameContentSize} without critical mode; `src` must be a native segment. */
+    static long frameContentSizeNative(MemorySegment src, long size, boolean magicless) {
+        try {
+            return (long) zstd_java_decompressedSize_native.invokeExact(src, size, magicless ? 1 : 0);
+        } catch (Throwable t) {
+            throw new AssertionError("Call to zstd_java_decompressedSize failed", t);
+        }
+    }
+
+    static MemorySegment allocateTrainingBuffer(Arena arena, long bytes) {
+        // Do not truncate a packed buffer allocation on a 32-bit platform.
+        if (bytes != asSizeT(bytes)) {
+            throw new OutOfMemoryError("native heap");
+        }
+        return arena.allocate(bytes, C_SIZE_T.byteAlignment());
+    }
+
+    static MemorySegment allocateSampleSizes(Arena arena, int count) {
+        return allocateTrainingBuffer(arena, count * C_SIZE_T.byteSize());
+    }
+
+    static void setSampleSize(MemorySegment sizes, int index, int size) {
+        if (SIZE_T_IS_64_BIT) {
+            sizes.setAtIndex((ValueLayout.OfLong) C_SIZE_T, index, (long) size);
+        } else {
+            sizes.setAtIndex((ValueLayout.OfInt) C_SIZE_T, index, size);
+        }
+    }
+
+    static long trainDictionary(Arena arena, MemorySegment dst, MemorySegment samples,
+                                MemorySegment sizes, int count, boolean legacy, int level) {
+        MemorySegment params = MemorySegment.NULL;
+        if (legacy) {
+            params = arena.allocate(ZDICT_LEGACY_PARAMS); // Zero initialized, as in JNI.
+            params.set(ValueLayout.JAVA_INT, LEGACY_COMPRESSION_LEVEL, level);
+        }
+        try {
+            if (legacy) {
+                return (long) ZDICT_trainFromBuffer_legacy.invokeExact(
+                        dst, dst.byteSize(), samples, sizes, count, params);
+            }
+            return (long) ZDICT_trainFromBuffer.invokeExact(
+                    dst, dst.byteSize(), samples, sizes, count, level);
+        } catch (Throwable t) {
+            throw new AssertionError("Call to dictionary trainer failed", t);
+        }
+    }
 
     private static MethodHandle downcall(@NotNull String name,
                                          @NotNull FunctionDescriptor descriptor,
@@ -777,6 +982,17 @@ final class ZstdBinding {
         }
     }
 
+    /** {@link #compress2} without critical mode; `dst` and `src` must be native segments. */
+    static long compress2Native(@NotNull MemorySegment cctx,
+                                @NotNull MemorySegment dst, long dstCapacity,
+                                @NotNull MemorySegment src, long srcSize) {
+        try {
+            return (long) ZSTD_compress2_native.invokeExact(cctx, dst, dstCapacity, src, srcSize);
+        } catch (Throwable t) {
+            throw new AssertionError("Call to ZSTD_compress2 failed", t);
+        }
+    }
+
     /**
      * The buffer {@code ZSTD_getFrameProgression} writes its result into.
      * <p>
@@ -960,6 +1176,17 @@ final class ZstdBinding {
                                @NotNull MemorySegment src, long srcSize) {
         try {
             return (long) ZSTD_decompressDCtx.invokeExact(dctx, dst, dstCapacity, src, srcSize);
+        } catch (Throwable t) {
+            throw new AssertionError("Call to ZSTD_decompressDCtx failed", t);
+        }
+    }
+
+    /** {@link #decompressDCtx} without critical mode; `dst` and `src` must be native segments. */
+    static long decompressDCtxNative(@NotNull MemorySegment dctx,
+                                     @NotNull MemorySegment dst, long dstCapacity,
+                                     @NotNull MemorySegment src, long srcSize) {
+        try {
+            return (long) ZSTD_decompressDCtx_native.invokeExact(dctx, dst, dstCapacity, src, srcSize);
         } catch (Throwable t) {
             throw new AssertionError("Call to ZSTD_decompressDCtx failed", t);
         }
