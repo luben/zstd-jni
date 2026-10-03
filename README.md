@@ -57,13 +57,14 @@ changing the class names will lead to failed linking at runtime.
 Foreign Function & Memory API
 -----------------------------
 
-Some classes are being ported from JNI to the Foreign Function & Memory API
-([JEP 454](https://openjdk.org/jeps/454)). The ported versions are compiled
-for JDK 22 and shipped inside the same Jar under `META-INF/versions/22`,
-which makes it a Multi-Release Jar: a JDK 22+ runtime loads them, anything
-older keeps loading the JNI implementation from the Jar root. The public API
-and the behaviour are identical either way, so there is nothing to configure
-and nothing to change in your code.
+The library's native operations have been ported from JNI to the Foreign
+Function & Memory API ([JEP 454](https://openjdk.org/jeps/454)). Every class
+that calls into libzstd has an FFM version. These are compiled for JDK 22 and
+shipped inside the same Jar under `META-INF/versions/22`, which makes it a
+Multi-Release Jar: a JDK 22+ runtime loads them, anything older keeps loading
+the JNI implementation from the Jar root. The public API and the behaviour are
+identical either way, so there is nothing to configure and nothing to change in
+your code.
 
 If you need to force the JNI implementation on a JDK 22+ runtime, start the
 JVM with:
