@@ -322,7 +322,7 @@ public class ZstdDecompressCtx extends AutoCloseBase {
         if (srcOffset + srcSize > src.capacity()) return -ZstdBinding.ZSTD_ERROR_SRC_SIZE_WRONG;
 
         ZstdBinding.resetDCtx(dctx, ZstdBinding.ZSTD_RESET_SESSION_ONLY);
-        return ZstdBinding.decompressDCtx(dctx,
+        return ZstdBinding.decompressDCtxNative(dctx,
                 directSegment(dst).asSlice(dstOffset, dstSize), dstSize,
                 directSegment(src).asSlice(srcOffset, srcSize), srcSize);
     }

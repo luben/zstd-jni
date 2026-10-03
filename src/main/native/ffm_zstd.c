@@ -289,3 +289,19 @@ ZSTD_JAVA_API int zstd_java_ps_disable(void) {
     return (int) ZSTD_ps_disable;
 }
 
+
+/* JNI_ZSTD_decompressedSize (jni_zstd.c) verbatim, for FFM. The frame header
+ * lives on the C stack, so Java needs no struct layout or buffer, and the
+ * size_t return reproduces the JNI narrowing on 32-bit platforms. */
+ZSTD_JAVA_API size_t zstd_java_decompressedSize(const void* buf, size_t bufSize, int magicless) {
+    if (magicless) {
+        ZSTD_frameHeader frameHeader;
+        if (ZSTD_getFrameHeader_advanced(&frameHeader, buf, bufSize, ZSTD_f_zstd1_magicless) != 0) {
+            return 0;
+        }
+        // note that skippable frames must have a magic number, so we don't need to consider that here
+        return frameHeader.frameContentSize;
+    }
+
+    return ZSTD_getFrameContentSize(buf, bufSize);
+}

@@ -4,6 +4,7 @@ import com.github.luben.zstd.util.Native;
 
 import org.jetbrains.annotations.NotNull;
 
+import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.lang.ref.Reference;
 import java.nio.ByteBuffer;
@@ -12,9 +13,7 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Java 22 implementation. Constants, configuration, dictionary attachment and
- * basic queries use FFM. Native declarations for frame inspection, unsafe
- * operations and training remain until the next migration step.
+ * Java 22 implementation using FFM for native operations.
  */
 public class Zstd {
     private static final @NotNull String maxDecompressSizeOverride = "ZstdMaxDecompressSize";
@@ -226,7 +225,16 @@ public class Zstd {
      * @return  the number of bytes written into buffer 'dst' or an error code if
      *          it fails (which can be tested using ZSTD_isError())
      */
-    public static native long compressUnsafe(long dst, long dstSize, long src, long srcSize, int level, boolean checksumFlag);
+    public static long compressUnsafe(long dst, long dstSize, long src, long srcSize, int level, boolean checksumFlag) {
+        MemorySegment cctx = ZstdBinding.createCCtx();
+        try {
+            ZstdBinding.setCCtxParameter(cctx, ZstdBinding.ZSTD_C_COMPRESSION_LEVEL, level);
+            ZstdBinding.setCCtxParameter(cctx, ZstdBinding.ZSTD_C_CHECKSUM_FLAG, checksumFlag ? 1 : 0);
+            return ZstdBinding.compress2Native(cctx, MemorySegment.ofAddress(dst), dstSize, MemorySegment.ofAddress(src), srcSize);
+        } finally {
+            ZstdBinding.freeCCtx(cctx);
+        }
+    }
 
     /**
      * Compresses buffer 'src' into direct buffer 'dst'.
@@ -515,7 +523,9 @@ public class Zstd {
      *          or an errorCode if it fails (which can be tested using ZSTD_isError())
      *
      */
-    public static native long decompressUnsafe(long dst, long dstSize, long src, long srcSize);
+    public static long decompressUnsafe(long dst, long dstSize, long src, long srcSize) {
+        return ZstdBinding.decompress(MemorySegment.ofAddress(dst), dstSize, MemorySegment.ofAddress(src), srcSize);
+    }
 
     /**
      * Decompresses buffer 'src' into buffer 'dst' with dictionary.
@@ -800,7 +810,9 @@ public class Zstd {
         return size;
     }
 
-    private static native long findFrameCompressedSize0(byte @NotNull [] src, int srcPosition, int srcSize);
+    private static long findFrameCompressedSize0(byte @NotNull [] src, int srcPosition, int srcSize) {
+        return ZstdBinding.findFrameCompressedSize(MemorySegment.ofArray(src).asSlice(srcPosition), srcSize);
+    }
 
     /**
      * Return the compressed size of a frame within a buffer.
@@ -847,7 +859,17 @@ public class Zstd {
      * @return the number of bytes of the compressed frame
      *         negative if there is an error decoding the frame header
      */
-    public static native long findDirectByteBufferFrameCompressedSize(@NotNull ByteBuffer src, int srcPosition, int srcSize);
+    public static long findDirectByteBufferFrameCompressedSize(@NotNull ByteBuffer src, int srcPosition, int srcSize) {
+        int capacity = src != null && src.isDirect() ? src.capacity() : -1;
+        if (srcPosition < 0 || srcSize < 0 || srcPosition > capacity - srcSize) {
+            return -ZstdBinding.ZSTD_ERROR_GENERIC;
+        }
+        MemorySegment source = fullBuffer(src);
+        if (source.address() == 0) {
+            return ZstdBinding.asSizeT(-ZstdBinding.ZSTD_ERROR_MEMORY_ALLOCATION);
+        }
+        return ZstdBinding.findFrameCompressedSizeNative(source.asSlice(srcPosition), srcSize);
+    }
 
     /**
      * Return the original size of a compressed buffer (if known)
@@ -870,7 +892,9 @@ public class Zstd {
         return getFrameContentSize0(src, srcPosition, srcSize, magicless);
     }
 
-    private static native long getFrameContentSize0(byte @NotNull [] src, int srcPosition, int srcSize, boolean magicless);
+    private static long getFrameContentSize0(byte @NotNull [] src, int srcPosition, int srcSize, boolean magicless) {
+        return ZstdBinding.frameContentSize(MemorySegment.ofArray(src).asSlice(srcPosition), srcSize, magicless);
+    }
 
     /**
      * Return the original size of a compressed buffer (if known)
@@ -895,7 +919,10 @@ public class Zstd {
         return decompressedSize0(src, srcPosition, srcSize, magicless);
     }
 
-    private static native long decompressedSize0(byte @NotNull [] src, int srcPosition, int srcSize, boolean magicless);
+    private static long decompressedSize0(byte @NotNull [] src, int srcPosition, int srcSize, boolean magicless) {
+        // JNI tests an unsigned size_t <= 0: only zero is clamped, not error sentinels.
+        return getFrameContentSize0(src, srcPosition, srcSize, magicless);
+    }
 
     /**
      * Return the original size of a compressed buffer (if known)
@@ -994,7 +1021,10 @@ public class Zstd {
      * Use `getDirectByteBufferFrameContentSize` to also return error codes from zstd
      */
     @Deprecated
-    public static native long decompressedDirectByteBufferSize(@NotNull ByteBuffer src, int srcPosition, int srcSize, boolean magicless);
+    public static long decompressedDirectByteBufferSize(@NotNull ByteBuffer src, int srcPosition, int srcSize, boolean magicless) {
+        // Same unsigned-zero check as decompressedSize0 in JNI.
+        return getDirectByteBufferFrameContentSize(src, srcPosition, srcSize, magicless);
+    }
 
     /**
      * Return the original size of a compressed buffer (if known)
@@ -1007,7 +1037,17 @@ public class Zstd {
      *         0 if the original size is not known
      *         negative if there is an error decoding the frame header
      */
-    public static native long getDirectByteBufferFrameContentSize(@NotNull ByteBuffer src, int srcPosition, int srcSize, boolean magicless);
+    public static long getDirectByteBufferFrameContentSize(@NotNull ByteBuffer src, int srcPosition, int srcSize, boolean magicless) {
+        int capacity = src != null && src.isDirect() ? src.capacity() : -1;
+        if (srcPosition < 0 || srcSize < 0 || srcPosition > capacity - srcSize) {
+            return -ZstdBinding.ZSTD_ERROR_GENERIC;
+        }
+        MemorySegment source = fullBuffer(src);
+        if (source.address() == 0) {
+            return ZstdBinding.asSizeT(-ZstdBinding.ZSTD_ERROR_MEMORY_ALLOCATION);
+        }
+        return ZstdBinding.frameContentSizeNative(source.asSlice(srcPosition), srcSize, magicless);
+    }
 
     /**
      * Return the original size of a compressed buffer (if known)
@@ -1172,7 +1212,32 @@ public class Zstd {
         }
         return trainFromBuffer0(samples, dictBuffer, legacy, compressionLevel);
     }
-    private static native long trainFromBuffer0(byte @NotNull [][] samples, byte @NotNull [] dictBuffer, boolean legacy, int compressionLevel);
+    private static long trainFromBuffer0(byte @NotNull [][] samples, byte @NotNull [] dictBuffer, boolean legacy, int compressionLevel) {
+        try (Arena arena = Arena.ofConfined()) {
+            MemorySegment sizes = ZstdBinding.allocateSampleSizes(arena, samples.length);
+            long total = 0;
+            for (int i = 0; i < samples.length; i++) {
+                ZstdBinding.setSampleSize(sizes, i, samples[i].length);
+                total += samples[i].length;
+            }
+            MemorySegment packed = ZstdBinding.allocateTrainingBuffer(arena, total);
+            long cursor = 0;
+            for (byte[] sample : samples) {
+                MemorySegment.copy(MemorySegment.ofArray(sample), 0, packed, cursor, sample.length);
+                cursor += sample.length;
+            }
+            MemorySegment output = ZstdBinding.allocateTrainingBuffer(arena, dictBuffer.length);
+            MemorySegment heapOutput = MemorySegment.ofArray(dictBuffer);
+            output.copyFrom(heapOutput);
+            try {
+                return ZstdBinding.trainDictionary(arena, output, packed, sizes,
+                        samples.length, legacy, compressionLevel);
+            } finally {
+                // JNI releases with mode 0, including partially written output on errors.
+                heapOutput.copyFrom(output);
+            }
+        }
+    }
 
     /**
      * Creates a new dictionary to tune a kind of samples
@@ -1210,7 +1275,38 @@ public class Zstd {
     }
 
 
-    private static native long trainFromBufferDirect0(@NotNull ByteBuffer samples, int @NotNull [] sampleSizes, @NotNull ByteBuffer dictBuffer, boolean legacy, int compressionLevel);
+    // JNI addresses the buffer base, ignoring position/limit without changing them.
+    private static MemorySegment fullBuffer(ByteBuffer buffer) {
+        return MemorySegment.ofBuffer(buffer.duplicate().clear());
+    }
+
+    private static long trainFromBufferDirect0(@NotNull ByteBuffer samples, int @NotNull [] sampleSizes, @NotNull ByteBuffer dictBuffer, boolean legacy, int compressionLevel) {
+        long allocationError = ZstdBinding.asSizeT(-ZstdBinding.ZSTD_ERROR_MEMORY_ALLOCATION);
+        if (!samples.isDirect() || !dictBuffer.isDirect()) {
+            return allocationError;
+        }
+        MemorySegment packed = fullBuffer(samples);
+        MemorySegment output = fullBuffer(dictBuffer);
+        if (packed.address() == 0 || output.address() == 0) {
+            return allocationError;
+        }
+        try (Arena arena = Arena.ofConfined()) {
+            MemorySegment sizes = ZstdBinding.allocateSampleSizes(arena, sampleSizes.length);
+            long total = 0;
+            for (int i = 0; i < sampleSizes.length; i++) {
+                if (sampleSizes[i] < 0) {
+                    return allocationError;
+                }
+                total += sampleSizes[i];
+                ZstdBinding.setSampleSize(sizes, i, sampleSizes[i]);
+            }
+            if (total > packed.byteSize()) {
+                return allocationError;
+            }
+            return ZstdBinding.trainDictionary(arena, output, packed, sizes,
+                    sampleSizes.length, legacy, compressionLevel);
+        }
+    }
 
     /**
      * Get DictId from a compressed frame
@@ -1218,7 +1314,9 @@ public class Zstd {
      * @param src compressed frame
      * @return DictId or 0 if not available
      */
-    public static native long getDictIdFromFrame(byte @NotNull [] src);
+    public static long getDictIdFromFrame(byte @NotNull [] src) {
+        return ZstdBinding.getDictIDFromFrame(MemorySegment.ofArray(src), src.length);
+    }
 
     /**
      * Get DictId from a compressed ByteBuffer frame
@@ -1226,7 +1324,13 @@ public class Zstd {
      * @param src compressed frame
      * @return DictId or 0 if not available
      */
-    public static native long getDictIdFromFrameBuffer(@NotNull ByteBuffer src);
+    public static long getDictIdFromFrameBuffer(@NotNull ByteBuffer src) {
+        if (src == null || !src.isDirect() || src.capacity() == 0) {
+            return 0;
+        }
+        MemorySegment source = fullBuffer(src);
+        return source.address() == 0 ? 0 : ZstdBinding.getDictIDFromFrameNative(source, source.byteSize());
+    }
 
     /**
      * Get DictId of a dictionary
@@ -1234,9 +1338,17 @@ public class Zstd {
      * @param dict dictionary
      * @return DictId or 0 if not available
      */
-    public static native long getDictIdFromDict(byte @NotNull [] dict);
+    public static long getDictIdFromDict(byte @NotNull [] dict) {
+        return ZstdBinding.getDictIDFromDict(MemorySegment.ofArray(dict), dict.length);
+    }
 
-    private static native long getDictIdFromDictDirect(@NotNull ByteBuffer dict, int offset, int length);
+    private static long getDictIdFromDictDirect(@NotNull ByteBuffer dict, int offset, int length) {
+        if (!dict.isDirect()) {
+            return 0;
+        }
+        MemorySegment source = fullBuffer(dict);
+        return source.address() == 0 ? 0 : ZstdBinding.getDictIDFromDict(source.asSlice(offset), length);
+    }
 
     /**
      * Get DictId of a dictionary
