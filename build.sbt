@@ -11,9 +11,12 @@ ThisBuild / versionScheme := Some("pvp")
 scalaVersion := "2.13.12"
 
 enablePlugins(JniPlugin, ModuleInfoPlugin)
+// Without an explicit list the plugin also exports META-INF/versions/22, which breaks
+// the module. Keep in sync with Export-Package below.
 moduleInfo := com.sandinh.javamodule.moduleinfo.JpmsModule(
   "com.github.luben.zstd_jni", // moduleName
   openModule = false,
+  exports = Set("com.github.luben.zstd", "com.github.luben.zstd.util"),
 )
 
 autoScalaLibrary := false
@@ -455,6 +458,7 @@ val classifiedConfigs = Seq(
   c / packageBin := {
     val jar = (c / packageBin).value
     verifyMultiRelease(jar, streams.value.log)
+    verifyModuleDescriptor(jar, streams.value.log)
     jar
   }
 )) ++
@@ -729,4 +733,23 @@ def verifyMultiRelease(jar: File, log: Logger): Unit = {
       s"$ffmRelease and match the base public API" +
       (if (additions.nonEmpty) s", ${additions.size} package-private helper class(es)" else "") + ".")
   } finally jf.close()
+}
+
+// Fail the build if the JDK can't load the jar as a module.
+def verifyModuleDescriptor(jar: File, log: Logger): Unit = {
+  import scala.collection.JavaConverters._
+  val refs =
+    try java.lang.module.ModuleFinder.of(jar.toPath).findAll().asScala
+    catch {
+      case e: java.lang.module.FindException =>
+        sys.error(s"${jar.getName} is not a valid module: ${Option(e.getCause).getOrElse(e).getMessage}")
+    }
+  refs.headOption match {
+    case Some(ref) =>
+      val d = ref.descriptor
+      log.info(s"Module check: ${jar.getName} - ${d.toNameAndVersion} exports " +
+        d.exports.asScala.map(_.source).toSeq.sorted.mkString(", "))
+    case None =>
+      sys.error(s"${jar.getName} has no module descriptor")
+  }
 }
