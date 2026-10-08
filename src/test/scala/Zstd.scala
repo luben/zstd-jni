@@ -1644,4 +1644,94 @@ class ZstdSpec extends AnyFlatSpec with ScalaCheckPropertyChecks {
       }
     }
   }.get
+
+  "ZstdInputStreamNoFinalizer.reset" should "decompress a second stream after reset" in {
+    val input1 = "hello world".getBytes("UTF-8")
+    val input2 = "goodbye world".getBytes("UTF-8")
+    val compressed1 = Zstd.compress(input1)
+    val compressed2 = Zstd.compress(input2)
+
+    val zis = new ZstdInputStreamNoFinalizer(new ByteArrayInputStream(compressed1))
+
+    // decompress first stream
+    val output1 = new Array[Byte](input1.length)
+    var total = 0
+    while (total < input1.length) {
+      val read = zis.read(output1, total, input1.length - total)
+      assert(read != -1, "unexpected EOF on first stream")
+      total += read
+    }
+    assert(input1.toSeq == output1.toSeq)
+
+    // reset and decompress second stream
+    zis.reset(new ByteArrayInputStream(compressed2))
+    val output2 = new Array[Byte](input2.length)
+    total = 0
+    while (total < input2.length) {
+      val read = zis.read(output2, total, input2.length - total)
+      assert(read != -1, "unexpected EOF on second stream")
+      total += read
+    }
+    assert(input2.toSeq == output2.toSeq)
+
+    zis.close()
+  }
+
+  it should "decompress correctly after resetting mid-stream" in {
+    val input1 = "abcdefghij" * 100
+    val input2 = "klmnopqrst" * 100
+    val compressed1 = Zstd.compress(input1.getBytes("UTF-8"))
+    val compressed2 = Zstd.compress(input2.getBytes("UTF-8"))
+
+    val zis = new ZstdInputStreamNoFinalizer(new ByteArrayInputStream(compressed1))
+
+    // partially read first stream
+    val partial = new Array[Byte](10)
+    zis.read(partial, 0, 10)
+
+    // reset without finishing the first stream
+    zis.reset(new ByteArrayInputStream(compressed2))
+    val expected2 = input2.getBytes("UTF-8")
+    val output2 = new Array[Byte](expected2.length)
+    var total = 0
+    while (total < expected2.length) {
+      val read = zis.read(output2, total, expected2.length - total)
+      assert(read != -1, "unexpected EOF")
+      total += read
+    }
+    assert(expected2.toSeq == output2.toSeq)
+
+    zis.close()
+  }
+
+  it should "throw IOException when reset is called on a closed stream" in {
+    val compressed = Zstd.compress("test".getBytes("UTF-8"))
+    val zis = new ZstdInputStreamNoFinalizer(new ByteArrayInputStream(compressed))
+    zis.close()
+    assertThrows[IOException] {
+      zis.reset(new ByteArrayInputStream(compressed))
+    }
+  }
+
+  it should "allow multiple consecutive resets" in {
+    val inputs = (1 to 5).map(i => s"stream number $i" * 50)
+    val compressed = inputs.map(s => Zstd.compress(s.getBytes("UTF-8")))
+
+    val zis = new ZstdInputStreamNoFinalizer(new ByteArrayInputStream(compressed.head))
+
+    for ((comp, orig) <- compressed.zip(inputs)) {
+      zis.reset(new ByteArrayInputStream(comp))
+      val expected = orig.getBytes("UTF-8")
+      val output = new Array[Byte](expected.length)
+      var total = 0
+      while (total < expected.length) {
+        val read = zis.read(output, total, expected.length - total)
+        assert(read != -1, "unexpected EOF")
+        total += read
+      }
+      assert(expected.toSeq == output.toSeq)
+    }
+
+    zis.close()
+  }
 }

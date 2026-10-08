@@ -64,6 +64,21 @@ JNIEXPORT jint JNICALL Java_com_github_luben_zstd_ZstdInputStreamNoFinalizer_ini
 
 /*
  * Class:     com_github_luben_zstd_ZstdInputStreamNoFinalizer
+ * Method:    resetDStream
+ * Signature: (J)J
+ *
+ * Resets the native ZSTD_DStream session state without clearing loaded
+ * dictionaries or parameters. Uses ZSTD_DCtx_reset with
+ * ZSTD_reset_session_only, which preserves the internal window buffer
+ * and any previously loaded dictionary.
+ */
+JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdInputStreamNoFinalizer_resetDStream
+  (JNIEnv *env, jclass obj, jlong stream) {
+    return (jlong) ZSTD_DCtx_reset((ZSTD_DCtx *)(intptr_t) stream, ZSTD_reset_session_only);
+}
+
+/*
+ * Class:     com_github_luben_zstd_ZstdInputStreamNoFinalizer
  * Method:    decompressStream
  * Signature: (J[BI[BI)I
  */
