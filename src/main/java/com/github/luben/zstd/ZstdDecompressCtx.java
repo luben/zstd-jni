@@ -147,6 +147,62 @@ public class ZstdDecompressCtx extends AutoCloseBase {
 
     /**
      * Decompress as much of the <code>src</code> {@link ByteBuffer} into the <code>dst</code> {@link
+     * ByteBuffer} as possible. Both buffers may be direct or array-backed heap buffers. The
+     * destination buffer must be writable.
+     *
+     * @param dst destination of uncompressed data
+     * @param src buffer to decompress
+     * @return true if all state has been flushed from internal buffers
+     * @throws IllegalArgumentException if either buffer is unsupported or the destination is read-only
+     */
+    public boolean decompressByteBufferStream(@NotNull ByteBuffer dst, @NotNull ByteBuffer src) {
+        ensureOpen();
+        if (dst.isReadOnly()) {
+            throw new IllegalArgumentException("dst must be writable");
+        }
+        if (!dst.isDirect() && !dst.hasArray()) {
+            throw new IllegalArgumentException("dst must be a direct or array-backed buffer");
+        }
+        if (!src.isDirect() && !src.hasArray()) {
+            throw new IllegalArgumentException("src must be a direct or array-backed buffer");
+        }
+
+        acquireSharedLock();
+        try {
+            final long result;
+            if (dst.isDirect()) {
+                if (src.isDirect()) {
+                    result = decompressDirectByteBufferStream0(nativePtr, dst, dst.position(), dst.limit(), src,
+                            src.position(), src.limit());
+                } else {
+                    result = decompressByteArrayToDirectByteBufferStream0(nativePtr, dst, dst.position(), dst.limit(),
+                            src.array(), src.arrayOffset(), src.position(), src.limit());
+                }
+            } else if (src.isDirect()) {
+                result = decompressDirectByteBufferToByteArrayStream0(nativePtr, dst.array(), dst.arrayOffset(),
+                        dst.position(), dst.limit(), src, src.position(), src.limit());
+            } else {
+                result = decompressByteArrayStream0(nativePtr, dst.array(), dst.arrayOffset(), dst.position(),
+                        dst.limit(), src.array(), src.arrayOffset(), src.position(), src.limit());
+            }
+            return updateStreamPositions(result, dst, src);
+        } finally {
+            releaseSharedLock();
+        }
+    }
+
+    private static native long decompressByteArrayToDirectByteBufferStream0(long nativePtr, @NotNull ByteBuffer dst,
+            int dstOffset, int dstSize, byte @NotNull [] src, int srcArrayOffset, int srcOffset, int srcSize);
+
+    private static native long decompressDirectByteBufferToByteArrayStream0(long nativePtr, byte @NotNull [] dst,
+            int dstArrayOffset, int dstOffset, int dstSize, @NotNull ByteBuffer src, int srcOffset, int srcSize);
+
+    private static native long decompressByteArrayStream0(long nativePtr, byte @NotNull [] dst, int dstArrayOffset,
+            int dstOffset, int dstSize,
+            byte @NotNull [] src, int srcArrayOffset, int srcOffset, int srcSize);
+
+    /**
+     * Decompress as much of the <code>src</code> {@link ByteBuffer} into the <code>dst</code> {@link
      * ByteBuffer} as possible.
      *
      * @param dst destination of uncompressed data
@@ -158,16 +214,20 @@ public class ZstdDecompressCtx extends AutoCloseBase {
         acquireSharedLock();
         try {
             long result = decompressDirectByteBufferStream0(nativePtr, dst, dst.position(), dst.limit(), src, src.position(), src.limit());
-            if ((result & 0x80000000L) != 0) {
-                long code = -(result & 0xFF);
-                throw new ZstdException(code, Zstd.getErrorName(code));
-            }
-            src.position((int) (result & 0x7FFFFFFF));
-            dst.position((int) (result >>> 32) & 0x7FFFFFFF);
-            return (result >>> 63) == 1;
+            return updateStreamPositions(result, dst, src);
         } finally {
             releaseSharedLock();
         }
+    }
+
+    private static boolean updateStreamPositions(long result, @NotNull ByteBuffer dst, @NotNull ByteBuffer src) {
+        if ((result & 0x80000000L) != 0) {
+            long code = -(result & 0xFF);
+            throw new ZstdException(code, Zstd.getErrorName(code));
+        }
+        src.position((int) (result & 0x7FFFFFFF));
+        dst.position((int) (result >>> 32) & 0x7FFFFFFF);
+        return (result >>> 63) == 1;
     }
 
     /**
