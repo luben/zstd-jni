@@ -1565,6 +1565,86 @@ class ZstdSpec extends AnyFlatSpec with ScalaCheckPropertyChecks {
     }.get
   }
 
+  it should "reject unsupported buffers" in {
+    Using.Manager { use =>
+      val dctx = use(new ZstdDecompressCtx())
+      assertThrows[IllegalArgumentException] {
+        dctx.decompressByteBufferStream(ByteBuffer.allocate(64).asReadOnlyBuffer(), ByteBuffer.allocate(1))
+      }
+      assertThrows[IllegalArgumentException] {
+        dctx.decompressByteBufferStream(ByteBuffer.allocateDirect(64).asReadOnlyBuffer(), ByteBuffer.allocate(1))
+      }
+      assertThrows[IllegalArgumentException] {
+        dctx.decompressByteBufferStream(ByteBuffer.allocateDirect(64), ByteBuffer.allocate(1).asReadOnlyBuffer())
+      }
+    }.get
+  }
+
+  Seq(
+    (true, true, "direct source and destination"),
+    (false, true, "a heap source and direct destination"),
+    (true, false, "a direct source and heap destination"),
+    (false, false, "heap source and destination")
+  ).foreach { case (sourceDirect, destinationDirect, description) =>
+    it should s"decompress with $description" in {
+      Using.Manager { use =>
+        val dctx = use(new ZstdDecompressCtx())
+        forAll { input: Array[Byte] =>
+          {
+            val size = input.length
+            val compressed = Zstd.compress(input)
+
+            // Slice the storage so that heap buffers have a non-zero array offset,
+            // and start each buffer at a non-zero position.
+            val sourceStorage = if (sourceDirect)
+              ByteBuffer.allocateDirect(compressed.length + 16)
+            else
+              ByteBuffer.allocate(compressed.length + 16)
+            sourceStorage.position(5)
+            val writableSource = sourceStorage.slice()
+            writableSource.position(3)
+            writableSource.put(compressed)
+            val sourceLimit = writableSource.position()
+            val sourceStart = 3
+            writableSource.position(sourceStart)
+            val compressedBuffer = if (sourceDirect) writableSource.asReadOnlyBuffer() else writableSource
+
+            val destinationStorage = if (destinationDirect)
+              ByteBuffer.allocateDirect(size + 16)
+            else
+              ByteBuffer.allocate(size + 16)
+            destinationStorage.position(5)
+            val decompressedBuffer = destinationStorage.slice()
+            decompressedBuffer.position(4)
+            val destinationStart = decompressedBuffer.position()
+
+            dctx.reset()
+            // Feed the frame in two halves and drain one output byte at a time to
+            // exercise partial progress on both sides.
+            compressedBuffer.limit(sourceStart + compressed.length / 2)
+            var done = false
+            while (compressedBuffer.hasRemaining) {
+              decompressedBuffer.limit(math.min(decompressedBuffer.position() + 1, destinationStart + size))
+              done = dctx.decompressByteBufferStream(decompressedBuffer, compressedBuffer)
+            }
+            compressedBuffer.limit(sourceLimit)
+            decompressedBuffer.limit(destinationStart + size)
+            while (!done) {
+              done = dctx.decompressByteBufferStream(decompressedBuffer, compressedBuffer)
+            }
+            assert(compressedBuffer.position() == sourceLimit)
+            assert(decompressedBuffer.position() == destinationStart + size)
+
+            val decompressed = new Array[Byte](size)
+            decompressedBuffer.position(destinationStart)
+            decompressedBuffer.get(decompressed)
+            assert(decompressed.toSeq == input.toSeq)
+          }
+        }
+      }.get
+    }
+  }
+
   "magicless frames" should "be magicless and roundtrip" in {
     Using.Manager { use =>
       val cctx = use(new ZstdCompressCtx())

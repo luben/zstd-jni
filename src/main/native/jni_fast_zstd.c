@@ -712,6 +712,25 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdDecompressCtx_reset0
     return ZSTD_DCtx_reset(dctx, ZSTD_reset_session_and_parameters);
 }
 
+static size_t decompress_buffer_stream
+  (jlong ptr, void *dst, jint *dst_offset, jint dst_size, const void *src, jint *src_offset, jint src_size) {
+    ZSTD_outBuffer out;
+    out.pos = *dst_offset;
+    out.size = dst_size;
+    out.dst = dst;
+
+    ZSTD_inBuffer in;
+    in.pos = *src_offset;
+    in.size = src_size;
+    in.src = src;
+
+    ZSTD_DCtx* dctx = (ZSTD_DCtx*)(intptr_t)ptr;
+    size_t result = ZSTD_decompressStream(dctx, &out, &in);
+    *dst_offset = out.pos;
+    *src_offset = in.pos;
+    return result;
+}
+
 static size_t decompress_direct_buffer_stream
   (JNIEnv *env, jlong ptr, jobject dst, jint *dst_offset, jint dst_size, jobject src, jint *src_offset, jint src_size)
 {
@@ -727,22 +746,84 @@ static size_t decompress_direct_buffer_stream
     jsize src_cap = (*env)->GetDirectBufferCapacity(env, src);
     if (src_size > src_cap) return -ZSTD_error_srcSize_wrong;
 
-    ZSTD_DCtx* dctx = (ZSTD_DCtx*)(intptr_t)ptr;
+    void *dst_buff = (*env)->GetDirectBufferAddress(env, dst);
+    if (dst_buff == NULL) return -ZSTD_error_memory_allocation;
+    void *src_buff = (*env)->GetDirectBufferAddress(env, src);
+    if (src_buff == NULL) return -ZSTD_error_memory_allocation;
 
-    ZSTD_outBuffer out;
-    out.pos = *dst_offset;
-    out.size = dst_size;
-    out.dst = (*env)->GetDirectBufferAddress(env, dst);
-    if (out.dst == NULL) return -ZSTD_error_memory_allocation;
-    ZSTD_inBuffer in;
-    in.pos = *src_offset;
-    in.size = src_size;
-    in.src = (*env)->GetDirectBufferAddress(env, src);
-    if (in.src == NULL) return -ZSTD_error_memory_allocation;
+    return decompress_buffer_stream(ptr, dst_buff, dst_offset, dst_size, src_buff, src_offset, src_size);
+}
 
-    size_t result = ZSTD_decompressStream(dctx, &out, &in);
-    *dst_offset = out.pos;
-    *src_offset = in.pos;
+static size_t decompress_byte_array_to_direct_buffer_stream
+  (JNIEnv *env, jlong ptr, jobject dst, jint *dst_offset, jint dst_size, jbyteArray src, jint src_array_offset,
+   jint *src_offset, jint src_size) {
+    if (NULL == dst) return -ZSTD_error_dstSize_tooSmall;
+    if (NULL == src) return -ZSTD_error_srcSize_wrong;
+    size_t result = validate_compress_stream_bounds(*dst_offset, dst_size, *src_offset, src_size);
+    if (ZSTD_isError(result)) return result;
+
+    jsize dst_cap = (*env)->GetDirectBufferCapacity(env, dst);
+    if (dst_size > dst_cap) return -ZSTD_error_dstSize_tooSmall;
+    if (!is_valid_array_stream_buffer(env, src, src_array_offset, src_size)) return -ZSTD_error_srcSize_wrong;
+
+    void *dst_buff = (*env)->GetDirectBufferAddress(env, dst);
+    if (dst_buff == NULL) return -ZSTD_error_memory_allocation;
+    void *src_buff = (*env)->GetPrimitiveArrayCritical(env, src, NULL);
+    if (src_buff == NULL) return -ZSTD_error_memory_allocation;
+
+    result = decompress_buffer_stream(ptr, dst_buff, dst_offset, dst_size, ((char *)src_buff) + src_array_offset,
+                                      src_offset, src_size);
+    (*env)->ReleasePrimitiveArrayCritical(env, src, src_buff, JNI_ABORT);
+    return result;
+}
+
+static size_t decompress_direct_buffer_to_byte_array_stream
+  (JNIEnv *env, jlong ptr, jbyteArray dst, jint dst_array_offset, jint *dst_offset, jint dst_size, jobject src,
+   jint *src_offset, jint src_size) {
+    if (NULL == dst) return -ZSTD_error_dstSize_tooSmall;
+    if (NULL == src) return -ZSTD_error_srcSize_wrong;
+    size_t result = validate_compress_stream_bounds(*dst_offset, dst_size, *src_offset, src_size);
+    if (ZSTD_isError(result)) return result;
+
+    if (!is_valid_array_stream_buffer(env, dst, dst_array_offset, dst_size)) return -ZSTD_error_dstSize_tooSmall;
+    jsize src_cap = (*env)->GetDirectBufferCapacity(env, src);
+    if (src_size > src_cap) return -ZSTD_error_srcSize_wrong;
+
+    void *src_buff = (*env)->GetDirectBufferAddress(env, src);
+    if (src_buff == NULL) return -ZSTD_error_memory_allocation;
+    void *dst_buff = (*env)->GetPrimitiveArrayCritical(env, dst, NULL);
+    if (dst_buff == NULL) return -ZSTD_error_memory_allocation;
+
+    result = decompress_buffer_stream(ptr, ((char *)dst_buff) + dst_array_offset, dst_offset, dst_size, src_buff,
+                                      src_offset, src_size);
+    (*env)->ReleasePrimitiveArrayCritical(env, dst, dst_buff, 0);
+    return result;
+}
+
+static size_t decompress_byte_array_stream
+  (JNIEnv *env, jlong ptr, jbyteArray dst, jint dst_array_offset, jint *dst_offset, jint dst_size, jbyteArray src,
+   jint src_array_offset, jint *src_offset, jint src_size) {
+    if (NULL == dst) return -ZSTD_error_dstSize_tooSmall;
+    if (NULL == src) return -ZSTD_error_srcSize_wrong;
+    size_t result = validate_compress_stream_bounds(*dst_offset, dst_size, *src_offset, src_size);
+    if (ZSTD_isError(result)) return result;
+
+    if (!is_valid_array_stream_buffer(env, dst, dst_array_offset, dst_size)) return -ZSTD_error_dstSize_tooSmall;
+    if (!is_valid_array_stream_buffer(env, src, src_array_offset, src_size)) return -ZSTD_error_srcSize_wrong;
+
+    /* Avoid nested critical regions when both buffers are heap arrays. */
+    jbyte *dst_buff = (*env)->GetByteArrayElements(env, dst, NULL);
+    if (dst_buff == NULL) return -ZSTD_error_memory_allocation;
+    jbyte *src_buff = (*env)->GetByteArrayElements(env, src, NULL);
+    if (src_buff == NULL) {
+        (*env)->ReleaseByteArrayElements(env, dst, dst_buff, JNI_ABORT);
+        return -ZSTD_error_memory_allocation;
+    }
+
+    result = decompress_buffer_stream(ptr, ((char *)dst_buff) + dst_array_offset, dst_offset, dst_size,
+                                      ((char *)src_buff) + src_array_offset, src_offset, src_size);
+    (*env)->ReleaseByteArrayElements(env, src, src_buff, JNI_ABORT);
+    (*env)->ReleaseByteArrayElements(env, dst, dst_buff, 0);
     return result;
 }
 
@@ -755,14 +836,46 @@ JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdDecompressCtx_decompressD
   (JNIEnv *env, jclass jclazz, jlong ptr, jobject dst, jint dst_offset, jint dst_size, jobject src, jint src_offset, jint src_size)
 {
     size_t result = decompress_direct_buffer_stream(env, ptr, dst, &dst_offset, dst_size, src, &src_offset, src_size);
-    if (ZSTD_isError(result)) {
-        return (1ULL << 31) | ZSTD_getErrorCode(result);
-    }
-    jlong encoded_result = ((jlong)dst_offset << 32) | src_offset;
-    if (result == 0) {
-        encoded_result |= 1ULL << 63;
-    }
-    return encoded_result;
+    return encode_compress_stream_result(result, dst_offset, src_offset);
+}
+
+/*
+ * Class:     com_github_luben_zstd_ZstdDecompressCtx
+ * Method:    decompressByteArrayToDirectByteBufferStream0
+ * Signature: (JLjava/nio/ByteBuffer;II[BIII)J
+ */
+JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdDecompressCtx_decompressByteArrayToDirectByteBufferStream0
+  (JNIEnv *env, jclass jclazz, jlong ptr, jobject dst, jint dst_offset, jint dst_size, jbyteArray src,
+   jint src_array_offset, jint src_offset, jint src_size) {
+    size_t result = decompress_byte_array_to_direct_buffer_stream(env, ptr, dst, &dst_offset, dst_size, src,
+                                                                  src_array_offset, &src_offset, src_size);
+    return encode_compress_stream_result(result, dst_offset, src_offset);
+}
+
+/*
+ * Class:     com_github_luben_zstd_ZstdDecompressCtx
+ * Method:    decompressDirectByteBufferToByteArrayStream0
+ * Signature: (J[BIIILjava/nio/ByteBuffer;II)J
+ */
+JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdDecompressCtx_decompressDirectByteBufferToByteArrayStream0
+  (JNIEnv *env, jclass jclazz, jlong ptr, jbyteArray dst, jint dst_array_offset, jint dst_offset, jint dst_size,
+   jobject src, jint src_offset, jint src_size) {
+    size_t result = decompress_direct_buffer_to_byte_array_stream(env, ptr, dst, dst_array_offset, &dst_offset,
+                                                                  dst_size, src, &src_offset, src_size);
+    return encode_compress_stream_result(result, dst_offset, src_offset);
+}
+
+/*
+ * Class:     com_github_luben_zstd_ZstdDecompressCtx
+ * Method:    decompressByteArrayStream0
+ * Signature: (J[BIII[BIII)J
+ */
+JNIEXPORT jlong JNICALL Java_com_github_luben_zstd_ZstdDecompressCtx_decompressByteArrayStream0
+  (JNIEnv *env, jclass jclazz, jlong ptr, jbyteArray dst, jint dst_array_offset, jint dst_offset, jint dst_size,
+   jbyteArray src, jint src_array_offset, jint src_offset, jint src_size) {
+    size_t result = decompress_byte_array_stream(env, ptr, dst, dst_array_offset, &dst_offset, dst_size, src,
+                                                 src_array_offset, &src_offset, src_size);
+    return encode_compress_stream_result(result, dst_offset, src_offset);
 }
 
 
