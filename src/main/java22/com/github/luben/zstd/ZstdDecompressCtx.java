@@ -370,10 +370,9 @@ public class ZstdDecompressCtx extends AutoCloseBase {
                                       directSegment(src), 0, srcOffset, srcSize);
     }
 
-    /* Replaces jni_fast_zstd.c decompress_byte_array_stream. JNI may copy both arrays
-     * with GetByteArrayElements; the critical downcall uses them in place. See
-     * ZstdCompressCtx.compressByteArrayStream0 for what that means when src and dst
-     * overlap in one array. */
+    /* Replaces jni_fast_zstd.c decompress_byte_array_stream. The critical downcall
+     * uses both arrays in place, like JNI's nested critical regions. If src and dst
+     * overlap in one array, writes can affect unread input. */
     private long decompressByteArrayStream0(byte @NotNull [] dst, int dstArrayOffset, int dstOffset, int dstSize,
             byte @NotNull [] src, int srcArrayOffset, int srcOffset, int srcSize) {
         long result = validateStreamBounds(dstOffset, dstSize, srcOffset, srcSize);
