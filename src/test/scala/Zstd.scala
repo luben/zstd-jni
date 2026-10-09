@@ -1645,6 +1645,126 @@ class ZstdSpec extends AnyFlatSpec with ScalaCheckPropertyChecks {
     }
   }
 
+  // A buffer of the given kind holding bytes(from until to), sliced so that a heap
+  // buffer has a non-zero array offset and positioned at a non-zero offset.
+  private def streamBuffer(direct: Boolean, bytes: Array[Byte], from: Int, to: Int): ByteBuffer = {
+    val storage = if (direct) ByteBuffer.allocateDirect(to - from + 8) else ByteBuffer.allocate(to - from + 8)
+    storage.position(3)
+    val buffer = storage.slice()
+    buffer.position(2)
+    buffer.put(bytes, from, to - from)
+    buffer.limit(buffer.position())
+    buffer.position(2)
+    buffer
+  }
+
+  private def emptyStreamBuffer(direct: Boolean, size: Int): ByteBuffer = {
+    val storage = if (direct) ByteBuffer.allocateDirect(size + 8) else ByteBuffer.allocate(size + 8)
+    storage.position(3)
+    val buffer = storage.slice()
+    buffer.position(2)
+    buffer.limit(2 + size)
+    buffer
+  }
+
+  Seq(
+    (true, true, "direct source and destination"),
+    (false, true, "a heap source and direct destination"),
+    (true, false, "a direct source and heap destination"),
+    (false, false, "heap source and destination")
+  ).foreach { case (sourceDirect, destinationDirect, description) =>
+    it should s"report an unknown frame with $description" in {
+      Using.Manager { use =>
+        val dctx = use(new ZstdDecompressCtx())
+        val garbage = "this is not a zstd frame".getBytes(Charset.forName("UTF-8"))
+        val src = streamBuffer(sourceDirect, garbage, 0, garbage.length)
+        val dst = emptyStreamBuffer(destinationDirect, 64)
+        val error = intercept[ZstdException] {
+          dctx.decompressByteBufferStream(dst, src)
+        }
+        assert(error.getErrorCode() == -Zstd.errPrefixUnknown())
+        assert(error.getMessage().contains("Unknown frame descriptor"))
+      }.get
+    }
+
+    it should s"report a wrong checksum with $description and recover after reset" in {
+      Using.Manager { use =>
+        val cctx = use(new ZstdCompressCtx())
+        val dctx = use(new ZstdDecompressCtx())
+        val input = Array.tabulate[Byte](10000)(i => (i % 251).toByte)
+        cctx.setChecksum(true)
+        val compressed = cctx.compress(input)
+        val corrupted = compressed.clone()
+        // The frame ends with the 4-byte content checksum.
+        corrupted(corrupted.length - 1) = (corrupted(corrupted.length - 1) ^ 0xFF).toByte
+
+        val error = intercept[ZstdException] {
+          val src = streamBuffer(sourceDirect, corrupted, 0, corrupted.length)
+          val dst = emptyStreamBuffer(destinationDirect, input.length)
+          var done = false
+          var calls = 0
+          while (!done) {
+            done = dctx.decompressByteBufferStream(dst, src)
+            calls += 1
+            assert(calls < 100, "no progress decompressing the corrupted frame")
+          }
+        }
+        assert(error.getErrorCode() == -Zstd.errChecksumWrong())
+
+        // The context is usable again once reset.
+        dctx.reset()
+        val src = streamBuffer(sourceDirect, compressed, 0, compressed.length)
+        val dst = emptyStreamBuffer(destinationDirect, input.length)
+        var done = false
+        var calls = 0
+        while (!done) {
+          done = dctx.decompressByteBufferStream(dst, src)
+          calls += 1
+          assert(calls < 100, "no progress decompressing the intact frame")
+        }
+        val decompressed = new Array[Byte](input.length)
+        dst.position(2)
+        dst.get(decompressed)
+        assert(decompressed.toSeq == input.toSeq)
+      }.get
+    }
+  }
+
+  it should "decompress one frame while switching between heap and direct buffers" in {
+    Using.Manager { use =>
+      val dctx = use(new ZstdDecompressCtx())
+      forAll { input: Array[Byte] =>
+        {
+          val compressed = Zstd.compress(input)
+          val output = new ByteArrayOutputStream()
+          dctx.reset()
+          // Small chunks so every call sees a different source and destination
+          // buffer, cycling through all four kind combinations.
+          var srcPos = 0
+          var calls = 0
+          var done = false
+          while (!done) {
+            val chunkEnd = math.min(srcPos + 7, compressed.length)
+            val src = streamBuffer(calls % 2 == 0, compressed, srcPos, chunkEnd)
+            val srcStart = src.position()
+            val dst = emptyStreamBuffer((calls / 2) % 2 == 0, 5)
+            val dstStart = dst.position()
+            done = dctx.decompressByteBufferStream(dst, src)
+            srcPos += src.position() - srcStart
+            val produced = new Array[Byte](dst.position() - dstStart)
+            dst.position(dstStart)
+            dst.get(produced)
+            output.write(produced)
+            calls += 1
+            assert(calls <= 10 * (compressed.length + input.length) + 100, "no progress decompressing")
+          }
+          assert(srcPos == compressed.length)
+          assert(output.toByteArray.toSeq == input.toSeq)
+        }
+      }
+    }.get
+  }
+
   "magicless frames" should "be magicless and roundtrip" in {
     Using.Manager { use =>
       val cctx = use(new ZstdCompressCtx())
