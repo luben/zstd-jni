@@ -28,7 +28,7 @@ public class ZstdDecompressCtx extends AutoCloseBase {
     private ZstdDictDecompress decompression_dict = null;
 
     /* The streaming call stores the new destination and source buffer positions here,
-     * and decompressDirectByteBufferStream applies them after a successful call - as
+     * and updateStreamPositions applies them after a successful call - as
      * in ZstdCompressCtx, in place of the JNI implementation's packed-long result. */
     private int streamDstPosition = 0;
     private int streamSrcPosition = 0;
@@ -187,6 +187,52 @@ public class ZstdDecompressCtx extends AutoCloseBase {
 
     /**
      * Decompress as much of the <code>src</code> {@link ByteBuffer} into the <code>dst</code> {@link
+     * ByteBuffer} as possible. Both buffers may be direct or array-backed heap buffers. The
+     * destination buffer must be writable.
+     *
+     * @param dst destination of uncompressed data
+     * @param src buffer to decompress
+     * @return true if all state has been flushed from internal buffers
+     * @throws IllegalArgumentException if either buffer is unsupported or the destination is read-only
+     */
+    public boolean decompressByteBufferStream(@NotNull ByteBuffer dst, @NotNull ByteBuffer src) {
+        ensureOpen();
+        if (dst.isReadOnly()) {
+            throw new IllegalArgumentException("dst must be writable");
+        }
+        if (!dst.isDirect() && !dst.hasArray()) {
+            throw new IllegalArgumentException("dst must be a direct or array-backed buffer");
+        }
+        if (!src.isDirect() && !src.hasArray()) {
+            throw new IllegalArgumentException("src must be a direct or array-backed buffer");
+        }
+
+        acquireSharedLock();
+        try {
+            final long result;
+            if (dst.isDirect()) {
+                if (src.isDirect()) {
+                    result = decompressDirectByteBufferStream0(dst, dst.position(), dst.limit(), src,
+                            src.position(), src.limit());
+                } else {
+                    result = decompressByteArrayToDirectByteBufferStream0(dst, dst.position(), dst.limit(),
+                            src.array(), src.arrayOffset(), src.position(), src.limit());
+                }
+            } else if (src.isDirect()) {
+                result = decompressDirectByteBufferToByteArrayStream0(dst.array(), dst.arrayOffset(),
+                        dst.position(), dst.limit(), src, src.position(), src.limit());
+            } else {
+                result = decompressByteArrayStream0(dst.array(), dst.arrayOffset(), dst.position(), dst.limit(),
+                        src.array(), src.arrayOffset(), src.position(), src.limit());
+            }
+            return updateStreamPositions(result, dst, src);
+        } finally {
+            releaseSharedLock();
+        }
+    }
+
+    /**
+     * Decompress as much of the <code>src</code> {@link ByteBuffer} into the <code>dst</code> {@link
      * ByteBuffer} as possible.
      *
      * @param dst destination of uncompressed data
@@ -198,19 +244,23 @@ public class ZstdDecompressCtx extends AutoCloseBase {
         acquireSharedLock();
         try {
             long result = decompressDirectByteBufferStream0(dst, dst.position(), dst.limit(), src, src.position(), src.limit());
-            if (ZstdBinding.isError(result)) {
-                /* Decode libzstd's result before masking: its low byte alone is not the
-                 * error code. Keep the JNI implementation's mask and negation so the
-                 * exception receives the same negative code. */
-                long code = -(Zstd.getErrorCode(result) & 0xFF);
-                throw new ZstdException(code, Zstd.getErrorName(code));
-            }
-            src.position(streamSrcPosition);
-            dst.position(streamDstPosition);
-            return result == 0;
+            return updateStreamPositions(result, dst, src);
         } finally {
             releaseSharedLock();
         }
+    }
+
+    private boolean updateStreamPositions(long result, @NotNull ByteBuffer dst, @NotNull ByteBuffer src) {
+        if (ZstdBinding.isError(result)) {
+            /* Decode libzstd's result before masking: its low byte alone is not the
+             * error code. Keep the JNI implementation's mask and negation so the
+             * exception receives the same negative code. */
+            long code = -(Zstd.getErrorCode(result) & 0xFF);
+            throw new ZstdException(code, Zstd.getErrorName(code));
+        }
+        src.position(streamSrcPosition);
+        dst.position(streamDstPosition);
+        return result == 0;
     }
 
     /* Cover the buffer's full capacity so buffer positions can be used as offsets.
@@ -226,23 +276,31 @@ public class ZstdDecompressCtx extends AutoCloseBase {
         return buffer.isDirect() ? buffer.capacity() : -1;
     }
 
-    /* Replaces jni_fast_zstd.c:718-769. The `size` arguments are absolute end offsets:
-     * both segments cover the whole buffer and libzstd starts at the position slots.
-     * The NULL dst / src guards are dropped - the public caller has already
-     * dereferenced both - and so are the GetDirectBufferAddress guards: directCapacity
-     * already rejects heap buffers. A zero-capacity direct buffer at address 0 is the
-     * one difference: JNI returned memory_allocation, here libzstd gets NULL with
-     * size 0, which it accepts. */
-    private long decompressDirectByteBufferStream0(@NotNull ByteBuffer dst, int dstOffset, int dstSize,
-            @NotNull ByteBuffer src, int srcOffset, int srcSize) {
-        if (0 > dstOffset) return -ZstdBinding.ZSTD_ERROR_DST_SIZE_TOO_SMALL;
-        if (0 > srcOffset) return -ZstdBinding.ZSTD_ERROR_SRC_SIZE_WRONG;
-        if (0 > dstSize) return -ZstdBinding.ZSTD_ERROR_DST_SIZE_TOO_SMALL;
-        if (0 > srcSize) return -ZstdBinding.ZSTD_ERROR_SRC_SIZE_WRONG;
+    /* jni_fast_zstd.c validate_compress_stream_bounds, which the heap-buffer stream
+     * variants share with ZstdCompressCtx. The `size` arguments are absolute end offsets. */
+    private static long validateStreamBounds(int dstOffset, int dstSize, int srcOffset, int srcSize) {
+        if (0 > dstOffset || dstOffset > dstSize) return -ZstdBinding.ZSTD_ERROR_DST_SIZE_TOO_SMALL;
+        if (0 > srcOffset || srcOffset > srcSize) return -ZstdBinding.ZSTD_ERROR_SRC_SIZE_WRONG;
+        return 0;
+    }
 
-        if (dstSize > directCapacity(dst)) return -ZstdBinding.ZSTD_ERROR_DST_SIZE_TOO_SMALL;
-        if (srcSize > directCapacity(src)) return -ZstdBinding.ZSTD_ERROR_SRC_SIZE_WRONG;
+    /* jni_fast_zstd.c is_valid_array_stream_buffer. */
+    private static boolean isValidArrayStreamBuffer(byte @NotNull [] buffer, int arrayOffset, int size) {
+        if (0 > arrayOffset || 0 > size) return false;
+        int capacity = buffer.length;
+        return arrayOffset <= capacity && size <= capacity - arrayOffset;
+    }
 
+    /* Replaces jni_fast_zstd.c decompress_buffer_stream.
+     * Heap segments cover the whole backing array. Add each buffer's array offset
+     * (shift) before the native call, then subtract it from the returned positions.
+     * Direct buffers use shift 0. dstSize and srcSize are end offsets, not byte counts.
+     *
+     * Callers must validate heap-buffer ranges with isValidArrayStreamBuffer first.
+     * This keeps shift + size within the array and prevents integer overflow,
+     * which could otherwise pass a huge size_t value to libzstd. */
+    private long decompressBufferStream(@NotNull MemorySegment dst, int dstShift, int dstOffset, int dstSize,
+                                        @NotNull MemorySegment src, int srcShift, int srcOffset, int srcSize) {
         ZstdBinding.SizeTRef dstPos = this.dstPos;
         if (dstPos == null) {
             dstPos = ZstdBinding.newSizeTRef();
@@ -254,15 +312,77 @@ public class ZstdDecompressCtx extends AutoCloseBase {
             this.srcPos = srcPos;
         }
 
-        dstPos.set(dstOffset);
-        srcPos.set(srcOffset);
+        dstPos.set(dstShift + dstOffset);
+        srcPos.set(srcShift + srcOffset);
         long result = ZstdBinding.decompressStream(
                 dctx,
-                directSegment(dst), dstSize, dstPos.segment,
-                directSegment(src), srcSize, srcPos.segment);
-        streamDstPosition = (int) dstPos.get();
-        streamSrcPosition = (int) srcPos.get();
+                dst, dstShift + dstSize, dstPos.segment,
+                src, srcShift + srcSize, srcPos.segment);
+        streamDstPosition = (int) dstPos.get() - dstShift;
+        streamSrcPosition = (int) srcPos.get() - srcShift;
         return result;
+    }
+
+    /* Replaces jni_fast_zstd.c decompress_direct_buffer_stream. The NULL dst / src
+     * guards are dropped - the public callers have already dereferenced both - and so
+     * are the GetDirectBufferAddress guards: directCapacity already rejects heap
+     * buffers. A zero-capacity direct buffer at address 0 is the one difference: JNI
+     * returned memory_allocation, here libzstd gets NULL with size 0, which it accepts. */
+    private long decompressDirectByteBufferStream0(@NotNull ByteBuffer dst, int dstOffset, int dstSize,
+            @NotNull ByteBuffer src, int srcOffset, int srcSize) {
+        if (0 > dstOffset) return -ZstdBinding.ZSTD_ERROR_DST_SIZE_TOO_SMALL;
+        if (0 > srcOffset) return -ZstdBinding.ZSTD_ERROR_SRC_SIZE_WRONG;
+        if (0 > dstSize) return -ZstdBinding.ZSTD_ERROR_DST_SIZE_TOO_SMALL;
+        if (0 > srcSize) return -ZstdBinding.ZSTD_ERROR_SRC_SIZE_WRONG;
+
+        if (dstSize > directCapacity(dst)) return -ZstdBinding.ZSTD_ERROR_DST_SIZE_TOO_SMALL;
+        if (srcSize > directCapacity(src)) return -ZstdBinding.ZSTD_ERROR_SRC_SIZE_WRONG;
+
+        return decompressBufferStream(directSegment(dst), 0, dstOffset, dstSize,
+                                      directSegment(src), 0, srcOffset, srcSize);
+    }
+
+    /* jni_fast_zstd.c decompress_byte_array_to_direct_buffer_stream. */
+    private long decompressByteArrayToDirectByteBufferStream0(@NotNull ByteBuffer dst, int dstOffset, int dstSize,
+            byte @NotNull [] src, int srcArrayOffset, int srcOffset, int srcSize) {
+        long result = validateStreamBounds(dstOffset, dstSize, srcOffset, srcSize);
+        if (ZstdBinding.isError(result)) return result;
+
+        if (dstSize > directCapacity(dst)) return -ZstdBinding.ZSTD_ERROR_DST_SIZE_TOO_SMALL;
+        if (!isValidArrayStreamBuffer(src, srcArrayOffset, srcSize)) return -ZstdBinding.ZSTD_ERROR_SRC_SIZE_WRONG;
+
+        return decompressBufferStream(directSegment(dst), 0, dstOffset, dstSize,
+                                      MemorySegment.ofArray(src), srcArrayOffset, srcOffset, srcSize);
+    }
+
+    /* Replaces jni_fast_zstd.c decompress_direct_buffer_to_byte_array_stream. As in
+     * ZstdCompressCtx, the critical downcall writes straight into the caller's array,
+     * so no copy-back step is needed. */
+    private long decompressDirectByteBufferToByteArrayStream0(byte @NotNull [] dst, int dstArrayOffset,
+            int dstOffset, int dstSize, @NotNull ByteBuffer src, int srcOffset, int srcSize) {
+        long result = validateStreamBounds(dstOffset, dstSize, srcOffset, srcSize);
+        if (ZstdBinding.isError(result)) return result;
+
+        if (!isValidArrayStreamBuffer(dst, dstArrayOffset, dstSize)) return -ZstdBinding.ZSTD_ERROR_DST_SIZE_TOO_SMALL;
+        if (srcSize > directCapacity(src)) return -ZstdBinding.ZSTD_ERROR_SRC_SIZE_WRONG;
+
+        return decompressBufferStream(MemorySegment.ofArray(dst), dstArrayOffset, dstOffset, dstSize,
+                                      directSegment(src), 0, srcOffset, srcSize);
+    }
+
+    /* Replaces jni_fast_zstd.c decompress_byte_array_stream. The critical downcall
+     * uses both arrays in place, like JNI's nested critical regions. If src and dst
+     * overlap in one array, writes can affect unread input. */
+    private long decompressByteArrayStream0(byte @NotNull [] dst, int dstArrayOffset, int dstOffset, int dstSize,
+            byte @NotNull [] src, int srcArrayOffset, int srcOffset, int srcSize) {
+        long result = validateStreamBounds(dstOffset, dstSize, srcOffset, srcSize);
+        if (ZstdBinding.isError(result)) return result;
+
+        if (!isValidArrayStreamBuffer(dst, dstArrayOffset, dstSize)) return -ZstdBinding.ZSTD_ERROR_DST_SIZE_TOO_SMALL;
+        if (!isValidArrayStreamBuffer(src, srcArrayOffset, srcSize)) return -ZstdBinding.ZSTD_ERROR_SRC_SIZE_WRONG;
+
+        return decompressBufferStream(MemorySegment.ofArray(dst), dstArrayOffset, dstOffset, dstSize,
+                                      MemorySegment.ofArray(src), srcArrayOffset, srcOffset, srcSize);
     }
 
     /**
@@ -307,7 +427,7 @@ public class ZstdDecompressCtx extends AutoCloseBase {
         }
     }
 
-    /* Replaces jni_fast_zstd.c:777-800. Each segment is sliced to the requested offset
+    /* Replaces jni_fast_zstd.c:890-913. Each segment is sliced to the requested offset
      * and length, matching the pointers and lengths the C passes. The public caller
      * already checks that both buffers are direct and the ranges fit their limits, so
      * plain capacity() suffices; the checks are redundant but kept in the C's order.
@@ -361,7 +481,7 @@ public class ZstdDecompressCtx extends AutoCloseBase {
         }
     }
 
-    /* Replaces jni_fast_zstd.c:807-831. The critical downcall accesses both arrays
+    /* Replaces jni_fast_zstd.c:920-944. The critical downcall accesses both arrays
      * directly, each sliced to the requested range, so there is no acquisition,
      * release or acquisition-error path. The redundant checks keep the C's order,
      * including the source end before the destination. */
@@ -405,7 +525,7 @@ public class ZstdDecompressCtx extends AutoCloseBase {
         }
     }
 
-    /* Replaces jni_fast_zstd.c:838-865, checks in the C's order. Its bounds checks are
+    /* Replaces jni_fast_zstd.c:951-978, checks in the C's order. Its bounds checks are
      * written as `offset > length - size`, which cannot overflow, unlike the two
      * same-kind entry points above. The public caller has already checked that dst
      * is direct. */
@@ -450,7 +570,7 @@ public class ZstdDecompressCtx extends AutoCloseBase {
         }
     }
 
-    /* Replaces jni_fast_zstd.c:872-899, checks in the C's order. JNI released dst with
+    /* Replaces jni_fast_zstd.c:985-1012, checks in the C's order. JNI released dst with
      * mode 0 to copy back a possible temporary; under critical(true) libzstd writes the
      * caller's array directly, so there is nothing to copy back. */
     private long decompressDirectByteBufferToByteArray0(byte @NotNull [] dst, int dstOffset, int dstSize,
