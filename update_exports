@@ -1,0 +1,19 @@
+#!/bin/bash
+BINDINGS=$(perl -ne 'print "$1\n" if /"(Z[^"]+)"/' src/main/java22/com/github/luben/zstd/ZstdBinding.java | sort -u)
+MAP=""
+for B in $BINDINGS; do
+    MAP="$MAP; $B"
+done
+cat > libzstd-jni.so.map << HERE
+LOCAL_ZSTD {
+        global: Java_com_github_luben_zstd*; zstd_java_*$MAP;
+        local: *;
+};
+HERE
+
+BINDINGS=$(perl -ne 'print "_$1\n" if /"(Z[^"]+)"/' src/main/java22/com/github/luben/zstd/ZstdBinding.java | sort -u)
+cat > libzstd-jni.so.exported << HERE
+_Java_com_github_luben_zstd*
+_zstd_java_*
+$BINDINGS
+HERE
