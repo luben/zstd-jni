@@ -1645,7 +1645,7 @@ class ZstdSpec extends AnyFlatSpec with ScalaCheckPropertyChecks {
     }
   }.get
 
-  "ZstdInputStreamNoFinalizer.reset" should "decompress a second stream after reset" in {
+  "ZstdInputStreamNoFinalizer.resetSession" should "decompress a second stream after reset" in {
     val input1 = "hello world".getBytes("UTF-8")
     val input2 = "goodbye world".getBytes("UTF-8")
     val compressed1 = Zstd.compress(input1)
@@ -1664,7 +1664,7 @@ class ZstdSpec extends AnyFlatSpec with ScalaCheckPropertyChecks {
     assert(input1.toSeq == output1.toSeq)
 
     // reset and decompress second stream
-    zis.reset(new ByteArrayInputStream(compressed2))
+    zis.resetSession(new ByteArrayInputStream(compressed2))
     val output2 = new Array[Byte](input2.length)
     total = 0
     while (total < input2.length) {
@@ -1690,7 +1690,7 @@ class ZstdSpec extends AnyFlatSpec with ScalaCheckPropertyChecks {
     zis.read(partial, 0, 10)
 
     // reset without finishing the first stream
-    zis.reset(new ByteArrayInputStream(compressed2))
+    zis.resetSession(new ByteArrayInputStream(compressed2))
     val expected2 = input2.getBytes("UTF-8")
     val output2 = new Array[Byte](expected2.length)
     var total = 0
@@ -1709,7 +1709,7 @@ class ZstdSpec extends AnyFlatSpec with ScalaCheckPropertyChecks {
     val zis = new ZstdInputStreamNoFinalizer(new ByteArrayInputStream(compressed))
     zis.close()
     assertThrows[IOException] {
-      zis.reset(new ByteArrayInputStream(compressed))
+      zis.resetSession(new ByteArrayInputStream(compressed))
     }
   }
 
@@ -1720,7 +1720,7 @@ class ZstdSpec extends AnyFlatSpec with ScalaCheckPropertyChecks {
     val zis = new ZstdInputStreamNoFinalizer(new ByteArrayInputStream(compressed.head))
 
     for ((comp, orig) <- compressed.zip(inputs)) {
-      zis.reset(new ByteArrayInputStream(comp))
+      zis.resetSession(new ByteArrayInputStream(comp))
       val expected = orig.getBytes("UTF-8")
       val output = new Array[Byte](expected.length)
       var total = 0
