@@ -308,9 +308,10 @@ public class ZstdInputStreamNoFinalizer extends FilterInputStream {
      * and call {@code reset()} with each new input stream.
      *
      * @param newInput the new compressed input stream to decompress
+     * @return the old input stream
      * @throws IOException if the stream has been closed or the native reset fails
      */
-    public synchronized void reset(@NotNull InputStream newInput) throws IOException {
+    public synchronized InputStream resetSession(@NotNull InputStream newInput) throws IOException {
         if (isClosed) {
             throw new IOException("Stream closed");
         }
@@ -320,12 +321,14 @@ public class ZstdInputStreamNoFinalizer extends FilterInputStream {
         if (Zstd.isError(size)) {
             throw new ZstdIOException(size);
         }
+        InputStream oldInputStream = this.in;
         this.in = newInput;
         this.dstPos = 0;
         this.srcPos = 0;
         this.srcSize = 0;
         this.needRead = true;
         this.frameFinished = true;
+        return oldInputStream;
     }
 
     public synchronized void close() throws IOException {
