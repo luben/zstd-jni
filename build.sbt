@@ -216,7 +216,6 @@ Compile / packageBin / packageOptions ++= Seq(
       |linux/amd64/libzstd-jni-${version.value}.so;osname=Linux;processor=amd64,
       |linux/arm/libzstd-jni-${version.value}.so;osname=Linux;processor=arm,
       |linux/i386/libzstd-jni-${version.value}.so;osname=Linux;processor=i386,
-      |linux/mips64/libzstd-jni-${version.value}.so;osname=Linux;processor=mips64,
       |linux/loongarch64/libzstd-jni-${version.value}.so;osname=Linux;processor=loongarch64,
       |linux/ppc64/libzstd-jni-${version.value}.so;osname=Linux;processor=ppc64,
       |linux/ppc64le/libzstd-jni-${version.value}.so;osname=Linux;processor=ppc64le,
@@ -238,7 +237,6 @@ Compile / packageBin / packageOptions ++= Seq(
       |linux.arm,
       |linux.i386,
       |linux.loongarch64,
-      |linux.mips64,
       |linux.ppc64,
       |linux.ppc64le,
       |linux.riscv64,
@@ -346,13 +344,6 @@ Linux_ppc64 / packageBin / mappings := {
 }
 addArtifact(Artifact(nameValue, "linux_ppc64"), Linux_ppc64 / packageBin)
 
-lazy val Linux_mips64 = config("linux_mips64").extend(Compile)
-inConfig(Linux_mips64)(Defaults.compileSettings)
-Linux_mips64 / packageBin / mappings := {
-  (file(s"target/classes/linux/mips64/libzstd-jni-${version.value}.so"), s"linux/mips64/libzstd-jni-${version.value}.so") :: classes
-}
-addArtifact(Artifact(nameValue, "linux_mips64"), Linux_mips64 / packageBin)
-
 lazy val Linux_loongarch64 = config("linux_loongarch64").extend(Compile)
 inConfig(Linux_loongarch64)(Defaults.compileSettings)
 Linux_loongarch64 / packageBin / mappings := {
@@ -442,7 +433,7 @@ addArtifact(Artifact(nameValue, "cloud"), Cloud / packageBin)
 
 val classifiedConfigs = Seq(
   Linux_amd64, Linux_i386, Linux_aarch64, Linux_arm, Linux_ppc64le, Linux_ppc64,
-  Linux_mips64, Linux_loongarch64, Linux_s390x, Linux_riscv64, Aix_ppc64,
+  Linux_loongarch64, Linux_s390x, Linux_riscv64, Aix_ppc64,
   Darwin_x86_64, Darwin_aarch64, FreeBSD_amd64, FreeBSD_i386,
   Win_x86, Win_amd64, Win_aarch64, Cloud
 )
