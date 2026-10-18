@@ -16,6 +16,7 @@ compile () {
     rsync ./libzstd-jni.so.map $HOST:
     # fall-back to scp if rsync fails
     if [[ $? != "0" ]]; then
+        ssh $HOST rm -rf jni native libzstd-jni.so.map
         scp -r jni $HOST:
         scp -r src/main/native $HOST:
         scp ./libzstd-jni.so.map $HOST:
@@ -32,9 +33,14 @@ compile_aix() {
     HOST="gcc-$ARCH-$OS"
     echo "Compiling for $ARCH/$OS on $HOST"
     INSTALL=target/classes/$OS/$ARCH
-    ssh $HOST rm -rf jni native
-    scp -r jni $HOST:
-    scp -r src/main/native $HOST:
+    rsync -r --delete --rsync-path=/opt/freeware/bin/rsync jni $HOST:
+    rsync -r --delete --rsync-path=/opt/freeware/bin/rsync src/main/native $HOST:
+    # fall-back to scp if rsync fails
+    if [[ $? != "0" ]]; then
+        ssh $HOST rm -rf jni native
+        scp -r jni $HOST:
+        scp -r src/main/native $HOST:
+    fi
     ssh $HOST 'export PATH=$HOME/bin:/opt/freeware/bin:$PATH; '$CC' -maix64 -shared -fPIC -O3 -DZSTD_MULTITHREAD=1 -I/usr/include -I./jni -I./native -I./native/common -std=c99 -lpthread -o libzstd-jni-'$VERSION'.so native/*.c native/common/*.c native/compress/*.c native/decompress/*.c native/dictBuilder/*.c'
     mkdir -p $INSTALL
     scp $HOST:libzstd-jni-$VERSION.so $INSTALL
