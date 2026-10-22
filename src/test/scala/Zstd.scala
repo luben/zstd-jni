@@ -296,6 +296,39 @@ class ZstdSpec extends AnyFlatSpec with ScalaCheckPropertyChecks {
     }
   }
 
+  for (direct <- List(false, true)) {
+    "buffer decompression streams" should s"reject a read-only target without consuming input (direct=$direct)" in {
+      val input = "read-only destination".getBytes("UTF-8")
+      val compressed = Zstd.compress(input)
+      val source = if (direct) ByteBuffer.allocateDirect(compressed.length) else ByteBuffer.allocate(compressed.length)
+      source.put(compressed)
+      source.flip()
+      val target = if (direct) ByteBuffer.allocateDirect(input.length + 3) else ByteBuffer.allocate(input.length + 3)
+      target.position(3)
+      val readOnlyTarget = target.asReadOnlyBuffer()
+
+      Using.Manager { use =>
+        val stream: BaseZstdBufferDecompressingStreamNoFinalizer = use(
+          if (direct) new ZstdDirectBufferDecompressingStreamNoFinalizer(source)
+          else new ZstdBufferDecompressingStreamNoFinalizer(source)
+        )
+        assertThrows[IllegalArgumentException] {
+          stream.read(readOnlyTarget)
+        }
+        assert(source.position() == 0)
+        assert(readOnlyTarget.position() == 3)
+        for (i <- 0 until target.capacity()) assert(target.get(i) == 0)
+
+        assert(stream.read(target) == input.length)
+        target.flip()
+        target.position(3)
+        val output = new Array[Byte](input.length)
+        target.get(output)
+        assert(output.toSeq == input.toSeq)
+      }.get
+    }
+  }
+
   for (level <- levels) {
     "ZstdDirectBufferDecompressingStream" should s"should round-trip compression/decompression at level $level" in {
       forAll { input: Array[Byte] =>
