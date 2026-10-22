@@ -60,6 +60,30 @@ public class ZstdDecompressCtx extends AutoCloseBase {
     }
 
     /**
+     * Set the maximum window size the decompressor accepts, as a power of 2.
+     * Frames that need a larger window are rejected instead of decoded, which
+     * bounds the memory a frame header can make the decompressor allocate.
+     * Cleared by {@link #reset()}.
+     *
+     * @param windowLogMax Maximum window size, expressed as power of 2,
+     *                     default: 27 (ZSTD_WINDOWLOG_LIMIT_DEFAULT)
+     */
+    @NotNull
+    public ZstdDecompressCtx setLongMax(int windowLogMax) {
+        ensureOpen();
+        acquireSharedLock();
+        try {
+            long result = Zstd.setDecompressionLongMax(nativePtr, windowLogMax);
+            if (Zstd.isError(result)) {
+                throw new ZstdException(result);
+            }
+        } finally {
+            releaseSharedLock();
+        }
+        return this;
+    }
+
+    /**
      * Load decompression dictionary
      *
      * @param dict the dictionary

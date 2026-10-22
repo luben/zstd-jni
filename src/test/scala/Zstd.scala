@@ -1789,6 +1789,48 @@ class ZstdSpec extends AnyFlatSpec with ScalaCheckPropertyChecks {
     }.get
   }
 
+  "ZstdDecompressCtx.setLongMax" should "reject frames whose window exceeds the limit" in {
+    Using.Manager { use =>
+      val input = Array.tabulate[Byte](1 << 16)(i => (i % 251).toByte)
+      // Feeding the input before ending the frame leaves its size unknown,
+      // so the full window is kept in the frame header
+      val cctx = use(new ZstdCompressCtx())
+      cctx.setLong(24)
+      val src = ByteBuffer.allocateDirect(input.length)
+      src.put(input)
+      src.flip()
+      val compressed = ByteBuffer.allocateDirect(Zstd.compressBound(input.length).toInt)
+      cctx.compressByteBufferStream(compressed, src, EndDirective.CONTINUE)
+      assert(!src.hasRemaining)
+      assert(cctx.compressByteBufferStream(compressed, src, EndDirective.END))
+      compressed.flip()
+
+      def decompress(dctx: ZstdDecompressCtx): Array[Byte] = {
+        val in = compressed.duplicate()
+        val out = ByteBuffer.allocateDirect(input.length)
+        while (!dctx.decompressByteBufferStream(out, in)) {}
+        out.flip()
+        val result = new Array[Byte](out.remaining())
+        out.get(result)
+        result
+      }
+
+      val dctx = use(new ZstdDecompressCtx())
+      dctx.setLongMax(23)
+      assertThrows[ZstdException] {
+        decompress(dctx)
+      }
+
+      dctx.reset()
+      dctx.setLongMax(24)
+      assert(decompress(dctx).toSeq == input.toSeq)
+
+      assertThrows[ZstdException] {
+        dctx.setLongMax(Zstd.windowLogMax() + 1)
+      }
+    }.get
+  }
+
   "magicless frames" should "report their content size from a direct buffer at an offset" in {
     Using.Manager { use =>
       val cctx = use(new ZstdCompressCtx())
