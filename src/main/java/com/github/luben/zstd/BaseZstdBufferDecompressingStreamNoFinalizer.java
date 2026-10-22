@@ -105,6 +105,9 @@ public abstract class BaseZstdBufferDecompressingStreamNoFinalizer implements Cl
         if (closed) {
             throw new IOException("Stream closed");
         }
+        if (target.isReadOnly()) {
+            throw new IllegalArgumentException("Target buffer should be writable");
+        }
         if (streamEnd) {
             return 0;
         }
@@ -170,7 +173,7 @@ public abstract class BaseZstdBufferDecompressingStreamNoFinalizer implements Cl
      * @param target buffer to store the read bytes from uncompressed stream.
      * @return the number of bytes read into the target buffer.
      * @throws ZstdIOException if an error occurs while reading.
-     * @throws IllegalArgumentException if provided source or target buffers are incorrectly configured.
+     * @throws IllegalArgumentException if provided source or target buffers are incorrectly configured, or the target is read-only.
      * @throws IOException if the stream is closed before reading.
      */
     public abstract int read(@NotNull ByteBuffer target) throws IOException;
