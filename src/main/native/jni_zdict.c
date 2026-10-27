@@ -22,7 +22,7 @@ JNIEXPORT jlong Java_com_github_luben_zstd_Zstd_trainFromBuffer0
     for (int i = 0; i < num_samples; i++) {
         jbyteArray sample = (*env)->GetObjectArrayElement(env, samples, i);
         if (sample == NULL) {
-            goto E3;
+            goto E2;
         }
         jsize length = (*env)->GetArrayLength(env, sample);
         (*env)->DeleteLocalRef(env, sample);
@@ -39,6 +39,12 @@ JNIEXPORT jlong Java_com_github_luben_zstd_Zstd_trainFromBuffer0
     for (int i = 0; i < num_samples; i++) {
         jbyteArray sample = (*env)->GetObjectArrayElement(env, samples, i);
         jsize length = (*env)->GetArrayLength(env, sample);
+        // sample concurrently modified in place - guard agains buffer overflow
+        if (length + cursor > samples_buffer_size) {
+            jclass eClass = (*env)->FindClass(env, "java/lang/RuntimeException");
+            (*env)->ThrowNew(env, eClass, "concurrent modification of samples");
+            goto E3;
+        }
         (*env)->GetByteArrayRegion(env, sample, 0, length, (jbyte*)(((char *)samples_buffer) + cursor));
         (*env)->DeleteLocalRef(env, sample);
         cursor += length;
