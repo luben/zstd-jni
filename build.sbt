@@ -271,6 +271,71 @@ pomExtra := (
   </developers>
 )
 
+// CycloneDX SBOM
+// The jar has no runtime dependencies, but embeds the native zstd library,
+// which is invisible to Maven-based tooling.
+// Publishing an SBOM next to the jar lets consumers track it.
+val cyclonedxBom = taskKey[File]("Generates a CycloneDX SBOM")
+cyclonedxBom := {
+  val header = IO.read(file("src/main/native/zstd.h"))
+  def zstdMacro(name: String): String =
+    s"(?m)^#define\\s+ZSTD_VERSION_$name\\s+(\\d+)".r.findFirstMatchIn(header)
+      .getOrElse(sys.error(s"ZSTD_VERSION_$name not found in zstd.h")).group(1)
+  val zstdVersion = Seq("MAJOR", "MINOR", "RELEASE").map(zstdMacro).mkString(".")
+  val purl = s"pkg:maven/${organization.value}/${name.value}@${version.value}"
+  val zstdPurl = s"pkg:github/meta/zstd@v$zstdVersion"
+  val serialNumber = java.util.UUID.nameUUIDFromBytes(purl.getBytes("UTF-8"))
+  // sjson-new ships with sbt: building an AST guarantees well-formed, correctly escaped JSON
+  import sjsonnew.shaded.scalajson.ast.unsafe._
+  def obj(fields: (String, JValue)*): JValue = JObject(fields.map { case (k, v) => JField(k, v) }.toArray)
+  def arr(values: JValue*): JValue = JArray(values.toArray)
+  def str(value: String): JValue = JString(value)
+  val meta = obj("name" -> str("Meta Platforms, Inc."), "url" -> arr(str("https://github.com/meta")))
+  val bom = obj(
+    "$schema" -> str("http://cyclonedx.org/schema/bom-1.7.schema.json"),
+    "bomFormat" -> str("CycloneDX"),
+    "specVersion" -> str("1.7"),
+    "serialNumber" -> str(s"urn:uuid:$serialNumber"),
+    "version" -> JNumber(1),
+    "metadata" -> obj(
+      "component" -> obj(
+        "type" -> str("library"),
+        "bom-ref" -> str(purl),
+        "group" -> str(organization.value),
+        "name" -> str(name.value),
+        "version" -> str(version.value),
+        "description" -> str(description.value),
+        "licenses" -> arr(obj("license" -> obj("id" -> str("BSD-2-Clause"), "acknowledgement" -> str("declared")))),
+        "purl" -> str(purl),
+        "externalReferences" -> arr(obj("type" -> str("vcs"), "url" -> str("https://github.com/luben/zstd-jni")))
+      )
+    ),
+    "components" -> arr(
+      obj(
+        "type" -> str("library"),
+        "bom-ref" -> str(zstdPurl),
+        "supplier" -> meta,
+        "manufacturer" -> meta,
+        "name" -> str("Zstandard"),
+        "version" -> str(zstdVersion),
+        "description" -> str("Zstandard - Fast real-time compression algorithm (native library)"),
+        "licenses" -> arr(obj("expression" -> str("BSD-3-Clause OR GPL-2.0-only"), "acknowledgement" -> str("concluded"))),
+        "cpe" -> str(s"cpe:2.3:a:facebook:zstandard:$zstdVersion:*:*:*:*:*:*:*"),
+        "purl" -> str(zstdPurl),
+        "externalReferences" -> arr(obj("type" -> str("vcs"), "url" -> str("https://github.com/meta/zstd")))
+      )
+    ),
+    "dependencies" -> arr(
+      obj("ref" -> str(purl), "dependsOn" -> arr(str(zstdPurl))),
+      obj("ref" -> str(zstdPurl), "dependsOn" -> arr())
+    )
+  )
+  val out = target.value / s"${name.value}-${version.value}-cyclonedx.json"
+  IO.write(out, sjsonnew.support.scalajson.unsafe.PrettyPrinter(bom))
+  out
+}
+addArtifact(Artifact(nameValue, "json", "json", "cyclonedx"), cyclonedxBom)
+
 // Jacoco coverage setting
 jacocoReportSettings := JacocoReportSettings(
   "Jacoco Coverage Report",
