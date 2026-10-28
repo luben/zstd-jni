@@ -9,6 +9,7 @@ import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.util.LinkedList;
 
 /**
  * InputStream filter that decompresses the data provided
@@ -39,8 +40,9 @@ public class ZstdInputStreamNoFinalizer extends FilterInputStream {
     private boolean isContinuous = false;
     private boolean frameFinished = true;
     private boolean isClosed = false;
-    // keep the active dict alive
-    private @Nullable ZstdDictDecompress active_dict;
+    private boolean isMultiDict = false;
+    // keep the active dict(s) alive
+    private LinkedList<ZstdDictDecompress> active_dicts =  new LinkedList<ZstdDictDecompress>();
 
     /* JNI methods */
     public static native long recommendedDInSize();
@@ -115,12 +117,12 @@ public class ZstdInputStreamNoFinalizer extends FilterInputStream {
             }
             throw new ZstdIOException(size);
         }
-        // release the shared lock on the previously used dict (if any)
-        if (active_dict != null) {
-            active_dict.releaseSharedLock();
+        // release the shared lock on the previously used dict if not using mulitple dicts (if any)
+        if (!active_dicts.isEmpty() && !isMultiDict) {
+            active_dicts.removeLast().releaseSharedLock();
         }
         // keep the dict alive so it's not garbage collected
-        active_dict = dict;
+        active_dicts.addFirst(dict);
         return this;
     }
 
@@ -143,6 +145,13 @@ public class ZstdInputStreamNoFinalizer extends FilterInputStream {
         if (Zstd.isError(size)) {
             throw new ZstdIOException(size);
         }
+        // if we disable the multi-dict support, release all but the last registered dict
+        if (!useMultiple) {
+            while (active_dicts.size() > 1) {
+                active_dicts.removeLast().releaseSharedLock();
+            }
+        }
+        isMultiDict = useMultiple;
         return this;
     }
 
@@ -335,9 +344,8 @@ public class ZstdInputStreamNoFinalizer extends FilterInputStream {
         if (isClosed) {
             return;
         }
-        if (active_dict != null) {
-            active_dict.releaseSharedLock();
-            active_dict = null;
+        while (active_dicts.size() > 0) {
+            active_dicts.removeLast().releaseSharedLock();
         }
         isClosed = true;
         bufferPool.release(srcByteBuffer);
