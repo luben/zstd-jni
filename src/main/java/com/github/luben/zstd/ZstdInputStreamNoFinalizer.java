@@ -222,7 +222,7 @@ public class ZstdInputStreamNoFinalizer extends FilterInputStream {
             // we have completed a frame
             if (size == 0) {
                 frameFinished = true;
-                // we need to read from the upstream only if we have not consumed
+                // we need to read from the upstream only if we have consumed
                 // fully the source buffer
                 needRead = srcPos == srcSize;
                 return (int)(dstPos - offset);

@@ -254,6 +254,8 @@ public class ZstdInputStreamNoFinalizer extends FilterInputStream {
                 srcPos.set(0);
                 if (srcSize < 0) {
                     srcSize = 0;
+                    lastDstArray = null;
+                    lastDstSegment = null;
                     if (frameFinished) {
                         return -1;
                     } else if (isContinuous) {
@@ -276,6 +278,8 @@ public class ZstdInputStreamNoFinalizer extends FilterInputStream {
             long size = decompressStream(dstSegment, dstSize, srcSize);
 
             if (Zstd.isError(size)) {
+                lastDstArray = null;
+                lastDstSegment = null;
                 throw new ZstdIOException(size);
             }
             dstPosition = dstPos.get();
@@ -283,9 +287,13 @@ public class ZstdInputStreamNoFinalizer extends FilterInputStream {
             // we have completed a frame
             if (size == 0) {
                 frameFinished = true;
-                // we need to read from the upstream only if we have not consumed
+                // we need to read from the upstream only if we have consumed
                 // fully the source buffer
                 needRead = srcPos.get() == srcSize;
+                if (needRead) {
+                    lastDstArray = null;
+                    lastDstSegment = null;
+                }
                 return (int)(dstPosition - offset);
             } else {
                 // size > 0, so more input is required but there is data left in
@@ -398,6 +406,8 @@ public class ZstdInputStreamNoFinalizer extends FilterInputStream {
         this.srcSize = 0;
         this.needRead = true;
         this.frameFinished = true;
+        this.lastDstArray = null;
+        this.lastDstSegment = null;
         return oldInputStream;
     }
 
