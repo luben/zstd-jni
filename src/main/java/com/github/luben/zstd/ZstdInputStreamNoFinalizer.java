@@ -212,6 +212,11 @@ public class ZstdInputStreamNoFinalizer extends FilterInputStream {
                 }
             }
 
+            // Input left over after a finished frame is the start of the next one.
+            if (srcPos < srcSize) {
+                frameFinished = false;
+            }
+
             lastDstPos = dstPos;
             long size = decompressStream(stream, dst, dstSize, src, (int) srcSize);
 
