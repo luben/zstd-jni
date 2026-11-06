@@ -1355,6 +1355,69 @@ class ZstdSpec extends AnyFlatSpec with ScalaCheckPropertyChecks {
     assert(extraRead == -1, "Expected -1 (EOF) when reading after frame is complete")
   }
 
+  it should "fail on a truncated frame that starts in the same read as the end of the previous frame" in {
+    val first = Zstd.compress("foo".getBytes("UTF-8"))
+    val input = new Array[Byte](1000)
+    new scala.util.Random(42).nextBytes(input)
+    val second = Zstd.compress(input)
+    // A single read of the underlying stream returns the end of the first frame and the start of the second.
+    val truncated = first ++ second.take(second.length / 2)
+
+    val zis = new ZstdInputStream(new ByteArrayInputStream(truncated))
+    val output = new Array[Byte](3 + input.length)
+    assertThrows[ZstdIOException] {
+      var totalRead = 0
+      var bytesRead = 0
+      while ({ bytesRead = zis.read(output, totalRead, output.length - totalRead); bytesRead != -1 && totalRead < output.length }) {
+        totalRead += bytesRead
+      }
+    }
+    zis.close()
+  }
+
+  it should "fail on such a truncated frame once continuous mode ends" in {
+    val first = Zstd.compress("foo".getBytes("UTF-8"))
+    val input = new Array[Byte](1000)
+    new scala.util.Random(42).nextBytes(input)
+    val second = Zstd.compress(input)
+    val truncated = first ++ second.take(second.length / 2)
+
+    val zis = new ZstdInputStream(new ByteArrayInputStream(truncated))
+    zis.setContinuous(true)
+    val output = new Array[Byte](3 + input.length)
+    var totalRead = 0
+    var bytesRead = 0
+    while (zis.available() > 0 && { bytesRead = zis.read(output, totalRead, output.length - totalRead); bytesRead > 0 }) {
+      totalRead += bytesRead
+    }
+    zis.setContinuous(false)
+    assertThrows[ZstdIOException] {
+      zis.read()
+    }
+    zis.close()
+  }
+
+  it should "read two frames from a single read of the underlying stream" in {
+    val first = Zstd.compress("foo".getBytes("UTF-8"))
+    val input = new Array[Byte](1000)
+    new scala.util.Random(42).nextBytes(input)
+    val second = Zstd.compress(input)
+
+    val zis = new ZstdInputStream(new ByteArrayInputStream(first ++ second))
+    val output = new Array[Byte](3 + input.length)
+    var totalRead = 0
+    var bytesRead = 0
+    while ({ bytesRead = zis.read(output, totalRead, output.length - totalRead); bytesRead != -1 && totalRead < output.length }) {
+      totalRead += bytesRead
+    }
+    val extraRead = zis.read()
+    zis.close()
+
+    assert(totalRead == output.length)
+    assert(output.toSeq == ("foo".getBytes("UTF-8") ++ input).toSeq)
+    assert(extraRead == -1)
+  }
+
   "RecyclingBufferPool" should "recycle buffers" in {
     val pool = RecyclingBufferPool.INSTANCE
     val largeBuf1 = pool.get(10)
