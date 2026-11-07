@@ -289,6 +289,10 @@ ZSTD_JAVA_API int zstd_java_ps_disable(void) {
     return (int) ZSTD_ps_disable;
 }
 
+ZSTD_JAVA_API int zstd_java_dlm_byCopy(void) {
+    return (int) ZSTD_dlm_byCopy;
+}
+
 
 /* JNI_ZSTD_decompressedSize (jni_zstd.c) verbatim, for FFM. The frame header
  * lives on the C stack, so Java needs no struct layout or buffer, and the
@@ -304,4 +308,46 @@ ZSTD_JAVA_API size_t zstd_java_decompressedSize(const void* buf, size_t bufSize,
     }
 
     return ZSTD_getFrameContentSize(buf, bufSize);
+}
+
+/* Dictionary creation with a ZSTD_dictContentType_e, shared by the JNI code
+ * (jni_fast_zstd.c) and FFM. byReference selects ZSTD_dlm_byRef. */
+
+static int zstd_java_startsWithDictMagic(const void* dict, size_t dictSize) {
+    const unsigned char* const p = (const unsigned char*) dict;
+    if (dict == NULL || dictSize < 8) return 0; /* libzstd loads shorter dicts as raw content */
+    return ((unsigned) p[0] | ((unsigned) p[1] << 8) | ((unsigned) p[2] << 16) | ((unsigned) p[3] << 24))
+            == ZSTD_MAGIC_DICTIONARY;
+}
+
+/* ZSTD_createCDict_advanced* mark the CDict as created by the advanced API, so it
+ * keeps the parameters chosen at creation for every input size, while
+ * ZSTD_createCDict records the level and re-derives them for large inputs. To stay
+ * identical to ZSTD_createCDict wherever the content type changes nothing, only a
+ * raw-content dict that starts with the magic number takes the advanced path. */
+ZSTD_JAVA_API ZSTD_CDict* zstd_java_createCDict(const void* dict, size_t dictSize,
+                                                int byReference, int dictContentType, int level) {
+    int const magic = zstd_java_startsWithDictMagic(dict, dictSize);
+    if (dictContentType == ZSTD_dct_rawContent && magic) {
+        ZSTD_CDict* cdict = NULL;
+        ZSTD_CCtx_params* const params = ZSTD_createCCtxParams();
+        if (params == NULL) return NULL;
+        if (!ZSTD_isError(ZSTD_CCtxParams_init(params, level))) {
+            cdict = ZSTD_createCDict_advanced2(dict, dictSize,
+                    byReference ? ZSTD_dlm_byRef : ZSTD_dlm_byCopy, ZSTD_dct_rawContent,
+                    params, ZSTD_defaultCMem);
+        }
+        ZSTD_freeCCtxParams(params);
+        return cdict;
+    }
+    if (dictContentType == ZSTD_dct_fullDict && !magic) return NULL;
+    return byReference ? ZSTD_createCDict_byReference(dict, dictSize, level)
+                       : ZSTD_createCDict(dict, dictSize, level);
+}
+
+ZSTD_JAVA_API ZSTD_DDict* zstd_java_createDDict(const void* dict, size_t dictSize,
+                                                int byReference, int dictContentType) {
+    return ZSTD_createDDict_advanced(dict, dictSize,
+            byReference ? ZSTD_dlm_byRef : ZSTD_dlm_byCopy,
+            (ZSTD_dictContentType_e) dictContentType, ZSTD_defaultCMem);
 }

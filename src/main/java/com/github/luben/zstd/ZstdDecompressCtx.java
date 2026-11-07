@@ -120,10 +120,22 @@ public class ZstdDecompressCtx extends AutoCloseBase {
      */
     @NotNull
     public ZstdDecompressCtx loadDict(byte @Nullable [] dict) {
+        return loadDict(dict, ZstdDictContentType.AUTO);
+    }
+
+    /**
+     * Load decompression dictionary, interpreting its content as {@code type} says.
+     *
+     * @param dict the dictionary or `null` to remove loaded dictionary
+     * @param type how to interpret the content of the dictionary
+     */
+    @NotNull
+    public ZstdDecompressCtx loadDict(byte @Nullable [] dict, @NotNull ZstdDictContentType type) {
+        java.util.Objects.requireNonNull(type, "type");
         ensureOpen();
         acquireSharedLock();
         try {
-            long result = loadDDict0(nativePtr, dict);
+            long result = loadDDict0(nativePtr, dict, type.value());
             if (Zstd.isError(result)) {
                 throw new ZstdException(result);
             }
@@ -137,7 +149,7 @@ public class ZstdDecompressCtx extends AutoCloseBase {
         return this;
     }
 
-    private static native long loadDDict0(long nativePtr, byte @Nullable [] dict);
+    private static native long loadDDict0(long nativePtr, byte @Nullable [] dict, int dictContentType);
 
     /**
      * Clear all state and parameters from the decompression context. This leaves the object in a

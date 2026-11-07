@@ -153,10 +153,22 @@ public class ZstdDecompressCtx extends AutoCloseBase {
      */
     @NotNull
     public ZstdDecompressCtx loadDict(byte @Nullable [] dict) {
+        return loadDict(dict, ZstdDictContentType.AUTO);
+    }
+
+    /**
+     * Load decompression dictionary, interpreting its content as {@code type} says.
+     *
+     * @param dict the dictionary or `null` to remove loaded dictionary
+     * @param type how to interpret the content of the dictionary
+     */
+    @NotNull
+    public ZstdDecompressCtx loadDict(byte @Nullable [] dict, @NotNull ZstdDictContentType type) {
+        java.util.Objects.requireNonNull(type, "type");
         ensureOpen();
         acquireSharedLock();
         try {
-            long result = loadDDict0(dict);
+            long result = loadDDict0(dict, type.value());
             if (Zstd.isError(result)) {
                 throw new ZstdException(result);
             }
@@ -173,12 +185,12 @@ public class ZstdDecompressCtx extends AutoCloseBase {
     /* Replaces jni_fast_zstd.c:691-705. The critical downcall passes the heap array
      * directly to libzstd, which copies it and retains no pointer. JNI could return a
      * memory-allocation error when acquiring the array; MemorySegment.ofArray cannot fail. */
-    private long loadDDict0(byte @Nullable [] dict) {
+    private long loadDDict0(byte @Nullable [] dict, int dictContentType) {
         if (dict == null) {
             // remove dictionary
             return ZstdBinding.loadDDictionary(dctx, MemorySegment.NULL, 0);
         }
-        return ZstdBinding.loadDDictionary(dctx, MemorySegment.ofArray(dict), dict.length);
+        return ZstdBinding.loadDDictionaryAdvanced(dctx, MemorySegment.ofArray(dict), dict.length, dictContentType);
     }
 
     /**
