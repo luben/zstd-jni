@@ -214,6 +214,9 @@ final class ZstdBinding {
     static final int ZSTD_PS_ENABLE = readConstant("ps_enable");
     static final int ZSTD_PS_DISABLE = readConstant("ps_disable");
 
+    /* ZSTD_dictLoadMethod_e */
+    static final int ZSTD_DLM_BY_COPY = readConstant("dlm_byCopy");
+
     private static final MethodHandle ZSTD_DCtx_setParameter =
             downcall("ZSTD_DCtx_setParameter",
                     FunctionDescriptor.of(C_SIZE_T, ValueLayout.ADDRESS, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT),
@@ -254,34 +257,44 @@ final class ZstdBinding {
                     FunctionDescriptor.of(ValueLayout.JAVA_INT),
                     MethodType.methodType(int.class));
 
-    /* Copying dictionary creation accepts heap segments under critical, matching
-     * JNI's GetPrimitiveArrayCritical. By-reference creation accepts only native
-     * segments: the dictionary keeps the pointer after the downcall returns. */
-    private static final MethodHandle ZSTD_createCDict =
-            downcallCritical(
-                    "ZSTD_createCDict",
-                    FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, C_SIZE_T, ValueLayout.JAVA_INT),
-                    MethodType.methodType(MemorySegment.class, MemorySegment.class, long.class, int.class));
-    private static final MethodHandle ZSTD_createCDict_byReference =
-            downcall(
-                    "ZSTD_createCDict_byReference",
-                    FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, C_SIZE_T, ValueLayout.JAVA_INT),
-                    MethodType.methodType(MemorySegment.class, MemorySegment.class, long.class, int.class));
     private static final MethodHandle ZSTD_freeCDict =
             downcall(
                     "ZSTD_freeCDict",
                     FunctionDescriptor.of(C_SIZE_T, ValueLayout.ADDRESS),
                     MethodType.methodType(long.class, MemorySegment.class));
-    private static final MethodHandle ZSTD_createDDict =
+    /* Dictionary creation goes through ffm_zstd.c helpers, shared with the JNI code,
+     * which take a ZSTD_dictContentType_e. Copying creation accepts heap segments
+     * under critical, matching JNI's GetPrimitiveArrayCritical. By-reference creation
+     * accepts only native segments: the dictionary keeps the pointer after the
+     * downcall returns. */
+    private static final MethodHandle zstd_java_createCDict =
             downcallCritical(
-                    "ZSTD_createDDict",
-                    FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, C_SIZE_T),
-                    MethodType.methodType(MemorySegment.class, MemorySegment.class, long.class));
-    private static final MethodHandle ZSTD_createDDict_byReference =
+                    "zstd_java_createCDict",
+                    FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, C_SIZE_T,
+                            ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT),
+                    MethodType.methodType(MemorySegment.class, MemorySegment.class, long.class,
+                            int.class, int.class, int.class));
+    private static final MethodHandle zstd_java_createCDict_byReference =
             downcall(
-                    "ZSTD_createDDict_byReference",
-                    FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, C_SIZE_T),
-                    MethodType.methodType(MemorySegment.class, MemorySegment.class, long.class));
+                    "zstd_java_createCDict",
+                    FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, C_SIZE_T,
+                            ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT),
+                    MethodType.methodType(MemorySegment.class, MemorySegment.class, long.class,
+                            int.class, int.class, int.class));
+    private static final MethodHandle zstd_java_createDDict =
+            downcallCritical(
+                    "zstd_java_createDDict",
+                    FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, C_SIZE_T,
+                            ValueLayout.JAVA_INT, ValueLayout.JAVA_INT),
+                    MethodType.methodType(MemorySegment.class, MemorySegment.class, long.class,
+                            int.class, int.class));
+    private static final MethodHandle zstd_java_createDDict_byReference =
+            downcall(
+                    "zstd_java_createDDict",
+                    FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, C_SIZE_T,
+                            ValueLayout.JAVA_INT, ValueLayout.JAVA_INT),
+                    MethodType.methodType(MemorySegment.class, MemorySegment.class, long.class,
+                            int.class, int.class));
     private static final MethodHandle ZSTD_freeDDict =
             downcall(
                     "ZSTD_freeDDict",
@@ -329,6 +342,15 @@ final class ZstdBinding {
                     "ZSTD_CCtx_loadDictionary",
                     FunctionDescriptor.of(C_SIZE_T, ValueLayout.ADDRESS, ValueLayout.ADDRESS, C_SIZE_T),
                     MethodType.methodType(long.class, MemorySegment.class, MemorySegment.class, long.class));
+    /* critical and copying (ZSTD_dlm_byCopy), as ZSTD_CCtx_loadDictionary. */
+    private static final MethodHandle ZSTD_CCtx_loadDictionary_advanced =
+            downcallCritical(
+                    "ZSTD_CCtx_loadDictionary_advanced",
+                    FunctionDescriptor.of(C_SIZE_T, ValueLayout.ADDRESS, ValueLayout.ADDRESS, C_SIZE_T,
+                            ValueLayout.JAVA_INT,                                      // ZSTD_dictLoadMethod_e
+                            ValueLayout.JAVA_INT),                                     // ZSTD_dictContentType_e
+                    MethodType.methodType(long.class, MemorySegment.class, MemorySegment.class, long.class,
+                            int.class, int.class));
     private static final MethodHandle ZSTD_CCtx_refCDict =
             downcall(
                     "ZSTD_CCtx_refCDict",
@@ -503,6 +525,15 @@ final class ZstdBinding {
                     "ZSTD_DCtx_loadDictionary",
                     FunctionDescriptor.of(C_SIZE_T, ValueLayout.ADDRESS, ValueLayout.ADDRESS, C_SIZE_T),
                     MethodType.methodType(long.class, MemorySegment.class, MemorySegment.class, long.class));
+    /* critical and copying (ZSTD_dlm_byCopy), as ZSTD_DCtx_loadDictionary. */
+    private static final MethodHandle ZSTD_DCtx_loadDictionary_advanced =
+            downcallCritical(
+                    "ZSTD_DCtx_loadDictionary_advanced",
+                    FunctionDescriptor.of(C_SIZE_T, ValueLayout.ADDRESS, ValueLayout.ADDRESS, C_SIZE_T,
+                            ValueLayout.JAVA_INT,                                      // ZSTD_dictLoadMethod_e
+                            ValueLayout.JAVA_INT),                                     // ZSTD_dictContentType_e
+                    MethodType.methodType(long.class, MemorySegment.class, MemorySegment.class, long.class,
+                            int.class, int.class));
     private static final MethodHandle ZSTD_DCtx_refDDict =
             downcall(
                     "ZSTD_DCtx_refDDict",
@@ -935,6 +966,17 @@ final class ZstdBinding {
         }
     }
 
+    /** {@link #loadDictionary} with a ZSTD_dictContentType_e; the dictionary is copied. */
+    static long loadDictionaryAdvanced(@NotNull MemorySegment cctx, @NotNull MemorySegment dict, long dictSize,
+                                       int dictContentType) {
+        try {
+            return (long) ZSTD_CCtx_loadDictionary_advanced.invokeExact(cctx, dict, dictSize,
+                    ZSTD_DLM_BY_COPY, dictContentType);
+        } catch (Throwable t) {
+            throw new AssertionError("Call to ZSTD_CCtx_loadDictionary_advanced failed", t);
+        }
+    }
+
     static long refCDict(@NotNull MemorySegment cctx, @NotNull MemorySegment cdict) {
         try {
             return (long) ZSTD_CCtx_refCDict.invokeExact(cctx, cdict);
@@ -1158,6 +1200,17 @@ final class ZstdBinding {
         }
     }
 
+    /** {@link #loadDDictionary} with a ZSTD_dictContentType_e; the dictionary is copied. */
+    static long loadDDictionaryAdvanced(@NotNull MemorySegment dctx, @NotNull MemorySegment dict, long dictSize,
+                                        int dictContentType) {
+        try {
+            return (long) ZSTD_DCtx_loadDictionary_advanced.invokeExact(dctx, dict, dictSize,
+                    ZSTD_DLM_BY_COPY, dictContentType);
+        } catch (Throwable t) {
+            throw new AssertionError("Call to ZSTD_DCtx_loadDictionary_advanced failed", t);
+        }
+    }
+
     static long refDDict(@NotNull MemorySegment dctx, @NotNull MemorySegment ddict) {
         try {
             return (long) ZSTD_DCtx_refDDict.invokeExact(dctx, ddict);
@@ -1192,19 +1245,24 @@ final class ZstdBinding {
         }
     }
 
-    static @NotNull MemorySegment createCDict(@NotNull MemorySegment dict, long dictSize, int level) {
+    /** zstd_java_createCDict (ffm_zstd.c), copying the dictionary. */
+    static @NotNull MemorySegment createCDict(@NotNull MemorySegment dict, long dictSize, int level,
+                                              int dictContentType) {
         try {
-            return (MemorySegment) ZSTD_createCDict.invokeExact(dict, dictSize, level);
+            return (MemorySegment) zstd_java_createCDict.invokeExact(dict, dictSize, 0, dictContentType, level);
         } catch (Throwable t) {
-            throw new AssertionError("Call to ZSTD_createCDict failed", t);
+            throw new AssertionError("Call to zstd_java_createCDict failed", t);
         }
     }
 
-    static @NotNull MemorySegment createCDictByReference(@NotNull MemorySegment dict, long dictSize, int level) {
+    /** zstd_java_createCDict (ffm_zstd.c) by reference; `dict` must be a native segment. */
+    static @NotNull MemorySegment createCDictByReference(@NotNull MemorySegment dict, long dictSize, int level,
+                                                         int dictContentType) {
         try {
-            return (MemorySegment) ZSTD_createCDict_byReference.invokeExact(dict, dictSize, level);
+            return (MemorySegment) zstd_java_createCDict_byReference.invokeExact(
+                    dict, dictSize, 1, dictContentType, level);
         } catch (Throwable t) {
-            throw new AssertionError("Call to ZSTD_createCDict_byReference failed", t);
+            throw new AssertionError("Call to zstd_java_createCDict failed", t);
         }
     }
 
@@ -1216,19 +1274,22 @@ final class ZstdBinding {
         }
     }
 
-    static @NotNull MemorySegment createDDict(@NotNull MemorySegment dict, long dictSize) {
+    /** zstd_java_createDDict (ffm_zstd.c), copying the dictionary. */
+    static @NotNull MemorySegment createDDict(@NotNull MemorySegment dict, long dictSize, int dictContentType) {
         try {
-            return (MemorySegment) ZSTD_createDDict.invokeExact(dict, dictSize);
+            return (MemorySegment) zstd_java_createDDict.invokeExact(dict, dictSize, 0, dictContentType);
         } catch (Throwable t) {
-            throw new AssertionError("Call to ZSTD_createDDict failed", t);
+            throw new AssertionError("Call to zstd_java_createDDict failed", t);
         }
     }
 
-    static @NotNull MemorySegment createDDictByReference(@NotNull MemorySegment dict, long dictSize) {
+    /** zstd_java_createDDict (ffm_zstd.c) by reference; `dict` must be a native segment. */
+    static @NotNull MemorySegment createDDictByReference(@NotNull MemorySegment dict, long dictSize,
+                                                         int dictContentType) {
         try {
-            return (MemorySegment) ZSTD_createDDict_byReference.invokeExact(dict, dictSize);
+            return (MemorySegment) zstd_java_createDDict_byReference.invokeExact(dict, dictSize, 1, dictContentType);
         } catch (Throwable t) {
-            throw new AssertionError("Call to ZSTD_createDDict_byReference failed", t);
+            throw new AssertionError("Call to zstd_java_createDDict failed", t);
         }
     }
 

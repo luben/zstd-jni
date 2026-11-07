@@ -22,17 +22,18 @@ public class ZstdDictCompress extends SharedDictBase {
 
     private int level = Zstd.defaultCompressionLevel();
 
-    private void init(byte @NotNull [] dict, int dict_offset, int dict_size, int level) {
+    private void init(byte @NotNull [] dict, int dict_offset, int dict_size, int level, int dictContentType) {
         nativePtr = ZstdBinding.createCDict(
-                MemorySegment.ofArray(dict).asSlice(dict_offset, dict_size), dict_size, level).address();
+                MemorySegment.ofArray(dict).asSlice(dict_offset, dict_size), dict_size, level, dictContentType)
+                .address();
     }
 
-    private void initDirect(@NotNull ByteBuffer dict, int dict_size, int level, int byReference) {
+    private void initDirect(@NotNull ByteBuffer dict, int dict_size, int level, int byReference, int dictContentType) {
         // ofBuffer already covers [position, limit), the range supplied by the constructor.
         MemorySegment segment = MemorySegment.ofBuffer(dict);
         nativePtr = (byReference == 0
-                ? ZstdBinding.createCDict(segment, dict_size, level)
-                : ZstdBinding.createCDictByReference(segment, dict_size, level)).address();
+                ? ZstdBinding.createCDict(segment, dict_size, level, dictContentType)
+                : ZstdBinding.createCDictByReference(segment, dict_size, level, dictContentType)).address();
     }
 
     private void free() {
@@ -57,6 +58,17 @@ public class ZstdDictCompress extends SharedDictBase {
     }
 
     /**
+     * Convenience constructor to create a new dictionary for use with fast compress
+     *
+     * @param dict  buffer containing dictionary to load/parse with exact length
+     * @param level compression level
+     * @param type  how to interpret the content of the dictionary
+     */
+    public ZstdDictCompress(byte @NotNull [] dict, int level, @NotNull ZstdDictContentType type) {
+        this(dict, 0, dict.length, level, type);
+    }
+
+    /**
      * Create a new dictionary for use with fast compress
      *
      * @param dict   buffer containing dictionary
@@ -65,6 +77,24 @@ public class ZstdDictCompress extends SharedDictBase {
      * @param level  compression level
      */
     public ZstdDictCompress(byte @NotNull [] dict, int offset, int length, int level) {
+        this(dict, offset, length, level, ZstdDictContentType.AUTO);
+    }
+
+    /**
+     * Create a new dictionary for use with fast compress, interpreting its content as {@code type} says.
+     * A {@link ZstdDictContentType#RAW_CONTENT} dictionary that starts with the dictionary magic number
+     * is created with libzstd's advanced API, which fixes the compression parameters for {@code level}
+     * when the dictionary is created rather than adjusting them to the size of each input.
+     *
+     * @param dict   buffer containing dictionary
+     * @param offset the offset into the buffer to read from
+     * @param length number of bytes to use from the buffer
+     * @param level  compression level
+     * @param type   how to interpret the content of the dictionary
+     */
+    public ZstdDictCompress(byte @NotNull [] dict, int offset, int length, int level,
+                            @NotNull ZstdDictContentType type) {
+        java.util.Objects.requireNonNull(type, "type");
         this.level = level;
         if (dict.length - offset < 0) {
             throw new IllegalArgumentException("Dictionary buffer is too short");
@@ -72,7 +102,7 @@ public class ZstdDictCompress extends SharedDictBase {
         if (offset < 0 || length < 0 || length > dict.length - offset) {
             throw new IllegalArgumentException("Invalid offset/length for dictionary buffer");
         }
-        init(dict, offset, length, level);
+        init(dict, offset, length, level, type.value());
 
         if (0 == nativePtr) {
             throw new IllegalStateException("ZSTD_createCDict failed");
@@ -101,6 +131,24 @@ public class ZstdDictCompress extends SharedDictBase {
      * @param byReference tell the native part to use the byte buffer directly and not copy the data when true.
      */
     public ZstdDictCompress(@NotNull ByteBuffer dict, int level, boolean byReference) {
+	this(dict, level, byReference, ZstdDictContentType.AUTO);
+    }
+
+    /**
+     * Create a new dictionary for use with fast compress, interpreting its content as {@code type} says.
+     * If byReference is true, then the native code does not copy the data but keeps a reference to the byte buffer, which must then not be modified before this context has been closed.
+     * A {@link ZstdDictContentType#RAW_CONTENT} dictionary that starts with the dictionary magic number
+     * is created with libzstd's advanced API, which fixes the compression parameters for {@code level}
+     * when the dictionary is created rather than adjusting them to the size of each input.
+     *
+     * @param dict   Direct ByteBuffer containing dictionary using position and limit to define range in buffer.
+     * @param level  compression level
+     * @param byReference tell the native part to use the byte buffer directly and not copy the data when true.
+     * @param type   how to interpret the content of the dictionary
+     */
+    public ZstdDictCompress(@NotNull ByteBuffer dict, int level, boolean byReference,
+                            @NotNull ZstdDictContentType type) {
+        java.util.Objects.requireNonNull(type, "type");
 	this.level = level;
 	int length = dict.limit() - dict.position();
         if (!dict.isDirect()) {
@@ -109,7 +157,7 @@ public class ZstdDictCompress extends SharedDictBase {
         if (length < 0) {
             throw new IllegalArgumentException("dict cannot be empty.");
         }
-	initDirect(dict, length, level, byReference ? 1 : 0);
+	initDirect(dict, length, level, byReference ? 1 : 0, type.value());
 
         if (nativePtr == 0L) {
            throw new IllegalStateException("ZSTD_createCDict failed");

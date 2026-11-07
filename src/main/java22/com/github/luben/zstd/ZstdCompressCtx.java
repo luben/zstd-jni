@@ -503,10 +503,25 @@ public class ZstdCompressCtx extends AutoCloseBase {
      */
     @NotNull
     public ZstdCompressCtx loadDict(byte @Nullable [] dict) {
+        return loadDict(dict, ZstdDictContentType.AUTO);
+    }
+
+    /**
+     * Load compression dictionary to be used for subsequently compressed frames,
+     * interpreting its content as {@code type} says.
+     * A {@link ZstdDictContentType#FULL_DICT} that is not a valid dictionary is reported
+     * when compressing with it.
+     *
+     * @param dict the dictionary or `null` to remove loaded dictionary
+     * @param type how to interpret the content of the dictionary
+     */
+    @NotNull
+    public ZstdCompressCtx loadDict(byte @Nullable [] dict, @NotNull ZstdDictContentType type) {
+        java.util.Objects.requireNonNull(type, "type");
         ensureOpen();
         acquireSharedLock();
         try {
-            long result = loadCDict0(dict);
+            long result = loadCDict0(dict, type.value());
             if (Zstd.isError(result)) {
                 throw new ZstdException(result);
             }
@@ -526,12 +541,12 @@ public class ZstdCompressCtx extends AutoCloseBase {
      * the empty-array case was checked to produce the same frames as JNI.
      * JNI could return a memory-allocation error when acquiring the array pointer;
      * MemorySegment.ofArray needs no equivalent error check. */
-    private long loadCDict0(byte @Nullable [] dict) {
+    private long loadCDict0(byte @Nullable [] dict, int dictContentType) {
         if (dict == null) {
             // remove dictionary
             return ZstdBinding.loadDictionary(cctx, MemorySegment.NULL, 0);
         }
-        return ZstdBinding.loadDictionary(cctx, MemorySegment.ofArray(dict), dict.length);
+        return ZstdBinding.loadDictionaryAdvanced(cctx, MemorySegment.ofArray(dict), dict.length, dictContentType);
     }
 
     /**

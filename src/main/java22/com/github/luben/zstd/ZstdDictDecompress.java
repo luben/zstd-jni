@@ -20,17 +20,17 @@ public class ZstdDictDecompress extends SharedDictBase {
 
     private ByteBuffer sharedDict = null;
 
-    private void init(byte @NotNull [] dict, int dict_offset, int dict_size) {
+    private void init(byte @NotNull [] dict, int dict_offset, int dict_size, int dictContentType) {
         nativePtr = ZstdBinding.createDDict(
-                MemorySegment.ofArray(dict).asSlice(dict_offset, dict_size), dict_size).address();
+                MemorySegment.ofArray(dict).asSlice(dict_offset, dict_size), dict_size, dictContentType).address();
     }
 
-    private void initDirect(@NotNull ByteBuffer dict, int dict_size, int byReference) {
+    private void initDirect(@NotNull ByteBuffer dict, int dict_size, int byReference, int dictContentType) {
         // ofBuffer already covers [position, limit), the range supplied by the constructor.
         MemorySegment segment = MemorySegment.ofBuffer(dict);
         nativePtr = (byReference == 0
-                ? ZstdBinding.createDDict(segment, dict_size)
-                : ZstdBinding.createDDictByReference(segment, dict_size)).address();
+                ? ZstdBinding.createDDict(segment, dict_size, dictContentType)
+                : ZstdBinding.createDDictByReference(segment, dict_size, dictContentType)).address();
     }
 
     private void free() {
@@ -54,6 +54,16 @@ public class ZstdDictDecompress extends SharedDictBase {
     }
 
     /**
+     * Convenience constructor to create a new dictionary for use with fast decompress
+     *
+     * @param dict buffer containing dictionary to load/parse with exact length
+     * @param type how to interpret the content of the dictionary
+     */
+    public ZstdDictDecompress(byte @NotNull [] dict, @NotNull ZstdDictContentType type) {
+        this(dict, 0, dict.length, type);
+    }
+
+    /**
      * Create a new dictionary for use with fast decompress
      *
      * @param dict   buffer containing dictionary
@@ -61,10 +71,23 @@ public class ZstdDictDecompress extends SharedDictBase {
      * @param length number of bytes to use from the buffer
      */
     public ZstdDictDecompress(byte @NotNull [] dict, int offset, int length) {
+        this(dict, offset, length, ZstdDictContentType.AUTO);
+    }
+
+    /**
+     * Create a new dictionary for use with fast decompress, interpreting its content as {@code type} says.
+     *
+     * @param dict   buffer containing dictionary
+     * @param offset the offset into the buffer to read from
+     * @param length number of bytes to use from the buffer
+     * @param type   how to interpret the content of the dictionary
+     */
+    public ZstdDictDecompress(byte @NotNull [] dict, int offset, int length, @NotNull ZstdDictContentType type) {
+        java.util.Objects.requireNonNull(type, "type");
         if (offset < 0 || length < 0 || length > dict.length - offset) {
             throw new IllegalArgumentException("Invalid offset/length for dictionary buffer");
         }
-        init(dict, offset, length);
+        init(dict, offset, length, type.value());
 
         if (nativePtr == 0L) {
            throw new IllegalStateException("ZSTD_createDDict failed");
@@ -92,6 +115,19 @@ public class ZstdDictDecompress extends SharedDictBase {
      * @param byReference tell the native part to use the byte buffer directly and not copy the data when true.
      */
     public ZstdDictDecompress(@NotNull ByteBuffer dict, boolean byReference) {
+	this(dict, byReference, ZstdDictContentType.AUTO);
+    }
+
+    /**
+     * Create a new dictionary for use with fast decompress, interpreting its content as {@code type} says.
+     * If byReference is true, then the native code does not copy the data but keeps a reference to the byte buffer, which must then not be modified before this context has been closed.
+     *
+     * @param dict   Direct ByteBuffer containing dictionary using position and limit to define range in buffer.
+     * @param byReference tell the native part to use the byte buffer directly and not copy the data when true.
+     * @param type   how to interpret the content of the dictionary
+     */
+    public ZstdDictDecompress(@NotNull ByteBuffer dict, boolean byReference, @NotNull ZstdDictContentType type) {
+        java.util.Objects.requireNonNull(type, "type");
 
 	int length = dict.limit() - dict.position();
         if (!dict.isDirect()) {
@@ -100,7 +136,7 @@ public class ZstdDictDecompress extends SharedDictBase {
         if (length < 0) {
             throw new IllegalArgumentException("dict cannot be empty.");
         }
-	initDirect(dict, length, byReference ? 1 : 0);
+	initDirect(dict, length, byReference ? 1 : 0, type.value());
 
         if (nativePtr == 0L) {
            throw new IllegalStateException("ZSTD_createDDict failed");

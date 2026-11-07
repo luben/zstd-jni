@@ -3,6 +3,7 @@ _zstd_java_*
 _ZDICT_trainFromBuffer
 _ZDICT_trainFromBuffer_legacy
 _ZSTD_CCtx_loadDictionary
+_ZSTD_CCtx_loadDictionary_advanced
 _ZSTD_CCtx_refCDict
 _ZSTD_CCtx_reset
 _ZSTD_CCtx_setParameter
@@ -11,15 +12,12 @@ _ZSTD_compress2
 _ZSTD_compressBound
 _ZSTD_compressStream2_simpleArgs
 _ZSTD_createCCtx
-_ZSTD_createCDict
-_ZSTD_createCDict_byReference
 _ZSTD_createCStream
 _ZSTD_createDCtx
-_ZSTD_createDDict
-_ZSTD_createDDict_byReference
 _ZSTD_createDStream
 _ZSTD_CStreamOutSize
 _ZSTD_DCtx_loadDictionary
+_ZSTD_DCtx_loadDictionary_advanced
 _ZSTD_DCtx_refDDict
 _ZSTD_DCtx_reset
 _ZSTD_DCtx_setParameter
