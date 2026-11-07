@@ -451,10 +451,25 @@ public class ZstdCompressCtx extends AutoCloseBase {
      */
     @NotNull
     public ZstdCompressCtx loadDict(byte @Nullable [] dict) {
+        return loadDict(dict, ZstdDictContentType.AUTO);
+    }
+
+    /**
+     * Load compression dictionary to be used for subsequently compressed frames,
+     * interpreting its content as {@code type} says.
+     * A {@link ZstdDictContentType#FULL_DICT} that is not a valid dictionary is reported
+     * when compressing with it.
+     *
+     * @param dict the dictionary or `null` to remove loaded dictionary
+     * @param type how to interpret the content of the dictionary
+     */
+    @NotNull
+    public ZstdCompressCtx loadDict(byte @Nullable [] dict, @NotNull ZstdDictContentType type) {
+        java.util.Objects.requireNonNull(type, "type");
         ensureOpen();
         acquireSharedLock();
         try {
-            long result = loadCDict0(nativePtr, dict);
+            long result = loadCDict0(nativePtr, dict, type.value());
             if (Zstd.isError(result)) {
                 throw new ZstdException(result);
             }
@@ -467,7 +482,7 @@ public class ZstdCompressCtx extends AutoCloseBase {
         }
         return this;
     }
-    private native long loadCDict0(long ptr, byte @Nullable [] dict);
+    private native long loadCDict0(long ptr, byte @Nullable [] dict, int dictContentType);
 
     /**
      * Tells how much data has been ingested (read from input),

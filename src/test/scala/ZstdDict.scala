@@ -427,4 +427,129 @@ class ZstdDictSpec extends AnyFlatSpec {
       assert(input.toSeq == output.toSeq)
     }
   }
+
+  // RFC 9842 `dcz`: the dictionary is any earlier resource and must be loaded as raw
+  // content, even when it happens to start with the dictionary magic number.
+  val magicPrefixedDict: Array[Byte] = Array(0x37, 0xA4, 0x30, 0xEC).map(_.toByte) ++ input.take(16 * 1024)
+  val plainRawDict: Array[Byte] = input.slice(1024, 17 * 1024)
+  val trainedDict: Array[Byte] = train(false, 1024)
+
+  def compressWith(dict: Array[Byte], useCDict: Boolean, byteBuffer: Boolean, byReference: Boolean,
+                   tpe: ZstdDictContentType): Array[Byte] = {
+    if (useCDict) {
+      val cdict =
+        if (byteBuffer) new ZstdDictCompress(wrapInDirectByteBuffer(dict), 3, byReference, tpe)
+        else new ZstdDictCompress(dict, 3, tpe)
+      try Zstd.compress(input, cdict) finally cdict.close()
+    } else {
+      Using.resource(new ZstdCompressCtx()) { ctx =>
+        ctx.setLevel(3).loadDict(dict, tpe).compress(input)
+      }
+    }
+  }
+
+  def decompressWith(compressed: Array[Byte], dict: Array[Byte], useDDict: Boolean, byteBuffer: Boolean,
+                     byReference: Boolean, tpe: ZstdDictContentType): Array[Byte] = {
+    if (useDDict) {
+      val ddict =
+        if (byteBuffer) new ZstdDictDecompress(wrapInDirectByteBuffer(dict), byReference, tpe)
+        else new ZstdDictDecompress(dict, tpe)
+      try Zstd.decompress(compressed, ddict, input.length) finally ddict.close()
+    } else {
+      Using.resource(new ZstdDecompressCtx()) { ctx =>
+        ctx.loadDict(dict, tpe).decompress(compressed, input.length)
+      }
+    }
+  }
+
+  "ZstdDictContentType.AUTO" should "reject a raw dictionary that starts with the magic number" in {
+    intercept[IllegalStateException] { new ZstdDictCompress(magicPrefixedDict, 3) }
+    intercept[IllegalStateException] { new ZstdDictDecompress(magicPrefixedDict) }
+    intercept[IllegalStateException] { new ZstdDictCompress(magicPrefixedDict, 3, ZstdDictContentType.AUTO) }
+    intercept[IllegalStateException] { new ZstdDictDecompress(magicPrefixedDict, ZstdDictContentType.AUTO) }
+    Using.resource(new ZstdDecompressCtx()) { ctx =>
+      intercept[ZstdException] { ctx.loadDict(magicPrefixedDict, ZstdDictContentType.AUTO) }
+    }
+  }
+
+  for {
+    useCDict <- List(false, true)
+    useDDict <- List(false, true)
+    byteBuffer <- List(false, true)
+    byReference <- List(false, true)
+    if byteBuffer || !byReference
+  } {
+    val desc = s"(cdict $useCDict, ddict $useDDict, byteBuffer $byteBuffer, byReference $byReference)"
+
+    "ZstdDictContentType.RAW_CONTENT" should s"round-trip with a dictionary that starts with the magic number $desc" in {
+      val compressed = compressWith(magicPrefixedDict, useCDict, byteBuffer, byReference, ZstdDictContentType.RAW_CONTENT)
+      assert(Zstd.getDictIdFromFrame(compressed) == 0)
+      // the dictionary is actually used: the input starts with its content
+      intercept[ZstdException] { Zstd.decompress(compressed, input.length) }
+      val decompressed = decompressWith(compressed, magicPrefixedDict, useDDict, byteBuffer, byReference,
+        ZstdDictContentType.RAW_CONTENT)
+      assert(input.toSeq == decompressed.toSeq)
+    }
+
+    it should s"load a full dictionary as raw content $desc" in {
+      val compressed = compressWith(trainedDict, useCDict, byteBuffer, byReference, ZstdDictContentType.RAW_CONTENT)
+      assert(Zstd.getDictIdFromFrame(compressed) == 0)
+      val decompressed = decompressWith(compressed, trainedDict, useDDict, byteBuffer, byReference,
+        ZstdDictContentType.RAW_CONTENT)
+      assert(input.toSeq == decompressed.toSeq)
+    }
+
+    it should s"compress like AUTO when the dictionary does not start with the magic number $desc" in {
+      val raw = compressWith(plainRawDict, useCDict, byteBuffer, byReference, ZstdDictContentType.RAW_CONTENT)
+      val auto = compressWith(plainRawDict, useCDict, byteBuffer, byReference, ZstdDictContentType.AUTO)
+      assert(raw.toSeq == auto.toSeq)
+      val decompressed = decompressWith(raw, plainRawDict, useDDict, byteBuffer, byReference,
+        ZstdDictContentType.RAW_CONTENT)
+      assert(input.toSeq == decompressed.toSeq)
+    }
+
+    "ZstdDictContentType.FULL_DICT" should s"round-trip with a trained dictionary $desc" in {
+      val compressed = compressWith(trainedDict, useCDict, byteBuffer, byReference, ZstdDictContentType.FULL_DICT)
+      assert(Zstd.getDictIdFromFrame(compressed) == Zstd.getDictIdFromDict(trainedDict))
+      assert(compressed.toSeq ==
+        compressWith(trainedDict, useCDict, byteBuffer, byReference, ZstdDictContentType.AUTO).toSeq)
+      val decompressed = decompressWith(compressed, trainedDict, useDDict, byteBuffer, byReference,
+        ZstdDictContentType.FULL_DICT)
+      assert(input.toSeq == decompressed.toSeq)
+    }
+
+    it should s"reject a dictionary that does not start with the magic number $desc" in {
+      if (useCDict) {
+        intercept[IllegalStateException] {
+          compressWith(plainRawDict, useCDict, byteBuffer, byReference, ZstdDictContentType.FULL_DICT)
+        }
+      } else {
+        // the compression context only checks the dictionary when it is first used
+        intercept[ZstdException] {
+          compressWith(plainRawDict, useCDict, byteBuffer, byReference, ZstdDictContentType.FULL_DICT)
+        }
+      }
+      val compressed = compressWith(plainRawDict, true, false, false, ZstdDictContentType.RAW_CONTENT)
+      if (useDDict) {
+        intercept[IllegalStateException] {
+          decompressWith(compressed, plainRawDict, useDDict, byteBuffer, byReference, ZstdDictContentType.FULL_DICT)
+        }
+      } else {
+        intercept[ZstdException] {
+          decompressWith(compressed, plainRawDict, useDDict, byteBuffer, byReference, ZstdDictContentType.FULL_DICT)
+        }
+      }
+    }
+  }
+
+  "ZstdDictContentType" should "not accept null" in {
+    intercept[NullPointerException] { new ZstdDictCompress(plainRawDict, 3, null: ZstdDictContentType) }
+    intercept[NullPointerException] { new ZstdDictDecompress(plainRawDict, null: ZstdDictContentType) }
+    Using.resource(new ZstdCompressCtx()) { ctx =>
+      intercept[NullPointerException] { ctx.loadDict(plainRawDict, null: ZstdDictContentType) }
+    }
+    Using.resource(new ZstdDecompressCtx()) { ctx =>
+      intercept[NullPointerException] { ctx.loadDict(plainRawDict, null: ZstdDictContentType) }
+    }
+  }
 }
