@@ -24,12 +24,11 @@ class ZstdDictSpec extends AnyFlatSpec {
 
   def wrapInDirectByteBuffer(array: Array[Byte]): ByteBuffer = {
     //use a slightly oversized buffer and a nonzero offset to test we use the position/limit too
-    val bb = ByteBuffer.allocateDirect(array.length + 13);
-    bb.limit(bb.capacity())
+    val bb = ByteBuffer.allocateDirect(array.length + 13)
     bb.position(7)
-    bb.limit(bb.position() + array.length)
     bb.put(array)
-    bb.flip()
+    bb.limit(bb.position())
+    bb.position(7)
     bb
   }
 
