@@ -122,6 +122,36 @@ public class ZstdInputStream extends FilterInputStream {
         return inner.markSupported();
     }
 
+    /**
+     * Reset the decompression stream to read from a new {@link InputStream}.
+     *
+     * This reuses the existing native {@code ZSTD_DStream} context, including its
+     * internal window buffer and any previously loaded dictionary. The native context
+     * is reset via {@code ZSTD_DCtx_reset} with {@code ZSTD_reset_session_only},
+     * which resets the session state without freeing or reallocating the window buffer
+     * and without clearing loaded dictionaries or parameters.
+     * If the next frame's window size fits within the existing buffer, no native memory
+     * allocation occurs at all.
+     *
+     * Previously configured settings such as {@link #setContinuous(boolean)} and
+     * loaded dictionaries are preserved across the reset.
+     *
+     * The previous {@link InputStream} is not closed; the caller is responsible
+     * for its lifecycle.
+     *
+     * This is intended for pooling: instead of creating a new
+     * {@code ZstdInputStream} (which calls {@code ZSTD_createDStream} +
+     * {@code malloc}) for each compressed stream and then closing it (which calls
+     * {@code ZSTD_freeDStream} + {@code free}), callers can keep a single instance
+     * and call {@code reset()} with each new input stream.
+     *
+     * @param newInput the new compressed input stream to decompress
+     * @return the old input stream
+     * @throws IOException if the stream has been closed or the native reset fails
+     */
+    public synchronized InputStream resetSession(@NotNull InputStream newInput) throws IOException {
+        return inner.resetSession(newInput);
+    }
 
     public void close() throws IOException {
         inner.close();

@@ -2015,6 +2015,38 @@ class ZstdSpec extends AnyFlatSpec with ScalaCheckPropertyChecks {
     zis.close()
   }
 
+  "ZstdInputStream.resetSession" should "decompress a second stream after reset" in {
+    val input1 = "hello world".getBytes("UTF-8")
+    val input2 = "goodbye world".getBytes("UTF-8")
+    val compressed1 = Zstd.compress(input1)
+    val compressed2 = Zstd.compress(input2)
+
+    val zis = new ZstdInputStream(new ByteArrayInputStream(compressed1))
+
+    // decompress first stream
+    val output1 = new Array[Byte](input1.length)
+    var total = 0
+    while (total < input1.length) {
+      val read = zis.read(output1, total, input1.length - total)
+      assert(read != -1, "unexpected EOF on first stream")
+      total += read
+    }
+    assert(input1.toSeq == output1.toSeq)
+
+    // reset and decompress second stream
+    zis.resetSession(new ByteArrayInputStream(compressed2))
+    val output2 = new Array[Byte](input2.length)
+    total = 0
+    while (total < input2.length) {
+      val read = zis.read(output2, total, input2.length - total)
+      assert(read != -1, "unexpected EOF on second stream")
+      total += read
+    }
+    assert(input2.toSeq == output2.toSeq)
+
+    zis.close()
+  }
+
   it should "decompress correctly after resetting mid-stream" in {
     val input1 = "abcdefghij" * 100
     val input2 = "klmnopqrst" * 100
