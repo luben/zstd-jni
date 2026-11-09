@@ -101,7 +101,7 @@ public abstract class BaseZstdBufferDecompressingStreamNoFinalizer implements Cl
         return this;
     }
 
-    int readInternal(@NotNull ByteBuffer target, boolean isDirectBufferRequired) throws IOException {
+    synchronized int readInternal(@NotNull ByteBuffer target, boolean isDirectBufferRequired) throws IOException {
         if (closed) {
             throw new IOException("Stream closed");
         }
@@ -145,7 +145,7 @@ public abstract class BaseZstdBufferDecompressingStreamNoFinalizer implements Cl
     }
 
     @Override
-    public void close() {
+    public synchronized void close() {
         if (!closed) {
             try {
                 freeDStream(stream);

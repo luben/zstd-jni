@@ -81,7 +81,7 @@ public class ZstdDirectBufferCompressingStreamNoFinalizer implements Closeable, 
         return this;
     }
 
-    public void compress(@NotNull ByteBuffer source) throws IOException {
+    public synchronized void compress(@NotNull ByteBuffer source) throws IOException {
         if (!source.isDirect()) {
             throw new IllegalArgumentException("Source buffer should be a direct buffer");
         }
@@ -128,7 +128,7 @@ public class ZstdDirectBufferCompressingStreamNoFinalizer implements Closeable, 
     }
 
     @Override
-    public void flush() throws IOException {
+    public synchronized void flush() throws IOException {
         if (closed) {
             throw new IOException("Already closed");
         }
@@ -159,7 +159,7 @@ public class ZstdDirectBufferCompressingStreamNoFinalizer implements Closeable, 
     }
 
     @Override
-    public void close() throws IOException {
+    public synchronized void close() throws IOException {
         if (!closed) {
             try {
                 if (initialized) {
