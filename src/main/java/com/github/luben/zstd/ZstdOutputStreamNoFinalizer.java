@@ -30,7 +30,6 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
     private final @NotNull ByteBuffer dstByteBuffer;
     private final byte @NotNull [] dst;
     private boolean isClosed = false;
-    private static final int dstSize = (int) recommendedCOutSize();
     private boolean closeFrameOnFlush = false;
     private boolean frameClosed = true;
     private boolean frameStarted = false;
@@ -85,7 +84,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
         // create compression context
         this.stream = createCStream();
         this.bufferPool = bufferPool;
-        this.dstByteBuffer = Zstd.getArrayBackedBuffer(bufferPool, dstSize);
+        this.dstByteBuffer = Zstd.getArrayBackedBuffer(bufferPool, (int) recommendedCOutSize());
         this.dst = dstByteBuffer.array();
     }
 
@@ -416,7 +415,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
         int srcSize = offset + len;
         srcPos = offset;
         while (srcPos < srcSize && !isClosed) {
-            long size = compressStream(stream, dst, dstSize, src, srcSize);
+            long size = compressStream(stream, dst, dst.length, src, srcSize);
             if (Zstd.isError(size)) {
                 throw new ZstdIOException(size);
             }
@@ -444,7 +443,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
                 // compress the remaining output and close the frame
                 long size;
                 do {
-                    size = endStream(stream, dst, dstSize);
+                    size = endStream(stream, dst, dst.length);
                     if (Zstd.isError(size)) {
                         throw new ZstdIOException(size);
                     }
@@ -455,7 +454,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
                 // compress the remaining input
                 long size;
                 do {
-                    size = flushStream(stream, dst, dstSize);
+                    size = flushStream(stream, dst, dst.length);
                     if (Zstd.isError(size)) {
                         throw new ZstdIOException(size);
                     }
@@ -495,7 +494,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
             // compress the remaining input and close the frame
             if (!frameClosed) {
                 do {
-                    size = endStream(stream, dst, dstSize);
+                    size = endStream(stream, dst, dst.length);
                     if (Zstd.isError(size)) {
                         throw new ZstdIOException(size);
                     }
