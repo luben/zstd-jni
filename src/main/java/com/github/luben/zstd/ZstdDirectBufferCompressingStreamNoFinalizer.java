@@ -105,7 +105,7 @@ public class ZstdDirectBufferCompressingStreamNoFinalizer implements Closeable, 
         }
         while (source.hasRemaining()) {
             ByteBuffer target = this.target;
-            if (target == null) {
+            if (target == null && closed) {
                 throw new IOException("Stream closed");
             }
             if (!target.hasRemaining()) {
@@ -136,7 +136,7 @@ public class ZstdDirectBufferCompressingStreamNoFinalizer implements Closeable, 
             long needed;
             do {
                 ByteBuffer target = this.target;
-                if (target == null) {
+                if (target == null || closed) {
                     throw new IOException("Stream closed");
                 }
                 needed = flushStream(stream, target, target.position(), target.remaining());

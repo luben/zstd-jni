@@ -212,6 +212,10 @@ public class ZstdInputStreamNoFinalizer extends FilterInputStream {
                 }
             }
 
+            if (isClosed) {
+                throw new IOException("Stream closed");
+            }
+
             // Input left over after a finished frame is the start of the next one.
             if (srcPos < srcSize) {
                 frameFinished = false;

@@ -415,7 +415,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
         }
         int srcSize = offset + len;
         srcPos = offset;
-        while (srcPos < srcSize) {
+        while (srcPos < srcSize && !isClosed) {
             long size = compressStream(stream, dst, dstSize, src, srcSize);
             if (Zstd.isError(size)) {
                 throw new ZstdIOException(size);
@@ -449,7 +449,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
                         throw new ZstdIOException(size);
                     }
                     out.write(dst, 0, (int) dstPos);
-                } while (size > 0);
+                } while (size > 0 && !isClosed);
                 frameClosed = true;
             } else {
                 // compress the remaining input
@@ -460,7 +460,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
                         throw new ZstdIOException(size);
                     }
                     out.write(dst, 0, (int) dstPos);
-                } while (size > 0);
+                } while (size > 0 && !isClosed);
             }
             out.flush();
         }
@@ -500,7 +500,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
                         throw new ZstdIOException(size);
                     }
                     out.write(dst, 0, (int) dstPos);
-                } while (size > 0);
+                } while (size > 0 && !isClosed);
             }
             if (closeParentStream) {
                 out.close();
