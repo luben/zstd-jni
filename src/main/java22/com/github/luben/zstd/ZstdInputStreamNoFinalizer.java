@@ -52,7 +52,6 @@ public class ZstdInputStreamNoFinalizer extends FilterInputStream {
      * segmentOf below), but `src` never changes, so it is built once in the
      * constructor. */
     private final @NotNull MemorySegment srcSegment;
-    private static final int srcBuffSize = (int) recommendedDInSize();
 
     private boolean isContinuous = false;
     private boolean frameFinished = true;
@@ -120,7 +119,7 @@ public class ZstdInputStreamNoFinalizer extends FilterInputStream {
     public ZstdInputStreamNoFinalizer(@NotNull InputStream inStream, @NotNull BufferPool bufferPool) throws IOException {
         super(inStream);
         this.bufferPool = bufferPool;
-        this.srcByteBuffer = Zstd.getArrayBackedBuffer(bufferPool, srcBuffSize);
+        this.srcByteBuffer = Zstd.getArrayBackedBuffer(bufferPool, (int) recommendedDInSize());
         this.src = srcByteBuffer.array();
         this.srcSegment = MemorySegment.ofArray(src);
         // memory barrier
@@ -250,7 +249,7 @@ public class ZstdInputStreamNoFinalizer extends FilterInputStream {
             // we will read only if data from the upstream is available OR
             // we have not yet produced any output
             if (needRead && (in.available() > 0 || dstPosition == offset)) {
-                srcSize = in.read(src, 0, srcBuffSize);
+                srcSize = in.read(src, 0, src.length);
                 srcPos.set(0);
                 if (srcSize < 0) {
                     srcSize = 0;

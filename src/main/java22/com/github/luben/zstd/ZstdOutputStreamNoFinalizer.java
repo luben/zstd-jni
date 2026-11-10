@@ -30,7 +30,6 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
     private final @NotNull ByteBuffer dstByteBuffer;
     private final byte @NotNull [] dst;
     private boolean isClosed = false;
-    private static final int dstSize = (int) recommendedCOutSize();
     private boolean closeFrameOnFlush = false;
     private boolean frameClosed = true;
     private boolean frameStarted = false;
@@ -75,7 +74,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
         srcPos.set(srcPosition);
         return ZstdBinding.compressStream2(
                 cstream,
-                dstSegment, dstSize, dstPos.segment,
+                dstSegment, dst.length, dstPos.segment,
                 src, srcSize, srcPos.segment,
                 endOp);
     }
@@ -138,7 +137,7 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
         this.cstream = ZstdBinding.createCStream();
         this.stream = cstream.address();
         this.bufferPool = bufferPool;
-        this.dstByteBuffer = Zstd.getArrayBackedBuffer(bufferPool, dstSize);
+        this.dstByteBuffer = Zstd.getArrayBackedBuffer(bufferPool, (int) recommendedCOutSize());
         this.dst = dstByteBuffer.array();
         this.dstSegment = MemorySegment.ofArray(dst);
     }
