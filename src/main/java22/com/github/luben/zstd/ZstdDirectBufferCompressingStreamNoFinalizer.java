@@ -308,7 +308,9 @@ public class ZstdDirectBufferCompressingStreamNoFinalizer implements Closeable, 
                 }
             }
             finally {
-                ZstdBinding.freeCStream(cstream);
+                if (!closed) {
+                    ZstdBinding.freeCStream(cstream);
+                }
                 closed = true;
                 initialized = false;
                 target = null; // help GC with realizing the buffer can be released
