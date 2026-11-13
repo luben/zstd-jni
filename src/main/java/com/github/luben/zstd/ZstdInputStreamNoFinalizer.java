@@ -40,8 +40,13 @@ public class ZstdInputStreamNoFinalizer extends FilterInputStream {
     private boolean frameFinished = true;
     private boolean isClosed = false;
     private boolean isMultiDict = false;
-    // keep the active dict(s) alive
+    // Dicts loaded while multi-dict mode was on. Native zstd keeps them in the DCtx's ddictSet,
+    // which is only freed together with the DCtx (not by switching back to single-dict mode or by
+    // loading another dict), so they must stay locked until close().
     private LinkedList<ZstdDictDecompress> active_dicts =  new LinkedList<ZstdDictDecompress>();
+    // The dict loaded while in single-dict mode, if any. Native only references it as the current
+    // DCtx dict (never in ddictSet), so it can be released as soon as another dict replaces it.
+    private ZstdDictDecompress singleDict = null;
 
     /* JNI methods */
     public static native long recommendedDInSize();
@@ -112,16 +117,31 @@ public class ZstdInputStreamNoFinalizer extends FilterInputStream {
         int size = Zstd.loadFastDictDecompress(stream, dict);
         if (Zstd.isError(size)) {
             if (dict != null) {
-                dict.releaseSharedLock();
+                long code = Zstd.getErrorCode(size);
+                if (code == Zstd.errStageWrong() || code == Zstd.errDictionaryWrong()) {
+                    // failed before the DCtx was touched: native does not reference the dict
+                    dict.releaseSharedLock();
+                } else {
+                    // ZSTD_DCtx_refDDict fails on growing ddictSet only after it has made this dict
+                    // the current one, so native may still use it: keep it locked until close()
+                    active_dicts.addFirst(dict);
+                }
             }
             throw new ZstdIOException(size);
         }
-        // release the shared lock on the previously used dict if not using mulitple dicts (if any)
-        if (!active_dicts.isEmpty() && !isMultiDict) {
-            active_dicts.removeLast().releaseSharedLock();
+        // ZSTD_DCtx_refDDict dropped the previous current dict. If that one was loaded in
+        // single-dict mode it is not in ddictSet, so native no longer references it.
+        ZstdDictDecompress previous = singleDict;
+        if (isMultiDict) {
+            // native added it to ddictSet: keep it locked until close()
+            active_dicts.addFirst(dict);
+            singleDict = null;
+        } else {
+            singleDict = dict;
         }
-        // keep the dict alive so it's not garbage collected
-        active_dicts.addFirst(dict);
+        if (previous != null) {
+            previous.releaseSharedLock();
+        }
         return this;
     }
 
@@ -348,6 +368,10 @@ public class ZstdInputStreamNoFinalizer extends FilterInputStream {
         }
         while (active_dicts.size() > 0) {
             active_dicts.removeLast().releaseSharedLock();
+        }
+        if (singleDict != null) {
+            singleDict.releaseSharedLock();
+            singleDict = null;
         }
         isClosed = true;
         bufferPool.release(srcByteBuffer);
