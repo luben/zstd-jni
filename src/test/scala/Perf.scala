@@ -162,30 +162,6 @@ class ZstdPerfSpec extends AnyFlatSpec  {
 
   }
 
-  def benchLDM(name: String, input: Array[Byte], level: Int = 1): Unit = {
-    var nsc = new AllocTracker
-    var nsd = new AllocTracker
-    val c_ctx = new ZstdCompressCtx()
-    c_ctx.setLevel(level)
-    c_ctx.setLong(27);
-    val d_ctx = new ZstdDecompressCtx()
-    val compressed: Array[Byte] = Array.fill[Byte](input.size)(0)
-    val output: Array[Byte] = Array.fill[Byte](input.size)(0)
-    var compressedSize = 0;
-
-    for (i <- 1 to cycles) {
-      nsc.timeAndAlloc {
-        compressedSize = c_ctx.compress(compressed, input)
-      }
-     nsd.timeAndAlloc {
-        d_ctx.decompressByteArray(output, 0, output.size, compressed, 0, compressedSize)
-      }
-    }
-
-    report(name, compressedSize, input.size, cycles, nsc, nsd)
-    assert (input.toSeq == output.toSeq)
-  }
-
   def benchMT(name: String, input: Array[Byte], level: Int = 1): Unit = {
     var nsc = new AllocTracker
     var nsd = new AllocTracker
@@ -367,44 +343,6 @@ class ZstdPerfSpec extends AnyFlatSpec  {
     assert(input.toSeq == output.toSeq)
   }
 
-  def benchStreamLDM(name: String, input: Array[Byte], level: Int = 1): Unit = {
-    val size  = input.length
-
-    val os = new ByteArrayOutputStream(Zstd.compressBound(size.toLong).toInt)
-    val nsc = new AllocTracker
-    nsc.timeAndAlloc {
-      for (i <- 1 to cycles) {
-        os.reset()
-        val zos = new ZstdOutputStream(os, level)
-        zos.setLong(27);
-        zos.write(input)
-        zos.close
-      }
-    }
-    val compressed = os.toByteArray()
-
-    val output= Array.fill[Byte](size)(0)
-    val nsd = new AllocTracker
-    nsd.timeAndAlloc {
-      for (i <- 1 to cycles) {
-
-        // now decompress
-        val is = new ByteArrayInputStream(compressed)
-        val zis = new ZstdInputStream(is)
-        var ptr = 0
-
-        while (ptr < size) {
-          ptr += zis.read(output, ptr, size - ptr)
-        }
-        zis.close
-
-      }
-    }
-    report(name, compressed.size, size, cycles, nsc, nsd)
-    assert(input.toSeq == output.toSeq)
-  }
-
-
   val cycles = 10
 
   val levels = List(-3, -1, 1, 3, 6, 9)
@@ -415,7 +353,6 @@ class ZstdPerfSpec extends AnyFlatSpec  {
       benchDirectByteBuffer(s"Compressable data at $level in a direct ByteBuffer", buff, level)
       benchDirectByteBufferWithDict(s"Compressable data at $level in a direct ByteBuffer and pre-allocated contexts", buff, level)
       benchMT(s"Compressable data at $level with multi-threaded", buff, level)
-      benchLDM(s"Compressable data at $level with Long Distance Matching", buff, level)
     }
   }
 
@@ -425,7 +362,6 @@ class ZstdPerfSpec extends AnyFlatSpec  {
         benchStreamWithBufferPool(s"Streaming with BufferPool at $level", buff, level)
         benchStreamMT(s"Streaming (multi-threaded) at $level", buff, level)
         benchDirectBufferStream(s"Streaming at $level to direct ByteBuffers", buff, level)
-        benchStreamLDM(s"Streaming at $level with Long Distance Matching", buff, level)
     }
   }
 }
