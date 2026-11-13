@@ -144,12 +144,6 @@ public class ZstdInputStreamNoFinalizer extends FilterInputStream {
         if (Zstd.isError(size)) {
             throw new ZstdIOException(size);
         }
-        // if we disable the multi-dict support, release all but the last registered dict
-        if (!useMultiple) {
-            while (active_dicts.size() > 1) {
-                active_dicts.removeLast().releaseSharedLock();
-            }
-        }
         isMultiDict = useMultiple;
         return this;
     }
