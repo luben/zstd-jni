@@ -1,0 +1,6 @@
+#!/bin/bash
+
+rm -r target
+rm -r build
+rm -r .cxx
+rm -r .gradle
