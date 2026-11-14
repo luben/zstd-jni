@@ -189,7 +189,7 @@ public class ZstdDirectBufferCompressingStreamNoFinalizer implements Closeable, 
                 }
             }
             finally {
-                if (closed) {
+                if (!closed) {
                     freeCStream(stream);
                 }
                 closed = true;
