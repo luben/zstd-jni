@@ -51,7 +51,7 @@ public abstract class BaseZstdBufferDecompressingStreamNoFinalizer implements Cl
         return this.source != null && !closed && !streamEnd && (this.source.hasRemaining() || !finishedFrame);
     }
 
-    public @NotNull BaseZstdBufferDecompressingStreamNoFinalizer setDict(byte @NotNull [] dict) throws IOException {
+    public synchronized @NotNull BaseZstdBufferDecompressingStreamNoFinalizer setDict(byte @NotNull [] dict) throws IOException {
         Objects.requireNonNull(dict, "dict");
         if (closed) {
             throw new IOException("Stream closed");
@@ -63,7 +63,7 @@ public abstract class BaseZstdBufferDecompressingStreamNoFinalizer implements Cl
         return this;
     }
 
-    public @NotNull BaseZstdBufferDecompressingStreamNoFinalizer setDict(@NotNull ZstdDictDecompress dict) throws IOException {
+    public synchronized @NotNull BaseZstdBufferDecompressingStreamNoFinalizer setDict(@NotNull ZstdDictDecompress dict) throws IOException {
         Objects.requireNonNull(dict, "dict");
         if (closed) {
             throw new IOException("Stream closed");
@@ -90,7 +90,7 @@ public abstract class BaseZstdBufferDecompressingStreamNoFinalizer implements Cl
      *
      * @see <a href="https://github.com/facebook/zstd/blob/0525d1cec64a8df749ff293ee476f616de79f7b0/lib/zstd.h#L606"> Zstd's ZSTD_d_windowLogMax parameter</a>
      */
-    public @NotNull BaseZstdBufferDecompressingStreamNoFinalizer setLongMax(int windowLogMax) throws IOException {
+    public synchronized @NotNull BaseZstdBufferDecompressingStreamNoFinalizer setLongMax(int windowLogMax) throws IOException {
         if (closed) {
             throw new IOException("Stream closed");
         }
