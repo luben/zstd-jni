@@ -336,7 +336,7 @@ public class ZstdInputStreamNoFinalizer extends FilterInputStream {
      * {@code ZstdInputStreamNoFinalizer} (which calls {@code ZSTD_createDStream} +
      * {@code malloc}) for each compressed stream and then closing it (which calls
      * {@code ZSTD_freeDStream} + {@code free}), callers can keep a single instance
-     * and call {@code reset()} with each new input stream.
+     * and call {@link #resetSession(InputStream)} with each new input stream.
      *
      * @param newInput the new compressed input stream to decompress
      * @return the old input stream
