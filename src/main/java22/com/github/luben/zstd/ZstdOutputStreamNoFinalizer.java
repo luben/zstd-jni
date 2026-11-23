@@ -564,17 +564,19 @@ public class ZstdOutputStreamNoFinalizer extends FilterOutputStream {
                 out.close();
             }
         } finally {
-            // release the resources even if underlying stream throw an exception
-            if (active_dict != null) {
-                active_dict.releaseSharedLock();
-                active_dict = null;
+            if (!isClosed) {
+                // release the resources even if underlying stream throw an exception
+                if (active_dict != null) {
+                    active_dict.releaseSharedLock();
+                    active_dict = null;
+                }
+                isClosed = true;
+                bufferPool.release(dstByteBuffer);
+                ZstdBinding.freeCStream(cstream);
+                // do not keep the caller's last source array alive past close()
+                lastSrcArray = null;
+                lastSrcSegment = null;
             }
-            isClosed = true;
-            bufferPool.release(dstByteBuffer);
-            ZstdBinding.freeCStream(cstream);
-            // do not keep the caller's last source array alive past close()
-            lastSrcArray = null;
-            lastSrcSegment = null;
         }
     }
 }
