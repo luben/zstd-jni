@@ -622,9 +622,9 @@ final class ZstdBinding {
     private static final MethodHandle ZDICT_trainFromBuffer =
             downcall("ZDICT_trainFromBuffer",
                     FunctionDescriptor.of(C_SIZE_T, ValueLayout.ADDRESS, C_SIZE_T,
-                            ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT),
+                            ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.JAVA_INT),
                     MethodType.methodType(long.class, MemorySegment.class, long.class,
-                            MemorySegment.class, MemorySegment.class, int.class, int.class));
+                            MemorySegment.class, MemorySegment.class, int.class));
     private static final MethodHandle ZDICT_trainFromBuffer_legacy =
             downcall("ZDICT_trainFromBuffer_legacy",
                     FunctionDescriptor.of(C_SIZE_T, ValueLayout.ADDRESS, C_SIZE_T,
@@ -726,11 +726,10 @@ final class ZstdBinding {
     }
 
     static long trainDictionary(Arena arena, MemorySegment dst, MemorySegment samples,
-                                MemorySegment sizes, int count, boolean legacy, int level) {
+                                MemorySegment sizes, int count, boolean legacy) {
         MemorySegment params = MemorySegment.NULL;
         if (legacy) {
             params = arena.allocate(ZDICT_LEGACY_PARAMS); // Zero initialized, as in JNI.
-            params.set(ValueLayout.JAVA_INT, LEGACY_COMPRESSION_LEVEL, level);
         }
         try {
             if (legacy) {
@@ -738,7 +737,7 @@ final class ZstdBinding {
                         dst, dst.byteSize(), samples, sizes, count, params);
             }
             return (long) ZDICT_trainFromBuffer.invokeExact(
-                    dst, dst.byteSize(), samples, sizes, count, level);
+                    dst, dst.byteSize(), samples, sizes, count);
         } catch (Throwable t) {
             throw new AssertionError("Call to dictionary trainer failed", t);
         }

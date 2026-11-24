@@ -1184,11 +1184,15 @@ public class Zstd {
      * @param samples the samples buffer array
      * @param dictBuffer the new dictionary buffer
      * @param legacy  use the legacy training algorithm; otherwise cover
+     * @param compressionLevel  optimal if using the same level as when compressing.
      * @return the number of bytes into buffer 'dictBuffer' or an error code if
      *          it fails (which can be tested using ZSTD_isError())
+     * @deprecated
+     * Use the variant without `compressionLevel`
      */
-    public static long trainFromBuffer(byte @NotNull [][] samples, byte @NotNull [] dictBuffer, boolean legacy) {
-        return trainFromBuffer(samples, dictBuffer, legacy, defaultCompressionLevel());
+    @Deprecated
+    public static long trainFromBuffer(byte @NotNull [][] samples, byte @NotNull [] dictBuffer, boolean legacy, int compressionLevel) {
+       return trainFromBuffer(samples, dictBuffer, legacy);
     }
 
     /**
@@ -1197,11 +1201,10 @@ public class Zstd {
      * @param samples the samples buffer array
      * @param dictBuffer the new dictionary buffer
      * @param legacy  use the legacy training algorithm; otherwise cover
-     * @param compressionLevel  optimal if using the same level as when compressing.
      * @return the number of bytes into buffer 'dictBuffer' or an error code if
      *          it fails (which can be tested using ZSTD_isError())
      */
-    public static long trainFromBuffer(byte @NotNull [][] samples, byte @NotNull [] dictBuffer, boolean legacy, int compressionLevel) {
+    public static long trainFromBuffer(byte @NotNull [][] samples, byte @NotNull [] dictBuffer, boolean legacy) {
         Objects.requireNonNull(samples, "samples");
         Objects.requireNonNull(dictBuffer, "dictBuffer");
         for (byte[] sample : samples) {
@@ -1220,9 +1223,9 @@ public class Zstd {
                 throw new ZstdException(Zstd.errGeneric(), "training samples too small");
             }
         }
-        return trainFromBuffer0(samples, dictBuffer, legacy, compressionLevel);
+        return trainFromBuffer0(samples, dictBuffer, legacy);
     }
-    private static long trainFromBuffer0(byte @NotNull [][] samples, byte @NotNull [] dictBuffer, boolean legacy, int compressionLevel) {
+    private static long trainFromBuffer0(byte @NotNull [][] samples, byte @NotNull [] dictBuffer, boolean legacy) {
         try (Arena arena = Arena.ofConfined()) {
             MemorySegment sizes = ZstdBinding.allocateSampleSizes(arena, samples.length);
             long total = 0;
@@ -1241,7 +1244,7 @@ public class Zstd {
             output.copyFrom(heapOutput);
             try {
                 return ZstdBinding.trainDictionary(arena, output, packed, sizes,
-                        samples.length, legacy, compressionLevel);
+                        samples.length, legacy);
             } finally {
                 // JNI releases with mode 0, including partially written output on errors.
                 heapOutput.copyFrom(output);
@@ -1256,11 +1259,15 @@ public class Zstd {
      * @param sampleSizes java integer array of sizes
      * @param dictBuffer the new dictionary buffer (preallocated direct byte buffer)
      * @param legacy  use the legacy training algorithm; oter
+     * @param compressionLevel  optimal if using the same level as when compressing.
      * @return the number of bytes into buffer 'dictBuffer' or an error code if
      *          it fails (which can be tested using ZSTD_isError())
+     * @deprecated
+     * Use the variant without `compressionLevel`
      */
-    public static long trainFromBufferDirect(@NotNull ByteBuffer samples, int @NotNull [] sampleSizes, @NotNull ByteBuffer dictBuffer, boolean legacy) {
-	return trainFromBufferDirect(samples, sampleSizes, dictBuffer, legacy, defaultCompressionLevel());
+    @Deprecated
+    public static long trainFromBufferDirect(@NotNull ByteBuffer samples, int @NotNull [] sampleSizes, @NotNull ByteBuffer dictBuffer, boolean legacy, int compressionLevel) {
+	return trainFromBufferDirect(samples, sampleSizes, dictBuffer, legacy);
     }
 
     /**
@@ -1274,7 +1281,7 @@ public class Zstd {
      * @return the number of bytes into buffer 'dictBuffer' or an error code if
      *          it fails (which can be tested using ZSTD_isError())
      */
-    public static long trainFromBufferDirect(@NotNull ByteBuffer samples, int @NotNull [] sampleSizes, @NotNull ByteBuffer dictBuffer, boolean legacy, int compressionLevel) {
+    public static long trainFromBufferDirect(@NotNull ByteBuffer samples, int @NotNull [] sampleSizes, @NotNull ByteBuffer dictBuffer, boolean legacy) {
         Objects.requireNonNull(samples, "samples");
         Objects.requireNonNull(sampleSizes, "sampleSizes");
         Objects.requireNonNull(dictBuffer, "dictBuffer");
@@ -1291,7 +1298,7 @@ public class Zstd {
                 throw new ZstdException(Zstd.errGeneric(), "training samples too small");
             }
         }
-        return trainFromBufferDirect0(samples, sampleSizes, dictBuffer, legacy, compressionLevel);
+        return trainFromBufferDirect0(samples, sampleSizes, dictBuffer, legacy);
     }
 
 
@@ -1300,7 +1307,7 @@ public class Zstd {
         return MemorySegment.ofBuffer(buffer.duplicate().clear());
     }
 
-    private static long trainFromBufferDirect0(@NotNull ByteBuffer samples, int @NotNull [] sampleSizes, @NotNull ByteBuffer dictBuffer, boolean legacy, int compressionLevel) {
+    private static long trainFromBufferDirect0(@NotNull ByteBuffer samples, int @NotNull [] sampleSizes, @NotNull ByteBuffer dictBuffer, boolean legacy) {
         long allocationError = ZstdBinding.asSizeT(-ZstdBinding.ZSTD_ERROR_MEMORY_ALLOCATION);
         if (!samples.isDirect() || !dictBuffer.isDirect()) {
             return allocationError;
@@ -1324,7 +1331,7 @@ public class Zstd {
                 return allocationError;
             }
             return ZstdBinding.trainDictionary(arena, output, packed, sizes,
-                    sampleSizes.length, legacy, compressionLevel);
+                    sampleSizes.length, legacy);
         }
     }
 

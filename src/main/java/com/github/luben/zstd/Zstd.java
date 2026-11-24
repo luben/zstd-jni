@@ -950,18 +950,6 @@ public class Zstd {
     public static native long errSrcSizeWrong();
     public static native long errDstBufferNull();
 
-    /**
-     * Creates a new dictionary to tune a kind of samples
-     *
-     * @param samples the samples buffer array
-     * @param dictBuffer the new dictionary buffer
-     * @param legacy  use the legacy training algorithm; otherwise cover
-     * @return the number of bytes into buffer 'dictBuffer' or an error code if
-     *          it fails (which can be tested using ZSTD_isError())
-     */
-    public static long trainFromBuffer(byte @NotNull [][] samples, byte @NotNull [] dictBuffer, boolean legacy) {
-        return trainFromBuffer(samples, dictBuffer, legacy, defaultCompressionLevel());
-    }
 
     /**
      * Creates a new dictionary to tune a kind of samples
@@ -972,8 +960,24 @@ public class Zstd {
      * @param compressionLevel  optimal if using the same level as when compressing.
      * @return the number of bytes into buffer 'dictBuffer' or an error code if
      *          it fails (which can be tested using ZSTD_isError())
+     * @deprecated
+     * Use the variant without `compressionLevel`
      */
+    @Deprecated
     public static long trainFromBuffer(byte @NotNull [][] samples, byte @NotNull [] dictBuffer, boolean legacy, int compressionLevel) {
+        return trainFromBuffer(samples, dictBuffer, legacy);
+    }
+
+    /**
+     * Creates a new dictionary to tune a kind of samples
+     *
+     * @param samples the samples buffer array
+     * @param dictBuffer the new dictionary buffer
+     * @param legacy  use the legacy training algorithm; otherwise cover
+     * @return the number of bytes into buffer 'dictBuffer' or an error code if
+     *          it fails (which can be tested using ZSTD_isError())
+     */
+    public static long trainFromBuffer(byte @NotNull [][] samples, byte @NotNull [] dictBuffer, boolean legacy) {
         Objects.requireNonNull(samples, "samples");
         Objects.requireNonNull(dictBuffer, "dictBuffer");
         for (byte[] sample : samples) {
@@ -992,9 +996,28 @@ public class Zstd {
                 throw new ZstdException(Zstd.errGeneric(), "training samples too small");
             }
         }
-        return trainFromBuffer0(samples, dictBuffer, legacy, compressionLevel);
+        return trainFromBuffer0(samples, dictBuffer, legacy);
     }
-    private static native long trainFromBuffer0(byte @NotNull [][] samples, byte @NotNull [] dictBuffer, boolean legacy, int compressionLevel);
+    private static native long trainFromBuffer0(byte @NotNull [][] samples, byte @NotNull [] dictBuffer, boolean legacy);
+
+    /**
+     * Creates a new dictionary to tune a kind of samples
+     *
+     * @param samples the samples direct byte buffer array
+     * @param sampleSizes java integer array of sizes
+     * @param dictBuffer the new dictionary buffer (preallocated direct byte buffer)
+     * @param legacy  use the legacy training algorithm; oter
+     * @param compressionLevel  optimal if using the same level as when compressing.
+     * @return the number of bytes into buffer 'dictBuffer' or an error code if
+     *          it fails (which can be tested using ZSTD_isError())
+     * @deprecated
+     * Use the variant without `compressionLevel`
+     */
+    @Deprecated
+    public static long trainFromBufferDirect(@NotNull ByteBuffer samples, int @NotNull [] sampleSizes, @NotNull ByteBuffer dictBuffer, boolean legacy, int compressionLevel) {
+        return trainFromBufferDirect(samples, sampleSizes, dictBuffer, legacy);
+    }
+
 
     /**
      * Creates a new dictionary to tune a kind of samples
@@ -1007,21 +1030,6 @@ public class Zstd {
      *          it fails (which can be tested using ZSTD_isError())
      */
     public static long trainFromBufferDirect(@NotNull ByteBuffer samples, int @NotNull [] sampleSizes, @NotNull ByteBuffer dictBuffer, boolean legacy) {
-	return trainFromBufferDirect(samples, sampleSizes, dictBuffer, legacy, defaultCompressionLevel());
-    }
-
-    /**
-     * Creates a new dictionary to tune a kind of samples
-     *
-     * @param samples the samples direct byte buffer array
-     * @param sampleSizes java integer array of sizes
-     * @param dictBuffer the new dictionary buffer (preallocated direct byte buffer)
-     * @param legacy  use the legacy training algorithm; oter
-     * @param compressionLevel  optimal if using the same level as when compressing.
-     * @return the number of bytes into buffer 'dictBuffer' or an error code if
-     *          it fails (which can be tested using ZSTD_isError())
-     */
-    public static long trainFromBufferDirect(@NotNull ByteBuffer samples, int @NotNull [] sampleSizes, @NotNull ByteBuffer dictBuffer, boolean legacy, int compressionLevel) {
         Objects.requireNonNull(samples, "samples");
         Objects.requireNonNull(sampleSizes, "sampleSizes");
         Objects.requireNonNull(dictBuffer, "dictBuffer");
@@ -1038,11 +1046,11 @@ public class Zstd {
                 throw new ZstdException(Zstd.errGeneric(), "training samples too small");
             }
         }
-        return trainFromBufferDirect0(samples, sampleSizes, dictBuffer, legacy, compressionLevel);
+        return trainFromBufferDirect0(samples, sampleSizes, dictBuffer, legacy);
     }
 
 
-    private static native long trainFromBufferDirect0(@NotNull ByteBuffer samples, int @NotNull [] sampleSizes, @NotNull ByteBuffer dictBuffer, boolean legacy, int compressionLevel);
+    private static native long trainFromBufferDirect0(@NotNull ByteBuffer samples, int @NotNull [] sampleSizes, @NotNull ByteBuffer dictBuffer, boolean legacy);
 
     /**
      * Get DictId from a compressed frame

@@ -8,7 +8,7 @@
 #include <string.h>
 
 JNIEXPORT jlong Java_com_github_luben_zstd_Zstd_trainFromBuffer0
-  (JNIEnv *env, jclass obj, jobjectArray samples, jbyteArray dictBuffer, jboolean legacy, jint compressionLevel) {
+  (JNIEnv *env, jclass obj, jobjectArray samples, jbyteArray dictBuffer, jboolean legacy) {
     if (dictBuffer == NULL) return -ZSTD_error_dictionary_wrong;
     size_t size = -ZSTD_error_memory_allocation;
     jsize num_samples = (*env)->GetArrayLength(env, samples);
@@ -58,10 +58,9 @@ JNIEXPORT jlong Java_com_github_luben_zstd_Zstd_trainFromBuffer0
     if (legacy == JNI_TRUE) {
         ZDICT_legacy_params_t params;
         memset(&params,0,sizeof(params));
-        params.zParams.compressionLevel = compressionLevel;
         size = ZDICT_trainFromBuffer_legacy(dict_buff, dict_capacity, samples_buffer, samples_sizes, num_samples, params);
     } else {
-        size = ZDICT_trainFromBuffer(dict_buff, dict_capacity, samples_buffer, samples_sizes, num_samples, compressionLevel);
+        size = ZDICT_trainFromBuffer(dict_buff, dict_capacity, samples_buffer, samples_sizes, num_samples);
     }
     (*env)->ReleasePrimitiveArrayCritical(env, dictBuffer, dict_buff, 0);
 
@@ -71,7 +70,7 @@ E1: return size;
 }
 
 JNIEXPORT jlong Java_com_github_luben_zstd_Zstd_trainFromBufferDirect0
-  (JNIEnv *env, jclass obj, jobject samples, jintArray sampleSizes, jobject dictBuffer, jboolean legacy, jint compressionLevel) {
+  (JNIEnv *env, jclass obj, jobject samples, jintArray sampleSizes, jobject dictBuffer, jboolean legacy) {
 
     size_t size = -ZSTD_error_memory_allocation;
     void *samples_buffer = (*env)->GetDirectBufferAddress(env, samples);
@@ -107,10 +106,9 @@ JNIEXPORT jlong Java_com_github_luben_zstd_Zstd_trainFromBufferDirect0
     if (legacy == JNI_TRUE) {
         ZDICT_legacy_params_t params;
         memset(&params, 0, sizeof(params));
-        params.zParams.compressionLevel = compressionLevel;
         size = ZDICT_trainFromBuffer_legacy(dict_buff, dict_capacity, samples_buffer, samples_sizes, num_samples, params);
     } else {
-        size = ZDICT_trainFromBuffer(dict_buff, dict_capacity, samples_buffer, samples_sizes, num_samples, compressionLevel);
+        size = ZDICT_trainFromBuffer(dict_buff, dict_capacity, samples_buffer, samples_sizes, num_samples);
     }
 E2: free(samples_sizes);
 E1: return size;
