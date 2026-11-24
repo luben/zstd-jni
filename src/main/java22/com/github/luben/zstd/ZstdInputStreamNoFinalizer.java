@@ -263,6 +263,12 @@ public class ZstdInputStreamNoFinalizer extends FilterInputStream {
             // we have not yet produced any output
             if (needRead && (in.available() > 0 || dstPosition == offset)) {
                 srcSize = in.read(src, 0, src.length);
+                // The count is handed to native code as the source length: a wrapped stream
+                // that breaks the InputStream contract must not widen it past the buffer.
+                if (srcSize > src.length) {
+                    throw new IOException("Underlying stream returned " + srcSize
+                            + " bytes, more than the " + src.length + " requested");
+                }
                 srcPos.set(0);
                 if (srcSize < 0) {
                     srcSize = 0;
